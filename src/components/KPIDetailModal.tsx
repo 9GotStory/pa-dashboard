@@ -91,7 +91,7 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
       <div className="relative w-full max-w-4xl bg-white rounded-xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
         
         {/* Header */}
-        <div className="bg-slate-50 border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div className="bg-slate-50 border-b border-slate-200 px-4 md:px-6 py-4 flex items-center justify-between">
           <div>
             <h3 className="text-lg font-bold text-slate-800">{facilityName}</h3>
             <p className="text-sm text-slate-500 truncate max-w-2xl">{title}</p>

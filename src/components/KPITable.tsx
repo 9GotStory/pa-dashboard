@@ -87,16 +87,16 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         header: '#',
         cell: info => info.row.index + 1,
         meta: {
-          className: "sticky left-0 z-20 px-2 py-4 border-b border-r border-slate-300 text-center bg-white group-hover:bg-blue-50/30 w-[50px] font-medium text-slate-400 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
-          headerClassName: "sticky left-0 z-30 px-2 py-4 border-b border-r border-slate-300 w-[50px] text-center bg-slate-100 font-bold text-slate-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+          className: "md:sticky left-0 z-20 px-2 py-4 border-b border-r border-slate-300 text-center bg-white group-hover:bg-blue-50/30 w-[50px] font-medium text-slate-400 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
+          headerClassName: "md:sticky left-0 z-30 px-2 py-4 border-b border-r border-slate-300 w-[50px] text-center bg-slate-100 font-bold text-slate-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
         }
       }),
       columnHelper.accessor('title', {
         header: 'ตัวชี้วัด',
         cell: info => info.getValue(),
         meta: {
-          className: "sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[300px] min-w-[300px] text-slate-800 leading-snug shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
-          headerClassName: "sticky left-[50px] z-30 px-3 py-4 border-b border-r border-slate-300 w-[300px] min-w-[300px] bg-slate-100 font-bold text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+          className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[300px] min-w-[300px] text-slate-800 leading-snug shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
+          headerClassName: "md:sticky left-[50px] z-30 px-3 py-4 border-b border-r border-slate-300 w-[300px] min-w-[300px] bg-slate-100 font-bold text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
         }
       }),
       columnHelper.accessor('percentage', {
@@ -114,18 +114,18 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
           );
         },
         meta: {
-           getHeaderClassName: () => "sticky left-[350px] z-30 px-2 py-4 border-b border-r-4 border-slate-300 w-[100px] min-w-[100px] text-center bg-slate-100 font-extrabold text-slate-800 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)]",
+           getHeaderClassName: () => "md:sticky left-[350px] z-30 px-2 py-4 border-b border-r-4 border-slate-300 w-[100px] min-w-[100px] text-center bg-slate-100 font-extrabold text-slate-800 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)]",
            getCellClassName: (row: Row<KPISummary>) => {
              const kpi = row.original;
              const targetVal = kpi.targetValue || 80;
              const isRawCount = kpi.totalTarget === 0;
              
              if (isRawCount) {
-                return "sticky left-[350px] z-20 px-2 py-4 border-b border-r-4 border-slate-300 text-center font-bold w-[100px] min-w-[100px] shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)] bg-slate-50 text-slate-700 group-hover:bg-slate-100";
+                return "md:sticky left-[350px] z-20 px-2 py-4 border-b border-r-4 border-slate-300 text-center font-bold w-[100px] min-w-[100px] shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)] bg-slate-50 text-slate-700 group-hover:bg-slate-100";
              }
 
              const totalPass = kpi.percentage >= targetVal;
-             return `sticky left-[350px] z-20 px-2 py-4 border-b border-r-4 border-slate-300 text-center font-bold w-[100px] min-w-[100px] shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)] ${
+             return `md:sticky left-[350px] z-20 px-2 py-4 border-b border-r-4 border-slate-300 text-center font-bold w-[100px] min-w-[100px] shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)] ${
                 totalPass ? 'bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200/80' : 'bg-rose-100 text-rose-800 group-hover:bg-rose-200/80'
              }`;
            }
@@ -202,8 +202,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
-            className: "sticky right-0 z-10 px-2 py-4 border-b border-l-4 border-l-slate-300 text-center text-xs w-24 min-w-[90px] font-bold text-amber-800 bg-amber-50 group-hover:bg-amber-100 shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.05)]",
-            headerClassName: "sticky right-0 z-20 px-2 py-4 border-b border-l-4 border-l-slate-300 w-24 text-center min-w-[90px] bg-amber-50 font-bold text-amber-900 shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]"
+            className: "md:sticky right-0 z-10 px-2 py-4 border-b border-l-4 border-l-slate-300 text-center text-xs w-24 min-w-[90px] font-bold text-amber-800 bg-amber-50 group-hover:bg-amber-100 shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.05)]",
+            headerClassName: "md:sticky right-0 z-20 px-2 py-4 border-b border-l-4 border-l-slate-300 w-24 text-center min-w-[90px] bg-amber-50 font-bold text-amber-900 shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]"
          }
       })
     ];
