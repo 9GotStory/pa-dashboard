@@ -29,7 +29,7 @@ export function calculateKPIValue(item: any, tableName: string): KPIValue {
   }
   
   // 3. Aged 9 Aspects (Exception: Do NOT sum results)
-  if (tableName === 's_aged9_w' || tableName === 's_aged9') {
+  if (tableName === 's_aged9') {
       t = Number(item.target || 0);
       r = Number(item.result || 0);
       return { t, r };

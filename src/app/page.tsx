@@ -2,7 +2,7 @@ import { fetchMophReport, fetchHospitalMap, fetchKPIMaster, fetchTambonMap } fro
 import KPITable from "@/components/KPITable";
 import { KPIReportType } from "@/lib/types";
 
-export const dynamic = 'force-dynamic'; 
+ 
 
 export default async function Home() {
   // 1. Fetch Configuration & Hospital Map AND Reports in parallel?
