@@ -95,7 +95,7 @@ export default async function Home() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900">PA Dashboard - 2569</h1>
+            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 font-prompt">PA Dashboard - 2569</h1>
             <p className="text-slate-500 mt-1">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
           </div>
           <div className="text-xs text-slate-500">
@@ -106,7 +106,7 @@ export default async function Home() {
         {/* Table View */}
         <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
              <div className="p-4 bg-slate-100 border-b border-slate-200">
-                <h2 className="font-semibold text-slate-700">PP & P Excellence</h2>
+                <h2 className="font-semibold text-slate-700 font-prompt">PP & P Excellence</h2>
              </div>
              <KPITable data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
         </div>
