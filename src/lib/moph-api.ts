@@ -70,8 +70,8 @@ export async function fetchMophReport(tableName: KPIReportType, title: string): 
     // Check specific tables that use A/B
     const useABColumns = [
        's_dental_0_5_cavity_free', 
-       // 's_dental_65' uses result/result01... no explicitly named 'target' column in schema, just multiple results.
-       // We'll stick to standard 'result' for s_dental_65 for now, though target might be missing (0).
+       // 's_kpi_dental33' uses result/result01... no explicitly named 'target' column in schema, just multiple results.
+       // We'll stick to standard 'result' for s_kpi_dental33 for now, though target might be missing (0).
     ].includes(tableName);
     
     if (useABColumns) {
