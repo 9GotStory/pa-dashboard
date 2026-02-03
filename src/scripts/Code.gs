@@ -232,6 +232,6 @@ function createDailyTrigger() {
   ScriptApp.newTrigger("syncAllData")
     .timeBased()
     .everyDays(1)
-    .atHour(6) // Run at 6 AM
+    .atHour(14) // Run at 2 PM (After 12:51 PM update)
     .create();
 }

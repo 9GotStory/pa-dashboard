@@ -27,7 +27,7 @@ export async function fetchMophReport(tableName: KPIReportType, title: string): 
   try {
     const response = await fetchWithRetry(url, {
       method: 'GET',
-      next: { revalidate: 3600 } 
+      cache: 'no-store' // Fetch fresh data every time (avoids 2MB cache limit err)
     });
 
     if (!response.ok) {
