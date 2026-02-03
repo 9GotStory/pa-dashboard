@@ -11,7 +11,7 @@ const CONFIG = {
     { table: "s_kpi_anc12", sheet: "s_kpi_anc12" }, // 1
     { table: "s_anc5", sheet: "s_anc5" }, // 2
     { table: "s_kpi_food", sheet: "s_kpi_food" }, // 3
-    { table: "s_kpi_child_specialpp", sheet: "s_kpi_child_specialpp" }, // 4
+    { table: "s_childdev_specialpp", sheet: "s_childdev_specialpp" }, // 4
     { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2" }, // 5
     { table: "s_aged9", sheet: "s_aged9" }, // 6
     { table: "s_dm_screen", sheet: "s_dm_screen" }, // 7
@@ -59,7 +59,8 @@ function fetchAndSave(tableName, sheetName) {
     const responseCode = response.getResponseCode();
 
     // Check HTTP Status
-    if (responseCode !== 200) {
+    // Check HTTP Status (Allow 200 OK and 201 Created)
+    if (responseCode !== 200 && responseCode !== 201) {
       Logger.log(
         "Error: API returned status " + responseCode + " for " + tableName,
       );

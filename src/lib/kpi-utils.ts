@@ -18,15 +18,27 @@ export function calculateKPIValue(item: any, tableName: string): KPIValue {
       return { t, r };
   }
 
-  // 2. Dental 65+ (Count only, Target from Config)
-  if (tableName === 's_kpi_dental33') {
-      // API has no target column (or it's 0), we rely on master config for % target.
-      // But for "Count", we consider target=0 implies raw count display.
-      // Result is in 'result'. breakdown is in result01..12
-      t = 0; // Will be handled by isRawCount logic if totalTarget=0
-      r = Number(item.result || 0);
+  // 1.1 Special Child Development (Sum of 9, 18, 30, 42, 60 months)
+  if (tableName === 's_childdev_specialpp') {
+      const ages = ['9', '18', '30', '42', '60'];
+      t = 0; // Denominator: Screened (result_X)
+      r = 0; // Numerator: Normal (1b260_1_X + 1b260_2_X)
+
+      ages.forEach(age => {
+          // Target = Screened Count
+          t += Number(item[`result_${age}`] || 0);
+          
+          // Result = Normal First Time + Normal After Stimulation
+          r += Number(item[`1b260_1_${age}`] || 0);
+          r += Number(item[`1b260_2_${age}`] || 0);
+      });
       return { t, r };
   }
+
+
+  // 2. Dental 65+ (Use Standard Logic if available, usually target/result)
+  // if (tableName === 's_kpi_dental33') { ... } // Removed to allow standard logic
+
   
   // 3. Aged 9 Aspects (Exception: Do NOT sum results)
   if (tableName === 's_aged9') {
