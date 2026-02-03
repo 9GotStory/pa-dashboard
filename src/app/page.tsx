@@ -40,12 +40,52 @@ export default async function Home() {
     overallData = [anc12Data, foodData, childData];
   }
 
-  const lastUpdated = new Date().toLocaleString('th-TH', { 
-    timeZone: 'Asia/Bangkok',
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  // Calculate Max Data Date
+  let maxDateStr = '';
+  overallData.forEach(r => {
+     if (r.data && r.data.length > 0) {
+        r.data.forEach(d => {
+           if (d.date_com && d.date_com > maxDateStr) {
+              maxDateStr = d.date_com;
+           }
+        });
+     }
   });
+
+  const formatDate = (dateStr: string) => {
+    try {
+      if (!dateStr) return 'N/A';
+      
+      let d = new Date();
+      const str = String(dateStr).trim();
+      
+      // Handle YYYYMMDDHHmm or YYYYMMDD
+      if (/^\d{8,}$/.test(str)) {
+         const year = parseInt(str.substring(0, 4));
+         const month = parseInt(str.substring(4, 6)) - 1; 
+         const day = parseInt(str.substring(6, 8));
+         // Optional time
+         const hour = str.length >= 10 ? parseInt(str.substring(8, 10)) : 0;
+         const minute = str.length >= 12 ? parseInt(str.substring(10, 12)) : 0;
+         d = new Date(year, month, day, hour, minute);
+      } else {
+         // Fallback try standard parse
+         const parsed = new Date(dateStr);
+         if (!isNaN(parsed.getTime())) d = parsed;
+      }
+      
+      return d.toLocaleDateString('th-TH', { 
+        timeZone: 'Asia/Bangkok',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return 'N/A';
+    }
+  };
+
+  const lastUpdated = maxDateStr ? formatDate(maxDateStr) : 'N/A';
 
   return (
     <main className="min-h-screen bg-slate-50 p-4 md:p-8 font-[family-name:var(--font-geist-sans)]">
@@ -58,7 +98,7 @@ export default async function Home() {
             <p className="text-slate-500 mt-1">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
           </div>
           <div className="text-xs text-slate-500">
-            Last Updated: {lastUpdated}
+            Data Date: {lastUpdated}
           </div>
         </div>
 
