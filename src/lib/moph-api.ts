@@ -265,12 +265,13 @@ export async function fetchKPIMaster(): Promise<KPIMaster[]> {
 
     // Map raw data to KPIMaster objects
     // GAS/json might return field names as in sheet (lowercase)
-    // We assume columns: table_name, title, target, order
+    // We assume columns: table_name, title, target, order, link
     return data.map((row: any) => ({
        table_name: row.table_name || '',
        title: row.title || 'Unknown KPI',
        target: Number(row.target || 0),
-       order: Number(row.order || 999)
+       order: Number(row.order || 999),
+       link: row.link || undefined
     })).filter(k => k.table_name)
       .sort((a, b) => a.order - b.order);
 
