@@ -94,9 +94,29 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
       }),
       columnHelper.accessor('title', {
         header: 'ตัวชี้วัด',
-        cell: info => info.getValue(),
+        cell: info => {
+           const title = info.getValue();
+           const link = info.row.original.link;
+
+           if (link) {
+              return (
+                 <a 
+                   href={link} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="group flex items-start gap-2 text-slate-800 hover:text-indigo-600 transition-colors duration-200"
+                 >
+                    <span className="font-medium leading-snug">{title}</span>
+                    <svg className="w-4 h-4 mt-0.5 opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                    </svg>
+                 </a>
+              );
+           }
+           return <span className="text-slate-800 leading-snug">{title}</span>;
+        },
         meta: {
-          className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[300px] min-w-[300px] text-slate-800 leading-snug shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
+          className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[300px] min-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
           headerClassName: "md:sticky left-[50px] z-30 px-3 py-4 border-b border-r border-slate-300 w-[300px] min-w-[300px] bg-slate-100 font-bold text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
         }
       }),

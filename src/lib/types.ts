@@ -47,6 +47,7 @@ export interface KPISummary {
   data: MophReportData[];
   breakdown: Record<string, { target: number; result: number; percentage: number }>;
   targetValue: number; // The goal (e.g. 70%)
+  link?: string;
 }
 
 export interface KPIMaster {
@@ -54,4 +55,5 @@ export interface KPIMaster {
   title: string;
   target: number;
   order: number;
+  link?: string;
 }

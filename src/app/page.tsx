@@ -23,6 +23,7 @@ export default async function Home() {
      const reportPromises = kpiConfig.map(async (kpi) => {
         const data = await fetchMophReport(kpi.table_name as KPIReportType, kpi.title);
         data.targetValue = kpi.target;
+        data.link = kpi.link;
         return data;
      });
      overallData = await Promise.all(reportPromises);
