@@ -4,11 +4,28 @@ import { calculateKPIValue } from './kpi-utils';
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H/exec';
 const TARGET_AREA_PREFIX = '5406'; // Song District
 
+
+// Helper for retry logic
+async function fetchWithRetry(url: string, options: RequestInit = {}, retries = 3, backoff = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      const res = await fetch(url, options);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res;
+    } catch (err) {
+      if (i === retries - 1) throw err;
+      console.warn(`Retrying ${url} (${i + 1}/${retries})...`);
+      await new Promise(r => setTimeout(r, backoff * (i + 1)));
+    }
+  }
+  throw new Error('Retries failed');
+}
+
 export async function fetchMophReport(tableName: KPIReportType, title: string): Promise<KPISummary> {
   const url = `${API_URL}?sheet=${tableName}`;
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'GET',
       next: { revalidate: 3600 } 
     });
@@ -169,7 +186,7 @@ export interface TambonMaster {
 export async function fetchTambonMap(): Promise<Record<string, string>> {
    try {
      const url = `${API_URL}?sheet=tambon_master`;
-     const response = await fetch(url, { next: { revalidate: 3600 } });
+     const response = await fetchWithRetry(url, { next: { revalidate: 3600 } });
      if (!response.ok) return {};
      
      const data: TambonMaster[] = await response.json();
@@ -197,7 +214,7 @@ export async function fetchHospitalMap(): Promise<Record<string, HospitalDetail>
   const url = `${API_URL}?sheet=hospitals`;
   
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'GET',
       next: { revalidate: 3600 } 
     });
@@ -236,7 +253,7 @@ export async function fetchKPIMaster(): Promise<KPIMaster[]> {
   const url = `${API_URL}?sheet=kpi_master`;
 
   try {
-    const response = await fetch(url, {
+    const response = await fetchWithRetry(url, {
       method: 'GET',
       next: { revalidate: 60 } // Cache shorter (1 min) for config changes
     });
