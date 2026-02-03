@@ -259,11 +259,11 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
       <div className="overflow-x-auto shadow-lg rounded-xl max-w-full border border-slate-200 bg-slate-50 mb-10">
          {/* Table Actions Header */}
          <div className="px-4 py-3 bg-white border-b border-slate-200 flex justify-between items-center sticky left-0 z-10 w-full">
-            <h3 className="font-bold text-slate-700">KPI Performance Table</h3>
+            <h3 className="font-bold text-slate-700 font-prompt">KPI Performance Table</h3>
             <button 
                onClick={handleExport}
                disabled={isExporting}
-               className={`flex items-center gap-2 px-3 py-1.5 text-white text-xs md:text-sm font-medium rounded-lg shadow-sm transition-all active:scale-95 ${
+               className={`flex items-center gap-2 px-3 py-1.5 text-white text-xs md:text-sm font-medium rounded-lg shadow-sm transition-all active:scale-95 font-prompt ${
                   isExporting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
                }`}
             >
