@@ -19,7 +19,7 @@ export function calculateKPIValue(item: any, tableName: string): KPIValue {
   }
 
   // 2. Dental 65+ (Count only, Target from Config)
-  if (tableName === 's_dental_65') {
+  if (tableName === 's_kpi_dental33') {
       // API has no target column (or it's 0), we rely on master config for % target.
       // But for "Count", we consider target=0 implies raw count display.
       // Result is in 'result'. breakdown is in result01..12

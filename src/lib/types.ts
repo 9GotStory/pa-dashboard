@@ -36,7 +36,7 @@ export type KPIReportType =
   | 's_ncd_screen_repleate2'
   | 's_dental_0_5_cavity_free'
   | 's_kpi_dental28'
-  | 's_dental_65';
+  | 's_kpi_dental33';
 
 export interface KPISummary {
   title: string;

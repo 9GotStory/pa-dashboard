@@ -20,7 +20,7 @@ const CONFIG = {
     { table: "s_ncd_screen_repleate2", sheet: "s_ncd_screen_repleate2" }, // 10
     { table: "s_dental_0_5_cavity_free", sheet: "s_dental_0_5_cavity_free" }, // 11
     { table: "s_kpi_dental28", sheet: "s_kpi_dental28" }, // 12
-    { table: "s_dental_65", sheet: "s_dental_65" }, // 13
+    { table: "s_kpi_dental33", sheet: "s_kpi_dental33" }, // 13
   ],
 };
 
@@ -50,49 +50,72 @@ function fetchAndSave(tableName, sheetName) {
     method: "post",
     contentType: "application/json",
     payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
   };
 
   try {
+    // 1. Fetch Data
     const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
-    const data = JSON.parse(response.getContentText());
+    const responseCode = response.getResponseCode();
 
-    if (!Array.isArray(data) || data.length === 0) {
-      Logger.log("No data found for " + tableName);
-      return;
+    // Check HTTP Status
+    if (responseCode !== 200) {
+      Logger.log(
+        "Error: API returned status " + responseCode + " for " + tableName,
+      );
+      return; // ABORT: Do not touch sheet
     }
 
-    const ss = SpreadsheetApp.getActiveSpreadsheet();
-    let sheet = ss.getSheetByName(sheetName);
-    if (!sheet) {
-      sheet = ss.insertSheet(sheetName);
+    const jsonText = response.getContentText();
+    let data;
+    try {
+      data = JSON.parse(jsonText);
+    } catch (parseErr) {
+      Logger.log("Error: Invalid JSON for " + tableName);
+      return; // ABORT
     }
 
-    // Prepare Headers from first object keys
-    // Ensure 'hospcode', 'areacode', 'target', 'result' etc. are present
-    const headers = Object.keys(data[0]);
+    // 2. Validate Data Structure
+    if (!Array.isArray(data)) {
+      Logger.log("Error: API response is not an array for " + tableName);
+      return; // ABORT
+    }
 
-    // Clear old data
-    sheet.clear();
+    if (data.length === 0) {
+      Logger.log(
+        "Warning: API returned 0 records for " +
+          tableName +
+          ". Keeping old data.",
+      );
+      return; // ABORT: Safety choice - if API returns empty, better to show old data than blank?
+      // Or strictly user might WANT to see empty if it's truly empty?
+      // User request implies "prevention of lost data if fetch fails".
+      // Returning 0 records is techincally a successful fetch, but suspicious for MOPH data.
+      // Let's assume 0 records means 'something is wrong' for now to be safe.
+    }
 
-    // Write Headers
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    // Check first item for integrity
+    const firstItem = data[0];
+    if (
+      typeof firstItem !== "object" ||
+      firstItem === null ||
+      Object.keys(firstItem).length === 0
+    ) {
+      Logger.log("Error: Invalid record format for " + tableName);
+      return; // ABORT
+    }
 
-    // Force Text Format for ID columns BEFORE writing data
-    const textColumns = ["id", "hospcode", "areacode"];
-    textColumns.forEach((colName) => {
-      const colIndex = headers.indexOf(colName);
-      if (colIndex > -1) {
-        // +1 because Sheet columns are 1-based, and +1 for header row (start at row 2)
-        sheet
-          .getRange(2, colIndex + 1, Math.max(data.length, 1), 1)
-          .setNumberFormat("@");
-      }
-    });
+    // 3. Prepare Data in Memory (Formatting)
+    // Prepare Headers
+    const headers = Object.keys(firstItem);
 
-    // Write Data with explicit string conversion for text columns
+    // Force Text Format for ID columns
+    const textColumns = ["id", "hospcode", "areacode", "vhid"];
+
     const rowsFormatted = data.map((item) =>
       headers.map((key) => {
         const val = item[key];
+        // Convert ID-like columns to string explicitly to prevent scientific notation in CSV/Excel later
         if (textColumns.includes(key)) {
           return val !== null && val !== undefined ? String(val) : "";
         }
@@ -100,19 +123,49 @@ function fetchAndSave(tableName, sheetName) {
       }),
     );
 
-    // Batch write
+    // 4. Write to Sheet (Critical Section)
+    // Only reach here if everything above succeeded
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    let sheet = ss.getSheetByName(sheetName);
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+    }
+
+    // Clear content but preserve formatting if possible, actually clear() is safest for clean slate
+    sheet.clear();
+
+    // Write Headers
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+    // Set Text Formatting for ID columns
+    textColumns.forEach((colName) => {
+      const colIndex = headers.indexOf(colName);
+      if (colIndex > -1) {
+        // Apply text format to the entire column range that will be written
+        sheet
+          .getRange(2, colIndex + 1, Math.max(rowsFormatted.length, 1), 1)
+          .setNumberFormat("@");
+      }
+    });
+
+    // Write Data
     if (rowsFormatted.length > 0) {
       sheet
         .getRange(2, 1, rowsFormatted.length, headers.length)
         .setValues(rowsFormatted);
     }
 
-    // Add Timestamp
+    // Add Timestamp to indicate successful sync
     sheet
       .getRange(1, headers.length + 2)
       .setValue("Last Updated: " + new Date());
+
+    Logger.log(
+      "Success: Synced " + rowsFormatted.length + " rows for " + tableName,
+    );
   } catch (e) {
-    Logger.log("Error syncing " + tableName + ": " + e.toString());
+    Logger.log("Critical Error syncing " + tableName + ": " + e.toString());
+    // Do nothing else - sheet remains untouched
   }
 }
 
