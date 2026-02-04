@@ -1,4 +1,5 @@
 import { Suspense } from 'react';
+import { CalendarClock } from "lucide-react";
 import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap } from "@/lib/moph-api";
 import KPITable from "@/components/KPITable";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
@@ -69,8 +70,9 @@ async function DashboardContent({
       <div className="flex justify-end -mt-10 mb-4 px-1 items-center gap-2">
          {/* Pulse Indicator now sits here next to date */}
          <PulseIndicator lastUpdated={formattedDate} />
-         <div className="text-xs text-slate-500 bg-white/50 px-2 py-1 rounded">
-            Data Date: {formattedDate}
+         <div className="flex items-center gap-1.5 bg-white/50 px-2.5 py-1 rounded-full border border-slate-100 shadow-sm">
+            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-medium text-slate-600 font-prompt">{formattedDate}</span>
          </div>
       </div>
 

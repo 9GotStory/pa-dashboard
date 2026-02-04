@@ -11,7 +11,7 @@ import {
 import { KPISummary } from '@/lib/types';
 import { KPIDetailModal } from './KPIDetailModal';
 import { exportToExcel } from '@/lib/excel-export';
-import { ExternalLink, Calendar, CalendarClock } from "lucide-react";
+import { ExternalLink, Calendar, CalendarClock, FileSpreadsheet } from "lucide-react";
 
 interface KPITableProps {
   data: KPISummary[];
@@ -130,8 +130,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[300px] min-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
-          headerClassName: "md:sticky left-[50px] z-30 px-3 py-4 border-b border-r border-slate-300 w-[300px] min-w-[300px] bg-slate-100 font-bold text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+          className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
+          headerClassName: "md:sticky left-[50px] z-30 px-3 py-4 border-b border-r border-slate-300 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] bg-slate-100 font-bold text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
         }
       }),
       columnHelper.accessor('percentage', {
@@ -283,18 +283,16 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
             >
                {isExporting ? (
                   <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg className="animate-spin -ml-1 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Exporting...
+                    <span className="hidden md:inline">Exporting...</span>
                   </>
                ) : (
                   <>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Export Excel
+                    <FileSpreadsheet className="w-4 h-4" />
+                    <span className="hidden md:inline">Export Excel</span>
                   </>
                )}
             </button>
