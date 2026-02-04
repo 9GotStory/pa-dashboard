@@ -7,6 +7,8 @@ export const metadata: Metadata = {
   description: "Health indicators for Song District, Phrae Province",
 };
 
+import { Toaster } from "sonner";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -18,6 +20,7 @@ export default function RootLayout({
         className={`${prompt.variable} ${sarabun.variable} antialiased text-slate-900 bg-slate-50 font-sans`}
       >
         {children}
+        <Toaster position="top-center" richColors />
       </body>
     </html>
   );

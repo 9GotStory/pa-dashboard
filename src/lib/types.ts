@@ -27,7 +27,7 @@ export type KPIReportType =
   | 's_kpi_anc12' 
   | 's_anc5'
   | 's_kpi_food' 
-  | 's_kpi_child_specialpp'
+  | 's_kpi_childdev4'
   | 's_kpi_childdev2'
   | 's_aged9_w'
   | 's_dm_screen'
@@ -47,7 +47,9 @@ export interface KPISummary {
   data: MophReportData[];
   breakdown: Record<string, { target: number; result: number; percentage: number }>;
   targetValue: number; // The goal (e.g. 70%)
+  targetValue: number; // The goal (e.g. 70%)
   link?: string;
+  period?: string; // e.g. "Q2"
 }
 
 export interface KPIMaster {

@@ -50,10 +50,32 @@ export async function fetchBatchReports(configs: KPIMaster[]): Promise<KPISummar
   const url = `${API_URL}?sheet=BATCH_ALL`;
   
   try {
-     const response = await fetchWithRetry(url, { next: { revalidate: 3600 } });
+     const response = await fetchWithRetry(url, { next: { revalidate: 0 } });
      if (!response.ok) throw new Error("Batch fetch failed");
      
-     const batchData: Record<string, MophReportData[]> = await response.json();
+     const json = await response.json();
+     
+     // Handle both new {data, meta} and old direct object format
+     let batchData: Record<string, MophReportData[]> = {};
+     let currentQuarter = 0;
+     let quarterlyKPIs = new Set<string>(); // Set of table names that are Quarterly
+
+     if (json.data && json.meta) {
+        batchData = json.data;
+        currentQuarter = json.meta.current_quarter || 0;
+        
+        // Build Set of Quarterly KPIs from Meta Config
+        if (Array.isArray(json.meta.kpi_config)) {
+           json.meta.kpi_config.forEach((k: any) => {
+              if (k.isQuarterly) quarterlyKPIs.add(k.table);
+           });
+        }
+     } else {
+        batchData = json;
+     }
+
+     const quarterLabel = currentQuarter > 0 ? `สะสม ${currentQuarter * 3} เดือน (Q${currentQuarter})` : "รายไตรมาส";
+     const annualLabel = "รายปี";
      
      // Map config to reports
      return configs.map(config => {
@@ -61,6 +83,16 @@ export async function fetchBatchReports(configs: KPIMaster[]): Promise<KPISummar
         const report = processReportData(rows, config.table_name as KPIReportType, config.title);
         report.targetValue = config.target;
         report.link = config.link;
+        
+        // Determine Badge
+        // 1. If explicit config says Quarterly -> Use Quarter Label
+        // 2. Else -> Use Annual Label
+        if (quarterlyKPIs.has(config.table_name)) {
+           report.period = quarterLabel;
+        } else {
+           report.period = annualLabel;
+        }
+        
         return report;
      });
 
@@ -141,7 +173,7 @@ export interface TambonMaster {
 export async function fetchTambonMap(): Promise<Record<string, string>> {
    try {
      const url = `${API_URL}?sheet=tambon_master`;
-     const response = await fetchWithRetry(url, { next: { revalidate: 3600 } });
+     const response = await fetchWithRetry(url, { next: { revalidate: 0 } });
      if (!response.ok) return {};
      
      const data: TambonMaster[] = await response.json();
@@ -210,7 +242,7 @@ export async function fetchKPIMaster(): Promise<KPIMaster[]> {
   try {
     const response = await fetchWithRetry(url, {
       method: 'GET',
-      next: { revalidate: 60 } // Cache shorter (1 min) for config changes
+      next: { revalidate: 0 } 
     });
 
     if (!response.ok) return [];

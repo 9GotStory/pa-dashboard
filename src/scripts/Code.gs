@@ -6,19 +6,28 @@
 
 const CONFIG = {
   YEAR: "2569",
-  PROVINCE: "54", // Phrae
+  PROVINCE: "54",
   API_URL: "https://opendata.moph.go.th/api/report_data",
+  CURRENT_QUARTER: 2, // Adjust this to control how many quarters are summed (1-4)
   KPIS: [
     { table: "s_kpi_anc12", sheet: "s_kpi_anc12" },
     { table: "s_anc5", sheet: "s_anc5" },
     { table: "s_kpi_food", sheet: "s_kpi_food" },
-    { table: "s_childdev_specialpp", sheet: "s_childdev_specialpp" },
-    { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2" },
+    { table: "s_kpi_childdev4", sheet: "s_kpi_childdev4", isQuarterly: true },
+    { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2", isQuarterly: true },
     { table: "s_aged9", sheet: "s_aged9" },
     { table: "s_dm_screen", sheet: "s_dm_screen" },
     { table: "s_ht_screen", sheet: "s_ht_screen" },
-    { table: "s_ncd_screen_repleate1", sheet: "s_ncd_screen_repleate1" },
-    { table: "s_ncd_screen_repleate2", sheet: "s_ncd_screen_repleate2" },
+    {
+      table: "s_ncd_screen_repleate1",
+      sheet: "s_ncd_screen_repleate1",
+      isQuarterly: true,
+    },
+    {
+      table: "s_ncd_screen_repleate2",
+      sheet: "s_ncd_screen_repleate2",
+      isQuarterly: true,
+    },
     { table: "s_dental_0_5_cavity_free", sheet: "s_dental_0_5_cavity_free" },
     { table: "s_kpi_dental28", sheet: "s_kpi_dental28" },
     { table: "s_kpi_dental33", sheet: "s_kpi_dental33" },
@@ -37,6 +46,103 @@ function syncAllData() {
     fetchAndSave(kpi.table, kpi.sheet);
   });
   SpreadsheetApp.getActive().toast("Sync Completed!", "Success");
+}
+
+function testConnection() {
+  const tableName = "s_kpi_anc12";
+  Logger.log("Testing connection to: " + CONFIG.API_URL);
+
+  const payload = {
+    tableName: tableName,
+    year: CONFIG.YEAR,
+    province: CONFIG.PROVINCE,
+    type: "json",
+  };
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  };
+
+  const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
+  Logger.log("Response Code: " + response.getResponseCode());
+  Logger.log(
+    "Response Body (First 500 chars): " +
+      response.getContentText().substring(0, 500),
+  );
+}
+
+function testChildDevCalculation() {
+  // Sample Data from API (s_kpi_childdev4)
+  const sampleItem = {
+    target1: 23,
+    result1: 3,
+    target2: 28,
+    result2: 0,
+    target3: 16,
+    result3: 0,
+    target4: 24,
+    result4: 0,
+  };
+
+  Logger.log("Testing Calculation Logic for s_kpi_childdev4...");
+  const result = calculateKPIOnServer(sampleItem, "s_kpi_childdev4");
+  Logger.log("Input: " + JSON.stringify(sampleItem));
+  Logger.log("Calculated Output: " + JSON.stringify(result));
+
+  // Expected: Q1(23)+Q2(28) = 51. Result: Q1(3)+Q2(0) = 3.
+  if (result.t === 51 && result.r === 3) {
+    Logger.log("✅ Logic is CORRECT (Q1+Q2 Only)");
+  } else {
+    Logger.log("❌ Logic is WRONG. Expected t=51, r=3. Got t=" + result.t);
+  }
+}
+
+function logKPIStructures() {
+  Logger.log("🔍 INSPECTING KPI COLUMNS...");
+  CONFIG.KPIS.forEach((kpi) => {
+    try {
+      const payload = {
+        tableName: kpi.table,
+        year: CONFIG.YEAR,
+        province: CONFIG.PROVINCE,
+        type: "json",
+      };
+      const options = {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true,
+      };
+      const res = UrlFetchApp.fetch(CONFIG.API_URL, options);
+      const data = JSON.parse(res.getContentText());
+
+      if (Array.isArray(data) && data.length > 0) {
+        const keys = Object.keys(data[0]);
+        // Check for relevant columns
+        const hasTargetAnnual = keys.includes("target");
+        const hasQuarterly = keys.some(
+          (k) => k.startsWith("target1") || k.includes("result1"),
+        );
+
+        let status = "❓ Unknown";
+        if (hasTargetAnnual && !hasQuarterly) status = "📅 ANNUAL Only";
+        if (!hasTargetAnnual && hasQuarterly) status = "📊 QUARTERLY Only";
+        if (hasTargetAnnual && hasQuarterly) status = "⚠️ HYBRID (Has both)";
+
+        Logger.log(
+          `[${kpi.table}] -> ${status} | Keys: ${keys.slice(0, 10).join(", ")}...`,
+        );
+      } else {
+        Logger.log(`[${kpi.table}] -> ❌ No Data or Error`);
+      }
+    } catch (e) {
+      Logger.log(`[${kpi.table}] -> ❌ Exception: ${e.message}`);
+    }
+  });
+  Logger.log("✅ Inspection Complete");
 }
 
 function fetchAndSave(tableName, sheetName) {
@@ -164,7 +270,16 @@ function doGet(e) {
       const rows = getProcessedDataForSheet(kpi.sheet);
       result[kpi.table] = rows;
     });
-    return createJsonOutput(result);
+
+    // Wrap with Metadata
+    const response = {
+      data: result,
+      meta: {
+        current_quarter: CONFIG.CURRENT_QUARTER,
+        kpi_config: CONFIG.KPIS,
+      },
+    };
+    return createJsonOutput(response);
   }
 
   // 2. Handle Master Sheets (Pass-through)
@@ -255,14 +370,12 @@ function calculateKPIOnServer(item, tableName) {
     return { t: t, r: r };
   }
 
-  // 2. Child Development Special (Multi-Age Sum)
-  if (tableName === "s_childdev_specialpp") {
-    const ages = ["9", "18", "30", "42", "60"];
-    ages.forEach(function (age) {
-      t += Number(item["result_" + age] || 0); // Denom: Screened
-      r += Number(item["1b260_1_" + age] || 0); // Num: Normal 1
-      r += Number(item["1b260_2_" + age] || 0); // Num: Normal 2
-    });
+  // 2. Child Development Special (Uses Global Current Quarter)
+  if (tableName === "s_kpi_childdev4") {
+    for (let i = 1; i <= CONFIG.CURRENT_QUARTER; i++) {
+      t += Number(item["target" + i] || item["targetq" + i] || 0);
+      r += Number(item["result" + i] || item["resultq" + i] || 0);
+    }
     return { t: t, r: r };
   }
 
@@ -278,12 +391,16 @@ function calculateKPIOnServer(item, tableName) {
   const tMain = Number(item["target"] || 0);
   const rMain = Number(item["result"] || 0);
 
-  if (tMain > 0) {
+  // Check if forced Quarterly by Config
+  const kpiConfig = CONFIG.KPIS.find((k) => k.table === tableName);
+  const forceQuarterly = kpiConfig ? kpiConfig.isQuarterly : false;
+
+  if (tMain > 0 && !forceQuarterly) {
     t = tMain;
     r = rMain > 0 ? rMain : getQuarterSum(item, "result");
     if (r === 0 && rMain > 0) r = rMain; // Fallback
   } else {
-    // Sum quarters
+    // Sum quarters (If Force Quarterly OR No Annual Target)
     t = getQuarterSum(item, "target");
     r = getQuarterSum(item, "result");
   }
@@ -293,7 +410,8 @@ function calculateKPIOnServer(item, tableName) {
 
 function getQuarterSum(item, prefix) {
   let sum = 0;
-  for (let i = 1; i <= 4; i++) {
+  // Use CONFIG.CURRENT_QUARTER to limit the sum
+  for (let i = 1; i <= CONFIG.CURRENT_QUARTER; i++) {
     // Try various patterns: target1, targetq1, target1q1
     const v1 = item[prefix + i];
     const v2 = item[prefix + "q" + i];

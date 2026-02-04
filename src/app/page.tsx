@@ -2,6 +2,8 @@ import { Suspense } from 'react';
 import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap, fetchMophReport } from "@/lib/moph-api";
 import KPITable from "@/components/KPITable";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
+import PulseIndicator from "@/components/PulseIndicator";
+import DataStatusNotifier from "@/components/DataStatusNotifier";
 import { KPIMaster } from "@/lib/types";
 
 // Async Component for the Data-Heavy part
@@ -23,10 +25,16 @@ async function DashboardContent({
      // Fallback
       const anc12Data = await fetchMophReport('s_kpi_anc12', '1. ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์');
       anc12Data.targetValue = 73; 
+      anc12Data.period = "รายปี (Fallback)";
+      
       const foodData = await fetchMophReport('s_kpi_food', '2. ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว');
       foodData.targetValue = 50; 
-      const childData = await fetchMophReport('s_childdev_specialpp', '3. ร้อยละของเด็กอายุ 0-5 ปี มีพัฒนาการสมวัย');
+      foodData.period = "รายปี (Fallback)";
+      
+      const childData = await fetchMophReport('s_kpi_childdev4', '3. ร้อยละของเด็กอายุ 0-5 ปี มีพัฒนาการสมวัย');
       childData.targetValue = 86;
+      childData.period = "สะสม 6 เดือน (Fallback)";
+      
       overallData = [anc12Data, foodData, childData];
   }
 
@@ -53,18 +61,28 @@ async function DashboardContent({
             parseInt(str.substring(10, 12))
           );
           return d.toLocaleDateString('th-TH', { 
-            day: 'numeric', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit'
-          });
+            day: 'numeric', 
+            month: 'long', 
+            year: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit',
+          }) + ' น.';
       }
       return 'N/A';
     } catch { return 'N/A'; }
   };
-
+  
+  const formattedDate = formatDate(maxDateStr);
+  
   return (
     <>
-      <div className="flex justify-end -mt-10 mb-4 px-1">
+      <DataStatusNotifier recordCount={overallData.length} />
+      
+      <div className="flex justify-end -mt-10 mb-4 px-1 items-center gap-2">
+         {/* Pulse Indicator now sits here next to date */}
+         <PulseIndicator lastUpdated={formattedDate} />
          <div className="text-xs text-slate-500 bg-white/50 px-2 py-1 rounded">
-            Data Date: {formatDate(maxDateStr)}
+            Data Date: {formattedDate}
          </div>
       </div>
 
