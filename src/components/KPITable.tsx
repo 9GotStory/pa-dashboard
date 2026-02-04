@@ -98,7 +98,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         header: '#',
         cell: info => info.row.index + 1,
         meta: {
-          className: "md:sticky left-0 z-20 bg-slate-50/80 min-w-[50px] w-[50px] text-center font-medium text-slate-500 text-xs border-r border-slate-200",
+          className: "md:sticky left-0 z-20 bg-slate-50 min-w-[50px] w-[50px] text-center font-medium text-slate-500 text-xs border-r border-slate-200",
           headerClassName: "md:sticky left-0 z-30 bg-slate-100 w-[50px] text-center border-r border-slate-200"
         }
       }),
@@ -134,8 +134,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          // Add bg-slate-50 to make sticky column opaque and distinct
-          className: "md:sticky left-[50px] z-20 bg-slate-50/80 w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] text-left align-middle shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200",
+          // SOLID BACKGROUND (Removed /80 opacity)
+          className: "md:sticky left-[50px] z-20 bg-slate-50 w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] text-left align-middle shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200",
           headerClassName: "md:sticky left-[50px] z-30 bg-slate-100 w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200"
         }
       }),
@@ -148,8 +148,11 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
 
           return (
              <div className="w-full text-center">
-                <span className="font-bold text-sm tracking-tight">
+                <span className="font-bold text-sm tracking-tight hidden md:inline">
                   {isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}
+                </span>
+                <span className="md:hidden font-bold text-sm">
+                  {isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}%
                 </span>
              </div>
           );
@@ -239,8 +242,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
-            // DISTINCT TARGET COLUMN
-            className: "md:sticky right-0 z-10 bg-amber-50/40 text-center text-xs w-[70px] min-w-[70px] font-bold text-amber-700 border-l border-amber-200/50",
+            // DISTINCT TARGET COLUMN -- SOLID BG (removed /40)
+            className: "md:sticky right-0 z-10 bg-amber-50 text-center text-xs w-[70px] min-w-[70px] font-bold text-amber-700 border-l border-amber-200/50",
             headerClassName: "md:sticky right-0 z-20 bg-amber-50 w-[70px] text-center min-w-[70px] text-amber-800 border-l border-amber-200/50"
          }
       })
@@ -321,7 +324,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                </TableHeader>
                <TableBody>
                  {table.getRowModel().rows.map(row => (
-                   <TableRow key={row.id} className="bg-white hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
+                   <TableRow key={row.id} className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors">
                      {row.getVisibleCells().map(cell => {
                         const meta: any = cell.column.columnDef.meta || {};
                         const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;
