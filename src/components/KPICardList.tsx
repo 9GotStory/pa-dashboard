@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState } from 'react';
 import { KPISummary } from '@/lib/types';
 import { KPICard } from './KPICard';
