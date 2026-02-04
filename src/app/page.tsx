@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import { CalendarClock } from "lucide-react";
 import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap } from "@/lib/moph-api";
 import KPITable from "@/components/KPITable";
+import KPICardList from "@/components/KPICardList";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import PulseIndicator from "@/components/PulseIndicator";
 import DataStatusNotifier from "@/components/DataStatusNotifier";
@@ -76,14 +77,23 @@ async function DashboardContent({
          </div>
       </div>
 
-       <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden">
-           <div className="px-6 py-5 bg-white border-b border-slate-100 flex items-center justify-between">
-              <h2 className="font-bold text-slate-700 font-prompt text-lg flex items-center gap-2">
-                <span className="w-1.5 h-6 bg-brand-500 rounded-full inline-block"></span>
-                PP & P Excellence
-              </h2>
-           </div>
-          <KPITable data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          <div className="px-4 py-4 md:px-6 md:py-5 bg-white border-b border-slate-100 flex items-center justify-between">
+             <h2 className="font-bold text-slate-800 font-prompt text-lg flex items-center gap-2">
+               <span className="w-1.5 h-6 bg-brand-500 rounded-full inline-block"></span>
+               PP & P Excellence
+             </h2>
+          </div>
+          
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+             <KPITable data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="block md:hidden p-4 bg-slate-50/50">
+             <KPICardList data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
+          </div>
       </div>
     </>
   );
@@ -101,12 +111,12 @@ export default async function Home() {
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="max-w-7xl mx-auto px-4 md:px-8 pb-12">
         
-        {/* APP SHELL (Static Header) - Sticky & Glassmorphism */}
-        <header className="sticky top-0 z-40 -mx-4 px-4 md:-mx-8 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm mb-8 transition-all">
+        {/* APP SHELL (Static Header) - Clean Linear Style */}
+        <header className="sticky top-0 z-40 -mx-4 px-4 md:-mx-8 md:px-8 py-4 bg-white border-b border-slate-200 shadow-sm mb-6 transition-all">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 max-w-7xl mx-auto">
             <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
-              <p className="text-slate-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
+              <h1 className="text-xl md:text-2xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
+              <p className="text-slate-500 text-xs md:text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
             </div>
           </div>
         </header>
