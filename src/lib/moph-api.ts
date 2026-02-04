@@ -60,7 +60,7 @@ export async function fetchBatchReports(configs: KPIMaster[]): Promise<KPISummar
      // Handle both new {data, meta} and old direct object format
      let batchData: Record<string, MophReportData[]> = {};
      let currentQuarter = 0;
-     let quarterlyKPIs = new Set<string>(); // Set of table names that are Quarterly
+     const quarterlyKPIs = new Set<string>(); // Set of table names that are Quarterly
 
      if (json.data && json.meta) {
         batchData = json.data;
@@ -68,7 +68,7 @@ export async function fetchBatchReports(configs: KPIMaster[]): Promise<KPISummar
         
         // Build Set of Quarterly KPIs from Meta Config
         if (Array.isArray(json.meta.kpi_config)) {
-           json.meta.kpi_config.forEach((k: any) => {
+           json.meta.kpi_config.forEach((k: { table: string; isQuarterly?: boolean }) => {
               if (k.isQuarterly) quarterlyKPIs.add(k.table);
            });
         }
@@ -255,12 +255,12 @@ export async function fetchKPIMaster(): Promise<KPIMaster[]> {
     // Map raw data to KPIMaster objects
     // GAS/json might return field names as in sheet (lowercase)
     // We assume columns: table_name, title, target, order, link
-    return data.map((row: any) => ({
-       table_name: row.table_name || '',
-       title: row.title || 'Unknown KPI',
+    return data.map((row: Record<string, unknown>) => ({
+       table_name: (row.table_name as string) || '',
+       title: (row.title as string) || 'Unknown KPI',
        target: Number(row.target || 0),
        order: Number(row.order || 999),
-       link: row.link || undefined
+       link: (row.link as string) || undefined
     })).filter(k => k.table_name)
       .sort((a, b) => a.order - b.order);
 

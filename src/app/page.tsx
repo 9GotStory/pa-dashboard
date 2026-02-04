@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
-import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap, fetchMophReport } from "@/lib/moph-api";
+import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap } from "@/lib/moph-api";
 import KPITable from "@/components/KPITable";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import PulseIndicator from "@/components/PulseIndicator";
 import DataStatusNotifier from "@/components/DataStatusNotifier";
-import { KPIMaster } from "@/lib/types";
+import { KPIMaster, KPISummary, MophReportData } from "@/lib/types";
 
 // Async Component for the Data-Heavy part
 async function DashboardContent({ 
@@ -16,26 +16,14 @@ async function DashboardContent({
   hospitalMap: any, 
   tambonMap: any 
 }) {
-  let overallData = [];
+  let overallData: KPISummary[] = [];
   
   if (kpiConfig.length > 0) {
       // 1 Request (Batch)
       overallData = await fetchBatchReports(kpiConfig);
   } else {
-     // Fallback
-      const anc12Data = await fetchMophReport('s_kpi_anc12', '1. ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์');
-      anc12Data.targetValue = 73; 
-      anc12Data.period = "รายปี (Fallback)";
-      
-      const foodData = await fetchMophReport('s_kpi_food', '2. ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว');
-      foodData.targetValue = 50; 
-      foodData.period = "รายปี (Fallback)";
-      
-      const childData = await fetchMophReport('s_kpi_childdev4', '3. ร้อยละของเด็กอายุ 0-5 ปี มีพัฒนาการสมวัย');
-      childData.targetValue = 86;
-      childData.period = "สะสม 6 เดือน (Fallback)";
-      
-      overallData = [anc12Data, foodData, childData];
+     // No KPI Config - Return empty (Grid will show "No Data" state)
+     overallData = [];
   }
 
   // Calculate Date
