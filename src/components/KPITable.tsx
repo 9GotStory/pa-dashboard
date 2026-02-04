@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { cn } from "@/lib/utils";
 
 interface KPITableProps {
   data: KPISummary[];
@@ -97,8 +98,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         header: '#',
         cell: info => info.row.index + 1,
         meta: {
-          className: "md:sticky left-0 z-20 px-1 py-1 border border-slate-300 text-center bg-blue-100 w-[40px] font-bold text-slate-700 text-xs",
-          headerClassName: "md:sticky left-0 z-30 px-1 py-2 border border-slate-400 w-[40px] text-center bg-blue-300 font-bold text-slate-800 text-xs"
+          className: "md:sticky left-0 z-20 bg-white min-w-[50px] w-[50px] text-center font-medium text-slate-400 text-xs",
+          headerClassName: "md:sticky left-0 z-30 bg-slate-50 w-[50px] text-center"
         }
       }),
       columnHelper.accessor('title', {
@@ -109,23 +110,23 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
            
            return (
-             <div className="min-w-[250px] py-1 px-1">
+             <div className="min-w-[250px] py-1">
                 <div className="flex items-start flex-col gap-1">
                    {/* KPI Title */}
-                   <div className="flex items-center gap-1">
+                   <div className="flex items-center gap-2">
                      {link ? (
-                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-slate-900 hover:text-blue-700 font-medium leading-tight text-xs group">
-                           {title} <ExternalLink className="w-3 h-3 inline opacity-50 group-hover:opacity-100" />
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-slate-800 hover:text-brand-600 font-medium leading-tight text-sm group transition-colors">
+                           {title} <ExternalLink className="w-3 h-3 inline text-slate-400 group-hover:text-brand-500" />
                         </a>
                      ) : (
-                        <span className="text-slate-900 font-medium leading-tight text-xs">{title}</span>
+                        <span className="text-slate-800 font-medium leading-tight text-sm">{title}</span>
                      )}
                    </div>
                    
                    {/* DATA PERIOD BADGE */}
                    {period && (
-                      <span className="text-[10px] text-slate-500 font-normal">
-                         ({period})
+                      <span className="text-[10px] text-slate-400 font-normal bg-slate-100 px-1.5 py-0.5 rounded-full">
+                         {period}
                       </span>
                    )}
                 </div>
@@ -133,38 +134,40 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          className: "md:sticky left-[40px] z-20 px-1 py-1 border border-slate-300 bg-white hover:bg-slate-50 w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] text-left align-middle",
-          headerClassName: "md:sticky left-[40px] z-30 px-2 py-2 border border-slate-400 w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] bg-blue-300 font-bold text-slate-900 text-center text-xs"
+          className: "md:sticky left-[50px] z-20 bg-white w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] text-left align-middle shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
+          headerClassName: "md:sticky left-[50px] z-30 bg-slate-50 w-[250px] min-w-[250px] md:w-[350px] md:min-w-[350px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]"
         }
       }),
       columnHelper.accessor('percentage', {
         id: 'result',
-        header: 'ผลงาน คปสอ. (ร้อยละ)',
+        header: 'ผลงาน (%)',
         cell: info => {
           const kpi = info.row.original;
           const isRawCount = kpi.totalTarget === 0;
 
           return (
-             <div className="w-full h-full flex items-center justify-center font-bold text-xs">
-                <span>{isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}</span>
+             <div className="w-full text-center">
+                <span className="font-bold text-sm tracking-tight">
+                  {isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}
+                </span>
              </div>
           );
         },
         meta: {
-           getHeaderClassName: () => "md:sticky left-[390px] z-30 px-1 py-2 border border-slate-400 w-[80px] min-w-[80px] text-center bg-blue-300 font-bold text-slate-900 text-xs",
+           getHeaderClassName: () => "md:sticky left-[300px] md:left-[400px] z-30 bg-slate-50 w-[80px] min-w-[80px] text-center",
            getCellClassName: (row: Row<KPISummary>) => {
              const kpi = row.original;
              const targetVal = kpi.targetValue || 80;
              const isRawCount = kpi.totalTarget === 0;
              
              if (isRawCount) {
-                return "md:sticky left-[390px] z-20 px-1 py-1 border border-slate-300 text-center font-bold w-[80px] min-w-[80px] bg-sky-100 text-slate-800";
+                return "md:sticky left-[300px] md:left-[400px] z-20 bg-white text-center font-medium text-slate-600";
              }
 
              const totalPass = kpi.percentage >= targetVal;
-             // Full Cell Color Logic
-             return `md:sticky left-[390px] z-20 px-1 py-1 border border-slate-300 text-center font-bold w-[80px] min-w-[80px] ${
-                totalPass ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'
+             // Minimal Logic: Text Color instead of BG
+             return `md:sticky left-[300px] md:left-[400px] z-20 bg-white text-center font-bold ${
+                totalPass ? 'text-emerald-600' : 'text-rose-600'
              }`;
            }
         }
@@ -174,49 +177,53 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         columnHelper.accessor(row => row.breakdown?.[key], {
           id: key,
           header: () => (
-             <div className="text-xs">{hospitalMap[key]?.name || key}</div>
+             <div className="text-[11px] font-medium text-slate-500 truncate max-w-[70px]" title={hospitalMap[key]?.name}>
+                {hospitalMap[key]?.name?.replace('โรงพยาบาลส่งเสริมสุขภาพตำบล', 'รพ.สต.') || key}
+             </div>
           ),
           cell: info => {
              const facilityData = info.getValue();
              const kpi = info.row.original;
              
-             if (!facilityData) return '-';
+             if (!facilityData) return <span className="text-slate-200">-</span>;
 
              const isRawCount = kpi.totalTarget === 0;
-             // If facility specific target is 0 logic
              
              return (
                <div 
                  onClick={() => openDrillDown(kpi, key)}
-                 className="w-full h-full flex items-center justify-center cursor-pointer min-h-[24px] text-xs"
+                 className="w-full h-full flex items-center justify-center cursor-pointer min-h-[24px]"
                >
-                 {isRawCount ? facilityData.result.toLocaleString() : (facilityData.target === 0 ? '-' : formatPct(facilityData.percentage))}
+                 {isRawCount 
+                    ? <span className="text-xs text-slate-600">{facilityData.result.toLocaleString()}</span>
+                    : (facilityData.target === 0 
+                        ? <span className="text-slate-200">-</span>
+                        : <span className="text-xs font-semibold">{formatPct(facilityData.percentage)}</span>)
+                 }
                </div>
              );
           },
           meta: {
-            headerClassName: "px-1 py-2 border border-slate-400 text-center min-w-[70px] w-[70px] bg-blue-200 font-bold text-slate-900 text-[11px] break-words whitespace-normal align-middle leading-tight",
+            headerClassName: "px-2 py-3 text-center min-w-[70px] w-[70px] bg-slate-50/50",
             getCellClassName: (row: Row<KPISummary>) => {
                const kpi = row.original;
                const targetVal = kpi.targetValue || 80;
                const facilityData = kpi.breakdown?.[key];
                const isRawCount = kpi.totalTarget === 0;
                
-               if (!facilityData) {
-                 return "px-1 py-1 border border-slate-300 text-center bg-gray-100 text-gray-400 text-[10px]";
+               if (!facilityData || facilityData.target === 0) {
+                 return "px-2 py-2 text-center bg-slate-50/30";
                }
                
                if (isRawCount) {
-                  return "px-1 py-1 border border-slate-300 text-center text-xs font-semibold whitespace-nowrap bg-sky-50 text-slate-700 hover:bg-sky-100 cursor-pointer";
-               }
-               
-               if (facilityData.target === 0) {
-                 return "px-1 py-1 border border-slate-300 text-center bg-gray-100 text-gray-400 text-[10px]";
+                  return "px-2 py-2 text-center bg-white hover:bg-slate-50 cursor-pointer transition-colors";
                }
                
                const fPass = facilityData.percentage >= targetVal;
-               return `px-1 py-1 border border-slate-300 text-center text-xs font-semibold whitespace-nowrap cursor-pointer hover:brightness-95 transition-all ${
-                  fPass ? 'bg-green-200 text-green-900' : 'bg-red-200 text-red-900'
+               
+               // Minimal: Background tint just for Hover, text color for status
+               return `px-2 py-2 text-center cursor-pointer transition-colors hover:bg-slate-50 ${
+                  fPass ? 'text-emerald-600/90' : 'text-rose-500'
                }`;
             }
           }
@@ -226,13 +233,13 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          id: 'target',
          header: () => (
            <div className="flex flex-col items-center leading-tight">
-             <span>เป้าหมาย</span>
+             <span>Goal</span>
            </div>
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
-            className: "md:sticky right-0 z-10 px-1 py-1 border border-slate-300 text-center text-xs w-[80px] min-w-[80px] font-bold text-slate-800 bg-white",
-            headerClassName: "md:sticky right-0 z-20 px-1 py-2 border border-slate-400 w-[80px] text-center min-w-[80px] bg-blue-300 font-bold text-slate-900 text-xs"
+            className: "md:sticky right-0 z-10 bg-white text-center text-xs w-[70px] min-w-[70px] font-medium text-slate-400 border-l border-slate-100",
+            headerClassName: "md:sticky right-0 z-20 bg-slate-50 w-[70px] text-center min-w-[70px] text-slate-400 border-l border-slate-100"
          }
       })
     ];
@@ -260,17 +267,18 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
 
   return (
     <>
-      <div className="overflow-x-auto shadow-sm rounded-none max-w-full border border-slate-400 bg-white mb-10 w-full">
+      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
          {/* Table Actions Header */}
-         <div className="px-4 py-2 bg-slate-50 border-b border-slate-300 flex justify-between items-center sticky left-0 z-10 w-full mb-0">
+         <div className="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center sticky left-0 z-10 w-full">
             <div>
-               <h3 className="font-bold text-slate-800 font-prompt text-sm">KPI Performance Table</h3>
+               <h3 className="font-bold text-slate-800 font-prompt text-lg">Detailed Breakdown</h3>
+               <p className="text-slate-500 text-xs">Performance by District & KPI</p>
             </div>
             <button 
                onClick={handleExport}
                disabled={isExporting}
-               className={`flex items-center gap-1.5 px-3 py-1 text-white text-xs font-semibold rounded shadow-sm transition-all active:scale-95 font-prompt ${
-                  isExporting ? 'bg-slate-400 cursor-not-allowed' : 'bg-green-600 hover:bg-green-700'
+               className={`flex items-center gap-1.5 px-3 py-1.5 text-slate-600 bg-white border border-slate-200 text-xs font-medium rounded-lg shadow-sm transition-all hover:bg-slate-50 active:scale-95 font-prompt ${
+                  isExporting ? 'opacity-50 cursor-not-allowed' : ''
                }`}
             >
                {isExporting ? (
@@ -279,53 +287,54 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                   </>
                ) : (
                   <>
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
                     <span className="hidden md:inline">Export Excel</span>
                   </>
                )}
             </button>
          </div>
 
-         {/* Use Shadcn-style Table Components */}
-         <Table className="w-full text-sm text-left border-collapse">
-            <TableHeader className="bg-blue-200">
-              {table.getHeaderGroups().map(headerGroup => (
-                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
-                  {headerGroup.headers.map(header => {
-                     const meta: any = header.column.columnDef.meta || {};
-                     const className = meta.getHeaderClassName ? meta.getHeaderClassName() : meta.headerClassName;
-                     
-                     return (
-                      <TableHead key={header.id} className={className}>
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext()
-                            )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map(row => (
-                <TableRow key={row.id} className="bg-white hover:bg-transparent border-none">
-                  {row.getVisibleCells().map(cell => {
-                     const meta: any = cell.column.columnDef.meta || {};
-                     const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;
-                     
-                     return (
-                      <TableCell key={cell.id} className={className}>
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableBody>
-         </Table>
+         <div className="relative w-full overflow-auto">
+            <Table className="w-full text-sm text-left border-collapse">
+               <TableHeader className="bg-slate-50/80 backdrop-blur-sm sticky top-0 z-40">
+                 {table.getHeaderGroups().map(headerGroup => (
+                   <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-slate-200">
+                     {headerGroup.headers.map(header => {
+                        const meta: any = header.column.columnDef.meta || {};
+                        const className = meta.getHeaderClassName ? meta.getHeaderClassName() : meta.headerClassName;
+                        
+                        return (
+                         <TableHead key={header.id} className={cn("h-10 text-xs font-semibold text-slate-500 uppercase tracking-wide", className)}>
+                           {header.isPlaceholder
+                             ? null
+                             : flexRender(
+                                 header.column.columnDef.header,
+                                 header.getContext()
+                               )}
+                         </TableHead>
+                       );
+                     })}
+                   </TableRow>
+                 ))}
+               </TableHeader>
+               <TableBody>
+                 {table.getRowModel().rows.map(row => (
+                   <TableRow key={row.id} className="bg-white hover:bg-slate-50/50 border-b border-slate-100 transition-colors">
+                     {row.getVisibleCells().map(cell => {
+                        const meta: any = cell.column.columnDef.meta || {};
+                        const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;
+                        
+                        return (
+                         <TableCell key={cell.id} className={cn("p-0 h-12", className)}>
+                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                         </TableCell>
+                       );
+                     })}
+                   </TableRow>
+                 ))}
+               </TableBody>
+            </Table>
+         </div>
       </div>
       
       <KPIDetailModal 
