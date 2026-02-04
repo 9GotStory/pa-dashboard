@@ -115,8 +115,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                    {/* KPI Title */}
                    <div className="flex items-start gap-2">
                      {link ? (
-                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-slate-800 hover:text-brand-700 font-medium text-sm leading-relaxed group transition-colors block">
-                           {title} <ExternalLink className="w-3.5 h-3.5 inline text-slate-400 group-hover:text-brand-500 ml-1 transform translate-y-[-1px]" />
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-slate-800 hover:text-blue-700 hover:underline font-medium text-sm leading-relaxed group transition-all block">
+                           {title} <ExternalLink className="w-3.5 h-3.5 inline text-slate-400 group-hover:text-blue-500 ml-1 transform translate-y-[-1px] transition-colors" />
                         </a>
                      ) : (
                         <span className="text-slate-800 font-medium text-sm leading-relaxed block">{title}</span>
