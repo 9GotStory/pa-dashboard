@@ -12,6 +12,14 @@ import { KPISummary } from '@/lib/types';
 import { KPIDetailModal } from './KPIDetailModal';
 import { exportToExcel } from '@/lib/excel-export';
 import { ExternalLink, Calendar, CalendarClock, FileSpreadsheet } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 interface KPITableProps {
   data: KPISummary[];
@@ -100,9 +108,6 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            const link = info.row.original.link;
            const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
            
-           // Determine Badge Color (Simplified for Gov Style)
-           const isQuarter = period && period.includes("(Q");
-
            return (
              <div className="min-w-[250px] py-1 px-1">
                 <div className="flex items-start flex-col gap-1">
@@ -281,45 +286,46 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
             </button>
          </div>
 
-        <table className="w-full text-sm text-left text-slate-700 border-collapse">
-          <thead className="text-xs text-slate-900 bg-blue-200">
-            {table.getHeaderGroups().map(headerGroup => (
-              <tr key={headerGroup.id}>
-                {headerGroup.headers.map(header => {
-                   const meta: any = header.column.columnDef.meta || {};
-                   const className = meta.getHeaderClassName ? meta.getHeaderClassName() : meta.headerClassName;
-                   
-                   return (
-                    <th key={header.id} className={className}>
-                      {header.isPlaceholder
-                        ? null
-                        : flexRender(
-                            header.column.columnDef.header,
-                            header.getContext()
-                          )}
-                    </th>
-                  );
-                })}
-              </tr>
-            ))}
-          </thead>
-          <tbody>
-            {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="bg-white border-b border-slate-300">
-                {row.getVisibleCells().map(cell => {
-                   const meta: any = cell.column.columnDef.meta || {};
-                   const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;
-                   
-                   return (
-                    <td key={cell.id} className={className}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+         {/* Use Shadcn-style Table Components */}
+         <Table className="w-full text-sm text-left border-collapse">
+            <TableHeader className="bg-blue-200">
+              {table.getHeaderGroups().map(headerGroup => (
+                <TableRow key={headerGroup.id} className="hover:bg-transparent border-none">
+                  {headerGroup.headers.map(header => {
+                     const meta: any = header.column.columnDef.meta || {};
+                     const className = meta.getHeaderClassName ? meta.getHeaderClassName() : meta.headerClassName;
+                     
+                     return (
+                      <TableHead key={header.id} className={className}>
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext()
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map(row => (
+                <TableRow key={row.id} className="bg-white hover:bg-transparent border-none">
+                  {row.getVisibleCells().map(cell => {
+                     const meta: any = cell.column.columnDef.meta || {};
+                     const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;
+                     
+                     return (
+                      <TableCell key={cell.id} className={className}>
+                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+         </Table>
       </div>
       
       <KPIDetailModal 
