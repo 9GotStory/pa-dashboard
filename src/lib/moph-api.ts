@@ -50,7 +50,9 @@ export async function fetchBatchReports(configs: KPIMaster[]): Promise<KPISummar
   const url = `${API_URL}?sheet=BATCH_ALL`;
   
   try {
-     const response = await fetchWithRetry(url, { next: { revalidate: 0 } });
+     // For Static Export: Data is fetched at build time. Revalidate has no effect on client but good for ISR if switched later.
+     // We set to 3600 to be safe for SSG.
+     const response = await fetchWithRetry(url, { next: { revalidate: 3600 } });
      if (!response.ok) throw new Error("Batch fetch failed");
      
      const json = await response.json();
@@ -173,7 +175,7 @@ export interface TambonMaster {
 export async function fetchTambonMap(): Promise<Record<string, string>> {
    try {
      const url = `${API_URL}?sheet=tambon_master`;
-     const response = await fetchWithRetry(url, { next: { revalidate: 0 } });
+     const response = await fetchWithRetry(url, { next: { revalidate: 3600 } });
      if (!response.ok) return {};
      
      const data: TambonMaster[] = await response.json();
@@ -242,7 +244,7 @@ export async function fetchKPIMaster(): Promise<KPIMaster[]> {
   try {
     const response = await fetchWithRetry(url, {
       method: 'GET',
-      next: { revalidate: 0 } 
+      next: { revalidate: 3600 } 
     });
 
     if (!response.ok) return [];

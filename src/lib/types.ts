@@ -47,7 +47,6 @@ export interface KPISummary {
   data: MophReportData[];
   breakdown: Record<string, { target: number; result: number; percentage: number }>;
   targetValue: number; // The goal (e.g. 70%)
-  targetValue: number; // The goal (e.g. 70%)
   link?: string;
   period?: string; // e.g. "Q2"
 }
