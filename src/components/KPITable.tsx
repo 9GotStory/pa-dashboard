@@ -89,8 +89,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         header: '#',
         cell: info => info.row.index + 1,
         meta: {
-          className: "md:sticky left-0 z-20 px-3 py-5 border-b border-white text-center bg-white w-[50px] font-medium text-slate-400 text-xs",
-          headerClassName: "md:sticky left-0 z-30 px-3 py-4 border-b border-slate-200 w-[50px] text-center bg-slate-50/80 backdrop-blur font-bold text-slate-500"
+          className: "md:sticky left-0 z-20 px-3 py-4 border-b border-r border-slate-200 text-center bg-white group-hover:bg-brand-50/10 w-[50px] font-medium text-slate-400 text-xs transition-colors",
+          headerClassName: "md:sticky left-0 z-30 px-3 py-3 border-b border-r border-slate-200 w-[50px] text-center bg-slate-50 font-bold text-slate-500 uppercase text-xs tracking-wider"
         }
       }),
       columnHelper.accessor('title', {
@@ -130,8 +130,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          className: "md:sticky left-[50px] z-20 px-4 py-5 border-b border-white hover:border-slate-100 font-medium bg-white group-hover:bg-brand-50/20 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] text-slate-700",
-          headerClassName: "md:sticky left-[50px] z-30 px-4 py-4 border-b border-slate-200 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] bg-slate-50/80 backdrop-blur font-bold text-slate-600 uppercase text-xs tracking-wider text-left"
+          className: "md:sticky left-[50px] z-20 px-4 py-4 border-b border-r border-slate-200 font-medium bg-white group-hover:bg-brand-50/10 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] text-slate-700 transition-colors",
+          headerClassName: "md:sticky left-[50px] z-30 px-4 py-3 border-b border-r border-slate-200 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] bg-slate-50 font-bold text-slate-600 uppercase text-xs tracking-wider text-left"
         }
       }),
       columnHelper.accessor('percentage', {
@@ -149,19 +149,19 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
           );
         },
         meta: {
-           getHeaderClassName: () => "md:sticky left-[350px] z-30 px-2 py-4 border-b border-r-4 border-slate-300 w-[100px] min-w-[100px] text-center bg-slate-100 font-extrabold text-slate-800 shadow-[4px_0_5px_-2px_rgba(0,0,0,0.1)]",
+           getHeaderClassName: () => "md:sticky left-[350px] z-30 px-3 py-3 border-b border-r border-slate-200 w-[100px] min-w-[100px] text-center bg-slate-50 font-bold text-slate-700 text-xs uppercase tracking-wider",
            getCellClassName: (row: Row<KPISummary>) => {
              const kpi = row.original;
              const targetVal = kpi.targetValue || 80;
              const isRawCount = kpi.totalTarget === 0;
              
              if (isRawCount) {
-                return "md:sticky left-[350px] z-20 px-2 py-4 border-b border-r-4 border-slate-300 text-center font-bold w-[100px] min-w-[100px] shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)] bg-slate-50 text-slate-700 group-hover:bg-slate-100";
+                return "md:sticky left-[350px] z-20 px-3 py-4 border-b border-r border-slate-200 text-center font-bold w-[100px] min-w-[100px] bg-slate-50/50 text-slate-600 group-hover:bg-slate-100 transition-colors";
              }
 
              const totalPass = kpi.percentage >= targetVal;
-             return `md:sticky left-[350px] z-20 px-2 py-4 border-b border-r-4 border-slate-300 text-center font-bold w-[100px] min-w-[100px] shadow-[4px_0_5px_-2px_rgba(0,0,0,0.05)] ${
-                totalPass ? 'bg-emerald-100 text-emerald-800 group-hover:bg-emerald-200/80' : 'bg-rose-100 text-rose-800 group-hover:bg-rose-200/80'
+             return `md:sticky left-[350px] z-20 px-3 py-4 border-b border-r border-slate-200 text-center font-bold w-[100px] min-w-[100px] transition-colors ${
+                totalPass ? 'bg-emerald-50 text-emerald-700 group-hover:bg-emerald-100' : 'bg-rose-50 text-rose-700 group-hover:bg-rose-100'
              }`;
            }
         }
@@ -237,8 +237,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
-            className: "md:sticky right-0 z-10 px-2 py-4 border-b border-l-4 border-l-slate-300 text-center text-xs w-24 min-w-[90px] font-bold text-amber-800 bg-amber-50 group-hover:bg-amber-100 shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.05)]",
-            headerClassName: "md:sticky right-0 z-20 px-2 py-4 border-b border-l-4 border-l-slate-300 w-24 text-center min-w-[90px] bg-amber-50 font-bold text-amber-900 shadow-[-4px_0_5px_-2px_rgba(0,0,0,0.1)]"
+            className: "md:sticky right-0 z-10 px-3 py-4 border-b border-l border-slate-200 text-center text-xs w-24 min-w-[90px] font-bold text-amber-700 bg-amber-50 group-hover:bg-amber-100 transition-colors",
+            headerClassName: "md:sticky right-0 z-20 px-3 py-3 border-b border-l border-slate-200 w-24 text-center min-w-[90px] bg-slate-50 font-bold text-amber-800 uppercase text-xs tracking-wider"
          }
       })
     ];
@@ -249,10 +249,6 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
-
-
-
-// ... (inside component)
 
   const [isExporting, setIsExporting] = useState(false);
 
