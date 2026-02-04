@@ -11,6 +11,7 @@ import {
 import { KPISummary } from '@/lib/types';
 import { KPIDetailModal } from './KPIDetailModal';
 import { exportToExcel } from '@/lib/excel-export';
+import { ExternalLink, Calendar, CalendarClock } from "lucide-react";
 
 interface KPITableProps {
   data: KPISummary[];
@@ -109,8 +110,9 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
              <div className="min-w-[200px] py-1">
                 <div className="flex items-center flex-wrap gap-2">
                    {link ? (
-                      <a href={link} target="_blank" rel="noopener noreferrer" className="font-medium text-slate-700 hover:text-blue-600 hover:underline transition-colors block">
-                        {title}
+                      <a href={link} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-1.5 font-medium text-slate-700 hover:text-blue-600 transition-colors">
+                        <span className="group-hover:underline">{title}</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
                       </a>
                    ) : (
                       <span className="font-medium text-slate-700 block">{title}</span>
@@ -118,7 +120,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                    
                    {/* DATA PERIOD BADGE */}
                    {period && (
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${badgeStyle}`}>
+                      <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${badgeStyle}`}>
+                         {isQuarter ? <CalendarClock className="w-3 h-3" /> : <Calendar className="w-3 h-3" />}
                          {period}
                       </span>
                    )}
