@@ -3,6 +3,7 @@ import { CalendarClock } from "lucide-react";
 import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap } from "@/lib/moph-api";
 import KPITable from "@/components/KPITable";
 import KPICardList from "@/components/KPICardList";
+import KPISummaryStats from "@/components/KPISummaryStats";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
 import PulseIndicator from "@/components/PulseIndicator";
 import DataStatusNotifier from "@/components/DataStatusNotifier";
@@ -68,13 +69,29 @@ async function DashboardContent({
     <>
       <DataStatusNotifier recordCount={overallData.length} />
       
-      <div className="flex justify-end -mt-10 mb-4 px-1 items-center gap-2">
-         {/* Pulse Indicator now sits here next to date */}
-         <PulseIndicator lastUpdated={formattedDate} />
-         <div className="flex items-center gap-1.5 bg-white/50 px-2.5 py-1 rounded-full border border-slate-100 shadow-sm">
-            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs font-medium text-slate-600 font-prompt">{formattedDate}</span>
+      {/* 1. HEADER & META ACTIONS */}
+      <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 -mt-6 mb-8">
+         <div>
+            <h2 className="text-lg font-bold text-slate-800 font-prompt">Overview</h2>
+            <p className="text-slate-500 text-xs">Snapshot of district health performance</p>
          </div>
+         
+         <div className="flex items-center gap-3">
+             <PulseIndicator lastUpdated={formattedDate} />
+             <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
+                <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+                <span className="text-xs font-medium text-slate-600 font-prompt">{formattedDate}</span>
+             </div>
+         </div>
+      </div>
+
+      {/* 2. SUMMARY STATS (Inverted Pyramid Level 1) */}
+      <KPISummaryStats data={overallData} />
+
+      {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
+      <div className="mb-4">
+         <h2 className="text-lg font-bold text-slate-800 font-prompt">Detailed Report</h2>
+         <p className="text-slate-500 text-xs">Breakdown by Key Performance Indicators</p>
       </div>
 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
