@@ -1,26 +1,36 @@
 /**
  * MOPH Data Sync Script
- * Syncs specific KPIs from MOPH Open Data API to Google Sheets
+ * 1. Syncs data from MOPH API to Google Sheets
+ * 2. Serve Optimized JSON for Frontend (Calculated Values)
  */
 
 const CONFIG = {
   YEAR: "2569",
-  PROVINCE: "54", // Phrae
+  PROVINCE: "54",
   API_URL: "https://opendata.moph.go.th/api/report_data",
+  CURRENT_QUARTER: 2, // Adjust this to control how many quarters are summed (1-4)
   KPIS: [
-    { table: "s_kpi_anc12", sheet: "s_kpi_anc12" }, // 1
-    { table: "s_anc5", sheet: "s_anc5" }, // 2
-    { table: "s_kpi_food", sheet: "s_kpi_food" }, // 3
-    { table: "s_childdev_specialpp", sheet: "s_childdev_specialpp" }, // 4
-    { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2" }, // 5
-    { table: "s_aged9", sheet: "s_aged9" }, // 6
-    { table: "s_dm_screen", sheet: "s_dm_screen" }, // 7
-    { table: "s_ht_screen", sheet: "s_ht_screen" }, // 8
-    { table: "s_ncd_screen_repleate1", sheet: "s_ncd_screen_repleate1" }, // 9
-    { table: "s_ncd_screen_repleate2", sheet: "s_ncd_screen_repleate2" }, // 10
-    { table: "s_dental_0_5_cavity_free", sheet: "s_dental_0_5_cavity_free" }, // 11
-    { table: "s_kpi_dental28", sheet: "s_kpi_dental28" }, // 12
-    { table: "s_kpi_dental33", sheet: "s_kpi_dental33" }, // 13
+    { table: "s_kpi_anc12", sheet: "s_kpi_anc12" },
+    { table: "s_anc5", sheet: "s_anc5" },
+    { table: "s_kpi_food", sheet: "s_kpi_food" },
+    { table: "s_kpi_childdev4", sheet: "s_kpi_childdev4", isQuarterly: true },
+    { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2", isQuarterly: true },
+    { table: "s_aged9", sheet: "s_aged9" },
+    { table: "s_dm_screen", sheet: "s_dm_screen" },
+    { table: "s_ht_screen", sheet: "s_ht_screen" },
+    {
+      table: "s_ncd_screen_repleate1",
+      sheet: "s_ncd_screen_repleate1",
+      isQuarterly: true,
+    },
+    {
+      table: "s_ncd_screen_repleate2",
+      sheet: "s_ncd_screen_repleate2",
+      isQuarterly: true,
+    },
+    { table: "s_dental_0_5_cavity_free", sheet: "s_dental_0_5_cavity_free" },
+    { table: "s_kpi_dental28", sheet: "s_kpi_dental28" },
+    { table: "s_kpi_dental33", sheet: "s_kpi_dental33" },
   ],
 };
 
@@ -36,6 +46,103 @@ function syncAllData() {
     fetchAndSave(kpi.table, kpi.sheet);
   });
   SpreadsheetApp.getActive().toast("Sync Completed!", "Success");
+}
+
+function testConnection() {
+  const tableName = "s_kpi_anc12";
+  Logger.log("Testing connection to: " + CONFIG.API_URL);
+
+  const payload = {
+    tableName: tableName,
+    year: CONFIG.YEAR,
+    province: CONFIG.PROVINCE,
+    type: "json",
+  };
+
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify(payload),
+    muteHttpExceptions: true,
+  };
+
+  const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
+  Logger.log("Response Code: " + response.getResponseCode());
+  Logger.log(
+    "Response Body (First 500 chars): " +
+      response.getContentText().substring(0, 500),
+  );
+}
+
+function testChildDevCalculation() {
+  // Sample Data from API (s_kpi_childdev4)
+  const sampleItem = {
+    target1: 23,
+    result1: 3,
+    target2: 28,
+    result2: 0,
+    target3: 16,
+    result3: 0,
+    target4: 24,
+    result4: 0,
+  };
+
+  Logger.log("Testing Calculation Logic for s_kpi_childdev4...");
+  const result = calculateKPIOnServer(sampleItem, "s_kpi_childdev4");
+  Logger.log("Input: " + JSON.stringify(sampleItem));
+  Logger.log("Calculated Output: " + JSON.stringify(result));
+
+  // Expected: Q1(23)+Q2(28) = 51. Result: Q1(3)+Q2(0) = 3.
+  if (result.t === 51 && result.r === 3) {
+    Logger.log("✅ Logic is CORRECT (Q1+Q2 Only)");
+  } else {
+    Logger.log("❌ Logic is WRONG. Expected t=51, r=3. Got t=" + result.t);
+  }
+}
+
+function logKPIStructures() {
+  Logger.log("🔍 INSPECTING KPI COLUMNS...");
+  CONFIG.KPIS.forEach((kpi) => {
+    try {
+      const payload = {
+        tableName: kpi.table,
+        year: CONFIG.YEAR,
+        province: CONFIG.PROVINCE,
+        type: "json",
+      };
+      const options = {
+        method: "post",
+        contentType: "application/json",
+        payload: JSON.stringify(payload),
+        muteHttpExceptions: true,
+      };
+      const res = UrlFetchApp.fetch(CONFIG.API_URL, options);
+      const data = JSON.parse(res.getContentText());
+
+      if (Array.isArray(data) && data.length > 0) {
+        const keys = Object.keys(data[0]);
+        // Check for relevant columns
+        const hasTargetAnnual = keys.includes("target");
+        const hasQuarterly = keys.some(
+          (k) => k.startsWith("target1") || k.includes("result1"),
+        );
+
+        let status = "❓ Unknown";
+        if (hasTargetAnnual && !hasQuarterly) status = "📅 ANNUAL Only";
+        if (!hasTargetAnnual && hasQuarterly) status = "📊 QUARTERLY Only";
+        if (hasTargetAnnual && hasQuarterly) status = "⚠️ HYBRID (Has both)";
+
+        Logger.log(
+          `[${kpi.table}] -> ${status} | Keys: ${keys.slice(0, 10).join(", ")}...`,
+        );
+      } else {
+        Logger.log(`[${kpi.table}] -> ❌ No Data or Error`);
+      }
+    } catch (e) {
+      Logger.log(`[${kpi.table}] -> ❌ Exception: ${e.message}`);
+    }
+  });
+  Logger.log("✅ Inspection Complete");
 }
 
 function fetchAndSave(tableName, sheetName) {
@@ -54,17 +161,14 @@ function fetchAndSave(tableName, sheetName) {
   };
 
   try {
-    // 1. Fetch Data
     const response = UrlFetchApp.fetch(CONFIG.API_URL, options);
     const responseCode = response.getResponseCode();
 
-    // Check HTTP Status
-    // Check HTTP Status (Allow 200 OK and 201 Created)
     if (responseCode !== 200 && responseCode !== 201) {
       Logger.log(
         "Error: API returned status " + responseCode + " for " + tableName,
       );
-      return; // ABORT: Do not touch sheet
+      return;
     }
 
     const jsonText = response.getContentText();
@@ -73,13 +177,12 @@ function fetchAndSave(tableName, sheetName) {
       data = JSON.parse(jsonText);
     } catch (parseErr) {
       Logger.log("Error: Invalid JSON for " + tableName);
-      return; // ABORT
+      return;
     }
 
-    // 2. Validate Data Structure
     if (!Array.isArray(data)) {
       Logger.log("Error: API response is not an array for " + tableName);
-      return; // ABORT
+      return;
     }
 
     if (data.length === 0) {
@@ -88,14 +191,9 @@ function fetchAndSave(tableName, sheetName) {
           tableName +
           ". Keeping old data.",
       );
-      return; // ABORT: Safety choice - if API returns empty, better to show old data than blank?
-      // Or strictly user might WANT to see empty if it's truly empty?
-      // User request implies "prevention of lost data if fetch fails".
-      // Returning 0 records is techincally a successful fetch, but suspicious for MOPH data.
-      // Let's assume 0 records means 'something is wrong' for now to be safe.
+      return;
     }
 
-    // Check first item for integrity
     const firstItem = data[0];
     if (
       typeof firstItem !== "object" ||
@@ -103,20 +201,15 @@ function fetchAndSave(tableName, sheetName) {
       Object.keys(firstItem).length === 0
     ) {
       Logger.log("Error: Invalid record format for " + tableName);
-      return; // ABORT
+      return;
     }
 
-    // 3. Prepare Data in Memory (Formatting)
-    // Prepare Headers
     const headers = Object.keys(firstItem);
-
-    // Force Text Format for ID columns
     const textColumns = ["id", "hospcode", "areacode", "vhid"];
 
     const rowsFormatted = data.map((item) =>
       headers.map((key) => {
         const val = item[key];
-        // Convert ID-like columns to string explicitly to prevent scientific notation in CSV/Excel later
         if (textColumns.includes(key)) {
           return val !== null && val !== undefined ? String(val) : "";
         }
@@ -124,114 +217,214 @@ function fetchAndSave(tableName, sheetName) {
       }),
     );
 
-    // 4. Write to Sheet (Critical Section)
-    // Only reach here if everything above succeeded
     const ss = SpreadsheetApp.getActiveSpreadsheet();
     let sheet = ss.getSheetByName(sheetName);
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
     }
 
-    // Clear content but preserve formatting if possible, actually clear() is safest for clean slate
     sheet.clear();
-
-    // Write Headers
     sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
 
-    // Set Text Formatting for ID columns
     textColumns.forEach((colName) => {
       const colIndex = headers.indexOf(colName);
       if (colIndex > -1) {
-        // Apply text format to the entire column range that will be written
         sheet
           .getRange(2, colIndex + 1, Math.max(rowsFormatted.length, 1), 1)
           .setNumberFormat("@");
       }
     });
 
-    // Write Data
     if (rowsFormatted.length > 0) {
       sheet
         .getRange(2, 1, rowsFormatted.length, headers.length)
         .setValues(rowsFormatted);
     }
 
-    // Add Timestamp to indicate successful sync
     sheet
       .getRange(1, headers.length + 2)
       .setValue("Last Updated: " + new Date());
-
     Logger.log(
       "Success: Synced " + rowsFormatted.length + " rows for " + tableName,
     );
   } catch (e) {
     Logger.log("Critical Error syncing " + tableName + ": " + e.toString());
-    // Do nothing else - sheet remains untouched
   }
 }
 
 /**
- * API Endpoint (doGet)
- * Serves data from Sheets as JSON
- * Usage: <SCRIPT_URL>?sheet=s_kpi_anc12
+ * OPTIMIZED API Endpoint
+ * Calculates KPI values on server-side and returns only minimal data.
+ * SUPPORTS: Single sheet fetch OR 'BATCH_ALL' for everything.
  */
 function doGet(e) {
   const sheetName = e.parameter.sheet;
 
-  if (!sheetName) {
-    return ContentService.createTextOutput(
-      JSON.stringify({
-        status: "error",
-        message: 'Missing "sheet" parameter',
-      }),
-    ).setMimeType(ContentService.MimeType.JSON);
+  // 0. Safety Check
+  if (!sheetName) return createJsonError('Missing "sheet" parameter');
+
+  // 1. BATCH MODE (Turbo)
+  if (sheetName === "BATCH_ALL") {
+    const result = {};
+    CONFIG.KPIS.forEach((kpi) => {
+      const rows = getProcessedDataForSheet(kpi.sheet);
+      result[kpi.table] = rows;
+    });
+
+    // Wrap with Metadata
+    const response = {
+      data: result,
+      meta: {
+        current_quarter: CONFIG.CURRENT_QUARTER,
+        kpi_config: CONFIG.KPIS,
+      },
+    };
+    return createJsonOutput(response);
   }
 
+  // 2. Handle Master Sheets (Pass-through)
+  if (["hospitals", "tambon_master", "kpi_master"].includes(sheetName)) {
+    return serveRawSheet(sheetName);
+  }
+
+  // 3. Single Sheet Mode (Backward Compatible)
+  const rows = getProcessedDataForSheet(sheetName);
+  return createJsonOutput(rows);
+}
+
+// Helper: Get Processed Data for a single sheet
+function getProcessedDataForSheet(sheetName) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName);
 
-  if (!sheet) {
-    return ContentService.createTextOutput(
-      JSON.stringify({
-        status: "error",
-        message: "Sheet not found: " + sheetName,
-      }),
-    ).setMimeType(ContentService.MimeType.JSON);
-  }
+  if (!sheet) return [];
 
   const data = sheet.getDataRange().getValues();
-  if (data.length === 0) {
-    return ContentService.createTextOutput(JSON.stringify([])).setMimeType(
-      ContentService.MimeType.JSON,
-    );
-  }
+  if (data.length === 0) return [];
 
   const headers = data[0];
   const rows = data.slice(1);
 
+  // LOGIC PROCESSOR
+  return rows.map((row) => {
+    const item = {};
+    headers.forEach((h, i) => {
+      const key = h ? h.toString() : "col_" + i;
+      item[key] = row[i];
+    });
+
+    const values = calculateKPIOnServer(item, sheetName);
+
+    return {
+      hospcode: item["hospcode"] || "",
+      areacode: item["areacode"] || "",
+      date_com: item["date_com"] || "",
+      b_year: item["b_year"] || "",
+      target: values.t,
+      result: values.r,
+    };
+  });
+}
+
+// Helper: Serve raw sheet for master data
+function serveRawSheet(sheetName) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return createJsonOutput([]);
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length === 0) return createJsonOutput([]);
+
+  const headers = data[0];
+  const rows = data.slice(1);
   const json = rows.map((row) => {
     const obj = {};
-    headers.forEach((header, index) => {
-      // Handle potential duplicate headers or empty headers by appending index
-      const key = header ? header.toString() : "col_" + index;
-      obj[key] = row[index];
-    });
+    headers.forEach((h, i) => (obj[h] = row[i]));
     return obj;
   });
+  return createJsonOutput(json);
+}
 
-  return ContentService.createTextOutput(JSON.stringify(json)).setMimeType(
+// Helper: Create JSON Output
+function createJsonOutput(data) {
+  return ContentService.createTextOutput(JSON.stringify(data)).setMimeType(
     ContentService.MimeType.JSON,
   );
 }
 
+function createJsonError(msg) {
+  return createJsonOutput({ status: "error", message: msg });
+}
+
 /**
- * Setup Trigger:
- * Run this function once manually to set up the daily trigger.
+ * CORE LOGIC ENGINE (Moved from Frontend)
  */
+function calculateKPIOnServer(item, tableName) {
+  let t = 0;
+  let r = 0;
+
+  // 1. Dental A/B Pattern (Target=B, Result=A)
+  if (tableName === "s_dental_0_5_cavity_free") {
+    t = Number(item["b"] || 0);
+    r = Number(item["a"] || 0);
+    return { t: t, r: r };
+  }
+
+  // 2. Child Development Special (Uses Global Current Quarter)
+  if (tableName === "s_kpi_childdev4") {
+    for (let i = 1; i <= CONFIG.CURRENT_QUARTER; i++) {
+      t += Number(item["target" + i] || item["targetq" + i] || 0);
+      r += Number(item["result" + i] || item["resultq" + i] || 0);
+    }
+    return { t: t, r: r };
+  }
+
+  // 3. Aged 9 (No Quarter Sum)
+  if (tableName === "s_aged9") {
+    t = Number(item["target"] || 0);
+    r = Number(item["result"] || 0);
+    return { t: t, r: r };
+  }
+
+  // 4. Standard Logic (Auto Quarter Sum)
+  // Try main target first
+  const tMain = Number(item["target"] || 0);
+  const rMain = Number(item["result"] || 0);
+
+  // Check if forced Quarterly by Config
+  const kpiConfig = CONFIG.KPIS.find((k) => k.table === tableName);
+  const forceQuarterly = kpiConfig ? kpiConfig.isQuarterly : false;
+
+  if (tMain > 0 && !forceQuarterly) {
+    t = tMain;
+    r = rMain > 0 ? rMain : getQuarterSum(item, "result");
+    if (r === 0 && rMain > 0) r = rMain; // Fallback
+  } else {
+    // Sum quarters (If Force Quarterly OR No Annual Target)
+    t = getQuarterSum(item, "target");
+    r = getQuarterSum(item, "result");
+  }
+
+  return { t: t, r: r };
+}
+
+function getQuarterSum(item, prefix) {
+  let sum = 0;
+  // Use CONFIG.CURRENT_QUARTER to limit the sum
+  for (let i = 1; i <= CONFIG.CURRENT_QUARTER; i++) {
+    // Try various patterns: target1, targetq1, target1q1
+    const v1 = item[prefix + i];
+    const v2 = item[prefix + "q" + i];
+    const v3 = item[prefix + "1q" + i];
+    sum += Number(v1 || v2 || v3 || 0);
+  }
+  return sum;
+}
+
 function createDailyTrigger() {
   ScriptApp.newTrigger("syncAllData")
     .timeBased()
     .everyDays(1)
-    .atHour(6) // Run at 6 AM
+    .atHour(14)
     .create();
 }

@@ -35,96 +35,87 @@ export async function fetchMophReport(tableName: KPIReportType, title: string): 
     }
 
     const allData: MophReportData[] = await response.json();
-    
-    if (!Array.isArray(allData)) {
-       console.error(`API returned non-array for ${tableName}`, allData);
-       // Return empty structure instead of throwing to prevent Promise.all failure
-       return {
-          title,
-          tableName,
-          totalTarget: 0,
-          totalResult: 0,
-          percentage: 0,
-          data: [],
-          breakdown: {},
-          targetValue: 0
-       };
-    }
+    return processReportData(allData, tableName, title);
+
+  } catch (error) {
+    console.error(`Error fetching ${tableName}:`, error);
+    return createEmptyReport(tableName, title);
+  }
+}
+
+/**
+ * NEW: Fetch ALL Reports in a Single Request (Turbo Mode)
+ */
+export async function fetchBatchReports(configs: KPIMaster[]): Promise<KPISummary[]> {
+  const url = `${API_URL}?sheet=BATCH_ALL`;
+  
+  try {
+     // For Static Export: Data is fetched at build time. Revalidate has no effect on client but good for ISR if switched later.
+     // We set to 3600 to be safe for SSG.
+     const response = await fetchWithRetry(url, { next: { revalidate: 3600 } });
+     if (!response.ok) throw new Error("Batch fetch failed");
+     
+     const json = await response.json();
+     
+     // Handle both new {data, meta} and old direct object format
+     let batchData: Record<string, MophReportData[]> = {};
+     let currentQuarter = 0;
+     let quarterlyKPIs = new Set<string>(); // Set of table names that are Quarterly
+
+     if (json.data && json.meta) {
+        batchData = json.data;
+        currentQuarter = json.meta.current_quarter || 0;
+        
+        // Build Set of Quarterly KPIs from Meta Config
+        if (Array.isArray(json.meta.kpi_config)) {
+           json.meta.kpi_config.forEach((k: any) => {
+              if (k.isQuarterly) quarterlyKPIs.add(k.table);
+           });
+        }
+     } else {
+        batchData = json;
+     }
+
+     const quarterLabel = currentQuarter > 0 ? `สะสม ${currentQuarter * 3} เดือน (Q${currentQuarter})` : "รายไตรมาส";
+     const annualLabel = "รายปี";
+     
+     // Map config to reports
+     return configs.map(config => {
+        const rows = batchData[config.table_name] || [];
+        const report = processReportData(rows, config.table_name as KPIReportType, config.title);
+        report.targetValue = config.target;
+        report.link = config.link;
+        
+        // Determine Badge
+        // 1. If explicit config says Quarterly -> Use Quarter Label
+        // 2. Else -> Use Annual Label
+        if (quarterlyKPIs.has(config.table_name)) {
+           report.period = quarterLabel;
+        } else {
+           report.period = annualLabel;
+        }
+        
+        return report;
+     });
+
+  } catch (error) {
+     console.error("Batch fetch error:", error);
+     return [];
+  }
+}
+
+/**
+ * Shared Processor: Converts Raw Rows -> KPI Summary
+ */
+function processReportData(allData: MophReportData[], tableName: KPIReportType, title: string): KPISummary {
+    if (!Array.isArray(allData)) return createEmptyReport(tableName, title);
 
     // Filter for Song District
     const filteredData = allData.filter(item => 
       item.areacode && String(item.areacode).startsWith(TARGET_AREA_PREFIX)
     );
 
-    // Filter out invalid rows (e.g., total rows with 'รวม' if any, or empty)
-    // Sometimes API returns Province Total as separate row, we rely on areacode filtering to remove it.
-
-    // Define Calculation Logic based on Table Type
-    // Note: s_kpi_dental28 uses target/result, not a/b. Only s_dental_0_5_cavity_free seems to use a/b.
-    // We should be specific.
-    
-    // Column Mapping
-    let targetCols = ['target'];
-    let resultCols = ['result'];
-    
-    // Check specific tables that use A/B
-    const useABColumns = [
-       's_dental_0_5_cavity_free', 
-       // 's_kpi_dental33' uses result/result01... no explicitly named 'target' column in schema, just multiple results.
-       // We'll stick to standard 'result' for s_kpi_dental33 for now, though target might be missing (0).
-    ].includes(tableName);
-    
-    if (useABColumns) {
-      // Dental 0-5 seems to imply: B = Examined (Target), A = Cavity Free (Result)
-      // Because Sum(A)=360, Sum(B)=419. If Target=A, Result=B => 116% (Wrong)
-      // So we swap: Target=B, Result=A => 85% (Plausible)
-      targetCols = ['b'];
-      resultCols = ['a'];
-    }
-
-    // Helper to get value from multiple potential columns (smart sum or priority?)
-    // Strategy: 
-    // For Standard: If 'target' exists and > 0, use it. Else sum 'target1'...'target4'.
-    // For Dental: Just use 'a'.
-    
-    // EXCEPTION: s_aged9_w has result1...result9 which are aspects, NOT quarters. 
-    // We must NOT sum them.
-    const isNoQuarterSum = ['s_aged9_w'].includes(tableName);
-
-    const calculateValue = (item: any, cols: string[]) => {
-      let val = 0;
-      // specific logic for standard columns (target/result)
-      if (cols[0] === 'target' || cols[0] === 'result') {
-         const mainField = cols[0];
-         const mainVal = Number(item[mainField] || 0);
-         
-         if (isNoQuarterSum) {
-            return mainVal;
-         }
-         
-         // Try to find quarters: target1 vs targetq1
-         // Check item keys for pattern
-         let qSum = 0;
-         for (let i = 1; i <= 4; i++) {
-            // Try 'target1', 'targetq1', 'result1', 'result1q1'
-            const suffix = String(i);
-            const qVal = Number(item[`${mainField}${suffix}`] || item[`${mainField}q${suffix}`] || item[`${mainField}1q${suffix}`] || 0);
-            qSum += qVal;
-         }
-
-         // If mainVal is significantly larger than qSum, it's likely the total.
-         // If mainVal is 0, use qSum.
-         // If mainVal roughly equals qSum, use mainVal.
-         // Safest: Use mainVal if > 0, else qSum.
-         return mainVal > 0 ? mainVal : qSum;
-      }
-      
-      // Fallback for simple columns like 'a', 'b'
-      cols.forEach(c => val += Number(item[c] || 0));
-      return val;
-    };
-
-    // Aggregate results
+    // Aggregate results using Server-Provided values (Trust the Server!)
     const totalTarget = filteredData.reduce((sum, item) => sum + calculateKPIValue(item, tableName).t, 0);
     const totalResult = filteredData.reduce((sum, item) => sum + calculateKPIValue(item, tableName).r, 0);
     
@@ -134,7 +125,6 @@ export async function fetchMophReport(tableName: KPIReportType, title: string): 
     const breakdown: Record<string, { target: number; result: number; percentage: number }> = {};
     filteredData.forEach(item => {
       const key = item.hospcode || item.areacode;
-      
       const { t, r } = calculateKPIValue(item, tableName);
       
       if (key) {
@@ -158,12 +148,12 @@ export async function fetchMophReport(tableName: KPIReportType, title: string): 
       percentage: parseFloat(percentage.toFixed(2)),
       data: filteredData,
       breakdown,
-      targetValue: 0 // Will be overwritten by master config
+      targetValue: 0 
     };
+}
 
-  } catch (error) {
-    console.error(`Error fetching ${tableName}:`, error);
-    return {
+function createEmptyReport(tableName: KPIReportType, title: string): KPISummary {
+   return {
       title,
       tableName,
       totalTarget: 0,
@@ -173,7 +163,6 @@ export async function fetchMophReport(tableName: KPIReportType, title: string): 
       breakdown: {},
       targetValue: 0
     };
-  }
 }
 
 export interface TambonMaster {
@@ -255,7 +244,7 @@ export async function fetchKPIMaster(): Promise<KPIMaster[]> {
   try {
     const response = await fetchWithRetry(url, {
       method: 'GET',
-      next: { revalidate: 60 } // Cache shorter (1 min) for config changes
+      next: { revalidate: 3600 } 
     });
 
     if (!response.ok) return [];

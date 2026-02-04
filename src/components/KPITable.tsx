@@ -11,6 +11,7 @@ import {
 import { KPISummary } from '@/lib/types';
 import { KPIDetailModal } from './KPIDetailModal';
 import { exportToExcel } from '@/lib/excel-export';
+import { ExternalLink, Calendar, CalendarClock } from "lucide-react";
 
 interface KPITableProps {
   data: KPISummary[];
@@ -97,23 +98,36 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         cell: info => {
            const title = info.getValue();
            const link = info.row.original.link;
+           const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
+           
+           // Determine Badge Color
+           const isQuarter = period && period.includes("(Q");
+           const badgeStyle = isQuarter 
+              ? "bg-sky-100 text-sky-700 border border-sky-200" 
+              : "bg-slate-100 text-slate-500 border border-slate-200";
 
-           if (link) {
-              return (
-                 <a 
-                   href={link} 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="group flex items-start gap-2 text-slate-800 hover:text-indigo-600 transition-colors duration-200"
-                 >
-                    <span className="font-medium leading-snug">{title}</span>
-                    <svg className="w-4 h-4 mt-0.5 opacity-0 -translate-x-2 group-hover:translate-x-0 group-hover:opacity-100 transition-all duration-200 text-indigo-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                 </a>
-              );
-           }
-           return <span className="text-slate-800 leading-snug">{title}</span>;
+           return (
+             <div className="min-w-[200px] py-1">
+                <div className="flex items-center flex-wrap gap-2">
+                   {link ? (
+                      <a href={link} target="_blank" rel="noopener noreferrer" className="group flex items-center gap-1.5 font-medium text-slate-700 hover:text-blue-600 transition-colors">
+                        <span className="group-hover:underline">{title}</span>
+                        <ExternalLink className="w-3.5 h-3.5 opacity-50 group-hover:opacity-100 transition-opacity" />
+                      </a>
+                   ) : (
+                      <span className="font-medium text-slate-700 block">{title}</span>
+                   )}
+                   
+                   {/* DATA PERIOD BADGE */}
+                   {period && (
+                      <span className={`flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold whitespace-nowrap ${badgeStyle}`}>
+                         {isQuarter ? <CalendarClock className="w-3 h-3" /> : <Calendar className="w-3 h-3" />}
+                         {period}
+                      </span>
+                   )}
+                </div>
+             </div>
+           );
         },
         meta: {
           className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[300px] min-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
