@@ -125,8 +125,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                    
                    {/* DATA PERIOD BADGE */}
                    {period && (
-                      <span className="text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-md border border-slate-200/50 inline-flex items-center gap-1">
-                         <CalendarClock className="w-3 h-3 text-slate-400" />
+                      <span className="text-[11px] font-semibold text-slate-700 bg-slate-200/80 border border-slate-300 px-2 py-0.5 rounded-md inline-flex items-center gap-1.5 whitespace-nowrap">
+                         <CalendarClock className="w-3.5 h-3.5 text-slate-600" />
                          {period}
                       </span>
                    )}
