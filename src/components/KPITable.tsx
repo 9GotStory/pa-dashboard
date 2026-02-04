@@ -89,8 +89,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         header: '#',
         cell: info => info.row.index + 1,
         meta: {
-          className: "md:sticky left-0 z-20 px-2 py-4 border-b border-r border-slate-300 text-center bg-white group-hover:bg-blue-50/30 w-[50px] font-medium text-slate-400 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
-          headerClassName: "md:sticky left-0 z-30 px-2 py-4 border-b border-r border-slate-300 w-[50px] text-center bg-slate-100 font-bold text-slate-600 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+          className: "md:sticky left-0 z-20 px-3 py-5 border-b border-white text-center bg-white w-[50px] font-medium text-slate-400 text-xs",
+          headerClassName: "md:sticky left-0 z-30 px-3 py-4 border-b border-slate-200 w-[50px] text-center bg-slate-50/80 backdrop-blur font-bold text-slate-500"
         }
       }),
       columnHelper.accessor('title', {
@@ -103,8 +103,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            // Determine Badge Color
            const isQuarter = period && period.includes("(Q");
            const badgeStyle = isQuarter 
-              ? "bg-sky-100 text-sky-700 border border-sky-200" 
-              : "bg-slate-100 text-slate-500 border border-slate-200";
+              ? "bg-sky-50 text-sky-700 ring-1 ring-inset ring-sky-600/20" 
+              : "bg-slate-50 text-slate-600 ring-1 ring-inset ring-slate-500/20";
 
            return (
              <div className="min-w-[200px] py-1">
@@ -130,8 +130,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          className: "md:sticky left-[50px] z-20 px-3 py-4 border-b border-r border-slate-300 font-medium bg-white group-hover:bg-blue-50/30 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]",
-          headerClassName: "md:sticky left-[50px] z-30 px-3 py-4 border-b border-r border-slate-300 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] bg-slate-100 font-bold text-slate-700 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]"
+          className: "md:sticky left-[50px] z-20 px-4 py-5 border-b border-white hover:border-slate-100 font-medium bg-white group-hover:bg-brand-50/20 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] text-slate-700",
+          headerClassName: "md:sticky left-[50px] z-30 px-4 py-4 border-b border-slate-200 w-[200px] min-w-[200px] md:w-[300px] md:min-w-[300px] bg-slate-50/80 backdrop-blur font-bold text-slate-600 uppercase text-xs tracking-wider text-left"
         }
       }),
       columnHelper.accessor('percentage', {
@@ -270,15 +270,18 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
 
   return (
     <>
-      <div className="overflow-x-auto shadow-lg rounded-xl max-w-full border border-slate-200 bg-slate-50 mb-10">
+      <div className="overflow-x-auto shadow-sm shadow-slate-200/50 rounded-xl max-w-full border border-slate-200 bg-white mb-10">
          {/* Table Actions Header */}
-         <div className="px-4 py-3 bg-white border-b border-slate-200 flex justify-between items-center sticky left-0 z-10 w-full">
-            <h3 className="font-bold text-slate-700 font-prompt">KPI Performance Table</h3>
+         <div className="px-5 py-4 bg-white border-none flex justify-between items-center sticky left-0 z-10 w-full mb-1">
+            <div>
+               <h3 className="font-bold text-slate-800 font-prompt text-lg">KPI Performance</h3>
+               <p className="text-xs text-slate-400 font-medium mt-0.5 uppercase tracking-wide">Detailed Breakdown</p>
+            </div>
             <button 
                onClick={handleExport}
                disabled={isExporting}
-               className={`flex items-center gap-2 px-3 py-1.5 text-white text-xs md:text-sm font-medium rounded-lg shadow-sm transition-all active:scale-95 font-prompt ${
-                  isExporting ? 'bg-slate-400 cursor-not-allowed' : 'bg-emerald-600 hover:bg-emerald-700'
+               className={`flex items-center gap-2 px-4 py-2 text-white text-xs md:text-sm font-semibold rounded-lg shadow-sm shadow-brand-500/20 transition-all active:scale-95 font-prompt ${
+                  isExporting ? 'bg-slate-400 cursor-not-allowed' : 'bg-brand-600 hover:bg-brand-700'
                }`}
             >
                {isExporting ? (
@@ -322,7 +325,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
           </thead>
           <tbody>
             {table.getRowModel().rows.map(row => (
-              <tr key={row.id} className="bg-white hover:bg-blue-50/30 transition-colors group">
+              <tr key={row.id} className="bg-white hover:bg-brand-50/10 transition-colors group border-b border-slate-50 last:border-none">
                 {row.getVisibleCells().map(cell => {
                    const meta: any = cell.column.columnDef.meta || {};
                    const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;

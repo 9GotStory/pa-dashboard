@@ -1,5 +1,6 @@
 import type { Config } from "tailwindcss";
 import defaultTheme from "tailwindcss/defaultTheme";
+import colors from "tailwindcss/colors";
 
 const config: Config = {
   content: [
@@ -16,6 +17,17 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        brand: {
+          50: colors.emerald[50],
+          100: colors.emerald[100],
+          500: colors.emerald[500],
+          600: colors.emerald[600],
+          700: colors.emerald[700],
+        },
+        accent: {
+          500: colors.indigo[500],
+          600: colors.indigo[600],
+        }
       },
     },
   },

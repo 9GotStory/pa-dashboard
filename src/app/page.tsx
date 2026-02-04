@@ -76,10 +76,13 @@ async function DashboardContent({
          </div>
       </div>
 
-      <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 bg-slate-100 border-b border-slate-200">
-             <h2 className="font-semibold text-slate-700 font-prompt">PP & P Excellence</h2>
-          </div>
+       <div className="bg-white rounded-2xl shadow-lg shadow-slate-200/50 border border-slate-100 overflow-hidden">
+           <div className="px-6 py-5 bg-white border-b border-slate-100 flex items-center justify-between">
+              <h2 className="font-bold text-slate-700 font-prompt text-lg flex items-center gap-2">
+                <span className="w-1.5 h-6 bg-brand-500 rounded-full inline-block"></span>
+                PP & P Excellence
+              </h2>
+           </div>
           <KPITable data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
       </div>
     </>
@@ -95,16 +98,18 @@ export default async function Home() {
   ]);
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-8 font-[family-name:var(--font-geist-sans)]">
-      <div className="max-w-[1600px] mx-auto space-y-6">
+    <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
+      <div className="max-w-7xl mx-auto px-4 md:px-8 pb-12">
         
-        {/* APP SHELL (Static Header) - Renders Instantly */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-h-[60px]">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 font-prompt">PA Dashboard - 2569</h1>
-            <p className="text-slate-500 mt-1">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
+        {/* APP SHELL (Static Header) - Sticky & Glassmorphism */}
+        <header className="sticky top-0 z-40 -mx-4 px-4 md:-mx-8 md:px-8 py-4 bg-white/80 backdrop-blur-md border-b border-slate-200/60 shadow-sm mb-8 transition-all">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 max-w-7xl mx-auto">
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
+              <p className="text-slate-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
+            </div>
           </div>
-        </div>
+        </header>
 
         {/* ASYNC CONTENT (Streaming) */}
         <Suspense fallback={<DashboardSkeleton />}>

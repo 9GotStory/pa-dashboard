@@ -83,7 +83,7 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div 
-        className="absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity" 
+        className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" 
         onClick={onClose}
       />
 
@@ -94,7 +94,7 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
         landscape:max-h-[95vh] landscape:w-[90vw] lg:landscape:max-w-5xl">
         
         {/* Header */}
-        <div className="bg-slate-50 border-b border-slate-200 px-4 py-3 md:px-6 md:py-4 flex items-center justify-between shrink-0">
+        <div className="bg-white border-b border-slate-100 px-4 py-4 md:px-6 md:py-5 flex items-center justify-between shrink-0">
           <div className="overflow-hidden mr-4">
             <h3 className="text-base md:text-lg font-bold text-slate-800 truncate">{facilityName}</h3>
             <p className="text-xs md:text-sm text-slate-500 truncate">{title}</p>
@@ -117,7 +117,7 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
         {/* Body (Table) */}
         <div className="flex-1 overflow-y-auto min-h-0 bg-white">
           <table className="w-full text-sm text-left relative">
-            <thead className="bg-slate-100 text-slate-600 font-semibold sticky top-0 shadow-sm z-10">
+            <thead className="bg-slate-50/95 backdrop-blur text-slate-500 font-semibold sticky top-0 shadow-sm z-10 text-xs uppercase tracking-wider">
               <tr>
                 <th className="px-3 py-2 md:px-6 md:py-3 border-b text-left whitespace-nowrap">Sub-district</th>
                 <th className="px-2 py-2 md:px-6 md:py-3 border-b text-right whitespace-nowrap">Target</th>
@@ -142,7 +142,7 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
                 }
 
                 return (
-                  <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                  <tr key={idx} className="hover:bg-brand-50/10 transition-colors border-b border-slate-50 last:border-none">
                     <td className="px-3 py-2 md:px-6 md:py-3 font-medium text-slate-700 truncate max-w-[120px] md:max-w-none">
                        {tambonName !== '-' ? `ต.${tambonName}${moo}` : '-'}
                     </td>
@@ -150,8 +150,8 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
                     <td className="px-2 py-2 md:px-6 md:py-3 text-right text-slate-800 font-medium">{fmt(r)}</td>
                     <td className="px-2 py-2 md:px-6 md:py-3 text-center">
                       {!isRaw ? (
-                        <span className={`inline-block px-1.5 py-0.5 md:px-2 md:py-1 rounded text-xs font-bold whitespace-nowrap ${
-                          isPass ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'
+                        <span className={`inline-block px-1.5 py-0.5 md:px-2 md:py-1 rounded text-xs font-bold whitespace-nowrap ring-1 ring-inset ${
+                          isPass ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20' : 'bg-rose-50 text-rose-700 ring-rose-600/20'
                         }`}>
                           {pct.toFixed(2)}%
                         </span>
