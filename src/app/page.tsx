@@ -72,7 +72,8 @@ async function DashboardContent({
       {/* 1. HEADER & META ACTIONS */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 -mt-6 mb-8">
          <div>
-            <h2 className="text-lg font-bold text-slate-800 font-prompt">สรุปภาพรวม</h2>
+            <h1 className="text-2xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
+            <p className="text-slate-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
          </div>
          
          <div className="flex items-center gap-3">
@@ -116,15 +117,7 @@ export default async function Home() {
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
         
-        {/* APP SHELL (Static Header) - Clean Linear Style */}
-        <header className="sticky top-0 z-40 -mx-4 px-4 md:-mx-8 md:px-8 py-4 bg-white border-b border-slate-200 shadow-sm mb-6 transition-all">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 w-full mx-auto">
-            <div>
-              <h1 className="text-xl md:text-2xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
-              <p className="text-slate-500 text-xs md:text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
-            </div>
-          </div>
-        </header>
+        {/* HEADER REMOVED - Moved to Content Flow */}
 
         {/* ASYNC CONTENT (Streaming) */}
         <Suspense fallback={<DashboardSkeleton />}>
