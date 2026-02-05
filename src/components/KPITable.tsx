@@ -254,9 +254,9 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
-            // DISTINCT TARGET COLUMN -- SOLID BG
-            className: "md:sticky right-0 z-10 bg-amber-50 text-center text-xs w-[90px] min-w-[90px] font-bold text-amber-700 border-l border-amber-200/50",
-            headerClassName: "md:sticky right-0 z-20 bg-amber-50 w-[90px] text-center min-w-[90px] text-amber-800 border-l border-amber-200/50"
+            // DISTINCT TARGET COLUMN -- SOLID BG + WALL EFFECT
+            className: "md:sticky right-0 z-50 bg-amber-50 text-center text-xs w-[90px] min-w-[90px] font-bold text-amber-700 border-l-[3px] border-slate-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+            headerClassName: "md:sticky right-0 z-50 bg-amber-50 w-[90px] text-center min-w-[90px] text-amber-800 border-l-[3px] border-slate-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]"
          }
       })
     ];
