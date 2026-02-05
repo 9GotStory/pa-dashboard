@@ -27,7 +27,13 @@ const config: Config = {
         accent: {
           500: colors.indigo[500],
           600: colors.indigo[600],
-        }
+        },
+        // SEMANTIC TOKENS
+        success: colors.emerald,
+        error: colors.rose,
+        warning: colors.amber,
+        info: colors.sky,
+        neutral: colors.slate,
       },
     },
   },
