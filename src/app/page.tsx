@@ -70,7 +70,7 @@ async function DashboardContent({
       <DataStatusNotifier recordCount={overallData.length} />
       
       {/* 1. HEADER & META ACTIONS */}
-      <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 -mt-6 mb-8">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-4 mb-8">
          <div>
             <h1 className="text-2xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
             <p className="text-slate-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
