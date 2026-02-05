@@ -158,19 +158,23 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
           );
         },
         meta: {
-           getHeaderClassName: () => "md:sticky left-[400px] md:left-[500px] z-30 bg-white w-[80px] min-w-[80px] text-center border-r border-slate-100",
+           // SEPARATION: Add border-r-4 and strong Drop Shadow
+           getHeaderClassName: () => "md:sticky left-[400px] md:left-[500px] z-40 bg-white w-[100px] min-w-[100px] text-center border-r-[3px] border-slate-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
            getCellClassName: (row: Row<KPISummary>) => {
              const kpi = row.original;
              const targetVal = kpi.targetValue || 80;
              const isRawCount = kpi.totalTarget === 0;
              
+             // Common Sticky Style + Separator
+             const stickyStyle = "md:sticky left-[400px] md:left-[500px] z-30 border-r-[3px] border-slate-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
+             
              if (isRawCount) {
-                return "md:sticky left-[400px] md:left-[500px] z-20 bg-slate-100/50 text-center font-medium text-slate-600 border-r border-slate-200";
+                return `${stickyStyle} bg-slate-100 text-center font-medium text-slate-600`;
              }
 
              const totalPass = kpi.percentage >= targetVal;
              // Soft Background Heatmap Logic
-             return `md:sticky left-[400px] md:left-[500px] z-20 text-center font-bold border-r border-slate-200 ${
+             return `${stickyStyle} text-center font-bold ${
                 totalPass 
                   ? 'bg-emerald-100 text-emerald-900' 
                   : 'bg-rose-100 text-rose-900'
@@ -219,7 +223,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                
                // No Data / Empty -> Gray
                if (!facilityData || facilityData.target === 0) {
-                 return "p-0 text-center bg-slate-50"; 
+                 return "p-0 text-center bg-slate-50/50"; 
                }
                
                if (isRawCount) {
@@ -233,8 +237,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                // Hover effects to darken slightly
                return `p-0 text-center cursor-pointer transition-colors ${
                   fPass 
-                    ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900' 
-                    : 'bg-rose-100 hover:bg-rose-200 text-rose-900'
+                    ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-900 text-opacity-90' 
+                    : 'bg-rose-50 hover:bg-rose-100 text-rose-900 text-opacity-90'
                }`;
             }
           }
