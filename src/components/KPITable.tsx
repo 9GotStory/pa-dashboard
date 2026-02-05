@@ -288,8 +288,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          {/* Table Actions Header */}
          <div className="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center sticky left-0 z-10 w-full">
             <div>
-               <h3 className="font-bold text-slate-800 font-prompt text-lg">Detailed Breakdown</h3>
-               <p className="text-slate-500 text-xs">Performance by District & KPI</p>
+               <h3 className="font-bold text-slate-800 font-prompt text-lg">ผลการดำเนินงานรายอำเภอ</h3>
             </div>
             <button 
                onClick={handleExport}

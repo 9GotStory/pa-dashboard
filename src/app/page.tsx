@@ -72,8 +72,7 @@ async function DashboardContent({
       {/* 1. HEADER & META ACTIONS */}
       <div className="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 -mt-6 mb-8">
          <div>
-            <h2 className="text-lg font-bold text-slate-800 font-prompt">Overview</h2>
-            <p className="text-slate-500 text-xs">Snapshot of district health performance</p>
+            <h2 className="text-lg font-bold text-slate-800 font-prompt">สรุปภาพรวม</h2>
          </div>
          
          <div className="flex items-center gap-3">
@@ -89,16 +88,11 @@ async function DashboardContent({
       <KPISummaryStats data={overallData} />
 
       {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
-      <div className="mb-4">
-         <h2 className="text-lg font-bold text-slate-800 font-prompt">Detailed Report</h2>
-         <p className="text-slate-500 text-xs">Breakdown by Key Performance Indicators</p>
-      </div>
-
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
           <div className="px-4 py-4 md:px-6 md:py-5 bg-white border-b border-slate-100 flex items-center justify-between">
              <h2 className="font-bold text-slate-800 font-prompt text-lg flex items-center gap-2">
                <span className="w-1.5 h-6 bg-brand-500 rounded-full inline-block"></span>
-               PP & P Excellence
+               รายงานผลการดำเนินงาน
              </h2>
           </div>
           
