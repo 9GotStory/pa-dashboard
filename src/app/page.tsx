@@ -89,12 +89,6 @@ async function DashboardContent({
 
       {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="px-4 py-4 md:px-6 md:py-5 bg-white border-b border-slate-100 flex items-center justify-between">
-             <h2 className="font-bold text-slate-800 font-prompt text-lg flex items-center gap-2">
-               <span className="w-1.5 h-6 bg-brand-500 rounded-full inline-block"></span>
-               รายงานผลการดำเนินงาน
-             </h2>
-          </div>
           
           {/* Desktop Table View */}
           <div className="hidden md:block">
