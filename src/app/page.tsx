@@ -70,18 +70,10 @@ async function DashboardContent({
       <DataStatusNotifier recordCount={overallData.length} />
       
       {/* 1. HEADER & META ACTIONS */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mt-4 mb-8">
+      <div className="mt-6 mb-8 text-center md:text-left">
          <div>
             <h1 className="text-2xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
             <p className="text-slate-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
-         </div>
-         
-         <div className="flex items-center gap-3">
-             <PulseIndicator lastUpdated={formattedDate} />
-             <div className="flex items-center gap-1.5 bg-white px-3 py-1.5 rounded-full border border-slate-200 shadow-sm">
-                <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
-                <span className="text-xs font-medium text-slate-600 font-prompt">{formattedDate}</span>
-             </div>
          </div>
       </div>
 
@@ -99,6 +91,15 @@ async function DashboardContent({
           {/* Mobile Card View */}
           <div className="block md:hidden p-4 bg-slate-50/50">
              <KPICardList data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
+          </div>
+      </div>
+
+      {/* 4. FOOTER META (Moved from Top) */}
+      <div className="mt-8 flex justify-center items-center gap-3 pb-8 opacity-80 hover:opacity-100 transition-opacity">
+          <PulseIndicator lastUpdated={formattedDate} />
+          <div className="flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm backdrop-blur-sm">
+            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-medium text-slate-500 font-prompt">อัปเดตล่าสุด: {formattedDate}</span>
           </div>
       </div>
     </>

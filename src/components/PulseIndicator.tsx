@@ -11,7 +11,7 @@ export default function PulseIndicator({ lastUpdated }: { lastUpdated: string })
       
       {/* Tooltip */}
       <div className="absolute left-0 bottom-full mb-2 hidden group-hover:block w-max bg-slate-800 text-white text-xs rounded px-2 py-1 shadow-lg z-50">
-         System Online • Last Sync: {lastUpdated}
+         อัปเดตล่าสุด: {lastUpdated}
          <div className="absolute left-1 top-full border-4 border-transparent border-t-slate-800"></div>
       </div>
     </div>
