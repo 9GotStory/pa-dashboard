@@ -23,7 +23,7 @@ export default function KPISummaryStats({ data }: KPISummaryStatsProps) {
             <Target className="w-5 h-5" />
          </div>
          <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Total Indicators</p>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">ตัวชี้วัดทั้งหมด</p>
             <p className="text-2xl font-bold text-slate-800 font-prompt">{total}</p>
          </div>
       </div>
@@ -34,7 +34,7 @@ export default function KPISummaryStats({ data }: KPISummaryStatsProps) {
             <TrendingUp className="w-5 h-5" />
          </div>
          <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Success Rate</p>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">อัตราผ่านเกณฑ์</p>
             <p className="text-2xl font-bold text-indigo-700 font-prompt">{successRate.toFixed(1)}%</p>
          </div>
       </div>
@@ -45,7 +45,7 @@ export default function KPISummaryStats({ data }: KPISummaryStatsProps) {
             <CheckCircle2 className="w-5 h-5" />
          </div>
          <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Passing Target</p>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">ผ่านเกณฑ์</p>
             <p className="text-2xl font-bold text-emerald-700 font-prompt">{passed}</p>
          </div>
       </div>
@@ -56,7 +56,7 @@ export default function KPISummaryStats({ data }: KPISummaryStatsProps) {
             <AlertCircle className="w-5 h-5" />
          </div>
          <div>
-            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">Needs Improvement</p>
+            <p className="text-xs text-slate-500 font-medium uppercase tracking-wide">ต้องปรับปรุง</p>
             <p className="text-2xl font-bold text-rose-700 font-prompt">{failed}</p>
          </div>
       </div>
