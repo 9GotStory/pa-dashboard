@@ -135,7 +135,6 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          // SOLID BACKGROUND + Wider Column
           className: "md:sticky left-[50px] z-20 bg-slate-50 w-[350px] min-w-[350px] md:w-[450px] md:min-w-[450px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-4 py-3",
           headerClassName: "md:sticky left-[50px] z-30 bg-slate-100 w-[350px] min-w-[350px] md:w-[450px] md:min-w-[450px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-4"
         }
@@ -166,13 +165,15 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
              const isRawCount = kpi.totalTarget === 0;
              
              if (isRawCount) {
-                return "md:sticky left-[400px] md:left-[500px] z-20 bg-white text-center font-medium text-slate-600 border-r border-slate-100";
+                return "md:sticky left-[400px] md:left-[500px] z-20 bg-slate-100/50 text-center font-medium text-slate-600 border-r border-slate-200";
              }
 
              const totalPass = kpi.percentage >= targetVal;
-             // Minimal Logic: Text Color instead of BG
-             return `md:sticky left-[400px] md:left-[500px] z-20 bg-white text-center font-bold border-r border-slate-100 ${
-                totalPass ? 'text-emerald-600' : 'text-rose-600'
+             // Soft Background Heatmap Logic
+             return `md:sticky left-[400px] md:left-[500px] z-20 text-center font-bold border-r border-slate-200 ${
+                totalPass 
+                  ? 'bg-emerald-100 text-emerald-900' 
+                  : 'bg-rose-100 text-rose-900'
              }`;
            }
         }
@@ -190,45 +191,50 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
              const facilityData = info.getValue();
              const kpi = info.row.original;
              
-             if (!facilityData) return <span className="text-slate-200">-</span>;
+             if (!facilityData) return <span className="text-slate-300">-</span>;
 
              const isRawCount = kpi.totalTarget === 0;
              
              return (
                <div 
                  onClick={() => openDrillDown(kpi, key)}
-                 className="w-full h-full flex items-center justify-center cursor-pointer min-h-[24px]"
+                 className="w-full h-full flex items-center justify-center cursor-pointer min-h-[50px]"
                >
                  {isRawCount 
-                    ? <span className="text-xs text-slate-600">{facilityData.result.toLocaleString()}</span>
+                    ? <span className="text-xs text-slate-600 font-medium">{facilityData.result.toLocaleString()}</span>
                     : (facilityData.target === 0 
-                        ? <span className="text-slate-200">-</span>
-                        : <span className="text-xs font-semibold">{formatPct(facilityData.percentage)}</span>)
+                        ? <span className="text-slate-300">-</span>
+                        : <span className="text-xs font-bold">{formatPct(facilityData.percentage)}</span>)
                  }
                </div>
              );
           },
           meta: {
-            headerClassName: "px-2 py-3 text-center min-w-[70px] w-[70px] bg-white",
+            headerClassName: "px-2 py-3 text-center min-w-[70px] w-[70px] bg-white border-b border-slate-100",
             getCellClassName: (row: Row<KPISummary>) => {
                const kpi = row.original;
                const targetVal = kpi.targetValue || 80;
                const facilityData = kpi.breakdown?.[key];
                const isRawCount = kpi.totalTarget === 0;
                
+               // No Data / Empty -> Gray
                if (!facilityData || facilityData.target === 0) {
-                 return "px-2 py-2 text-center bg-slate-50/10";
+                 return "p-0 text-center bg-slate-50"; 
                }
                
                if (isRawCount) {
-                  return "px-2 py-2 text-center bg-white hover:bg-slate-50 cursor-pointer transition-colors";
+                  return "p-0 text-center bg-white hover:bg-slate-100 cursor-pointer transition-colors";
                }
                
                const fPass = facilityData.percentage >= targetVal;
                
-               // Minimal: Background tint just for Hover, text color for status
-               return `px-2 py-2 text-center cursor-pointer transition-colors hover:bg-slate-50 ${
-                  fPass ? 'text-emerald-600/90' : 'text-rose-500'
+               // Soft Heatmap Logic
+               // Pass: Emerald-100, Fail: Rose-100
+               // Hover effects to darken slightly
+               return `p-0 text-center cursor-pointer transition-colors ${
+                  fPass 
+                    ? 'bg-emerald-100 hover:bg-emerald-200 text-emerald-900' 
+                    : 'bg-rose-100 hover:bg-rose-200 text-rose-900'
                }`;
             }
           }
@@ -243,7 +249,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
-            // DISTINCT TARGET COLUMN -- SOLID BG (removed /40)
+            // DISTINCT TARGET COLUMN -- SOLID BG
             className: "md:sticky right-0 z-10 bg-amber-50 text-center text-xs w-[70px] min-w-[70px] font-bold text-amber-700 border-l border-amber-200/50",
             headerClassName: "md:sticky right-0 z-20 bg-amber-50 w-[70px] text-center min-w-[70px] text-amber-800 border-l border-amber-200/50"
          }
