@@ -110,7 +110,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
            
            return (
-             <div className="min-w-[350px] md:min-w-[400px] py-1.5 pr-4">
+             <div className="min-w-[350px] lg:min-w-[400px] py-1.5 pr-4">
                 <div className="flex items-start flex-col gap-1.5">
                    {/* KPI Title */}
                    <div className="flex items-start gap-2">
@@ -135,8 +135,8 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          className: "md:sticky left-[50px] z-20 bg-slate-50 w-[350px] min-w-[350px] md:w-[450px] md:min-w-[450px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-4 py-3",
-          headerClassName: "md:sticky left-[50px] z-30 bg-slate-100 w-[350px] min-w-[350px] md:w-[450px] md:min-w-[450px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-4"
+          className: "md:sticky left-[50px] z-20 bg-slate-50 w-[350px] min-w-[350px] lg:w-[450px] lg:min-w-[450px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-4 py-3",
+          headerClassName: "md:sticky left-[50px] z-30 bg-slate-100 w-[350px] min-w-[350px] lg:w-[450px] lg:min-w-[450px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-4"
         }
       }),
       columnHelper.accessor('percentage', {
@@ -159,14 +159,14 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         },
         meta: {
            // SEPARATION: Add border-r-4 and strong Drop Shadow
-           getHeaderClassName: () => "md:sticky left-[400px] md:left-[500px] z-40 bg-white w-[100px] min-w-[100px] text-center border-r-[3px] border-slate-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+           getHeaderClassName: () => "md:sticky left-[400px] lg:left-[500px] z-40 bg-white w-[100px] min-w-[100px] text-center border-r-[3px] border-slate-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
            getCellClassName: (row: Row<KPISummary>) => {
              const kpi = row.original;
              const targetVal = kpi.targetValue || 80;
              const isRawCount = kpi.totalTarget === 0;
              
              // Common Sticky Style + Separator
-             const stickyStyle = "md:sticky left-[400px] md:left-[500px] z-30 border-r-[3px] border-slate-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
+             const stickyStyle = "md:sticky left-[400px] lg:left-[500px] z-30 border-r-[3px] border-slate-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
              
              if (isRawCount) {
                 return `${stickyStyle} bg-slate-100 text-center font-medium text-slate-600`;
