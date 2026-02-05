@@ -248,14 +248,15 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          id: 'target',
          header: () => (
            <div className="flex flex-col items-center leading-tight">
-             <span>Goal</span>
+             <span>Target</span>
+             <span className="text-[10px] opacity-80">(6 เดือน)</span>
            </div>
          ),
          cell: info => `≥ ${info.getValue() || 80}`,
          meta: {
             // DISTINCT TARGET COLUMN -- SOLID BG
-            className: "md:sticky right-0 z-10 bg-amber-50 text-center text-xs w-[70px] min-w-[70px] font-bold text-amber-700 border-l border-amber-200/50",
-            headerClassName: "md:sticky right-0 z-20 bg-amber-50 w-[70px] text-center min-w-[70px] text-amber-800 border-l border-amber-200/50"
+            className: "md:sticky right-0 z-10 bg-amber-50 text-center text-xs w-[90px] min-w-[90px] font-bold text-amber-700 border-l border-amber-200/50",
+            headerClassName: "md:sticky right-0 z-20 bg-amber-50 w-[90px] text-center min-w-[90px] text-amber-800 border-l border-amber-200/50"
          }
       })
     ];
