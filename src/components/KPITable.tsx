@@ -110,23 +110,23 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
            
            return (
-             <div className="min-w-[350px] lg:min-w-[400px] py-1.5 pr-4">
+             <div className="min-w-[250px] w-[300px] py-2 pr-3">
                 <div className="flex items-start flex-col gap-1.5">
                    {/* KPI Title */}
                    <div className="flex items-start gap-2">
                      {link ? (
-                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-all block">
+                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-all block whitespace-normal">
                            {title} <ExternalLink className="w-3.5 h-3.5 inline text-neutral-400 group-hover:text-accent-500 ml-1 transform translate-y-[-1px] transition-colors" />
                         </a>
                      ) : (
-                        <span className="text-neutral-800 font-medium text-sm leading-relaxed block">{title}</span>
+                        <span className="text-neutral-800 font-medium text-sm leading-relaxed block whitespace-normal">{title}</span>
                      )}
                    </div>
                    
                    {/* DATA PERIOD BADGE */}
                    {period && (
-                      <span className="text-[11px] font-semibold text-neutral-700 bg-neutral-200/80 border border-neutral-300 px-2 py-0.5 rounded-md inline-flex items-center gap-1.5 whitespace-nowrap">
-                         <CalendarClock className="w-3.5 h-3.5 text-neutral-600" />
+                      <span className="text-[10px] font-semibold text-neutral-700 bg-neutral-200/80 border border-neutral-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1.5 whitespace-nowrap">
+                         <CalendarClock className="w-3 h-3 text-neutral-600" />
                          {period}
                       </span>
                    )}
@@ -135,38 +135,35 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
            );
         },
         meta: {
-          className: "md:sticky left-[50px] z-20 bg-neutral-50 w-[350px] min-w-[350px] lg:w-[450px] lg:min-w-[450px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-4 py-3",
-          headerClassName: "md:sticky left-[50px] z-30 bg-neutral-100 w-[350px] min-w-[350px] lg:w-[450px] lg:min-w-[450px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-4"
+          className: "md:sticky left-[50px] z-20 bg-neutral-50 w-[300px] min-w-[300px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-3 py-3",
+          headerClassName: "md:sticky left-[50px] z-30 bg-neutral-100 w-[300px] min-w-[300px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-3"
         }
       }),
       columnHelper.accessor('percentage', {
         id: 'result',
-        header: 'ผลงาน (%)',
+        header: 'ผลงาน',
         cell: info => {
           const kpi = info.row.original;
           const isRawCount = kpi.totalTarget === 0;
 
           return (
              <div className="w-full text-center">
-                <span className="font-bold text-sm tracking-tight hidden md:inline">
-                  {isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}
-                </span>
-                <span className="md:hidden font-bold text-sm">
+                <span className="font-bold text-sm tracking-tight">
                   {isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}%
                 </span>
              </div>
           );
         },
         meta: {
-           // SEPARATION: Add border-r-4 and strong Drop Shadow
-           getHeaderClassName: () => "md:sticky left-[400px] lg:left-[500px] z-40 bg-white w-[100px] min-w-[100px] text-center border-r-[3px] border-neutral-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+           // Sticky Position = 50 (Index) + 300 (Title) = 350px
+           getHeaderClassName: () => "md:sticky left-[350px] z-40 bg-white w-[85px] min-w-[85px] text-center border-r-[3px] border-neutral-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
            getCellClassName: (row: Row<KPISummary>) => {
              const kpi = row.original;
              const targetVal = kpi.targetValue || 80;
              const isRawCount = kpi.totalTarget === 0;
              
              // Common Sticky Style + Separator
-             const stickyStyle = "md:sticky left-[400px] lg:left-[500px] z-30 border-r-[3px] border-neutral-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
+             const stickyStyle = "md:sticky left-[350px] z-30 border-r-[3px] border-neutral-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
              
              if (isRawCount) {
                 return `${stickyStyle} bg-neutral-100 text-center font-medium text-neutral-600`;
@@ -187,15 +184,17 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
         columnHelper.accessor(row => row.breakdown?.[key], {
           id: key,
           header: () => (
-             <div className="text-[11px] font-medium text-neutral-500 truncate max-w-[70px]" title={hospitalMap[key]?.name}>
-                {hospitalMap[key]?.name?.replace('โรงพยาบาลส่งเสริมสุขภาพตำบล', 'รพ.สต.') || key}
+             <div className="h-[120px] w-full flex items-end justify-center pb-1">
+                <span className="[writing-mode:vertical-rl] rotate-180 whitespace-nowrap text-[11px] font-medium text-neutral-500 text-left line-clamp-1">
+                  {hospitalMap[key]?.name?.replace('โรงพยาบาลส่งเสริมสุขภาพตำบล', 'รพ.สต.') || key}
+                </span>
              </div>
           ),
           cell: info => {
              const facilityData = info.getValue();
              const kpi = info.row.original;
              
-             if (!facilityData) return <span className="text-neutral-300">-</span>;
+             if (!facilityData) return <span className="text-neutral-300 text-[10px]">-</span>;
 
              const isRawCount = kpi.totalTarget === 0;
              
@@ -203,18 +202,19 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                <div 
                  onClick={() => openDrillDown(kpi, key)}
                  className="w-full h-full flex items-center justify-center cursor-pointer min-h-[50px]"
+                 title={`Target: ${formatPct(facilityData.target)}\nResult: ${formatPct(facilityData.result)}`}
                >
                  {isRawCount 
-                    ? <span className="text-xs text-neutral-600 font-medium">{facilityData.result.toLocaleString()}</span>
+                    ? <span className="text-[11px] text-neutral-600 font-medium">{facilityData.result.toLocaleString()}</span>
                     : (facilityData.target === 0 
-                        ? <span className="text-neutral-300">-</span>
-                        : <span className="text-xs font-bold">{formatPct(facilityData.percentage)}</span>)
+                        ? <span className="text-neutral-300 text-[10px]">-</span>
+                        : <span className="text-[11px] font-bold">{Math.round(facilityData.percentage)}%</span>)
                  }
                </div>
              );
           },
           meta: {
-            headerClassName: "px-2 py-3 text-center min-w-[70px] w-[70px] bg-white border-b border-neutral-100",
+            headerClassName: "px-0 py-0 text-center min-w-[40px] w-[40px] bg-white border-b border-neutral-100 align-bottom overflow-hidden",
             getCellClassName: (row: Row<KPISummary>) => {
                const kpi = row.original;
                const targetVal = kpi.targetValue || 80;
@@ -227,7 +227,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                }
                
                if (isRawCount) {
-                  return "p-0 text-center bg-white hover:bg-neutral-100 cursor-pointer transition-colors";
+                  return "p-0 text-center bg-white hover:bg-neutral-100 cursor-pointer transition-colors border-r border-neutral-100/50";
                }
                
                const fPass = facilityData.percentage >= targetVal;
@@ -235,7 +235,7 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
                // Soft Heatmap Logic
                // Pass: Success-100, Fail: Error-100
                // Hover effects to darken slightly
-               return `p-0 text-center cursor-pointer transition-colors ${
+               return `p-0 text-center cursor-pointer transition-colors border-r border-neutral-100/50 ${
                   fPass 
                     ? 'bg-success-50 hover:bg-success-100 text-success-900 text-opacity-90' 
                     : 'bg-error-50 hover:bg-error-100 text-error-900 text-opacity-90'
@@ -249,14 +249,13 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
          header: () => (
            <div className="flex flex-col items-center leading-tight">
              <span>Target</span>
-             <span className="text-[10px] opacity-80">(6 เดือน)</span>
            </div>
          ),
-         cell: info => `≥ ${info.getValue() || 80}`,
+         cell: info => <span className="text-[11px]">≥{info.getValue() || 80}</span>,
          meta: {
             // DISTINCT TARGET COLUMN -- SOLID BG + WALL EFFECT
-            className: "md:sticky right-0 z-50 bg-warning-50 text-center text-xs w-[90px] min-w-[90px] font-bold text-warning-700 border-l-[3px] border-neutral-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
-            headerClassName: "md:sticky right-0 z-50 bg-warning-50 w-[90px] text-center min-w-[90px] text-warning-800 border-l-[3px] border-neutral-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]"
+            className: "md:sticky right-0 z-50 bg-warning-50 text-center text-xs w-[60px] min-w-[60px] font-bold text-warning-700 border-l-[3px] border-neutral-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+            headerClassName: "md:sticky right-0 z-50 bg-warning-50 w-[60px] text-center min-w-[60px] text-warning-800 border-l-[3px] border-neutral-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]"
          }
       })
     ];
@@ -314,13 +313,13 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
             <Table className="w-full text-sm text-left border-collapse">
                <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
                  {table.getHeaderGroups().map(headerGroup => (
-                   <TableRow key={headerGroup.id} className="hover:bg-transparent border-b border-slate-200">
+                   <TableRow key={headerGroup.id} className="h-auto hover:bg-transparent border-b border-slate-200">
                      {headerGroup.headers.map(header => {
                         const meta: any = header.column.columnDef.meta || {};
                         const className = meta.getHeaderClassName ? meta.getHeaderClassName() : meta.headerClassName;
                         
                         return (
-                         <TableHead key={header.id} className={cn("h-10 text-xs font-semibold text-slate-500 uppercase tracking-wide", className)}>
+                         <TableHead key={header.id} className={cn("h-auto pb-4 align-bottom text-xs font-semibold text-slate-500 uppercase tracking-wide", className)}>
                            {header.isPlaceholder
                              ? null
                              : flexRender(
