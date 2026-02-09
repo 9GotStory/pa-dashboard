@@ -371,7 +371,7 @@ export default function KPITable({
         </div>
 
         <div className="relative w-full overflow-auto">
-          <Table className="w-full table-fixed text-sm text-left border-collapse">
+          <Table className="w-full table-fixed text-sm text-left border-separate border-spacing-0">
             <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
               {table.getHeaderGroups().map((headerGroup) => (
                 <TableRow
