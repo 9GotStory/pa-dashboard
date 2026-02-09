@@ -1,130 +1,96 @@
-import { Suspense } from 'react';
-import { fetchBatchReports, fetchHospitalMap, fetchKPIMaster, fetchTambonMap, fetchMophReport } from "@/lib/moph-api";
-import KPITable from "@/components/KPITable";
-import DashboardSkeleton from "@/components/DashboardSkeleton";
-import PulseIndicator from "@/components/PulseIndicator";
-import DataStatusNotifier from "@/components/DataStatusNotifier";
-import { KPIMaster } from "@/lib/types";
+"use client";
 
-// Async Component for the Data-Heavy part
-async function DashboardContent({ 
-  kpiConfig, 
-  hospitalMap, 
-  tambonMap 
-}: { 
-  kpiConfig: KPIMaster[], 
-  hospitalMap: any, 
-  tambonMap: any 
-}) {
-  let overallData = [];
-  
-  if (kpiConfig.length > 0) {
-      // 1 Request (Batch)
-      overallData = await fetchBatchReports(kpiConfig);
-  } else {
-     // Fallback
-      const anc12Data = await fetchMophReport('s_kpi_anc12', '1. ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์');
-      anc12Data.targetValue = 73; 
-      anc12Data.period = "รายปี (Fallback)";
-      
-      const foodData = await fetchMophReport('s_kpi_food', '2. ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว');
-      foodData.targetValue = 50; 
-      foodData.period = "รายปี (Fallback)";
-      
-      const childData = await fetchMophReport('s_kpi_childdev4', '3. ร้อยละของเด็กอายุ 0-5 ปี มีพัฒนาการสมวัย');
-      childData.targetValue = 86;
-      childData.period = "สะสม 6 เดือน (Fallback)";
-      
-      overallData = [anc12Data, foodData, childData];
+import { CalendarClock } from "lucide-react";
+import KPITable from "@/components/KPITable";
+import KPICardList from "@/components/KPICardList";
+import KPISummaryStats from "@/components/KPISummaryStats";
+import DashboardSkeleton from "@/components/DashboardSkeleton";
+
+import DataStatusNotifier from "@/components/DataStatusNotifier";
+import { useKPIData } from "@/lib/useKPIData";
+
+export default function Home() {
+  const { data, hospitalMap, tambonMap, isLoading, error, lastUpdated } =
+    useKPIData();
+
+  if (isLoading) {
+    return (
+      <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
+        <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
+          <DashboardSkeleton />
+        </div>
+      </main>
+    );
   }
 
-  // Calculate Date
-  let maxDateStr = '';
-  overallData.forEach(r => {
-     if (r.data && r.data.length > 0) {
-        r.data.forEach(d => {
-           if (d.date_com && d.date_com > maxDateStr) maxDateStr = d.date_com;
-        });
-     }
-  });
-
-  const formatDate = (dateStr: string) => {
-    try {
-      if (!dateStr) return 'N/A';
-      if (/^\d{12}$/.test(String(dateStr))) {
-          const str = String(dateStr);
-          const d = new Date(
-            parseInt(str.substring(0, 4)),
-            parseInt(str.substring(4, 6)) - 1,
-            parseInt(str.substring(6, 8)),
-            parseInt(str.substring(8, 10)),
-            parseInt(str.substring(10, 12))
-          );
-          return d.toLocaleDateString('th-TH', { 
-            day: 'numeric', 
-            month: 'long', 
-            year: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit',
-          }) + ' น.';
-      }
-      return 'N/A';
-    } catch { return 'N/A'; }
-  };
-  
-  const formattedDate = formatDate(maxDateStr);
-  
-  return (
-    <>
-      <DataStatusNotifier recordCount={overallData.length} />
-      
-      <div className="flex justify-end -mt-10 mb-4 px-1 items-center gap-2">
-         {/* Pulse Indicator now sits here next to date */}
-         <PulseIndicator lastUpdated={formattedDate} />
-         <div className="text-xs text-slate-500 bg-white/50 px-2 py-1 rounded">
-            Data Date: {formattedDate}
-         </div>
-      </div>
-
-      <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-          <div className="p-4 bg-slate-100 border-b border-slate-200">
-             <h2 className="font-semibold text-slate-700 font-prompt">PP & P Excellence</h2>
+  if (error) {
+    return (
+      <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
+        <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
+          <div className="mt-20 text-center">
+            <p className="text-error-600 font-medium">{error}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 px-4 py-2 bg-brand-600 text-white rounded-lg hover:bg-brand-700 transition-colors"
+            >
+              ลองใหม่
+            </button>
           </div>
-          <KPITable data={overallData} hospitalMap={hospitalMap} tambonMap={tambonMap} />
-      </div>
-    </>
-  );
-}
-
-export default async function Home() {
-  // Parallel fetch of LIGHTWEIGHT config
-  const [kpiConfig, hospitalMap, tambonMap] = await Promise.all([
-     fetchKPIMaster(),
-     fetchHospitalMap(),
-     fetchTambonMap()
-  ]);
+        </div>
+      </main>
+    );
+  }
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-8 font-[family-name:var(--font-geist-sans)]">
-      <div className="max-w-[1600px] mx-auto space-y-6">
-        
-        {/* APP SHELL (Static Header) - Renders Instantly */}
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 min-h-[60px]">
+    <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
+      <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
+        <DataStatusNotifier recordCount={data.length} />
+
+        {/* 1. HEADER & META ACTIONS */}
+        <div className="mt-6 mb-8 text-center md:text-left">
           <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 font-prompt">PA Dashboard - 2569</h1>
-            <p className="text-slate-500 mt-1">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
+            <h1 className="text-2xl font-bold text-brand-700 font-prompt tracking-tight">
+              PA Dashboard
+            </h1>
+            <p className="text-slate-500 text-sm font-medium mt-0.5">
+              คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง
+            </p>
           </div>
         </div>
 
-        {/* ASYNC CONTENT (Streaming) */}
-        <Suspense fallback={<DashboardSkeleton />}>
-           <DashboardContent 
-              kpiConfig={kpiConfig} 
-              hospitalMap={hospitalMap} 
-              tambonMap={tambonMap} 
-           />
-        </Suspense>
+        {/* 2. SUMMARY STATS (Inverted Pyramid Level 1) */}
+        <KPISummaryStats data={data} />
 
+        {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+          {/* Desktop Table View */}
+          <div className="hidden md:block">
+            <KPITable
+              data={data}
+              hospitalMap={hospitalMap}
+              tambonMap={tambonMap}
+            />
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="block md:hidden p-4 bg-slate-50/50">
+            <KPICardList
+              data={data}
+              hospitalMap={hospitalMap}
+              tambonMap={tambonMap}
+            />
+          </div>
+        </div>
+
+        {/* 4. FOOTER META (Moved from Top) */}
+        <div className="mt-8 flex justify-center items-center gap-3 pb-8 opacity-80 hover:opacity-100 transition-opacity">
+          <div className="flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm backdrop-blur-sm">
+            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+            <span className="text-xs font-medium text-slate-500 font-prompt">
+              อัปเดตล่าสุด: {lastUpdated || "N/A"}
+            </span>
+          </div>
+        </div>
       </div>
     </main>
   );
