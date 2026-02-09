@@ -1,17 +1,25 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { toast } from "sonner";
 import { CheckCircle2, AlertCircle } from "lucide-react";
 
-export default function DataStatusNotifier({ 
-  success = true, 
-  recordCount = 0 
-}: { 
+export default function DataStatusNotifier({
+  success = true,
+  recordCount = 0,
+}: {
   success?: boolean;
   recordCount?: number;
 }) {
+  const hasShownToast = useRef(false);
+
   useEffect(() => {
+    // Prevent duplicate toast from React Strict Mode
+    if (hasShownToast.current) return;
+    if (recordCount === 0) return; // Wait until data is loaded
+
+    hasShownToast.current = true;
+
     if (success) {
       toast.success("อัปเดตข้อมูลเรียบร้อย", {
         description: `โหลดข้อมูลครบถ้วน ${recordCount} รายการ พร้อมใช้งาน`,
@@ -26,5 +34,5 @@ export default function DataStatusNotifier({
     }
   }, [success, recordCount]);
 
-  return null; // This component renders nothing visually
+  return null;
 }
