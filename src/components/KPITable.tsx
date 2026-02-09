@@ -1,17 +1,22 @@
-'use client';
+"use client";
 
-import React, { useState, useMemo } from 'react';
-import { 
-  useReactTable, 
-  getCoreRowModel, 
+import React, { useState, useMemo } from "react";
+import {
+  useReactTable,
+  getCoreRowModel,
   flexRender,
   createColumnHelper,
   type Row,
-} from '@tanstack/react-table';
-import { KPISummary } from '@/lib/types';
-import { KPIDetailModal } from './KPIDetailModal';
-import { exportToExcel } from '@/lib/excel-export';
-import { ExternalLink, Calendar, CalendarClock, FileSpreadsheet } from "lucide-react";
+} from "@tanstack/react-table";
+import { KPISummary } from "@/lib/types";
+import { KPIDetailModal } from "./KPIDetailModal";
+import { exportToExcel } from "@/lib/excel-export";
+import {
+  ExternalLink,
+  Calendar,
+  CalendarClock,
+  FileSpreadsheet,
+} from "lucide-react";
 import {
   Table,
   TableBody,
@@ -28,7 +33,11 @@ interface KPITableProps {
   tambonMap?: Record<string, string>;
 }
 
-export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPITableProps) {
+export default function KPITable({
+  data,
+  hospitalMap = {},
+  tambonMap = {},
+}: KPITableProps) {
   // Modal State
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
@@ -39,51 +48,53 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
     tableName: string;
   }>({
     isOpen: false,
-    title: '',
-    facilityName: '',
+    title: "",
+    facilityName: "",
     data: [],
     targetValue: 0,
-    tableName: ''
+    tableName: "",
   });
 
   // Extract facility keys and sort by Tambon ID
   const facilityKeys = useMemo(() => {
     const allKeys = new Set<string>();
-    data.forEach(kpi => {
+    data.forEach((kpi) => {
       if (kpi.breakdown) {
-        Object.keys(kpi.breakdown).forEach(k => allKeys.add(k));
+        Object.keys(kpi.breakdown).forEach((k) => allKeys.add(k));
       }
     });
-    
+
     return Array.from(allKeys).sort((a, b) => {
-       const hA = hospitalMap[a];
-       const hB = hospitalMap[b];
-       
-       // Sort by Tambon ID first
-       if (hA?.tambon_id && hB?.tambon_id) {
-          if (hA.tambon_id !== hB.tambon_id) {
-             return hA.tambon_id.localeCompare(hB.tambon_id);
-          }
-       }
-       
-       // Then by Code (numeric value if possible)
-       return a.localeCompare(b);
+      const hA = hospitalMap[a];
+      const hB = hospitalMap[b];
+
+      // Sort by Tambon ID first
+      if (hA?.tambon_id && hB?.tambon_id) {
+        if (hA.tambon_id !== hB.tambon_id) {
+          return hA.tambon_id.localeCompare(hB.tambon_id);
+        }
+      }
+
+      // Then by Code (numeric value if possible)
+      return a.localeCompare(b);
     });
   }, [data, hospitalMap]);
 
   const openDrillDown = (kpi: KPISummary, facilityKey: string) => {
-      const facilityRawData = kpi.data.filter(d => (d.hospcode === facilityKey) || (d.areacode === facilityKey));
-      const facilityInfo = hospitalMap[facilityKey];
-      const facilityName = facilityInfo ? facilityInfo.name : facilityKey;
-      
-      setModalState({
-         isOpen: true,
-         title: kpi.title,
-         facilityName: facilityName,
-         data: facilityRawData,
-         targetValue: kpi.targetValue || 80,
-         tableName: kpi.tableName
-      });
+    const facilityRawData = kpi.data.filter(
+      (d) => d.hospcode === facilityKey || d.areacode === facilityKey,
+    );
+    const facilityInfo = hospitalMap[facilityKey];
+    const facilityName = facilityInfo ? facilityInfo.name : facilityKey;
+
+    setModalState({
+      isOpen: true,
+      title: kpi.title,
+      facilityName: facilityName,
+      data: facilityRawData,
+      targetValue: kpi.targetValue || 80,
+      tableName: kpi.tableName,
+    });
   };
 
   // Helper to format percentage
@@ -94,171 +105,218 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
   const columns = useMemo(() => {
     return [
       columnHelper.display({
-        id: 'index',
-        header: '#',
-        cell: info => info.row.index + 1,
+        id: "index",
+        header: "#",
+        cell: (info) => info.row.index + 1,
         meta: {
-          className: "md:sticky left-0 z-20 bg-neutral-50 min-w-[24px] w-[24px] max-w-[24px] text-center pb-4 px-1 font-medium text-neutral-500 text-xs border-r border-neutral-200",
-          headerClassName: "md:sticky left-0 z-30 bg-neutral-100 w-[24px] max-w-[24px] text-center pb-4 px-1 border-r border-neutral-200"
-        }
+          className:
+            "md:sticky left-0 z-20 bg-white min-w-[24px] w-[24px] max-w-[24px] text-center pb-4 px-1 font-medium text-neutral-500 text-xs border-r border-neutral-200",
+          headerClassName:
+            "md:sticky left-0 z-30 bg-slate-50 w-[24px] max-w-[24px] text-center pb-4 px-1 border-r border-slate-200",
+        },
       }),
-      columnHelper.accessor('title', {
-        header: 'ตัวชี้วัด',
-        cell: info => {
-           const title = info.getValue();
-           const link = info.row.original.link;
-           const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
-           
-           return (
-             <div className="w-full py-1.5">
-                <div className="flex items-start flex-col gap-1">
-                   {/* KPI Title */}
-                   <div className="flex items-start gap-2">
-                     {link ? (
-                        <a href={link} target="_blank" rel="noopener noreferrer" className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-all block whitespace-normal">
-                           {title} <ExternalLink className="w-3.5 h-3.5 inline text-neutral-400 group-hover:text-accent-500 ml-1 transform translate-y-[-1px] transition-colors" />
-                        </a>
-                     ) : (
-                        <span className="text-neutral-800 font-medium text-sm leading-relaxed block whitespace-normal">{title}</span>
-                     )}
-                   </div>
-                   
-                   {/* DATA PERIOD BADGE */}
-                   {period && (
-                      <span className="text-[10px] font-semibold text-neutral-700 bg-neutral-200/80 border border-neutral-300 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 whitespace-nowrap">
-                         <CalendarClock className="w-3 h-3 text-neutral-600" />
-                         {period}
-                      </span>
-                   )}
+      columnHelper.accessor("title", {
+        header: "ตัวชี้วัด",
+        cell: (info) => {
+          const title = info.getValue();
+          const link = info.row.original.link;
+          const period = info.row.original.period; // "สะสม 6 เดือน (Q2)" or "รายปี"
+
+          return (
+            <div className="w-full py-1.5">
+              <div className="flex items-start flex-col gap-1">
+                {/* KPI Title */}
+                <div className="flex items-start gap-2">
+                  {link ? (
+                    <a
+                      href={link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-all block whitespace-normal"
+                    >
+                      {title}{" "}
+                      <ExternalLink className="w-3.5 h-3.5 inline text-neutral-400 group-hover:text-accent-500 ml-1 transform translate-y-[-1px] transition-colors" />
+                    </a>
+                  ) : (
+                    <span className="text-neutral-800 font-medium text-sm leading-relaxed block whitespace-normal">
+                      {title}
+                    </span>
+                  )}
                 </div>
-             </div>
-           );
+
+                {/* DATA PERIOD BADGE */}
+                {period && (
+                  <span
+                    className={cn(
+                      "text-xs font-semibold px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 whitespace-nowrap border",
+                      period.includes("รายปี")
+                        ? "bg-brand-50 text-brand-700 border-brand-200"
+                        : "bg-warning-50 text-warning-700 border-warning-200",
+                    )}
+                  >
+                    <CalendarClock
+                      className={cn(
+                        "w-3 h-3",
+                        period.includes("รายปี")
+                          ? "text-brand-600"
+                          : "text-warning-600",
+                      )}
+                    />
+                    {period}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
         },
         meta: {
-          className: "md:sticky left-[24px] z-20 bg-neutral-50 w-[220px] min-w-[220px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-2 py-2",
-          headerClassName: "md:sticky left-[24px] z-30 bg-neutral-100 w-[220px] min-w-[220px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-2"
-        }
+          className:
+            "md:sticky left-[24px] z-20 bg-white w-[250px] min-w-[250px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-2 py-2",
+          headerClassName:
+            "md:sticky left-[24px] z-30 bg-slate-50 w-[250px] min-w-[250px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-2",
+        },
       }),
-      columnHelper.accessor('percentage', {
-        id: 'result',
-        header: 'ผลงาน',
-        cell: info => {
+      columnHelper.accessor("percentage", {
+        id: "result",
+        header: "ผลงาน",
+        cell: (info) => {
           const kpi = info.row.original;
           const isRawCount = kpi.totalTarget === 0;
 
           return (
-             <div className="w-full text-center">
-                <span className="font-bold text-sm tracking-tight">
-                  {isRawCount ? kpi.totalResult.toLocaleString() : formatPct(info.getValue())}%
-                </span>
-             </div>
+            <div className="w-full text-center">
+              <span className="font-bold text-sm tracking-tight">
+                {isRawCount
+                  ? kpi.totalResult.toLocaleString()
+                  : formatPct(info.getValue())}
+                %
+              </span>
+            </div>
           );
         },
         meta: {
-           // Sticky Position = 50 (Index) + 220 (Title) = 270px
-           getHeaderClassName: () => "md:sticky left-[244px] z-40 bg-white w-[60px] min-w-[60px] text-center border-r-[3px] border-neutral-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
-           getCellClassName: (row: Row<KPISummary>) => {
-             const kpi = row.original;
-             const targetVal = kpi.targetValue || 80;
-             const isRawCount = kpi.totalTarget === 0;
-             
-             // Common Sticky Style + Separator
-             const stickyStyle = "md:sticky left-[244px] z-30 w-[48px] min-w-[48px] border-r-[3px] border-neutral-300 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
-             
-             if (isRawCount) {
-                return `${stickyStyle} bg-neutral-100 text-center font-medium text-neutral-600`;
-             }
+          // Sticky Position = 50 (Index) + 220 (Title) = 270px
+          getHeaderClassName: () =>
+            "md:sticky left-[274px] z-40 bg-slate-50 w-[75px] min-w-[75px] text-center border-r-[3px] border-slate-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+          getCellClassName: (row: Row<KPISummary>) => {
+            const kpi = row.original;
+            const targetVal = kpi.targetValue || 80;
+            const isRawCount = kpi.totalTarget === 0;
 
-             const totalPass = kpi.percentage >= targetVal;
-             // Soft Background Heatmap Logic
-             return `${stickyStyle} text-center font-bold ${
-                totalPass 
-                  ? 'bg-success-100 text-success-900' 
-                  : 'bg-error-100 text-error-900'
-             }`;
-           }
-        }
+            // Common Sticky Style + Separator
+            const stickyStyle =
+              "md:sticky left-[274px] z-30 w-[75px] min-w-[75px] border-r-[3px] border-slate-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
+
+            if (isRawCount) {
+              return `${stickyStyle} bg-neutral-100 text-center font-medium text-neutral-600`;
+            }
+
+            const totalPass = kpi.percentage >= targetVal;
+            // Soft Background Heatmap Logic
+            return `${stickyStyle} text-center font-bold ${
+              totalPass
+                ? "bg-success-100 text-success-900"
+                : "bg-error-100 text-error-900"
+            }`;
+          },
+        },
       }),
       // Dynamic Facility Columns
-      ...facilityKeys.map(key => 
-        columnHelper.accessor(row => row.breakdown?.[key], {
+      ...facilityKeys.map((key) =>
+        columnHelper.accessor((row) => row.breakdown?.[key], {
           id: key,
           header: () => (
-             <div className="w-full flex items-center justify-center">
-                <span className="whitespace-nowrap text-[10px] truncate max-w-[70px] font-medium text-neutral-500 text-left line-clamp-1">
-                  {hospitalMap[key]?.name?.replace('โรงพยาบาลส่งเสริมสุขภาพตำบล', 'รพ.สต.') || key}
-                </span>
-             </div>
+            <div className="w-full flex items-center justify-center">
+              <span className="whitespace-nowrap text-xs truncate max-w-[70px] font-bold text-slate-700 text-left line-clamp-1">
+                {hospitalMap[key]?.name?.replace(
+                  "โรงพยาบาลส่งเสริมสุขภาพตำบล",
+                  "รพ.สต.",
+                ) || key}
+              </span>
+            </div>
           ),
-          cell: info => {
-             const facilityData = info.getValue();
-             const kpi = info.row.original;
-             
-             if (!facilityData) return <span className="text-neutral-300 text-[10px]">-</span>;
+          cell: (info) => {
+            const facilityData = info.getValue();
+            const kpi = info.row.original;
 
-             const isRawCount = kpi.totalTarget === 0;
-             
-             return (
-               <div 
-                 onClick={() => openDrillDown(kpi, key)}
-                 className="w-full h-full flex items-center justify-center cursor-pointer min-h-[50px]"
-                 title={`Target: ${formatPct(facilityData.target)}\nResult: ${formatPct(facilityData.result)}`}
-               >
-                 {isRawCount 
-                    ? <span className="text-[11px] text-neutral-600 font-medium">{facilityData.result.toLocaleString()}</span>
-                    : (facilityData.target === 0 
-                        ? <span className="text-neutral-300 text-[10px]">-</span>
-                        : <span className="text-[11px] font-bold">{Math.round(facilityData.percentage)}%</span>)
-                 }
-               </div>
-             );
+            if (!facilityData)
+              return <span className="text-neutral-300 text-[10px]">-</span>;
+
+            const isRawCount = kpi.totalTarget === 0;
+
+            return (
+              <div
+                onClick={() => openDrillDown(kpi, key)}
+                className="w-full h-full flex items-center justify-center cursor-pointer h-[40px]"
+                title={`Target: ${formatPct(facilityData.target)}\nResult: ${formatPct(facilityData.result)}`}
+              >
+                {isRawCount ? (
+                  <span className="text-xs text-neutral-600 font-medium">
+                    {facilityData.result.toLocaleString()}
+                  </span>
+                ) : facilityData.target === 0 ? (
+                  <span className="text-neutral-300 text-[10px]">-</span>
+                ) : (
+                  <span className="text-xs font-bold">
+                    {Math.round(facilityData.percentage)}%
+                  </span>
+                )}
+              </div>
+            );
           },
           meta: {
-            headerClassName: "px-2 py-2 text-center min-w-[70px] w-[70px] bg-white border-b border-neutral-100 align-middle overflow-hidden",
+            headerClassName:
+              "px-2 py-2 text-center min-w-[70px] w-[70px] bg-slate-50 border-b border-slate-200 align-middle overflow-hidden",
             getCellClassName: (row: Row<KPISummary>) => {
-               const kpi = row.original;
-               const targetVal = kpi.targetValue || 80;
-               const facilityData = kpi.breakdown?.[key];
-               const isRawCount = kpi.totalTarget === 0;
-               
-               // No Data / Empty -> Gray
-               if (!facilityData || facilityData.target === 0) {
-                 return "p-0 text-center bg-neutral-50/50"; 
-               }
-               
-               if (isRawCount) {
-                  return "p-0 text-center bg-white hover:bg-neutral-100 cursor-pointer transition-colors border-r border-neutral-100/50";
-               }
-               
-               const fPass = facilityData.percentage >= targetVal;
-               
-               // Soft Heatmap Logic
-               // Pass: Success-100, Fail: Error-100
-               // Hover effects to darken slightly
-               return `p-0 text-center cursor-pointer transition-colors border-r border-neutral-100/50 ${
-                  fPass 
-                    ? 'bg-success-50 hover:bg-success-100 text-success-900 text-opacity-90' 
-                    : 'bg-error-50 hover:bg-error-100 text-error-900 text-opacity-90'
-               }`;
-            }
-          }
-        })
+              const kpi = row.original;
+              const targetVal = kpi.targetValue || 80;
+              const facilityData = kpi.breakdown?.[key];
+              const isRawCount = kpi.totalTarget === 0;
+
+              // No Data / Empty -> Gray
+              if (!facilityData || facilityData.target === 0) {
+                return "p-0 text-center bg-neutral-50/50";
+              }
+
+              if (isRawCount) {
+                return "p-0 text-center bg-white hover:bg-neutral-100 cursor-pointer transition-colors border-r border-neutral-100/50";
+              }
+
+              const fPass = facilityData.percentage >= targetVal;
+
+              // Soft Heatmap Logic
+              // Pass: Success-100, Fail: Error-100
+              // Hover effects to darken slightly
+              return `p-0 text-center cursor-pointer transition-colors border-r border-neutral-100/50 ${
+                fPass
+                  ? "bg-success-50 hover:bg-success-100 text-success-900 text-opacity-90"
+                  : "bg-error-50 hover:bg-error-100 text-error-900 text-opacity-90"
+              }`;
+            },
+          },
+        }),
       ),
-      columnHelper.accessor('targetValue', {
-         id: 'target',
-         header: () => (
-           <div className="flex flex-col items-center leading-tight">
-             <span>Target</span>
-              <span className="text-[9px] font-normal text-warning-600">(6 เดือน)</span>
-           </div>
-         ),
-         cell: info => <span className="text-[11px]">≥{info.getValue() || 80}</span>,
-         meta: {
-            // DISTINCT TARGET COLUMN -- SOLID BG + WALL EFFECT
-            className: "md:sticky right-0 z-50 bg-warning-50 text-center text-xs w-[60px] min-w-[60px] font-bold text-warning-700 border-l-[3px] border-neutral-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
-            headerClassName: "md:sticky right-0 z-50 bg-warning-50 w-[60px] text-center min-w-[60px] text-warning-800 border-l-[3px] border-neutral-300 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]"
-         }
-      })
+      columnHelper.accessor("targetValue", {
+        id: "target",
+        header: () => (
+          <div className="flex flex-col items-center leading-tight">
+            <span>Target</span>
+            <span className="text-[9px] font-normal text-warning-600">
+              (6 เดือน)
+            </span>
+          </div>
+        ),
+        cell: (info) => (
+          <span className="text-xs">≥{info.getValue() || 80}</span>
+        ),
+        meta: {
+          // DISTINCT TARGET COLUMN -- SOLID BG + WALL EFFECT
+          className:
+            "md:sticky right-0 z-50 bg-warning-50 text-center text-xs w-[80px] min-w-[80px] font-bold text-warning-700 border-l-[3px] border-slate-200 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+          headerClassName:
+            "md:sticky right-0 z-50 bg-slate-50 w-[80px] text-center min-w-[80px] text-warning-800 border-l-[3px] border-slate-200 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+        },
+      }),
     ];
   }, [facilityKeys, hospitalMap]);
 
@@ -271,97 +329,121 @@ export default function KPITable({ data, hospitalMap = {}, tambonMap = {} }: KPI
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
-     try {
-       setIsExporting(true);
-       await exportToExcel(data, hospitalMap, facilityKeys);
-     } catch (err) {
-       console.error("Export failed", err);
-       alert("Export failed. Please try again.");
-     } finally {
-       setIsExporting(false);
-     }
+    try {
+      setIsExporting(true);
+      await exportToExcel(data, hospitalMap, facilityKeys);
+    } catch (err) {
+      console.error("Export failed", err);
+      alert("Export failed. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   return (
     <>
       <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-         {/* Table Actions Header */}
-         <div className="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center sticky left-0 z-10 w-full">
-            <div>
-               <h3 className="font-bold text-slate-800 font-prompt text-lg">ผลการดำเนินงาน</h3>
-            </div>
-            <button 
-               onClick={handleExport}
-               disabled={isExporting}
-               className={`flex items-center gap-1 px-3 py-1.5 text-slate-600 bg-white border border-slate-200 text-xs font-medium rounded-lg shadow-sm transition-all hover:bg-slate-50 active:scale-95 font-prompt ${
-                  isExporting ? 'opacity-50 cursor-not-allowed' : ''
-               }`}
-            >
-               {isExporting ? (
-                  <>
-                    <span className="hidden md:inline">Exporting...</span>
-                  </>
-               ) : (
-                  <>
-                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
-                    <span className="hidden md:inline">Export Excel</span>
-                  </>
-               )}
-            </button>
-         </div>
+        {/* Table Actions Header */}
+        <div className="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center sticky left-0 z-10 w-full">
+          <div>
+            <h3 className="font-bold text-slate-800 font-prompt text-lg">
+              ผลการดำเนินงาน
+            </h3>
+          </div>
+          <button
+            onClick={handleExport}
+            disabled={isExporting}
+            className={`flex items-center gap-1 px-3 py-1.5 text-slate-600 bg-white border border-slate-200 text-xs font-medium rounded-lg shadow-sm transition-all hover:bg-slate-50 active:scale-95 font-prompt ${
+              isExporting ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            {isExporting ? (
+              <>
+                <span className="hidden md:inline">Exporting...</span>
+              </>
+            ) : (
+              <>
+                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden md:inline">Export Excel</span>
+              </>
+            )}
+          </button>
+        </div>
 
-         <div className="relative w-full overflow-auto">
-            <Table className="w-full table-fixed text-sm text-left border-collapse">
-               <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
-                 {table.getHeaderGroups().map(headerGroup => (
-                   <TableRow key={headerGroup.id} className="h-auto hover:bg-transparent border-b border-slate-200">
-                     {headerGroup.headers.map(header => {
-                        const meta: any = header.column.columnDef.meta || {};
-                        const className = meta.getHeaderClassName ? meta.getHeaderClassName() : meta.headerClassName;
-                        
-                        return (
-                         <TableHead key={header.id} className={cn("h-auto px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide", className)}>
-                           {header.isPlaceholder
-                             ? null
-                             : flexRender(
-                                 header.column.columnDef.header,
-                                 header.getContext()
-                               )}
-                         </TableHead>
-                       );
-                     })}
-                   </TableRow>
-                 ))}
-               </TableHeader>
-               <TableBody>
-                 {table.getRowModel().rows.map(row => (
-                   <TableRow key={row.id} className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors">
-                     {row.getVisibleCells().map(cell => {
-                        const meta: any = cell.column.columnDef.meta || {};
-                        const className = meta.getCellClassName ? meta.getCellClassName(row) : meta.className;
-                        
-                        return (
-                         <TableCell key={cell.id} className={cn("p-0 min-h-[50px]", className)}>
-                           {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                         </TableCell>
-                       );
-                     })}
-                   </TableRow>
-                 ))}
-               </TableBody>
-            </Table>
-         </div>
+        <div className="relative w-full overflow-auto">
+          <Table className="w-full table-fixed text-sm text-left border-collapse">
+            <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
+              {table.getHeaderGroups().map((headerGroup) => (
+                <TableRow
+                  key={headerGroup.id}
+                  className="h-auto hover:bg-transparent border-b border-slate-200"
+                >
+                  {headerGroup.headers.map((header) => {
+                    const meta: any = header.column.columnDef.meta || {};
+                    const className = meta.getHeaderClassName
+                      ? meta.getHeaderClassName()
+                      : meta.headerClassName;
+
+                    return (
+                      <TableHead
+                        key={header.id}
+                        className={cn(
+                          "h-auto px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide",
+                          className,
+                        )}
+                      >
+                        {header.isPlaceholder
+                          ? null
+                          : flexRender(
+                              header.column.columnDef.header,
+                              header.getContext(),
+                            )}
+                      </TableHead>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableHeader>
+            <TableBody>
+              {table.getRowModel().rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors"
+                >
+                  {row.getVisibleCells().map((cell) => {
+                    const meta: any = cell.column.columnDef.meta || {};
+                    const className = meta.getCellClassName
+                      ? meta.getCellClassName(row)
+                      : meta.className;
+
+                    return (
+                      <TableCell
+                        key={cell.id}
+                        className={cn("p-0 h-[40px]", className)}
+                      >
+                        {flexRender(
+                          cell.column.columnDef.cell,
+                          cell.getContext(),
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
       </div>
-      
-      <KPIDetailModal 
-         isOpen={modalState.isOpen}
-         onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
-         title={modalState.title}
-         facilityName={modalState.facilityName}
-         data={modalState.data}
-         targetValue={modalState.targetValue}
-         tableName={modalState.tableName}
-         tambonMap={tambonMap}
+
+      <KPIDetailModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
+        title={modalState.title}
+        facilityName={modalState.facilityName}
+        data={modalState.data}
+        targetValue={modalState.targetValue}
+        tableName={modalState.tableName}
+        tambonMap={tambonMap}
       />
     </>
   );
