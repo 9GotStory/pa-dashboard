@@ -1,9 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { KPISummary } from '@/lib/types';
-import { KPICard } from './KPICard';
-import { KPIDetailModal } from './KPIDetailModal';
+import React, { useState } from "react";
+import { KPISummary } from "@/lib/types";
+import { KPICard } from "./KPICard";
+import { KPIDetailModal } from "./KPIDetailModal";
 
 interface KPICardListProps {
   data: KPISummary[];
@@ -11,8 +11,32 @@ interface KPICardListProps {
   tambonMap?: Record<string, string>;
 }
 
-export default function KPICardList({ data, hospitalMap = {}, tambonMap = {} }: KPICardListProps) {
-  // Modal State (Duplicated from Table, but simpler for Mobile)
+export default function KPICardList({
+  data,
+  hospitalMap = {},
+  tambonMap = {},
+}: KPICardListProps) {
+  // State for Facility Filter
+  const [selectedFacility, setSelectedFacility] = useState<string>("all");
+
+  // Helper to get Hospital Name
+  const getFacilityName = (code: string) => {
+    if (code === "all") return "ภาพรวมทั้งอำเภอ";
+    return hospitalMap[code]?.name || code;
+  };
+
+  // Filtered Data Logic
+  // We don't filter the *list of KPIs* (they remain the same).
+  // We filter the *stats inside each KPI*.
+  // But KPICard currently takes the whole `kpi` object.
+  // We need to pass a `displayStat` prop to override if needed.
+
+  // Sorted Facility List for Dropdown (by code or name)
+  const facilities = Object.entries(hospitalMap).sort((a, b) =>
+    a[1].name.localeCompare(b[1].name),
+  );
+
+  // Modal State
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     title: string;
@@ -22,77 +46,80 @@ export default function KPICardList({ data, hospitalMap = {}, tambonMap = {} }: 
     tableName: string;
   }>({
     isOpen: false,
-    title: '',
-    facilityName: '',
+    title: "",
+    facilityName: "",
     data: [],
     targetValue: 0,
-    tableName: ''
+    tableName: "",
   });
 
   const openDrillDown = (kpi: KPISummary) => {
-      // For Mobile Card click, we might want to show the "Overall District" breakdown or logic?
-      // Wait, the original drill-down was "Facility Specific".
-      // If user clicks a KPI Card (which represents the WHOLE DISTRICT average), 
-      // they probably want to see the "Ranking of all Facilities" for that KPI.
-      
-      // However, the current modal is designed to show "Villages for ONE Facility".
-      // Let's adapt: If card clicked => Show breakdown by Hospital???
-      // Actually, standard dashboards usually let you drill from "District KPI" -> "List of Hospitals".
-      
-      // BUT current backend data structure for `breakdown` is { hospcode: { target, result } }.
-      // So we can show a list of hospitals easily!
-      
-      // Let's implement a specific MOBILE VIEW interaction:
-      // Clicking the card doesn't open the Village modal (that's too deep).
-      // It should probably do nothing for now OR show a simple "Hospital Ranking" (future).
-      // User request was just "Mobile Card View" to replace table.
-      
-      // Actually, let's keep it simple. If they click, maybe they want to see the metadata?
-      // For now, let's make it clickable but maybe just show a Toast or "Coming Soon" for drilldown?
-      // OR, re-use logic: "Overall District" isn't a facility.
-      
-      // wait, let's re-read implementation plan. "Interaction: Tap card to open Drill-down Modal."
-      // OK, I'll pass the *District Total* data? No, that doesn't make sense.
-      // Re-reading `KPITable`: drill-down is triggered by clicking a *Facility Cell*.
-      // In Mobile Card, we are seeing the *District Summary*.
-      // So logically, clicking it should show *Per-Facility Breakdown*.
-      
-      // Current `KPIDetailModal` expects `data: MophReportData[]`.
-      // The `KPISummary.data` contains ALL rows for that KPI.
-      // So if we pass `kpi.data` to the modal, it will show ALL villages in the district.
-      // That works!
-      
-      setModalState({
-         isOpen: true,
-         title: kpi.title,
-         facilityName: 'ภาพรวมอำเภอ', // "District Overview"
-         data: kpi.data, // All raw data for this KPI
-         targetValue: kpi.targetValue || 80,
-         tableName: kpi.tableName
-      });
+    // If Global Filter is ALL -> Show District Overview (All Data)
+    // If Global Filter is Specific -> Show Data for that Facility (Wait, modal expects Array of Records)
+
+    let modalData = kpi.data;
+    let modalTitle = "ภาพรวมอำเภอ";
+
+    if (selectedFacility !== "all") {
+      // Filter raw data for this facility
+      modalData = kpi.data.filter((row) => row.hospcode === selectedFacility);
+      modalTitle = getFacilityName(selectedFacility);
+    }
+
+    setModalState({
+      isOpen: true,
+      title: kpi.title,
+      facilityName: modalTitle,
+      data: modalData,
+      targetValue: kpi.targetValue || 80,
+      tableName: kpi.tableName,
+    });
   };
 
   return (
     <>
+      {/* Sticky Filter Bar */}
+      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200 px-4 py-3 -mx-4 mb-4">
+        <div className="flex items-center gap-3">
+          <span className="text-sm font-bold text-slate-700 whitespace-nowrap">
+            เลือกหน่วยบริการ:
+          </span>
+          <select
+            value={selectedFacility}
+            onChange={(e) => setSelectedFacility(e.target.value)}
+            className="flex-1 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2"
+          >
+            <option value="all">ภาพรวมทั้งอำเภอ</option>
+            {facilities.map(([code, info]) => (
+              <option key={code} value={code}>
+                {info.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       <div className="flex flex-col gap-3 pb-8">
         {data.map((kpi, index) => (
-          <KPICard 
-            key={index} 
-            kpi={kpi} 
+          <KPICard
+            key={index}
+            kpi={kpi}
+            hospitalMap={hospitalMap}
+            selectedFacility={selectedFacility}
             onClick={() => openDrillDown(kpi)}
           />
         ))}
       </div>
 
-      <KPIDetailModal 
-         isOpen={modalState.isOpen}
-         onClose={() => setModalState(prev => ({ ...prev, isOpen: false }))}
-         title={modalState.title}
-         facilityName={modalState.facilityName}
-         data={modalState.data}
-         targetValue={modalState.targetValue}
-         tableName={modalState.tableName}
-         tambonMap={tambonMap}
+      <KPIDetailModal
+        isOpen={modalState.isOpen}
+        onClose={() => setModalState((prev) => ({ ...prev, isOpen: false }))}
+        title={modalState.title}
+        facilityName={modalState.facilityName}
+        data={modalState.data}
+        targetValue={modalState.targetValue}
+        tableName={modalState.tableName}
+        tambonMap={tambonMap}
       />
     </>
   );
