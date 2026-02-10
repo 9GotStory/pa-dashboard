@@ -161,7 +161,10 @@ export const KPICard: React.FC<KPICardProps> = ({
 
       {/* Expanded List (Only for All View) */}
       {isExpanded && selectedFacility === "all" && (
-        <div className="bg-neutral-50 px-4 py-2 border-t border-neutral-200 max-h-[300px] overflow-y-auto">
+        <div
+          className="bg-neutral-50 px-4 py-2 border-t border-neutral-200 max-h-[300px] overflow-y-auto overscroll-contain"
+          onClick={(e) => e.stopPropagation()}
+        >
           <table className="w-full text-xs">
             <thead className="text-neutral-400 font-medium border-b border-neutral-200">
               <tr>
