@@ -66,7 +66,7 @@ export default function Home() {
         <KPISummaryStats data={data} selectedFacility={selectedFacility} />
 
         {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 md:overflow-hidden">
           {/* Desktop Table View */}
           <div className="hidden md:block">
             <KPITable

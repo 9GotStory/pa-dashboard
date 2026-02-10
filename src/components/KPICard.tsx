@@ -71,7 +71,7 @@ export const KPICard: React.FC<KPICardProps> = ({
   return (
     <div
       onClick={() => onClick(kpi)}
-      className="bg-white rounded-lg border border-neutral-200 shadow-sm active:scale-[0.99] transition-transform cursor-pointer overflow-hidden"
+      className="bg-white rounded-lg border border-neutral-200 shadow-sm cursor-pointer overflow-hidden hover:border-brand-200 transition-colors"
     >
       <div className="p-4">
         {/* Header */}
