@@ -76,6 +76,8 @@ function processReportData(allData: any[], tableName: string, title: string): KP
   };
 }
 
+const CACHE_KEY = 'PA_DASHBOARD_CACHE_V1';
+
 export function useKPIData(): UseKPIDataResult {
   const [data, setData] = useState<KPISummary[]>([]);
   const [hospitalMap, setHospitalMap] = useState<Record<string, HospitalDetail>>({});
@@ -85,8 +87,34 @@ export function useKPIData(): UseKPIDataResult {
   const [lastUpdated, setLastUpdated] = useState('');
 
   useEffect(() => {
+    // 1. Try to load from LocalStorage (Instant Load)
+    const loadFromCache = () => {
+      try {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          // Valid cache check (optional: check timestamp expiry)
+          if (parsed.data && Array.isArray(parsed.data)) {
+            console.log('Using cached data');
+            setData(parsed.data);
+            setHospitalMap(parsed.hospitalMap || {});
+            setTambonMap(parsed.tambonMap || {});
+            setLastUpdated(parsed.lastUpdated || '');
+            setIsLoading(false); // Show immediately
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load cache', e);
+      }
+    };
+
+    loadFromCache();
+
+    // 2. Fetch fresh data (Stale-While-Revalidate)
     async function fetchAllData() {
-      setIsLoading(true);
+      // If we didn't have cache, show loading. If we did, keep showing cache while fetching.
+      // We don't set isLoading(true) here if we already have data, to prevent flash.
+      
       setError(null);
 
       try {
@@ -183,6 +211,7 @@ export function useKPIData(): UseKPIDataResult {
           }
         });
 
+        let formattedLastUpdated = '';
         if (/^\d{12}$/.test(String(maxDateStr))) {
           const str = String(maxDateStr);
           const d = new Date(
@@ -192,18 +221,31 @@ export function useKPIData(): UseKPIDataResult {
             parseInt(str.substring(8, 10)),
             parseInt(str.substring(10, 12))
           );
-          setLastUpdated(d.toLocaleDateString('th-TH', {
+          formattedLastUpdated = d.toLocaleDateString('th-TH', {
             day: 'numeric',
             month: 'long',
             year: 'numeric',
             hour: '2-digit',
             minute: '2-digit',
-          }) + ' น.');
+          }) + ' น.';
+          setLastUpdated(formattedLastUpdated);
         }
+
+        // Cache the fresh data
+        localStorage.setItem(CACHE_KEY, JSON.stringify({
+           data: reports,
+           hospitalMap: hMap,
+           tambonMap: tMap,
+           lastUpdated: formattedLastUpdated,
+           timestamp: Date.now()
+        }));
 
       } catch (err) {
         console.error('Error fetching KPI data:', err);
-        setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+        // Only set error if we don't have cached data
+        if (data.length === 0) {
+           setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
+        }
       } finally {
         setIsLoading(false);
       }
