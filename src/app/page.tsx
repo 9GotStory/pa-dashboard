@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { CalendarClock } from "lucide-react";
 import KPITable from "@/components/KPITable";
 import KPICardList from "@/components/KPICardList";
@@ -12,6 +13,9 @@ import { useKPIData } from "@/lib/useKPIData";
 export default function Home() {
   const { data, hospitalMap, tambonMap, isLoading, error, lastUpdated } =
     useKPIData();
+
+  // State for Mobile Facility Filter (Lifted Up)
+  const [selectedFacility, setSelectedFacility] = useState<string>("all");
 
   if (isLoading) {
     return (
@@ -59,10 +63,10 @@ export default function Home() {
         </div>
 
         {/* 2. SUMMARY STATS (Inverted Pyramid Level 1) */}
-        <KPISummaryStats data={data} />
+        <KPISummaryStats data={data} selectedFacility={selectedFacility} />
 
         {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 md:overflow-hidden">
           {/* Desktop Table View */}
           <div className="hidden md:block">
             <KPITable
@@ -78,6 +82,8 @@ export default function Home() {
               data={data}
               hospitalMap={hospitalMap}
               tambonMap={tambonMap}
+              selectedFacility={selectedFacility}
+              onSelectFacility={setSelectedFacility}
             />
           </div>
         </div>

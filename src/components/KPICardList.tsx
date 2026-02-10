@@ -9,16 +9,17 @@ interface KPICardListProps {
   data: KPISummary[];
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
   tambonMap?: Record<string, string>;
+  selectedFacility?: string;
+  onSelectFacility?: (facilityCode: string) => void;
 }
 
 export default function KPICardList({
   data,
   hospitalMap = {},
   tambonMap = {},
+  selectedFacility = "all",
+  onSelectFacility,
 }: KPICardListProps) {
-  // State for Facility Filter
-  const [selectedFacility, setSelectedFacility] = useState<string>("all");
-
   // Helper to get Hospital Name
   const getFacilityName = (code: string) => {
     if (code === "all") return "ภาพรวมทั้งอำเภอ";
@@ -86,7 +87,9 @@ export default function KPICardList({
           </span>
           <select
             value={selectedFacility}
-            onChange={(e) => setSelectedFacility(e.target.value)}
+            onChange={(e) =>
+              onSelectFacility && onSelectFacility(e.target.value)
+            }
             className="flex-1 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2"
           >
             <option value="all">ภาพรวมทั้งอำเภอ</option>
