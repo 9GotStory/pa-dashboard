@@ -82,7 +82,15 @@ export const KPICard: React.FC<KPICardProps> = ({
                 {kpi.title}
               </h3>
               {kpi.link && (
-                <ExternalLink className="w-3.5 h-3.5 text-accent-500 shrink-0 mt-0.5" />
+                <a
+                  href={kpi.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="p-1 -m-1 hover:bg-neutral-100 rounded-full transition-colors"
+                >
+                  <ExternalLink className="w-3.5 h-3.5 text-accent-500 shrink-0" />
+                </a>
               )}
             </div>
             {/* Period Badge */}
