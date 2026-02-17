@@ -13,7 +13,7 @@ const CONFIG = {
     { table: "s_kpi_anc12", sheet: "s_kpi_anc12" },
     { table: "s_anc5", sheet: "s_anc5" },
     { table: "s_kpi_food", sheet: "s_kpi_food" },
-    { table: "s_kpi_childdev4", sheet: "s_kpi_childdev4", isQuarterly: true },
+    { table: "s_childdev_specialpp", sheet: "s_childdev_specialpp" },
     { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2", isQuarterly: true },
     { table: "s_aged9", sheet: "s_aged9" },
     { table: "s_dm_screen", sheet: "s_dm_screen" },
@@ -477,13 +477,13 @@ function calculateKPIOnServer(item, tableName) {
     r = Number(item["a"] || 0);
     return { t: t, r: r };
   }
-
-  // 2. Child Development Special (Uses Global Current Quarter)
-  if (tableName === "s_kpi_childdev4") {
-    for (let i = 1; i <= CONFIG.CURRENT_QUARTER; i++) {
-      t += Number(item["target" + i] || item["targetq" + i] || 0);
-      r += Number(item["result" + i] || item["resultq" + i] || 0);
-    }
+  // 2. Child Development Special PP (Sum by Age Groups: 9, 18, 30, 42, 60 months)
+  if (tableName === "s_childdev_specialpp") {
+    const ageGroups = [9, 18, 30, 42, 60];
+    ageGroups.forEach((age) => {
+      t += Number(item[`target_${age}`] || 0);
+      r += Number(item[`result_${age}`] || 0);
+    });
     return { t: t, r: r };
   }
 

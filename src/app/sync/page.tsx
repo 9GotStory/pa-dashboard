@@ -22,7 +22,7 @@ const KPI_LIST = [
   { table: "s_kpi_anc12", sheet: "s_kpi_anc12" },
   { table: "s_anc5", sheet: "s_anc5" },
   { table: "s_kpi_food", sheet: "s_kpi_food" },
-  { table: "s_kpi_childdev4", sheet: "s_kpi_childdev4" },
+  { table: "s_childdev_specialpp", sheet: "s_childdev_specialpp" },
   { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2" },
   { table: "s_aged9", sheet: "s_aged9" },
   { table: "s_dm_screen", sheet: "s_dm_screen" },
