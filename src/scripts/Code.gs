@@ -168,6 +168,7 @@ function fetchAndSave(tableName, sheetName) {
       Logger.log(
         "Error: API returned status " + responseCode + " for " + tableName,
       );
+      logToSheet("ERROR", `API Error ${tableName}`, `Status: ${responseCode}`);
       return;
     }
 
@@ -177,78 +178,185 @@ function fetchAndSave(tableName, sheetName) {
       data = JSON.parse(jsonText);
     } catch (parseErr) {
       Logger.log("Error: Invalid JSON for " + tableName);
-      return;
-    }
-
-    if (!Array.isArray(data)) {
-      Logger.log("Error: API response is not an array for " + tableName);
-      return;
-    }
-
-    if (data.length === 0) {
-      Logger.log(
-        "Warning: API returned 0 records for " +
-          tableName +
-          ". Keeping old data.",
+      logToSheet(
+        "ERROR",
+        `Start JSON Parse Error ${tableName}`,
+        "Invalid JSON format",
       );
       return;
     }
 
-    const firstItem = data[0];
-    if (
-      typeof firstItem !== "object" ||
-      firstItem === null ||
-      Object.keys(firstItem).length === 0
-    ) {
-      Logger.log("Error: Invalid record format for " + tableName);
-      return;
+    saveDataToSheet(tableName, data, sheetName);
+  } catch (e) {
+    const errorMsg = e.toString();
+    Logger.log("Critical Error syncing " + tableName + ": " + errorMsg);
+    logToSheet("ERROR", `Failed ${tableName}`, errorMsg);
+  }
+}
+
+function doPost(e) {
+  try {
+    const json = JSON.parse(e.postData.contents);
+    const action = json.action;
+
+    if (action === "save_kpi_data") {
+      const { tableName, data } = json;
+      // Resolve sheetName from CONFIG if not provided
+      let sheetName = json.sheetName;
+      if (!sheetName) {
+        const kpi = CONFIG.KPIS.find((k) => k.table === tableName);
+        if (kpi) sheetName = kpi.sheet;
+      }
+
+      if (!sheetName) {
+        logToSheet(
+          "ERROR",
+          `Start Sync Error ${tableName}`,
+          "Unknown Sheet Name",
+        );
+        return createJsonError("Unknown sheet for table: " + tableName);
+      }
+
+      const success = saveDataToSheet(tableName, data, sheetName);
+      if (success) {
+        return createJsonOutput({ status: "success", count: data.length });
+      } else {
+        return createJsonError(
+          "Failed to save data. Check system_logs for details.",
+        );
+      }
     }
 
-    const headers = Object.keys(firstItem);
-    const textColumns = ["id", "hospcode", "areacode", "vhid"];
+    return createJsonError("Unknown action: " + action);
+  } catch (e) {
+    logToSheet("ERROR", "doPost Critical", e.toString());
+    return createJsonError(e.toString());
+  }
+}
 
-    const rowsFormatted = data.map((item) =>
-      headers.map((key) => {
-        const val = item[key];
-        if (textColumns.includes(key)) {
-          return val !== null && val !== undefined ? String(val) : "";
-        }
-        return val || "";
-      }),
+function saveDataToSheet(tableName, data, sheetName) {
+  if (!Array.isArray(data)) {
+    Logger.log("Error: API response is not an array for " + tableName);
+    logToSheet(
+      "ERROR",
+      `Data Format Error ${tableName}`,
+      "Response is not an array",
     );
+    return false;
+  }
 
+  if (data.length === 0) {
+    Logger.log(
+      "Warning: API returned 0 records for " +
+        tableName +
+        ". Keeping old data.",
+    );
+    logToSheet("WARNING", `Empty Data ${tableName}`, "0 records found");
+    return false;
+  }
+
+  const firstItem = data[0];
+  if (
+    typeof firstItem !== "object" ||
+    firstItem === null ||
+    Object.keys(firstItem).length === 0
+  ) {
+    Logger.log("Error: Invalid record format for " + tableName);
+    logToSheet(
+      "ERROR",
+      `Record Format Error ${tableName}`,
+      "First item is invalid",
+    );
+    return false;
+  }
+
+  const headers = Object.keys(firstItem);
+  const textColumns = ["id", "hospcode", "areacode", "vhid"];
+
+  const rowsFormatted = data.map((item) =>
+    headers.map((key) => {
+      const val = item[key];
+      if (textColumns.includes(key)) {
+        return val !== null && val !== undefined ? String(val) : "";
+      }
+      return val || "";
+    }),
+  );
+
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  let sheet = ss.getSheetByName(sheetName);
+  if (!sheet) {
+    sheet = ss.insertSheet(sheetName);
+  }
+
+  sheet.clear();
+  sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+
+  textColumns.forEach((colName) => {
+    const colIndex = headers.indexOf(colName);
+    if (colIndex > -1) {
+      sheet
+        .getRange(2, colIndex + 1, Math.max(rowsFormatted.length, 1), 1)
+        .setNumberFormat("@");
+    }
+  });
+
+  if (rowsFormatted.length > 0) {
+    sheet
+      .getRange(2, 1, rowsFormatted.length, headers.length)
+      .setValues(rowsFormatted);
+  }
+
+  sheet.getRange(1, headers.length + 2).setValue("Last Updated: " + new Date());
+
+  Logger.log(
+    "Success: Synced " + rowsFormatted.length + " rows for " + tableName,
+  );
+  logToSheet("SUCCESS", `Synced ${tableName}`, `${rowsFormatted.length} rows`);
+  return true;
+}
+
+/**
+ * SYSTEM LOGGING
+ * Logs events to 'system_logs' sheet.
+ * Auto-rotates to keep only the last 500 logs.
+ */
+function logToSheet(type, message, details = "") {
+  try {
     const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetName = "system_logs";
     let sheet = ss.getSheetByName(sheetName);
+
     if (!sheet) {
       sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(["Timestamp", "Type", "Message", "Details"]);
+      sheet.setFrozenRows(1);
+      sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
     }
 
-    sheet.clear();
-    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    const timestamp = new Date();
+    sheet.appendRow([timestamp, type, message, details]);
 
-    textColumns.forEach((colName) => {
-      const colIndex = headers.indexOf(colName);
-      if (colIndex > -1) {
-        sheet
-          .getRange(2, colIndex + 1, Math.max(rowsFormatted.length, 1), 1)
-          .setNumberFormat("@");
-      }
-    });
-
-    if (rowsFormatted.length > 0) {
+    // Format Timestamp Column if new
+    if (sheet.getLastRow() === 2) {
       sheet
-        .getRange(2, 1, rowsFormatted.length, headers.length)
-        .setValues(rowsFormatted);
+        .getRange(2, 1, sheet.getMaxRows() - 1, 1)
+        .setNumberFormat("yyyy-mm-dd hh:mm:ss");
     }
 
-    sheet
-      .getRange(1, headers.length + 2)
-      .setValue("Last Updated: " + new Date());
-    Logger.log(
-      "Success: Synced " + rowsFormatted.length + " rows for " + tableName,
-    );
+    // Auto-Cleanup (Keep last 500 rows)
+    const maxLogs = 500;
+    const lastRow = sheet.getLastRow();
+    if (lastRow > maxLogs + 1) {
+      // +1 for header
+      const rowsToDelete = lastRow - (maxLogs + 1);
+      if (rowsToDelete > 0) {
+        // Delete from top (after header)
+        sheet.deleteRows(2, rowsToDelete);
+      }
+    }
   } catch (e) {
-    Logger.log("Critical Error syncing " + tableName + ": " + e.toString());
+    Logger.log("Failed to write log: " + e.toString());
   }
 }
 
@@ -427,4 +535,48 @@ function createDailyTrigger() {
     .everyDays(1)
     .atHour(14)
     .create();
+}
+
+/**
+ * SYSTEM LOGGING
+ * Logs events to 'system_logs' sheet.
+ * Auto-rotates to keep only the last 500 logs.
+ */
+function logToSheet(type, message, details = "") {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheetName = "system_logs";
+    let sheet = ss.getSheetByName(sheetName);
+
+    if (!sheet) {
+      sheet = ss.insertSheet(sheetName);
+      sheet.appendRow(["Timestamp", "Type", "Message", "Details"]);
+      sheet.setFrozenRows(1);
+      sheet.getRange(1, 1, 1, 4).setFontWeight("bold");
+    }
+
+    const timestamp = new Date();
+    sheet.appendRow([timestamp, type, message, details]);
+
+    // Format Timestamp Column if new
+    if (sheet.getLastRow() === 2) {
+      sheet
+        .getRange(2, 1, sheet.getMaxRows() - 1, 1)
+        .setNumberFormat("yyyy-mm-dd hh:mm:ss");
+    }
+
+    // Auto-Cleanup (Keep last 500 rows)
+    const maxLogs = 500;
+    const lastRow = sheet.getLastRow();
+    if (lastRow > maxLogs + 1) {
+      // +1 for header
+      const rowsToDelete = lastRow - (maxLogs + 1);
+      if (rowsToDelete > 0) {
+        // Delete from top (after header)
+        sheet.deleteRows(2, rowsToDelete);
+      }
+    }
+  } catch (e) {
+    Logger.log("Failed to write log: " + e.toString());
+  }
 }
