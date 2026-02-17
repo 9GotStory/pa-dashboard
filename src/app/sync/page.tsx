@@ -251,8 +251,8 @@ export default function SyncPage() {
   return (
     <div className="min-h-screen bg-slate-50 p-4 md:p-8">
       <div className="mx-auto max-w-3xl">
-        <div className="mb-6 flex items-center justify-between rounded-xl bg-white p-6 shadow-md">
-          <div>
+        <div className="mb-6 flex flex-col gap-4 rounded-xl bg-white p-6 shadow-md sm:flex-row sm:items-center sm:justify-between">
+          <div className="text-center sm:text-left">
             <h1 className="text-2xl font-bold text-gray-800">
               Client-Side Data Sync
             </h1>
@@ -261,7 +261,7 @@ export default function SyncPage() {
           <button
             onClick={startSync}
             disabled={isSyncing}
-            className={`flex items-center gap-2 rounded-lg px-6 py-3 font-bold text-white shadow-md transition-all ${
+            className={`flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-bold text-white shadow-md transition-all sm:w-auto ${
               isSyncing
                 ? "cursor-not-allowed bg-gray-400"
                 : "bg-green-600 hover:bg-green-700 active:scale-95"
