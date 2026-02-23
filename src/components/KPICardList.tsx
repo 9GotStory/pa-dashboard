@@ -9,20 +9,17 @@ interface KPICardListProps {
   data: KPISummary[];
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
   tambonMap?: Record<string, string>;
-  selectedFacility?: string;
-  onSelectFacility?: (facilityCode: string) => void;
+  selectedFacilities?: string[];
 }
 
 export default function KPICardList({
   data,
   hospitalMap = {},
   tambonMap = {},
-  selectedFacility = "all",
-  onSelectFacility,
+  selectedFacilities = [],
 }: KPICardListProps) {
   // Helper to get Hospital Name
   const getFacilityName = (code: string) => {
-    if (code === "all") return "ภาพรวมทั้งอำเภอ";
     return hospitalMap[code]?.name || code;
   };
 
@@ -55,16 +52,19 @@ export default function KPICardList({
   });
 
   const openDrillDown = (kpi: KPISummary) => {
-    // If Global Filter is ALL -> Show District Overview (All Data)
-    // If Global Filter is Specific -> Show Data for that Facility (Wait, modal expects Array of Records)
-
     let modalData = kpi.data;
     let modalTitle = "ภาพรวมอำเภอ";
 
-    if (selectedFacility !== "all") {
-      // Filter raw data for this facility
-      modalData = kpi.data.filter((row) => row.hospcode === selectedFacility);
-      modalTitle = getFacilityName(selectedFacility);
+    if (selectedFacilities.length > 0) {
+      // Filter raw data for these facilities
+      modalData = kpi.data.filter((row) =>
+        selectedFacilities.includes(row.hospcode),
+      );
+      if (selectedFacilities.length === 1) {
+        modalTitle = getFacilityName(selectedFacilities[0]);
+      } else {
+        modalTitle = `ข้อมูล ${selectedFacilities.length} หน่วยบริการ`;
+      }
     }
 
     setModalState({
@@ -79,36 +79,13 @@ export default function KPICardList({
 
   return (
     <>
-      {/* Sticky Filter Bar */}
-      <div className="sticky top-0 z-30 bg-white/95 backdrop-blur shadow-sm border-b border-slate-200 px-4 py-3 -mx-4 mb-4">
-        <div className="flex items-center gap-3">
-          <span className="text-sm font-bold text-slate-700 whitespace-nowrap">
-            เลือกหน่วยบริการ:
-          </span>
-          <select
-            value={selectedFacility}
-            onChange={(e) =>
-              onSelectFacility && onSelectFacility(e.target.value)
-            }
-            className="flex-1 bg-slate-50 border border-slate-300 text-slate-900 text-sm rounded-lg focus:ring-brand-500 focus:border-brand-500 block w-full p-2"
-          >
-            <option value="all">ภาพรวมทั้งอำเภอ</option>
-            {facilities.map(([code, info]) => (
-              <option key={code} value={code}>
-                {info.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       <div className="flex flex-col gap-3 pb-8">
         {data.map((kpi, index) => (
           <KPICard
             key={index}
             kpi={kpi}
             hospitalMap={hospitalMap}
-            selectedFacility={selectedFacility}
+            selectedFacilities={selectedFacilities}
             onClick={() => openDrillDown(kpi)}
           />
         ))}

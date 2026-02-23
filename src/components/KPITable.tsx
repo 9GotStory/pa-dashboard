@@ -31,12 +31,14 @@ interface KPITableProps {
   data: KPISummary[];
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
   tambonMap?: Record<string, string>;
+  selectedFacilities?: string[];
 }
 
 export default function KPITable({
   data,
   hospitalMap = {},
   tambonMap = {},
+  selectedFacilities = [],
 }: KPITableProps) {
   // Modal State
   const [modalState, setModalState] = useState<{
@@ -79,6 +81,13 @@ export default function KPITable({
       return a.localeCompare(b);
     });
   }, [data, hospitalMap]);
+
+  // If specific facilities are selected, filter the keys to show
+  const displayConfigKeys = useMemo(() => {
+    if (!selectedFacilities || selectedFacilities.length === 0)
+      return facilityKeys;
+    return facilityKeys.filter((key) => selectedFacilities.includes(key));
+  }, [facilityKeys, selectedFacilities]);
 
   const openDrillDown = (kpi: KPISummary, facilityKey: string) => {
     const facilityRawData = kpi.data.filter(
@@ -181,14 +190,43 @@ export default function KPITable({
         header: "ผลงาน",
         cell: (info) => {
           const kpi = info.row.original;
-          const isRawCount = kpi.totalTarget === 0;
+          let totalTarget = kpi.totalTarget;
+          let totalResult = kpi.totalResult;
+          let percentage = kpi.percentage;
+
+          if (selectedFacilities && selectedFacilities.length > 0) {
+            if (kpi.totalTarget === 0) {
+              // Raw count
+              let selResult = 0;
+              selectedFacilities.forEach((f) => {
+                if (kpi.breakdown && kpi.breakdown[f])
+                  selResult += kpi.breakdown[f].result;
+              });
+              totalResult = selResult;
+              percentage = selResult > 0 ? 100 : 0;
+            } else {
+              let selTarget = 0;
+              let selResult = 0;
+              selectedFacilities.forEach((f) => {
+                if (kpi.breakdown && kpi.breakdown[f]) {
+                  selTarget += kpi.breakdown[f].target;
+                  selResult += kpi.breakdown[f].result;
+                }
+              });
+              totalTarget = selTarget;
+              totalResult = selResult;
+              percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
+            }
+          }
+
+          const isRawCount = totalTarget === 0;
 
           return (
             <div className="w-full text-center">
               <span className="font-bold text-sm tracking-tight">
                 {isRawCount
-                  ? kpi.totalResult.toLocaleString()
-                  : formatPct(info.getValue())}
+                  ? totalResult.toLocaleString()
+                  : formatPct(percentage)}
                 %
               </span>
             </div>
@@ -200,8 +238,34 @@ export default function KPITable({
             "md:sticky left-[274px] z-40 bg-slate-50 w-[75px] min-w-[75px] text-center border-r-[3px] border-slate-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
           getCellClassName: (row: Row<KPISummary>) => {
             const kpi = row.original;
+            
+            let totalTarget = kpi.totalTarget;
+            let percentage = kpi.percentage;
+
+            if (selectedFacilities && selectedFacilities.length > 0) {
+              if (kpi.totalTarget === 0) {
+                let selResult = 0;
+                selectedFacilities.forEach((f) => {
+                  if (kpi.breakdown && kpi.breakdown[f])
+                    selResult += kpi.breakdown[f].result;
+                });
+                percentage = selResult > 0 ? 100 : 0;
+              } else {
+                let selTarget = 0;
+                let selResult = 0;
+                selectedFacilities.forEach((f) => {
+                  if (kpi.breakdown && kpi.breakdown[f]) {
+                    selTarget += kpi.breakdown[f].target;
+                    selResult += kpi.breakdown[f].result;
+                  }
+                });
+                totalTarget = selTarget;
+                percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
+              }
+            }
+
             const targetVal = kpi.targetValue || 80;
-            const isRawCount = kpi.totalTarget === 0;
+            const isRawCount = totalTarget === 0;
 
             // Common Sticky Style + Separator
             const stickyStyle =
@@ -211,7 +275,7 @@ export default function KPITable({
               return `${stickyStyle} bg-neutral-100 text-center font-medium text-neutral-600`;
             }
 
-            const totalPass = kpi.percentage >= targetVal;
+            const totalPass = percentage >= targetVal;
             // Soft Background Heatmap Logic
             return `${stickyStyle} text-center font-bold ${
               totalPass
@@ -222,7 +286,7 @@ export default function KPITable({
         },
       }),
       // Dynamic Facility Columns
-      ...facilityKeys.map((key) =>
+      ...displayConfigKeys.map((key) =>
         columnHelper.accessor((row) => row.breakdown?.[key], {
           id: key,
           header: () => (
@@ -318,7 +382,7 @@ export default function KPITable({
         },
       }),
     ];
-  }, [facilityKeys, hospitalMap]);
+  }, [displayConfigKeys, selectedFacilities, hospitalMap]);
 
   const table = useReactTable({
     data,

@@ -12,13 +12,14 @@ interface HospitalDetail {
   tambon_id: string;
 }
 
-interface UseKPIDataResult {
+export interface UseKPIDataResult {
   data: KPISummary[];
+  kpiMasterList: KPIMaster[];
   hospitalMap: Record<string, HospitalDetail>;
   tambonMap: Record<string, string>;
   isLoading: boolean;
   error: string | null;
-  lastUpdated: string;
+  lastUpdated: string | null;
 }
 
 async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
@@ -80,6 +81,7 @@ const CACHE_KEY = 'PA_DASHBOARD_CACHE_V1';
 
 export function useKPIData(): UseKPIDataResult {
   const [data, setData] = useState<KPISummary[]>([]);
+  const [kpiMasterList, setKpiMasterList] = useState<KPIMaster[]>([]);
   const [hospitalMap, setHospitalMap] = useState<Record<string, HospitalDetail>>({});
   const [tambonMap, setTambonMap] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -254,5 +256,13 @@ export function useKPIData(): UseKPIDataResult {
     fetchAllData();
   }, []);
 
-  return { data, hospitalMap, tambonMap, isLoading, error, lastUpdated };
+  return {
+    data,
+    kpiMasterList,
+    hospitalMap,
+    tambonMap,
+    isLoading,
+    error,
+    lastUpdated,
+  };
 }
