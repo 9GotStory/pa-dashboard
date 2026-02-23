@@ -234,21 +234,31 @@ export default function DashboardFilter({
                   )}
                 </div>
 
-                <div className="flex items-center justify-end w-full sm:w-auto shrink-0">
+                <div className="flex items-center gap-1 sm:gap-2 justify-end w-full sm:w-auto shrink-0">
                   <button
-                    onClick={
-                      activeTab === "facilities"
-                        ? handleSelectAllFacilities
-                        : handleSelectAllKPIs
-                    }
-                    className="text-[13px] sm:text-sm font-medium text-brand-600 hover:text-brand-700 bg-brand-50 sm:bg-transparent px-3 py-1.5 sm:px-0 sm:py-0 rounded-md sm:rounded-none transition-colors"
+                    onClick={() => {
+                      if (activeTab === "facilities") {
+                        onFacilitiesChange(facilityOptions.map((f) => f.value));
+                      } else {
+                        onKPIsChange(kpiOptions.map((k) => k.value));
+                      }
+                    }}
+                    className="text-[12px] sm:text-[13px] font-medium text-brand-600 hover:text-brand-700 hover:bg-brand-50 px-2 py-1.5 rounded transition-colors"
                   >
-                    {(activeTab === "facilities" &&
-                      selectedFacilities.length === facilityOptions.length) ||
-                    (activeTab === "kpis" &&
-                      selectedKPIs.length === kpiOptions.length)
-                      ? "ยกเลิกทั้งหมด"
-                      : "เลือกทั้งหมด"}
+                    เลือกทั้งหมด
+                  </button>
+                  <span className="text-slate-300 text-xs sm:text-sm">|</span>
+                  <button
+                    onClick={() => {
+                      if (activeTab === "facilities") {
+                        onFacilitiesChange([]);
+                      } else {
+                        onKPIsChange([]);
+                      }
+                    }}
+                    className="text-[12px] sm:text-[13px] font-medium text-slate-500 hover:text-slate-700 hover:bg-slate-100 px-2 py-1.5 rounded transition-colors"
+                  >
+                    ล้างตัวเลือก
                   </button>
                 </div>
               </div>
