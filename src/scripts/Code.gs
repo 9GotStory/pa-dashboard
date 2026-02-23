@@ -374,9 +374,22 @@ function doGet(e) {
   // 1. BATCH MODE (Turbo)
   if (sheetName === "BATCH_ALL") {
     const result = {};
+    const lastUpdatedMap = {};
+
     CONFIG.KPIS.forEach((kpi) => {
       const rows = getProcessedDataForSheet(kpi.sheet);
       result[kpi.table] = rows;
+
+      // Extract date_com from the first available row as the "Last Updated" for this KPI
+      lastUpdatedMap[kpi.table] = null;
+      if (rows.length > 0) {
+        for (let i = 0; i < rows.length; i++) {
+          if (rows[i].date_com) {
+            lastUpdatedMap[kpi.table] = rows[i].date_com;
+            break;
+          }
+        }
+      }
     });
 
     // Wrap with Metadata
@@ -385,6 +398,7 @@ function doGet(e) {
       meta: {
         current_quarter: CONFIG.CURRENT_QUARTER,
         kpi_config: CONFIG.KPIS,
+        lastUpdatedMap: lastUpdatedMap,
       },
     };
     return createJsonOutput(response);

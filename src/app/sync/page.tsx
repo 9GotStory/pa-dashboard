@@ -11,6 +11,7 @@ import {
   CloudDownload,
   Database,
   Flag,
+  CalendarClock,
 } from "lucide-react";
 
 // --- CONFIGURATION ---
@@ -39,6 +40,7 @@ type LogType =
   | "info"
   | "success"
   | "error"
+  | "warn"
   | "finish"
   | "fetch"
   | "upload";
@@ -53,14 +55,57 @@ export default function SyncPage() {
   const [pin, setPin] = useState("");
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isFetchingMeta, setIsFetchingMeta] = useState(false);
   const [progress, setProgress] = useState(0);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const logsEndRef = useRef<HTMLDivElement>(null);
+
+  // New States for Selective Sync & Metadata
+  const [selectedKPIs, setSelectedKPIs] = useState<string[]>(
+    KPI_LIST.map((kpi) => kpi.table),
+  );
+  const [lastUpdatedMap, setLastUpdatedMap] = useState<Record<string, string>>(
+    {},
+  );
 
   // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
+
+  // Fetch Metadata after login
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchMetadata();
+    }
+  }, [isAuthenticated]);
+
+  const fetchMetadata = async () => {
+    setIsFetchingMeta(true);
+    addLog("Fetching metadata to check last updated status...", "info");
+
+    const gasUrl = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL;
+    if (!gasUrl || gasUrl.includes("YOUR_SCRIPT_ID")) {
+      addLog("Cannot fetch metadata: Invalid GAS URL", "warn");
+      setIsFetchingMeta(false);
+      return;
+    }
+
+    try {
+      const res = await fetch(`${gasUrl}?sheet=BATCH_ALL`);
+      if (!res.ok) throw new Error("Failed to fetch BATCH_ALL");
+      const json = await res.json();
+      if (json && json.meta && json.meta.lastUpdatedMap) {
+        setLastUpdatedMap(json.meta.lastUpdatedMap);
+        addLog("Metadata loaded successfully.", "success");
+      }
+    } catch (e: any) {
+      console.error(e);
+      addLog(`Failed to load metadata: ${e.message}`, "error");
+    } finally {
+      setIsFetchingMeta(false);
+    }
+  };
 
   const addLog = (msg: string, type: LogType = "info") => {
     setLogs((prev) => [
@@ -107,29 +152,64 @@ export default function SyncPage() {
     setLogs([]); // Clear old logs
     addLog("Starting Client-Side Sync Process (Static Mode)...", "start");
 
+    const kpisToSync = KPI_LIST.filter((kpi) =>
+      selectedKPIs.includes(kpi.table),
+    );
+
+    if (kpisToSync.length === 0) {
+      addLog("No KPIs selected for sync. Aborting.", "warn");
+      setIsSyncing(false);
+      return;
+    }
+
     let successCount = 0;
     let failCount = 0;
 
-    for (let i = 0; i < KPI_LIST.length; i++) {
-      const kpi = KPI_LIST[i];
-      const currentProgress = Math.round((i / KPI_LIST.length) * 100);
+    for (let i = 0; i < kpisToSync.length; i++) {
+      const kpi = kpisToSync[i];
+      const currentProgress = Math.round((i / kpisToSync.length) * 100);
       setProgress(currentProgress);
 
       try {
-        // 1. Fetch from MOPH
-        addLog(`Fetching ${kpi.table}...`, "fetch");
-        const fetchRes = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tableName: kpi.table,
-            year: YEAR,
-            province: PROVINCE,
-            type: "json",
-          }),
-        });
+        // 1. Fetch from MOPH with Retry Logic (to handle CORS/WAF blocks)
+        let fetchRes;
+        let retries = 3;
+        let delayMs = 5000;
 
-        if (!fetchRes.ok) throw new Error(`MOPH API Error: ${fetchRes.status}`);
+        while (retries > 0) {
+          try {
+            fetchRes = await fetch(API_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                tableName: kpi.table,
+                year: YEAR,
+                province: PROVINCE,
+                type: "json",
+              }),
+            });
+            break; // Success, exit retry loop
+          } catch (err: any) {
+            // TypeError usually indicates a network or CORS error
+            if (err.message === "Failed to fetch" || err.name === "TypeError") {
+              retries--;
+              if (retries === 0)
+                throw new Error("CORS/Network Error after multiple retries");
+              addLog(
+                `ถูกบล็อก (CORS/Rate Limit). รอ ${delayMs / 1000} วิ แล้วลองใหม่...`,
+                "warn",
+              );
+              await new Promise((r) => setTimeout(r, delayMs));
+              delayMs += 5000; // Increase delay progressively
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        if (!fetchRes || !fetchRes.ok) {
+          throw new Error(`MOPH API Error: ${fetchRes?.status}`);
+        }
 
         const rawText = await fetchRes.text();
         let data;
@@ -183,8 +263,10 @@ export default function SyncPage() {
         failCount++;
       }
 
-      // Brief pause to avoid rate limiting (MOPH WAF is sensitive)
-      await new Promise((r) => setTimeout(r, 2000));
+      // Random pause between 4 to 7 seconds to avoid rate limiting
+      // WAFs often block exact interval requests (bot detection)
+      const randomDelay = 4000 + Math.floor(Math.random() * 3000);
+      await new Promise((r) => setTimeout(r, randomDelay));
     }
 
     setProgress(100);
@@ -193,6 +275,9 @@ export default function SyncPage() {
       `Sync Completed. Success: ${successCount}, Failed: ${failCount}`,
       "finish",
     );
+
+    // Refresh metadata to show new dates
+    fetchMetadata();
   };
 
   const getIconForLog = (type: LogType) => {
@@ -273,10 +358,133 @@ export default function SyncPage() {
               </>
             ) : (
               <>
-                <RefreshCw /> Start Sync
+                <RefreshCw /> Start Targeted Sync
               </>
             )}
           </button>
+        </div>
+
+        {/* KPI Selection Section */}
+        <div className="mb-6 rounded-xl bg-white p-6 shadow-md border border-slate-100">
+          <div className="flex justify-between items-end mb-4 border-b border-slate-100 pb-3">
+            <div>
+              <h2 className="text-lg font-bold text-gray-800">
+                Select Indicators to Sync
+              </h2>
+              <p className="text-sm text-gray-500">
+                {selectedKPIs.length} of {KPI_LIST.length} selected
+              </p>
+            </div>
+            <div className="flex gap-2 text-sm">
+              <button
+                onClick={() => setSelectedKPIs(KPI_LIST.map((k) => k.table))}
+                className="text-brand-600 hover:text-brand-700 font-medium"
+                disabled={isSyncing}
+              >
+                Select All
+              </button>
+              <span className="text-slate-300">|</span>
+              <button
+                onClick={() => setSelectedKPIs([])}
+                className="text-slate-500 hover:text-slate-700 font-medium"
+                disabled={isSyncing}
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+            {KPI_LIST.map((kpi) => {
+              const isSelected = selectedKPIs.includes(kpi.table);
+              const lastUpdated = lastUpdatedMap[kpi.table];
+
+              // Format Date if exists
+              let dateStrOut = "No data / Never synced";
+              let dateColor = "text-slate-400";
+              if (lastUpdated) {
+                try {
+                  let d = new Date(lastUpdated);
+
+                  // Handle MOPH format YYYYMMDDHHmm (e.g., "202602221224")
+                  const dateStr = String(lastUpdated);
+                  if (dateStr.length === 12 && /^\d+$/.test(dateStr)) {
+                    const y = parseInt(dateStr.substring(0, 4));
+                    const m = parseInt(dateStr.substring(4, 6)) - 1;
+                    const day = parseInt(dateStr.substring(6, 8));
+                    const h = parseInt(dateStr.substring(8, 10));
+                    const min = parseInt(dateStr.substring(10, 12));
+                    d = new Date(y, m, day, h, min);
+                  }
+
+                  if (!isNaN(d.getTime())) {
+                    dateStrOut = d.toLocaleString("th-TH", {
+                      year: "numeric",
+                      month: "short",
+                      day: "numeric",
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    });
+
+                    // Simple heuristic: if date is within last 2 days, green, else orange
+                    const now = new Date();
+                    const diffDays =
+                      (now.getTime() - d.getTime()) / (1000 * 3600 * 24);
+                    if (diffDays <= 2)
+                      dateColor = "text-emerald-500 font-medium";
+                    else if (diffDays <= 7)
+                      dateColor = "text-amber-500 font-medium";
+                    else dateColor = "text-orange-500 font-medium";
+                  } else {
+                    dateStrOut = String(lastUpdated);
+                  }
+                } catch (e) {
+                  dateStrOut = String(lastUpdated);
+                }
+              }
+
+              return (
+                <label
+                  key={kpi.table}
+                  className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
+                    isSelected
+                      ? "bg-brand-50/30 border-brand-200"
+                      : "bg-white border-slate-200 hover:bg-slate-50"
+                  } ${isSyncing ? "opacity-50 pointer-events-none" : ""}`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedKPIs([...selectedKPIs, kpi.table]);
+                      } else {
+                        setSelectedKPIs(
+                          selectedKPIs.filter((id) => id !== kpi.table),
+                        );
+                      }
+                    }}
+                    className="mt-1 w-4 h-4 text-brand-600 rounded border-slate-300 focus:ring-brand-500"
+                    disabled={isSyncing}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p
+                      className="text-sm font-medium text-slate-800 truncate"
+                      title={kpi.table}
+                    >
+                      {kpi.table}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <CalendarClock className={`w-3.5 h-3.5 ${dateColor}`} />
+                      <span className={`text-[11px] ${dateColor}`}>
+                        {isFetchingMeta ? "Loading..." : dateStrOut}
+                      </span>
+                    </div>
+                  </div>
+                </label>
+              );
+            })}
+          </div>
         </div>
 
         {/* Progress Section */}
