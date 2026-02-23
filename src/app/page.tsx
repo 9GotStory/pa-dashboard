@@ -1,21 +1,37 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { CalendarClock } from "lucide-react";
 import KPITable from "@/components/KPITable";
 import KPICardList from "@/components/KPICardList";
 import KPISummaryStats from "@/components/KPISummaryStats";
 import DashboardSkeleton from "@/components/DashboardSkeleton";
+import DashboardFilter from "@/components/DashboardFilter";
 
 import DataStatusNotifier from "@/components/DataStatusNotifier";
 import { useKPIData } from "@/lib/useKPIData";
+import { KPIMaster } from "@/lib/types";
 
 export default function Home() {
-  const { data, hospitalMap, tambonMap, isLoading, error, lastUpdated } =
-    useKPIData();
+  const {
+    data,
+    hospitalMap,
+    tambonMap,
+    kpiMasterList,
+    isLoading,
+    error,
+    lastUpdated,
+  } = useKPIData();
 
-  // State for Mobile Facility Filter (Lifted Up)
-  const [selectedFacility, setSelectedFacility] = useState<string>("all");
+  // Multi-Checkbox Filter States
+  const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
+  const [selectedKPIs, setSelectedKPIs] = useState<string[]>([]);
+
+  // Filter Data based on Selected KPIs
+  const filteredData = useMemo(() => {
+    if (selectedKPIs.length === 0) return data;
+    return data.filter((kpi) => selectedKPIs.includes(kpi.tableName));
+  }, [data, selectedKPIs]);
 
   if (isLoading) {
     return (
@@ -45,6 +61,18 @@ export default function Home() {
     );
   }
 
+  // Create a fallback KPI list if kpiMasterList is not available directly from useKPIData yet
+  // Extracting from 'data' is a safe fallback.
+  const dynamicKPIList: KPIMaster[] =
+    kpiMasterList && kpiMasterList.length > 0
+      ? kpiMasterList
+      : data.map((d) => ({
+          table_name: d.tableName,
+          title: d.title,
+          target: d.targetValue,
+          order: 0,
+        }));
+
   return (
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
@@ -62,28 +90,41 @@ export default function Home() {
           </div>
         </div>
 
+        {/* MULTI-CHECKBOX FILTER */}
+        <DashboardFilter
+          hospitalMap={hospitalMap}
+          kpiList={dynamicKPIList}
+          selectedFacilities={selectedFacilities}
+          selectedKPIs={selectedKPIs}
+          onFacilitiesChange={setSelectedFacilities}
+          onKPIsChange={setSelectedKPIs}
+        />
+
         {/* 2. SUMMARY STATS (Inverted Pyramid Level 1) */}
-        <KPISummaryStats data={data} selectedFacility={selectedFacility} />
+        <KPISummaryStats
+          data={filteredData}
+          selectedFacilities={selectedFacilities}
+        />
 
         {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 md:overflow-hidden">
           {/* Desktop Table View */}
           <div className="hidden md:block">
             <KPITable
-              data={data}
+              data={filteredData}
               hospitalMap={hospitalMap}
               tambonMap={tambonMap}
+              selectedFacilities={selectedFacilities}
             />
           </div>
 
           {/* Mobile Card View */}
           <div className="block md:hidden p-4 bg-slate-50/50">
             <KPICardList
-              data={data}
+              data={filteredData}
               hospitalMap={hospitalMap}
               tambonMap={tambonMap}
-              selectedFacility={selectedFacility}
-              onSelectFacility={setSelectedFacility}
+              selectedFacilities={selectedFacilities}
             />
           </div>
         </div>

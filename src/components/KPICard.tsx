@@ -11,14 +11,14 @@ import {
 interface KPICardProps {
   kpi: KPISummary;
   onClick: (kpi: KPISummary) => void;
-  selectedFacility?: string;
+  selectedFacilities?: string[];
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
 }
 
 export const KPICard: React.FC<KPICardProps> = ({
   kpi,
   onClick,
-  selectedFacility = "all",
+  selectedFacilities = [],
   hospitalMap = {},
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
@@ -28,20 +28,29 @@ export const KPICard: React.FC<KPICardProps> = ({
   let totalResult = kpi.totalResult;
   let percentage = kpi.percentage;
 
-  if (
-    selectedFacility !== "all" &&
-    kpi.breakdown &&
-    kpi.breakdown[selectedFacility]
-  ) {
-    const facData = kpi.breakdown[selectedFacility];
-    totalTarget = facData.target;
-    totalResult = facData.result;
-    percentage = facData.percentage;
-  } else if (selectedFacility !== "all") {
-    // No data for this facility
-    totalTarget = 0;
-    totalResult = 0;
-    percentage = 0;
+  if (selectedFacilities.length > 0) {
+    if (kpi.totalTarget === 0) {
+      // Raw count
+      let selResult = 0;
+      selectedFacilities.forEach((f) => {
+        if (kpi.breakdown && kpi.breakdown[f])
+          selResult += kpi.breakdown[f].result;
+      });
+      totalResult = selResult;
+      percentage = selResult > 0 ? 100 : 0;
+    } else {
+      let selTarget = 0;
+      let selResult = 0;
+      selectedFacilities.forEach((f) => {
+        if (kpi.breakdown && kpi.breakdown[f]) {
+          selTarget += kpi.breakdown[f].target;
+          selResult += kpi.breakdown[f].result;
+        }
+      });
+      totalTarget = selTarget;
+      totalResult = selResult;
+      percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
+    }
   }
 
   const isRawCount = totalTarget === 0;
@@ -51,10 +60,16 @@ export const KPICard: React.FC<KPICardProps> = ({
   const period = kpi.period;
   const isQuarter = period && period.includes("(Q");
 
-  // Facility Ranking Logic (Only when Expanded & All selected)
+  // Facility Ranking Logic (Only when Expanded & All selected or multiple selected)
   const getTopFacilities = () => {
     if (!kpi.breakdown) return [];
-    return Object.entries(kpi.breakdown)
+
+    let entries = Object.entries(kpi.breakdown);
+    if (selectedFacilities.length > 0) {
+      entries = entries.filter(([code]) => selectedFacilities.includes(code));
+    }
+
+    return entries
       .map(([code, stats]) => ({
         code,
         name: hospitalMap[code]?.name || code,
@@ -150,8 +165,8 @@ export const KPICard: React.FC<KPICardProps> = ({
         </div>
       </div>
 
-      {/* Footer / Expand Button (Only for All View) */}
-      {selectedFacility === "all" && (
+      {/* Footer / Expand Button */}
+      {(selectedFacilities.length === 0 || selectedFacilities.length > 1) && (
         <div
           className={`bg-neutral-50 border-t border-neutral-100 px-4 py-2 flex items-center justify-center cursor-pointer hover:bg-neutral-100 transition-colors ${isExpanded ? "border-b" : ""}`}
           onClick={handleExpand}
@@ -167,43 +182,44 @@ export const KPICard: React.FC<KPICardProps> = ({
         </div>
       )}
 
-      {/* Expanded List (Only for All View) */}
-      {isExpanded && selectedFacility === "all" && (
-        <div
-          className="bg-neutral-50 px-4 py-2 border-t border-neutral-200 max-h-[300px] overflow-y-auto overscroll-contain"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <table className="w-full text-xs">
-            <thead className="text-neutral-400 font-medium border-b border-neutral-200">
-              <tr>
-                <th className="py-2 text-left w-[60%]">หน่วยบริการ</th>
-                <th className="py-2 text-right">ผลงาน</th>
-                <th className="py-2 text-right">%</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-neutral-200/50">
-              {getTopFacilities().map((fac) => {
-                const facPass = fac.percentage >= targetVal;
-                return (
-                  <tr key={fac.code}>
-                    <td className="py-2 pr-2 text-neutral-700 truncate max-w-[150px]">
-                      {fac.name}
-                    </td>
-                    <td className="py-2 text-right text-neutral-600">
-                      {fac.result.toLocaleString()}
-                    </td>
-                    <td
-                      className={`py-2 text-right font-bold ${facPass ? "text-success-600" : "text-error-600"}`}
-                    >
-                      {fac.percentage.toFixed(2)}%
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
+      {/* Expanded List */}
+      {isExpanded &&
+        (selectedFacilities.length === 0 || selectedFacilities.length > 1) && (
+          <div
+            className="bg-neutral-50 px-4 py-2 border-t border-neutral-200 max-h-[300px] overflow-y-auto overscroll-contain"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <table className="w-full text-xs">
+              <thead className="text-neutral-400 font-medium border-b border-neutral-200">
+                <tr>
+                  <th className="py-2 text-left w-[60%]">หน่วยบริการ</th>
+                  <th className="py-2 text-right">ผลงาน</th>
+                  <th className="py-2 text-right">%</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-neutral-200/50">
+                {getTopFacilities().map((fac) => {
+                  const facPass = fac.percentage >= targetVal;
+                  return (
+                    <tr key={fac.code}>
+                      <td className="py-2 pr-2 text-neutral-700 truncate max-w-[150px]">
+                        {fac.name}
+                      </td>
+                      <td className="py-2 text-right text-neutral-600">
+                        {fac.result.toLocaleString()}
+                      </td>
+                      <td
+                        className={`py-2 text-right font-bold ${facPass ? "text-success-600" : "text-error-600"}`}
+                      >
+                        {fac.percentage.toFixed(2)}%
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
     </div>
   );
 };

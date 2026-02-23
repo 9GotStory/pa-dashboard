@@ -4,29 +4,40 @@ import { Target, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface KPISummaryStatsProps {
   data: KPISummary[];
-  selectedFacility?: string;
+  selectedFacilities?: string[];
 }
 
 export default function KPISummaryStats({
   data,
-  selectedFacility = "all",
+  selectedFacilities = [],
 }: KPISummaryStatsProps) {
   const total = data.length;
 
-  // Calculate Passed/Failed based on Selected Facility
+  // Calculate Passed/Failed based on Selected Facilities
   const passed = data.filter((kpi) => {
     let percentage = kpi.percentage;
 
-    // If specific facility selected, use its percentage
-    if (selectedFacility !== "all") {
-      if (kpi.breakdown && kpi.breakdown[selectedFacility]) {
-        percentage = kpi.breakdown[selectedFacility].percentage;
+    // If specific facilities selected, calculate aggregate percentage for them
+    if (selectedFacilities.length > 0) {
+      if (kpi.totalTarget === 0) {
+        // It's a raw count KPI, not a percentage one (like NCD screening)
+        // Just see if total result > target (which is basically 0 or something else)
+        let selResult = 0;
+        selectedFacilities.forEach((f) => {
+          if (kpi.breakdown && kpi.breakdown[f])
+            selResult += kpi.breakdown[f].result;
+        });
+        percentage = selResult > 0 ? 100 : 0; // Fake pass if any result
       } else {
-        // Facility has no data for this KPI -> Treat as 0? or ignore?
-        // Usually treat as not passed (0%)
-        percentage = 0;
-        // Alternative: if target is 0, maybe it's N/A?
-        // But let's stick to simple logic: if it meets target, it passes.
+        let selTarget = 0;
+        let selResult = 0;
+        selectedFacilities.forEach((f) => {
+          if (kpi.breakdown && kpi.breakdown[f]) {
+            selTarget += kpi.breakdown[f].target;
+            selResult += kpi.breakdown[f].result;
+          }
+        });
+        percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
       }
     }
 
