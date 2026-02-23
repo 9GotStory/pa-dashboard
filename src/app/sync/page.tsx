@@ -39,6 +39,7 @@ type LogType =
   | "info"
   | "success"
   | "error"
+  | "warn"
   | "finish"
   | "fetch"
   | "upload";
@@ -116,20 +117,45 @@ export default function SyncPage() {
       setProgress(currentProgress);
 
       try {
-        // 1. Fetch from MOPH
-        addLog(`Fetching ${kpi.table}...`, "fetch");
-        const fetchRes = await fetch(API_URL, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            tableName: kpi.table,
-            year: YEAR,
-            province: PROVINCE,
-            type: "json",
-          }),
-        });
+        // 1. Fetch from MOPH with Retry Logic (to handle CORS/WAF blocks)
+        let fetchRes;
+        let retries = 3;
+        let delayMs = 5000;
 
-        if (!fetchRes.ok) throw new Error(`MOPH API Error: ${fetchRes.status}`);
+        while (retries > 0) {
+          try {
+            fetchRes = await fetch(API_URL, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                tableName: kpi.table,
+                year: YEAR,
+                province: PROVINCE,
+                type: "json",
+              }),
+            });
+            break; // Success, exit retry loop
+          } catch (err: any) {
+            // TypeError usually indicates a network or CORS error
+            if (err.message === "Failed to fetch" || err.name === "TypeError") {
+              retries--;
+              if (retries === 0)
+                throw new Error("CORS/Network Error after multiple retries");
+              addLog(
+                `ถูกบล็อก (CORS/Rate Limit). รอ ${delayMs / 1000} วิ แล้วลองใหม่...`,
+                "warn",
+              );
+              await new Promise((r) => setTimeout(r, delayMs));
+              delayMs += 5000; // Increase delay progressively
+            } else {
+              throw err;
+            }
+          }
+        }
+
+        if (!fetchRes || !fetchRes.ok) {
+          throw new Error(`MOPH API Error: ${fetchRes?.status}`);
+        }
 
         const rawText = await fetchRes.text();
         let data;
@@ -183,8 +209,10 @@ export default function SyncPage() {
         failCount++;
       }
 
-      // Brief pause to avoid rate limiting (MOPH WAF is sensitive)
-      await new Promise((r) => setTimeout(r, 2000));
+      // Random pause between 4 to 7 seconds to avoid rate limiting
+      // WAFs often block exact interval requests (bot detection)
+      const randomDelay = 4000 + Math.floor(Math.random() * 3000);
+      await new Promise((r) => setTimeout(r, randomDelay));
     }
 
     setProgress(100);
