@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import { KPISummary } from "@/lib/types";
+import { computeAggregate } from "@/lib/kpi-utils";
 import {
   ExternalLink,
   Calendar,
@@ -23,35 +24,11 @@ export const KPICard: React.FC<KPICardProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  // Determine Stats based on Filter
-  let totalTarget = kpi.totalTarget;
-  let totalResult = kpi.totalResult;
-  let percentage = kpi.percentage;
-
-  if (selectedFacilities.length > 0) {
-    if (kpi.totalTarget === 0) {
-      // Raw count
-      let selResult = 0;
-      selectedFacilities.forEach((f) => {
-        if (kpi.breakdown && kpi.breakdown[f])
-          selResult += kpi.breakdown[f].result;
-      });
-      totalResult = selResult;
-      percentage = selResult > 0 ? 100 : 0;
-    } else {
-      let selTarget = 0;
-      let selResult = 0;
-      selectedFacilities.forEach((f) => {
-        if (kpi.breakdown && kpi.breakdown[f]) {
-          selTarget += kpi.breakdown[f].target;
-          selResult += kpi.breakdown[f].result;
-        }
-      });
-      totalTarget = selTarget;
-      totalResult = selResult;
-      percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
-    }
-  }
+  // Determine Stats based on Filter (shared with table + summary views)
+  const { totalTarget, totalResult, percentage } = computeAggregate(
+    kpi,
+    selectedFacilities,
+  );
 
   const isRawCount = totalTarget === 0;
   const targetVal = kpi.targetValue || 80;
@@ -154,7 +131,10 @@ export const KPICard: React.FC<KPICardProps> = ({
 
           <div className="text-right">
             <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wide">
-              Target ≥ {targetVal}
+              Target ≥ {targetVal}{" "}
+              <span className="normal-case tracking-normal">
+                ({kpi.targetMonths ?? 12} เดือน)
+              </span>
             </p>
             <div className="text-xs text-neutral-600 mt-0.5 font-medium flex items-center justify-end gap-1">
               <span>R: {totalResult.toLocaleString()}</span>

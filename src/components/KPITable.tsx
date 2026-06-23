@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -8,12 +8,12 @@ import {
   createColumnHelper,
   type Row,
 } from "@tanstack/react-table";
-import { KPISummary } from "@/lib/types";
+import { KPISummary, MophReportData } from "@/lib/types";
 import { KPIDetailModal } from "./KPIDetailModal";
 import { exportToExcel } from "@/lib/excel-export";
+import { computeAggregate } from "@/lib/kpi-utils";
 import {
   ExternalLink,
-  Calendar,
   CalendarClock,
   FileSpreadsheet,
 } from "lucide-react";
@@ -26,6 +26,18 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
+
+// Type-safe meta for column definitions (replaces `any` casts).
+declare module "@tanstack/react-table" {
+  interface ColumnMeta<TData, TValue> {
+    className?: string;
+    headerClassName?: string;
+    getHeaderClassName?: () => string;
+    getCellClassName?: (row: Row<TData>) => string;
+  }
+}
+
+const columnHelper = createColumnHelper<KPISummary>();
 
 interface KPITableProps {
   data: KPISummary[];
@@ -45,7 +57,7 @@ export default function KPITable({
     isOpen: boolean;
     title: string;
     facilityName: string;
-    data: any[];
+    data: MophReportData[];
     targetValue: number;
     tableName: string;
   }>({
@@ -109,8 +121,6 @@ export default function KPITable({
   // Helper to format percentage
   const formatPct = (val: number) => val.toFixed(2);
 
-  const columnHelper = createColumnHelper<KPISummary>();
-
   const columns = useMemo(() => {
     return [
       columnHelper.display({
@@ -144,7 +154,7 @@ export default function KPITable({
                       className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-all block whitespace-normal"
                     >
                       {title}{" "}
-                      <ExternalLink className="w-3.5 h-3.5 inline text-neutral-400 group-hover:text-accent-500 ml-1 transform translate-y-[-1px] transition-colors" />
+                      <ExternalLink className="w-3.5 h-3.5 inline text-neutral-400 group-hover:text-accent-500 ml-1 transform -translate-y-px transition-colors" />
                     </a>
                   ) : (
                     <span className="text-neutral-800 font-medium text-sm leading-relaxed block whitespace-normal">
@@ -190,35 +200,10 @@ export default function KPITable({
         header: "ผลงาน",
         cell: (info) => {
           const kpi = info.row.original;
-          let totalTarget = kpi.totalTarget;
-          let totalResult = kpi.totalResult;
-          let percentage = kpi.percentage;
-
-          if (selectedFacilities && selectedFacilities.length > 0) {
-            if (kpi.totalTarget === 0) {
-              // Raw count
-              let selResult = 0;
-              selectedFacilities.forEach((f) => {
-                if (kpi.breakdown && kpi.breakdown[f])
-                  selResult += kpi.breakdown[f].result;
-              });
-              totalResult = selResult;
-              percentage = selResult > 0 ? 100 : 0;
-            } else {
-              let selTarget = 0;
-              let selResult = 0;
-              selectedFacilities.forEach((f) => {
-                if (kpi.breakdown && kpi.breakdown[f]) {
-                  selTarget += kpi.breakdown[f].target;
-                  selResult += kpi.breakdown[f].result;
-                }
-              });
-              totalTarget = selTarget;
-              totalResult = selResult;
-              percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
-            }
-          }
-
+          const { totalTarget, totalResult, percentage } = computeAggregate(
+            kpi,
+            selectedFacilities,
+          );
           const isRawCount = totalTarget === 0;
 
           return (
@@ -226,44 +211,21 @@ export default function KPITable({
               <span className="font-bold text-sm tracking-tight">
                 {isRawCount
                   ? totalResult.toLocaleString()
-                  : formatPct(percentage)}
-                %
+                  : `${formatPct(percentage)}%`}
               </span>
             </div>
           );
         },
         meta: {
-          // Sticky Position = 50 (Index) + 220 (Title) = 270px
+          // Sticky Position = 24 (Index) + 250 (Title) = 274px
           getHeaderClassName: () =>
             "md:sticky left-[274px] z-40 bg-slate-50 w-[75px] min-w-[75px] text-center border-r-[3px] border-slate-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
           getCellClassName: (row: Row<KPISummary>) => {
             const kpi = row.original;
-            
-            let totalTarget = kpi.totalTarget;
-            let percentage = kpi.percentage;
-
-            if (selectedFacilities && selectedFacilities.length > 0) {
-              if (kpi.totalTarget === 0) {
-                let selResult = 0;
-                selectedFacilities.forEach((f) => {
-                  if (kpi.breakdown && kpi.breakdown[f])
-                    selResult += kpi.breakdown[f].result;
-                });
-                percentage = selResult > 0 ? 100 : 0;
-              } else {
-                let selTarget = 0;
-                let selResult = 0;
-                selectedFacilities.forEach((f) => {
-                  if (kpi.breakdown && kpi.breakdown[f]) {
-                    selTarget += kpi.breakdown[f].target;
-                    selResult += kpi.breakdown[f].result;
-                  }
-                });
-                totalTarget = selTarget;
-                percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
-              }
-            }
-
+            const { totalTarget, percentage } = computeAggregate(
+              kpi,
+              selectedFacilities,
+            );
             const targetVal = kpi.targetValue || 80;
             const isRawCount = totalTarget === 0;
 
@@ -291,7 +253,7 @@ export default function KPITable({
           id: key,
           header: () => (
             <div className="w-full flex items-center justify-center">
-              <span className="whitespace-nowrap text-xs truncate max-w-[70px] font-bold text-slate-700 text-left line-clamp-1">
+              <span className="whitespace-nowrap text-xs truncate max-w-17.5 font-bold text-slate-700 text-left line-clamp-1">
                 {hospitalMap[key]?.name?.replace(
                   "โรงพยาบาลส่งเสริมสุขภาพตำบล",
                   "รพ.สต.",
@@ -309,10 +271,12 @@ export default function KPITable({
             const isRawCount = kpi.totalTarget === 0;
 
             return (
-              <div
+              <button
+                type="button"
                 onClick={() => openDrillDown(kpi, key)}
-                className="w-full h-full flex items-center justify-center cursor-pointer h-[40px]"
-                title={`Target: ${formatPct(facilityData.target)}\nResult: ${formatPct(facilityData.result)}`}
+                aria-label={`รายละเอียด ${kpi.title} ของ ${hospitalMap[key]?.name ?? key}: Target ${facilityData.target.toLocaleString()}, Result ${facilityData.result.toLocaleString()}`}
+                title={`Target: ${facilityData.target.toLocaleString()}\nResult: ${facilityData.result.toLocaleString()}`}
+                className="w-full h-full flex items-center justify-center cursor-pointer bg-transparent border-0 p-0"
               >
                 {isRawCount ? (
                   <span className="text-xs text-neutral-600 font-medium">
@@ -325,12 +289,12 @@ export default function KPITable({
                     {Math.round(facilityData.percentage)}%
                   </span>
                 )}
-              </div>
+              </button>
             );
           },
           meta: {
             headerClassName:
-              "px-2 py-2 text-center min-w-[70px] w-[70px] bg-slate-50 border-b border-slate-200 align-middle overflow-hidden",
+              "px-2 py-2 text-center min-w-17.5 w-17.5 bg-slate-50 border-b border-slate-200 align-middle overflow-hidden",
             getCellClassName: (row: Row<KPISummary>) => {
               const kpi = row.original;
               const targetVal = kpi.targetValue || 80;
@@ -353,8 +317,8 @@ export default function KPITable({
               // Hover effects to darken slightly
               return `p-0 text-center cursor-pointer transition-colors border-r border-neutral-100/50 ${
                 fPass
-                  ? "bg-success-50 hover:bg-success-100 text-success-900 text-opacity-90"
-                  : "bg-error-50 hover:bg-error-100 text-error-900 text-opacity-90"
+                  ? "bg-success-50 hover:bg-success-100 text-success-900/90"
+                  : "bg-error-50 hover:bg-error-100 text-error-900/90"
               }`;
             },
           },
@@ -362,16 +326,14 @@ export default function KPITable({
       ),
       columnHelper.accessor("targetValue", {
         id: "target",
-        header: () => (
-          <div className="flex flex-col items-center leading-tight">
-            <span>Target</span>
-            <span className="text-[9px] font-normal text-warning-600">
-              (6 เดือน)
-            </span>
-          </div>
-        ),
+        header: "Target",
         cell: (info) => (
-          <span className="text-xs">≥{info.getValue() || 80}</span>
+          <span className="text-xs">
+            ≥{info.getValue() || 80}
+            <span className="block text-[9px] font-normal text-warning-600/80">
+              ({info.row.original.targetMonths ?? 12} เดือน)
+            </span>
+          </span>
         ),
         meta: {
           // DISTINCT TARGET COLUMN -- SOLID BG + WALL EFFECT
@@ -443,10 +405,10 @@ export default function KPITable({
                   className="h-auto hover:bg-transparent border-b border-slate-200"
                 >
                   {headerGroup.headers.map((header) => {
-                    const meta: any = header.column.columnDef.meta || {};
-                    const className = meta.getHeaderClassName
+                    const meta = header.column.columnDef.meta;
+                    const className = meta?.getHeaderClassName
                       ? meta.getHeaderClassName()
-                      : meta.headerClassName;
+                      : meta?.headerClassName;
 
                     return (
                       <TableHead
@@ -475,15 +437,15 @@ export default function KPITable({
                   className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors"
                 >
                   {row.getVisibleCells().map((cell) => {
-                    const meta: any = cell.column.columnDef.meta || {};
-                    const className = meta.getCellClassName
+                    const meta = cell.column.columnDef.meta;
+                    const className = meta?.getCellClassName
                       ? meta.getCellClassName(row)
-                      : meta.className;
+                      : meta?.className;
 
                     return (
                       <TableCell
                         key={cell.id}
-                        className={cn("p-0 h-[40px]", className)}
+                        className={cn("p-0 h-10", className)}
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
