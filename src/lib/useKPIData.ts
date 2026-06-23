@@ -174,14 +174,22 @@ export function useKPIData(): UseKPIDataResult {
         // Process Batch Data
         let batchData: Record<string, any[]> = {};
         let currentQuarter = 0;
-        const quarterlyKPIs = new Set<string>();
+        // Single source of truth for per-KPI config from meta.kpi_config.
+        // GAS parses the kpi_master sheet; here we just trust its clean output.
+        const kpiCfgMap = new Map<string, { isQuarterly: boolean; targetMonths: number | null }>();
 
         if (batchJson.data && batchJson.meta) {
           batchData = batchJson.data;
           currentQuarter = batchJson.meta.current_quarter || 0;
           if (Array.isArray(batchJson.meta.kpi_config)) {
             batchJson.meta.kpi_config.forEach((k: any) => {
-              if (k.isQuarterly) quarterlyKPIs.add(k.table);
+              kpiCfgMap.set(k.table, {
+                isQuarterly: !!k.isQuarterly,
+                targetMonths:
+                  typeof k.target_months === "number" && k.target_months > 0
+                    ? k.target_months
+                    : null,
+              });
             });
           }
         } else {
@@ -195,9 +203,13 @@ export function useKPIData(): UseKPIDataResult {
         const reports = configs.map(config => {
           const rows = batchData[config.table_name] || [];
           const report = processReportData(rows, config.table_name, config.title);
+          const cfg = kpiCfgMap.get(config.table_name);
+          const isQuarterly = !!cfg?.isQuarterly;
+          // target_months override ?? derive from quarter (quarterly) or 12 (annual)
+          report.targetMonths = cfg?.targetMonths ?? (isQuarterly ? currentQuarter * 3 : 12);
           report.targetValue = config.target;
           report.link = config.link;
-          report.period = quarterlyKPIs.has(config.table_name) ? quarterLabel : annualLabel;
+          report.period = isQuarterly ? quarterLabel : annualLabel;
           return report;
         });
 

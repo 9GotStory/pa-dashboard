@@ -1,5 +1,5 @@
-import React from "react";
 import { KPISummary } from "@/lib/types";
+import { computeAggregate } from "@/lib/kpi-utils";
 import { Target, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface KPISummaryStatsProps {
@@ -13,34 +13,9 @@ export default function KPISummaryStats({
 }: KPISummaryStatsProps) {
   const total = data.length;
 
-  // Calculate Passed/Failed based on Selected Facilities
+  // Calculate Passed/Failed based on Selected Facilities (shared logic)
   const passed = data.filter((kpi) => {
-    let percentage = kpi.percentage;
-
-    // If specific facilities selected, calculate aggregate percentage for them
-    if (selectedFacilities.length > 0) {
-      if (kpi.totalTarget === 0) {
-        // It's a raw count KPI, not a percentage one (like NCD screening)
-        // Just see if total result > target (which is basically 0 or something else)
-        let selResult = 0;
-        selectedFacilities.forEach((f) => {
-          if (kpi.breakdown && kpi.breakdown[f])
-            selResult += kpi.breakdown[f].result;
-        });
-        percentage = selResult > 0 ? 100 : 0; // Fake pass if any result
-      } else {
-        let selTarget = 0;
-        let selResult = 0;
-        selectedFacilities.forEach((f) => {
-          if (kpi.breakdown && kpi.breakdown[f]) {
-            selTarget += kpi.breakdown[f].target;
-            selResult += kpi.breakdown[f].result;
-          }
-        });
-        percentage = selTarget > 0 ? (selResult / selTarget) * 100 : 0;
-      }
-    }
-
+    const { percentage } = computeAggregate(kpi, selectedFacilities);
     const target = kpi.targetValue || 80;
     return percentage >= target;
   }).length;

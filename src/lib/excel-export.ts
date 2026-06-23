@@ -27,7 +27,7 @@ export async function exportToExcel(
   const columns = [
     { header: '#', key: 'index', width: 5 },
     { header: 'ตัวชี้วัด (Indicator)', key: 'title', width: 40 },
-    { header: 'Target (6 เดือน)', key: 'target', width: 15 },
+    { header: 'Target', key: 'target', width: 18 },
     { header: 'Result (%)', key: 'result', width: 15 },
   ];
 
@@ -63,10 +63,10 @@ export async function exportToExcel(
     const isRawCount = kpi.totalTarget === 0;
     const targetVal = kpi.targetValue || 80;
     
-    const rowValues: any = {
+    const rowValues: Record<string, string | number> = {
       index: index + 1,
       title: kpi.title,
-      target: `≥ ${targetVal}`,
+      target: `≥ ${targetVal} (${kpi.targetMonths ?? 12} เดือน)`,
       result: isRawCount ? kpi.totalResult : parseFloat(kpi.percentage.toFixed(2)),
     };
 
