@@ -39,7 +39,7 @@ export type KPIReportType =
   | 's_dm_screen'
   | 's_ht_screen'
   | 's_ncd_screen_repleate1'
-  | 's_ncd_screen_repleate2'
+  | 's_ht_screen_follow'
   | 's_dental_0_5_cavity_free'
   | 's_kpi_dental28'
   | 's_kpi_dental33';

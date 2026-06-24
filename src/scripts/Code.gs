@@ -24,8 +24,8 @@ const CONFIG = {
       isQuarterly: true,
     },
     {
-      table: "s_ncd_screen_repleate2",
-      sheet: "s_ncd_screen_repleate2",
+      table: "s_ht_screen_follow",
+      sheet: "s_ht_screen_follow",
       isQuarterly: true,
     },
     { table: "s_dental_0_5_cavity_free", sheet: "s_dental_0_5_cavity_free" },
@@ -868,11 +868,14 @@ function getQuarterSum(item, prefix, currentQuarter) {
   const q = currentQuarter || CONFIG.CURRENT_QUARTER;
   for (let i = 1; i <= q; i++) {
     // Supported column naming patterns observed in MOPH data:
-    //   target1, target2, target3, target4   (most common)
-    //   targetq1, targetq2, targetq3, targetq4
+    //   target1, target2, target3, target4   (most common — s_kpi_childdev2 etc.)
+    //   targetq1, targetq2, targetq3, targetq4 (s_ncd_screen_repleate1 etc.)
+    //   t_q1, r_q1, ...                       (s_ht_screen_follow — newer convention)
+    // The 3rd pattern uses the prefix's first letter + '_q' + i.
     const v1 = item[prefix + i];
     const v2 = item[prefix + "q" + i];
-    sum += Number(v1 || v2 || 0);
+    const v3 = item[prefix.charAt(0) + "_q" + i];
+    sum += Number(v1 || v2 || v3 || 0);
   }
   return sum;
 }
