@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import {
   useReactTable,
   getCoreRowModel,
@@ -17,6 +17,7 @@ import {
   CalendarClock,
   FileSpreadsheet,
 } from "lucide-react";
+import { toast } from "sonner";
 import {
   Table,
   TableBody,
@@ -28,7 +29,11 @@ import {
 import { cn } from "@/lib/utils";
 
 // Type-safe meta for column definitions (replaces `any` casts).
+// TValue is required by @tanstack/react-table v8's ColumnMeta signature
+// (v9 adds TFeatures as a 3rd param). We don't use it here, but it must
+// appear in the augmentation to match the library's interface arity.
 declare module "@tanstack/react-table" {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   interface ColumnMeta<TData, TValue> {
     className?: string;
     headerClassName?: string;
@@ -59,14 +64,12 @@ export default function KPITable({
     facilityName: string;
     data: MophReportData[];
     targetValue: number;
-    tableName: string;
   }>({
     isOpen: false,
     title: "",
     facilityName: "",
     data: [],
     targetValue: 0,
-    tableName: "",
   });
 
   // Extract facility keys and sort by Tambon ID
@@ -101,22 +104,24 @@ export default function KPITable({
     return facilityKeys.filter((key) => selectedFacilities.includes(key));
   }, [facilityKeys, selectedFacilities]);
 
-  const openDrillDown = (kpi: KPISummary, facilityKey: string) => {
-    const facilityRawData = kpi.data.filter(
-      (d) => d.hospcode === facilityKey || d.areacode === facilityKey,
-    );
-    const facilityInfo = hospitalMap[facilityKey];
-    const facilityName = facilityInfo ? facilityInfo.name : facilityKey;
+  const openDrillDown = useCallback(
+    (kpi: KPISummary, facilityKey: string) => {
+      const facilityRawData = kpi.data.filter(
+        (d) => d.hospcode === facilityKey || d.areacode === facilityKey,
+      );
+      const facilityInfo = hospitalMap[facilityKey];
+      const facilityName = facilityInfo ? facilityInfo.name : facilityKey;
 
-    setModalState({
-      isOpen: true,
-      title: kpi.title,
-      facilityName: facilityName,
-      data: facilityRawData,
-      targetValue: kpi.targetValue || 80,
-      tableName: kpi.tableName,
-    });
-  };
+      setModalState({
+        isOpen: true,
+        title: kpi.title,
+        facilityName: facilityName,
+        data: facilityRawData,
+        targetValue: kpi.targetValue || 80,
+      });
+    },
+    [hospitalMap],
+  );
 
   // Helper to format percentage
   const formatPct = (val: number) => val.toFixed(2);
@@ -331,7 +336,7 @@ export default function KPITable({
           <span className="text-xs">
             ≥{info.getValue() || 80}
             <span className="block text-[9px] font-normal text-warning-600/80">
-              ({info.row.original.targetMonths ?? 12} เดือน)
+              ({info.row.original.targetMonths} เดือน)
             </span>
           </span>
         ),
@@ -344,7 +349,7 @@ export default function KPITable({
         },
       }),
     ];
-  }, [displayConfigKeys, selectedFacilities, hospitalMap]);
+  }, [displayConfigKeys, selectedFacilities, hospitalMap, openDrillDown]);
 
   const table = useReactTable({
     data,
@@ -360,7 +365,7 @@ export default function KPITable({
       await exportToExcel(data, hospitalMap, facilityKeys);
     } catch (err) {
       console.error("Export failed", err);
-      alert("Export failed. Please try again.");
+      toast.error("Export failed. Please try again.");
     } finally {
       setIsExporting(false);
     }
@@ -468,7 +473,6 @@ export default function KPITable({
         facilityName={modalState.facilityName}
         data={modalState.data}
         targetValue={modalState.targetValue}
-        tableName={modalState.tableName}
         tambonMap={tambonMap}
       />
     </>

@@ -1,23 +1,25 @@
+// Run with: node --experimental-vm-modules src/scripts/verify-all.js
+// or just: node src/scripts/verify-all.js (Node 20+ supports .js ESM via package "type": "module",
+// but this repo uses CommonJS package.json, so we use dynamic import for `fs` not needed here).
 
-const fs = require('fs');
-
-// Config
+// Config — TABLE_NAMES must mirror Code.gs CONFIG.KPIS (source of truth).
+// See memory: project_table_name_source_of_truth.md.
 const PROVINCE = '54';
 const DISTRICT_PREFIX = '5406'; // Song
 const TABLE_NAMES = [
   's_kpi_anc12',
   's_anc5',
   's_kpi_food',
-  's_kpi_child_specialpp',
+  's_childdev_specialpp',
   's_kpi_childdev2',
-  's_aged9_w',
+  's_aged9',
   's_dm_screen',
   's_ht_screen',
   's_ncd_screen_repleate1',
   's_ncd_screen_repleate2',
   's_dental_0_5_cavity_free',
   's_kpi_dental28',
-  's_dental_65'
+  's_kpi_dental33',
 ];
 
 async function fetchData(tableName) {
@@ -54,7 +56,8 @@ async function verifyAll() {
     // Filter
     const data = rawData.filter(d => d.areacode && String(d.areacode).startsWith(DISTRICT_PREFIX));
 
-    // Logic Mirroring moph-api.ts
+    // Logic mirroring calculateKPIOnServer in src/scripts/Code.gs.
+    // (src/lib/moph-api.ts has been removed; Code.gs is the source of truth.)
     // 1. Dental 0-5 Swap
     let targetCols = ['target'];
     let resultCols = ['result'];
@@ -64,11 +67,11 @@ async function verifyAll() {
        targetCols = ['b'];
        resultCols = ['a'];
     } 
-    // Dental 65 and others - default target/result.
-    // Note: s_dental_65 has no target, so it will be 0.
+    // Dental 33 and others - default target/result.
+    // Note: s_kpi_dental33 has no target, so it will be 0.
     
-    // 2. Exception: s_aged9_w (No sum quarters)
-    const isNoQuarterSum = ['s_aged9_w'].includes(tableName);
+    // 2. Exception: s_aged9 (No sum quarters)
+    const isNoQuarterSum = ['s_aged9'].includes(tableName);
 
     let totalTarget = 0;
     let totalResult = 0;

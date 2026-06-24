@@ -217,9 +217,13 @@ function readSettings() {
 }
 
 /**
- * Read `kpi_master` into {table_name: {isQuarterly, targetMonths}} (cached ~60s).
+ * Read `kpi_master` into {table_name: {isQuarterly}} (cached ~60s).
  * Single source of truth for per-KPI config. Missing column/cell → null
  * (consumer falls back to CONFIG.KPIS).
+ *
+ * The `target_months` field was removed — the frontend now derives the target
+ * period directly from `is_quarterly` + `current_quarter` so the period badge
+ * and the Target column always show the same N months.
  */
 function readKpiMasterConfig() {
   const cache = CacheService.getScriptCache();
@@ -261,7 +265,6 @@ function readKpiMasterConfig() {
       });
       const idxTable = headers.indexOf("table_name");
       const idxQuarterly = headers.indexOf("is_quarterly");
-      const idxMonths = headers.indexOf("target_months");
       if (idxTable < 0) return map;
       for (let i = 1; i < values.length; i++) {
         const row = values[i];
@@ -269,7 +272,6 @@ function readKpiMasterConfig() {
         if (!table) continue;
         map[table] = {
           isQuarterly: idxQuarterly >= 0 ? parseBool(row[idxQuarterly]) : null,
-          targetMonths: idxMonths >= 0 ? parsePositiveInt(row[idxMonths]) : null,
         };
       }
     } catch (err) {
@@ -633,8 +635,10 @@ function doGet(e) {
     });
 
     // Merge CONFIG.KPIS with sheet overrides so every KPI is represented and
-    // the frontend gets clean {table, sheet, isQuarterly, target_months} values.
+    // the frontend gets clean {table, sheet, isQuarterly} values.
     // Including `sheet` here lets the sync page avoid duplicating CONFIG.KPIS.
+    // The frontend derives target_months from isQuarterly + current_quarter
+    // (annual=12, quarterly=currentQuarter×3) so it's not emitted here.
     const kpiConfigOut = CONFIG.KPIS.map((kpi) => {
       const sheetCfg = kpiCfg[kpi.table] || {};
       const isQuarterly =
@@ -645,7 +649,6 @@ function doGet(e) {
         table: kpi.table,
         sheet: kpi.sheet,
         isQuarterly: isQuarterly,
-        target_months: sheetCfg.targetMonths != null ? sheetCfg.targetMonths : null,
       };
     });
 

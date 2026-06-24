@@ -17,7 +17,6 @@ export default function Home() {
     data,
     hospitalMap,
     tambonMap,
-    kpiMasterList,
     isLoading,
     error,
     lastUpdated,
@@ -32,6 +31,21 @@ export default function Home() {
     if (selectedKPIs.length === 0) return data;
     return data.filter((kpi) => selectedKPIs.includes(kpi.tableName));
   }, [data, selectedKPIs]);
+
+  // Derive the KPI list for the filter from the loaded reports. useKPIData
+  // used to expose kpiMasterList but the state was never populated (always []),
+  // so this derivation has always been the effective path.
+  // NOTE: must run before any early return — React Hooks order rule.
+  const dynamicKPIList: KPIMaster[] = useMemo(
+    () =>
+      data.map((d) => ({
+        table_name: d.tableName,
+        title: d.title,
+        target: d.targetValue,
+        order: 0,
+      })),
+    [data],
+  );
 
   if (isLoading) {
     return (
@@ -60,18 +74,6 @@ export default function Home() {
       </main>
     );
   }
-
-  // Create a fallback KPI list if kpiMasterList is not available directly from useKPIData yet
-  // Extracting from 'data' is a safe fallback.
-  const dynamicKPIList: KPIMaster[] =
-    kpiMasterList && kpiMasterList.length > 0
-      ? kpiMasterList
-      : data.map((d) => ({
-          table_name: d.tableName,
-          title: d.title,
-          target: d.targetValue,
-          order: 0,
-        }));
 
   return (
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">

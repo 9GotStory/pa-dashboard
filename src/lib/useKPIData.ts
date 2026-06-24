@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { KPISummary, KPIMaster, KPIReportType } from './types';
+import { KPISummary, KPIMaster, KPIReportType, MophReportData } from './types';
 import { calculateKPIValue } from './kpi-utils';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H/exec';
@@ -14,12 +14,11 @@ interface HospitalDetail {
 
 export interface UseKPIDataResult {
   data: KPISummary[];
-  kpiMasterList: KPIMaster[];
   hospitalMap: Record<string, HospitalDetail>;
   tambonMap: Record<string, string>;
   isLoading: boolean;
   error: string | null;
-  lastUpdated: string | null;
+  lastUpdated: string;
 }
 
 async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
@@ -36,23 +35,44 @@ async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
   throw new Error('Retries failed');
 }
 
-function processReportData(allData: any[], tableName: string, title: string): KPISummary {
+type KpiConfigEntry = {
+  isQuarterly: boolean;
+};
+
+type BatchMeta = {
+  current_quarter?: number;
+  kpi_config?: Array<{
+    table: string;
+    sheet?: string;
+    isQuarterly?: boolean;
+  }>;
+};
+
+type HospitalRow = Record<string, unknown>;
+type TambonRow = { id?: unknown; name_th?: unknown };
+type KpiMasterRow = Record<string, unknown>;
+
+function processReportData(
+  allData: MophReportData[],
+  tableName: string,
+  title: string,
+): KPISummary {
   if (!Array.isArray(allData)) {
-    return { title, tableName: tableName as KPIReportType, totalTarget: 0, totalResult: 0, percentage: 0, data: [], breakdown: {}, targetValue: 0 };
+    return { title, tableName: tableName as KPIReportType, totalTarget: 0, totalResult: 0, percentage: 0, data: [], breakdown: {}, targetValue: 0, targetMonths: 12 };
   }
 
   const filteredData = allData.filter(item =>
     item.areacode && String(item.areacode).startsWith(TARGET_AREA_PREFIX)
   );
 
-  const totalTarget = filteredData.reduce((sum, item) => sum + calculateKPIValue(item, tableName).t, 0);
-  const totalResult = filteredData.reduce((sum, item) => sum + calculateKPIValue(item, tableName).r, 0);
+  const totalTarget = filteredData.reduce((sum, item) => sum + calculateKPIValue(item).t, 0);
+  const totalResult = filteredData.reduce((sum, item) => sum + calculateKPIValue(item).r, 0);
   const percentage = totalTarget > 0 ? (totalResult / totalTarget) * 100 : 0;
 
   const breakdown: Record<string, { target: number; result: number; percentage: number }> = {};
   filteredData.forEach(item => {
     const key = item.hospcode || item.areacode;
-    const { t, r } = calculateKPIValue(item, tableName);
+    const { t, r } = calculateKPIValue(item);
     if (key) {
       if (!breakdown[key]) breakdown[key] = { target: 0, result: 0, percentage: 0 };
       breakdown[key].target += t;
@@ -73,7 +93,8 @@ function processReportData(allData: any[], tableName: string, title: string): KP
     percentage: parseFloat(percentage.toFixed(2)),
     data: filteredData,
     breakdown,
-    targetValue: 0
+    targetValue: 0,
+    targetMonths: 12,
   };
 }
 
@@ -81,7 +102,6 @@ const CACHE_KEY = 'PA_DASHBOARD_CACHE_V1';
 
 export function useKPIData(): UseKPIDataResult {
   const [data, setData] = useState<KPISummary[]>([]);
-  const [kpiMasterList, setKpiMasterList] = useState<KPIMaster[]>([]);
   const [hospitalMap, setHospitalMap] = useState<Record<string, HospitalDetail>>({});
   const [tambonMap, setTambonMap] = useState<Record<string, string>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -89,15 +109,28 @@ export function useKPIData(): UseKPIDataResult {
   const [lastUpdated, setLastUpdated] = useState('');
 
   useEffect(() => {
+    let isMounted = true;
+    // Track cache hits locally so the catch block knows whether the user is
+    // already seeing cached data. Reading React state inside the async catch
+    // would always see the initial empty array (closure captures mount-time
+    // value), causing setError to fire even when cache is on screen.
+    let hadCachedData = false;
+
     // 1. Try to load from LocalStorage (Instant Load)
     const loadFromCache = () => {
       try {
         const cached = localStorage.getItem(CACHE_KEY);
         if (cached) {
-          const parsed = JSON.parse(cached);
+          const parsed = JSON.parse(cached) as {
+            data?: KPISummary[];
+            hospitalMap?: Record<string, HospitalDetail>;
+            tambonMap?: Record<string, string>;
+            lastUpdated?: string;
+          };
           // Valid cache check (optional: check timestamp expiry)
           if (parsed.data && Array.isArray(parsed.data)) {
             console.log('Using cached data');
+            hadCachedData = true;
             setData(parsed.data);
             setHospitalMap(parsed.hospitalMap || {});
             setTambonMap(parsed.tambonMap || {});
@@ -116,7 +149,7 @@ export function useKPIData(): UseKPIDataResult {
     async function fetchAllData() {
       // If we didn't have cache, show loading. If we did, keep showing cache while fetching.
       // We don't set isLoading(true) here if we already have data, to prevent flash.
-      
+
       setError(null);
 
       try {
@@ -128,19 +161,19 @@ export function useKPIData(): UseKPIDataResult {
           fetchWithRetry(`${API_URL}?sheet=BATCH_ALL`)
         ]);
 
-        const kpiMasterData = await kpiMasterRes.json();
-        const hospitalsData = await hospitalsRes.json();
-        const tambonData = await tambonRes.json();
+        const kpiMasterData: KpiMasterRow[] = await kpiMasterRes.json();
+        const hospitalsData: HospitalRow[] = await hospitalsRes.json();
+        const tambonData: TambonRow[] = await tambonRes.json();
         const batchJson = await batchRes.json();
 
         // Process KPI Master
         const configs: KPIMaster[] = (Array.isArray(kpiMasterData) ? kpiMasterData : [])
-          .map((row: any) => ({
-            table_name: row.table_name || '',
-            title: row.title || 'Unknown KPI',
-            target: Number(row.target || 0),
-            order: Number(row.order || 999),
-            link: row.link || undefined
+          .map((row: KpiMasterRow) => ({
+            table_name: String(row.table_name ?? ''),
+            title: String(row.title ?? 'Unknown KPI'),
+            target: Number(row.target ?? 0),
+            order: Number(row.order ?? 999),
+            link: row.link ? String(row.link) : undefined,
           }))
           .filter((k: KPIMaster) => k.table_name)
           .sort((a: KPIMaster, b: KPIMaster) => a.order - b.order);
@@ -148,7 +181,7 @@ export function useKPIData(): UseKPIDataResult {
         // Process Hospital Map
         const hMap: Record<string, HospitalDetail> = {};
         if (Array.isArray(hospitalsData)) {
-          hospitalsData.forEach((row: any) => {
+          hospitalsData.forEach((row: HospitalRow) => {
             const keys = Object.keys(row);
             if (keys.length >= 2) {
               const code = String(row[keys[0]]).trim();
@@ -163,32 +196,29 @@ export function useKPIData(): UseKPIDataResult {
         // Process Tambon Map
         const tMap: Record<string, string> = {};
         if (Array.isArray(tambonData)) {
-          tambonData.forEach((item: any) => {
+          tambonData.forEach((item: TambonRow) => {
             if (item.id && item.name_th) {
-              tMap[String(item.id)] = item.name_th;
+              tMap[String(item.id)] = String(item.name_th);
             }
           });
         }
         setTambonMap(tMap);
 
         // Process Batch Data
-        let batchData: Record<string, any[]> = {};
+        let batchData: Record<string, MophReportData[]> = {};
         let currentQuarter = 0;
         // Single source of truth for per-KPI config from meta.kpi_config.
         // GAS parses the kpi_master sheet; here we just trust its clean output.
-        const kpiCfgMap = new Map<string, { isQuarterly: boolean; targetMonths: number | null }>();
+        const kpiCfgMap = new Map<string, KpiConfigEntry>();
 
         if (batchJson.data && batchJson.meta) {
           batchData = batchJson.data;
-          currentQuarter = batchJson.meta.current_quarter || 0;
-          if (Array.isArray(batchJson.meta.kpi_config)) {
-            batchJson.meta.kpi_config.forEach((k: any) => {
+          const meta = batchJson.meta as BatchMeta;
+          currentQuarter = meta.current_quarter ?? 0;
+          if (Array.isArray(meta.kpi_config)) {
+            meta.kpi_config.forEach((k) => {
               kpiCfgMap.set(k.table, {
                 isQuarterly: !!k.isQuarterly,
-                targetMonths:
-                  typeof k.target_months === "number" && k.target_months > 0
-                    ? k.target_months
-                    : null,
               });
             });
           }
@@ -196,8 +226,8 @@ export function useKPIData(): UseKPIDataResult {
           batchData = batchJson;
         }
 
-        const quarterLabel = currentQuarter > 0 ? `สะสม ${currentQuarter * 3} เดือน (Q${currentQuarter})` : "รายไตรมาส";
-        const annualLabel = "รายปี";
+        const quarterLabel = currentQuarter > 0 ? `สะสม ${currentQuarter * 3} เดือน (Q${currentQuarter})` : 'รายไตรมาส';
+        const annualLabel = 'รายปี';
 
         // Map configs to reports
         const reports = configs.map(config => {
@@ -205,21 +235,23 @@ export function useKPIData(): UseKPIDataResult {
           const report = processReportData(rows, config.table_name, config.title);
           const cfg = kpiCfgMap.get(config.table_name);
           const isQuarterly = !!cfg?.isQuarterly;
-          // target_months override ?? derive from quarter (quarterly) or 12 (annual)
-          report.targetMonths = cfg?.targetMonths ?? (isQuarterly ? currentQuarter * 3 : 12);
+          // Derive target_months directly from the data accumulation period:
+          //   Annual KPI    → 12
+          //   Quarterly KPI → currentQuarter × 3 (9 at Q3, 12 at Q4)
+          // The badge ("สะสม N เดือน") and Target column ("≥X (N เดือน)")
+          // share the same N, so pass/fail coloring stays meaningful.
+          report.targetMonths = isQuarterly ? currentQuarter * 3 : 12;
           report.targetValue = config.target;
           report.link = config.link;
           report.period = isQuarterly ? quarterLabel : annualLabel;
           return report;
         });
 
-        setData(reports);
-
         // Calculate last updated date
         let maxDateStr = '';
         reports.forEach(r => {
           if (r.data && r.data.length > 0) {
-            r.data.forEach((d: any) => {
+            r.data.forEach((d: MophReportData) => {
               if (d.date_com && d.date_com > maxDateStr) maxDateStr = d.date_com;
             });
           }
@@ -242,8 +274,14 @@ export function useKPIData(): UseKPIDataResult {
             hour: '2-digit',
             minute: '2-digit',
           }) + ' น.';
-          setLastUpdated(formattedLastUpdated);
         }
+
+        // Bail out if the component unmounted mid-fetch so we don't
+        // write state onto an unmounted component (React 18 warns).
+        if (!isMounted) return;
+
+        setData(reports);
+        setLastUpdated(formattedLastUpdated);
 
         // Cache the fresh data
         localStorage.setItem(CACHE_KEY, JSON.stringify({
@@ -256,21 +294,25 @@ export function useKPIData(): UseKPIDataResult {
 
       } catch (err) {
         console.error('Error fetching KPI data:', err);
-        // Only set error if we don't have cached data
-        if (data.length === 0) {
+        // Only surface the error to UI if the user has nothing to look at.
+        // If cache was loaded synchronously above, keep showing it (SWR-style).
+        if (!hadCachedData) {
            setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
         }
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
     }
 
     fetchAllData();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   return {
     data,
-    kpiMasterList,
     hospitalMap,
     tambonMap,
     isLoading,

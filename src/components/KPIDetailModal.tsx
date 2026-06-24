@@ -1,4 +1,3 @@
-import React from 'react';
 import { MophReportData } from '@/lib/types';
 import { calculateKPIValue } from '@/lib/kpi-utils';
 
@@ -9,20 +8,18 @@ interface KPIDetailModalProps {
   facilityName: string;
   data: MophReportData[];
   targetValue: number;
-  tableName: string;
   tambonMap?: Record<string, string>;
 }
 
-export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
+export function KPIDetailModal({
   isOpen,
   onClose,
   title,
   facilityName,
   data,
   targetValue,
-  tableName,
   tambonMap = {}
-}) => {
+}: KPIDetailModalProps) {
   if (!isOpen) return null;
 
   // Helper to format numbers with commas
@@ -39,8 +36,8 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
      return tambonMap[tambonId] || '';
   };
 
-  const totalT = data.reduce((acc, item) => acc + calculateKPIValue(item, tableName).t, 0);
-  const totalR = data.reduce((acc, item) => acc + calculateKPIValue(item, tableName).r, 0);
+  const totalT = data.reduce((acc, item) => acc + calculateKPIValue(item).t, 0);
+  const totalR = data.reduce((acc, item) => acc + calculateKPIValue(item).r, 0);
 
   // Get Data Date
   const lastUpdated = data.length > 0 && data[0].date_com ? data[0].date_com : '';
@@ -67,14 +64,14 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
       }
       
       // Explicitly request ONLY date parts
-      return d.toLocaleDateString('th-TH', { 
-        year: 'numeric', 
-        month: 'long', 
+      return d.toLocaleDateString('th-TH', {
+        year: 'numeric',
+        month: 'long',
         day: 'numeric',
         hour: '2-digit',
         minute: '2-digit'
       });
-    } catch (e) {
+    } catch {
       return '';
     }
   };
@@ -127,7 +124,7 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
             </thead>
             <tbody className="divide-y divide-neutral-100">
               {data.map((item, idx) => {
-                const { t, r } = calculateKPIValue(item, tableName);
+                const { t, r } = calculateKPIValue(item);
 
                 const pct = calcPct(t, r);
                 const isPass = pct >= targetValue;
@@ -182,4 +179,4 @@ export const KPIDetailModal: React.FC<KPIDetailModalProps> = ({
       </div>
     </div>
   );
-};
+}

@@ -9,8 +9,6 @@ const COLORS = {
   PASS_TEXT: 'FF047857', // emerald-700
   FAIL_BG: 'FFFFE4E6',   // rose-100
   FAIL_TEXT: 'FFBE123C', // rose-700
-  TARGET_BG: 'FFFFFBEB', // amber-50
-  TARGET_TEXT: 'FF78350F', // amber-900
   BORDER: 'FFCBD5E1',    // slate-300
 };
 
@@ -66,7 +64,7 @@ export async function exportToExcel(
     const rowValues: Record<string, string | number> = {
       index: index + 1,
       title: kpi.title,
-      target: `≥ ${targetVal} (${kpi.targetMonths ?? 12} เดือน)`,
+      target: `≥ ${targetVal} (${kpi.targetMonths} เดือน)`,
       result: isRawCount ? kpi.totalResult : parseFloat(kpi.percentage.toFixed(2)),
     };
 

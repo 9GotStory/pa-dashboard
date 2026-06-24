@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
-import { KPISummary } from "@/lib/types";
+import { useState } from "react";
+import { KPISummary, MophReportData } from "@/lib/types";
 import { KPICard } from "./KPICard";
 import { KPIDetailModal } from "./KPIDetailModal";
 
@@ -23,32 +23,19 @@ export default function KPICardList({
     return hospitalMap[code]?.name || code;
   };
 
-  // Filtered Data Logic
-  // We don't filter the *list of KPIs* (they remain the same).
-  // We filter the *stats inside each KPI*.
-  // But KPICard currently takes the whole `kpi` object.
-  // We need to pass a `displayStat` prop to override if needed.
-
-  // Sorted Facility List for Dropdown (by code or name)
-  const facilities = Object.entries(hospitalMap).sort((a, b) =>
-    a[1].name.localeCompare(b[1].name),
-  );
-
   // Modal State
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     title: string;
     facilityName: string;
-    data: any[];
+    data: MophReportData[];
     targetValue: number;
-    tableName: string;
   }>({
     isOpen: false,
     title: "",
     facilityName: "",
     data: [],
     targetValue: 0,
-    tableName: "",
   });
 
   const openDrillDown = (kpi: KPISummary) => {
@@ -73,7 +60,6 @@ export default function KPICardList({
       facilityName: modalTitle,
       data: modalData,
       targetValue: kpi.targetValue || 80,
-      tableName: kpi.tableName,
     });
   };
 
@@ -98,7 +84,6 @@ export default function KPICardList({
         facilityName={modalState.facilityName}
         data={modalState.data}
         targetValue={modalState.targetValue}
-        tableName={modalState.tableName}
         tambonMap={tambonMap}
       />
     </>

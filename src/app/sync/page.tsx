@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback, type ComponentProps } from "react";
+import { toast } from "sonner";
 import {
   Lock,
   RefreshCw,
@@ -25,9 +26,46 @@ interface KpiListItem {
   sheet: string;
 }
 
+interface KpiConfigRaw {
+  table?: unknown;
+  sheet?: unknown;
+}
+
+interface BatchMeta {
+  current_year?: unknown;
+  province_code?: unknown;
+  // GAS emits these as numbers (YYYYMMDDHHmm timestamps), not strings.
+  lastUpdatedMap?: Record<string, number>;
+  kpi_config?: KpiConfigRaw[];
+}
+
+/** Shape returned by GAS doPost — keeps gasJson access type-safe. */
+interface GasPostResponse {
+  status?: 'success' | 'error';
+  message?: string;
+  count?: number;
+}
+
 interface SyncSettings {
   current_year: string;
   province_code: string;
+}
+
+/**
+ * Narrow an unknown catch value to a human-readable message.
+ * Modern TS best practice: catch variables are `unknown`, so we never bind
+ * `any` and we never assume `.message` exists without an instanceof check.
+ */
+function errorMessage(err: unknown, fallback = "Unknown error"): string {
+  if (err instanceof Error) return err.message || fallback;
+  if (typeof err === "string") return err;
+  return fallback;
+}
+
+/** True if err looks like a network/CORS failure (fetch() rejects with TypeError). */
+function isNetworkError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  return err.message === "Failed to fetch" || err.name === "TypeError";
 }
 
 type LogType =
@@ -60,7 +98,7 @@ export default function SyncPage() {
   const [kpiList, setKpiList] = useState<KpiListItem[]>([]);
   const [settings, setSettings] = useState<SyncSettings | null>(null);
   const [selectedKPIs, setSelectedKPIs] = useState<string[]>([]);
-  const [lastUpdatedMap, setLastUpdatedMap] = useState<Record<string, string>>(
+  const [lastUpdatedMap, setLastUpdatedMap] = useState<Record<string, number>>(
     {},
   );
   const [metaError, setMetaError] = useState<string | null>(null);
@@ -69,19 +107,37 @@ export default function SyncPage() {
   // is not overridden when fetchMetadata() refreses after a sync completes.
   const hasInitializedSelection = useRef(false);
 
+  // AbortController for the in-flight sync so navigating away cancels
+  // remaining MOPH fetches + GAS uploads instead of running for ~2 min
+  // against an unmounted component.
+  const syncAbortRef = useRef<AbortController | null>(null);
+
+  useEffect(() => {
+    return () => {
+      syncAbortRef.current?.abort();
+    };
+  }, []);
+
   // Auto-scroll logs
   useEffect(() => {
     logsEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [logs]);
 
-  // Fetch Metadata after login
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMetadata();
-    }
-  }, [isAuthenticated]);
+  const addLog = useCallback((msg: string, type: LogType = "info") => {
+    setLogs((prev) => [
+      ...prev,
+      {
+        timestamp: new Date().toLocaleTimeString(),
+        message: msg,
+        type: type,
+      },
+    ]);
+  }, []);
 
-  const fetchMetadata = async () => {
+  // Fetch Metadata after login. useCallback keeps the identity stable so the
+  // useEffect below does not refetch on every render — only when auth flips.
+  // Also reused by the "Retry config load" button and post-sync refresh.
+  const fetchMetadata = useCallback(async () => {
     setIsFetchingMeta(true);
     setMetaError(null);
     addLog("Fetching metadata to check last updated status...", "info");
@@ -98,7 +154,7 @@ export default function SyncPage() {
     try {
       const res = await fetch(`${gasUrl}?sheet=BATCH_ALL`);
       if (!res.ok) throw new Error(`BATCH_ALL HTTP ${res.status}`);
-      const json = await res.json();
+      const json: { meta?: BatchMeta } = await res.json();
       const meta = json?.meta;
       if (!meta) {
         throw new Error("BATCH_ALL response is missing meta — deploy the latest Code.gs version.");
@@ -109,14 +165,17 @@ export default function SyncPage() {
         // deployments before the sheet field was added), fall back to using
         // the table name as the sheet name — they are identical for every
         // entry in CONFIG.KPIS today.
-        const list: KpiListItem[] = meta.kpi_config
-          .filter((k: any) => k && k.table)
-          .map((k: any) => ({
-            table: String(k.table),
-            sheet: String(k.sheet || k.table),
-          }));
+        const rawList = meta.kpi_config.filter(
+          (k): k is KpiConfigRaw => Boolean(k && k.table),
+        );
+        const list: KpiListItem[] = rawList.map((k) => ({
+          table: String(k.table),
+          sheet: String(k.sheet ?? k.table),
+        }));
         setKpiList(list);
-        if (list.length > 0 && !meta.kpi_config[0].sheet) {
+        // Warn if ANY KPI is missing `sheet` — checking only the first entry
+        // would miss the case where the rest of the list is stale.
+        if (list.length > 0 && rawList.some((k) => !k.sheet)) {
           addLog(
             "Note: deployed Code.gs is older — using table name as sheet fallback. Deploy latest Code.gs to remove this warning.",
             "warn",
@@ -145,41 +204,39 @@ export default function SyncPage() {
         setLastUpdatedMap(meta.lastUpdatedMap);
       }
       addLog("Metadata loaded successfully.", "success");
-    } catch (e: any) {
+    } catch (e) {
       console.error(e);
-      const msg = e.message || "Unknown error";
+      const msg = errorMessage(e);
       addLog(`Failed to load metadata: ${msg}`, "error");
       setMetaError(msg);
     } finally {
       setIsFetchingMeta(false);
     }
-  };
+  }, [addLog]);
 
-  const addLog = (msg: string, type: LogType = "info") => {
-    setLogs((prev) => [
-      ...prev,
-      {
-        timestamp: new Date().toLocaleTimeString(),
-        message: msg,
-        type: type,
-      },
-    ]);
-  };
+  // Fetch Metadata after login
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchMetadata();
+    }
+  }, [isAuthenticated, fetchMetadata]);
 
-  const checkPin = async (e: React.FormEvent) => {
+  // ComponentProps<'form'>['onSubmit'] is the canonical type for form submit
+  // handlers in React 19 — avoids the deprecated `FormEvent`/`FormEventHandler`.
+  const checkPin: ComponentProps<"form">["onSubmit"] = async (e) => {
     e.preventDefault();
     const serverPin = process.env.NEXT_PUBLIC_SYNC_PIN_CODE;
 
     // Fallback if env not set
     if (!serverPin) {
-      alert("Configuration Error: NEXT_PUBLIC_SYNC_PIN_CODE is not set!");
+      toast.error("Configuration Error: NEXT_PUBLIC_SYNC_PIN_CODE is not set!");
       return;
     }
 
     if (pin === serverPin) {
       setIsAuthenticated(true);
     } else {
-      alert("Incorrect PIN");
+      toast.error("Incorrect PIN");
       setPin("");
     }
   };
@@ -189,18 +246,25 @@ export default function SyncPage() {
 
     const gasUrl = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL;
     if (!gasUrl || gasUrl.includes("YOUR_SCRIPT_ID")) {
-      alert(
+      toast.error(
         "Configuration Error: NEXT_PUBLIC_GAS_SCRIPT_URL is not set or invalid!",
       );
       return;
     }
 
     if (!settings || kpiList.length === 0) {
-      alert(
+      toast.warning(
         "Settings or KPI list not loaded yet. Wait for metadata to finish loading, then try again.",
       );
       return;
     }
+
+    // Cancel any previous in-flight sync (defensive — isSyncing check above
+    // already prevents normal re-entry).
+    syncAbortRef.current?.abort();
+    const abort = new AbortController();
+    syncAbortRef.current = abort;
+    const { signal } = abort;
 
     setIsSyncing(true);
     setProgress(0);
@@ -224,13 +288,14 @@ export default function SyncPage() {
     let failCount = 0;
 
     for (let i = 0; i < kpisToSync.length; i++) {
+      if (signal.aborted) return; // Bail out early if user navigated away
       const kpi = kpisToSync[i];
       const currentProgress = Math.round((i / kpisToSync.length) * 100);
       setProgress(currentProgress);
 
       try {
         // 1. Fetch from MOPH with Retry Logic (to handle CORS/WAF blocks)
-        let fetchRes;
+        let fetchRes: Response | undefined;
         let retries = 3;
         let delayMs = 5000;
 
@@ -239,6 +304,7 @@ export default function SyncPage() {
             fetchRes = await fetch(API_URL, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
+              signal,
               body: JSON.stringify({
                 tableName: kpi.table,
                 year: settings.current_year,
@@ -247,9 +313,11 @@ export default function SyncPage() {
               }),
             });
             break; // Success, exit retry loop
-          } catch (err: any) {
+          } catch (err) {
+            // AbortError — user navigated away, stop retrying immediately
+            if (signal.aborted) return;
             // TypeError usually indicates a network or CORS error
-            if (err.message === "Failed to fetch" || err.name === "TypeError") {
+            if (isNetworkError(err)) {
               retries--;
               if (retries === 0)
                 throw new Error("CORS/Network Error after multiple retries");
@@ -270,10 +338,10 @@ export default function SyncPage() {
         }
 
         const rawText = await fetchRes.text();
-        let data;
+        let data: unknown;
         try {
           data = JSON.parse(rawText);
-        } catch (e) {
+        } catch {
           if (rawText.trim().startsWith("<")) {
             throw new Error(
               "MOPH returned HTML instead of JSON (Possible Cloudflare block?)",
@@ -303,7 +371,7 @@ export default function SyncPage() {
           data: data,
         };
 
-        let gasRes;
+        let gasRes: Response | undefined;
         let gasRetries = 3;
         let gasDelayMs = 3000;
 
@@ -314,14 +382,13 @@ export default function SyncPage() {
               headers: {
                 "Content-Type": "text/plain;charset=utf-8",
               },
+              signal,
               body: JSON.stringify(payload),
             });
             break; // Success, exit retry loop
-          } catch (err: any) {
-            if (
-              err.message === "Failed to fetch" ||
-              err.name === "TypeError"
-            ) {
+          } catch (err) {
+            if (signal.aborted) return;
+            if (isNetworkError(err)) {
               gasRetries--;
               if (gasRetries === 0)
                 throw new Error(
@@ -343,7 +410,7 @@ export default function SyncPage() {
           throw new Error(`GAS HTTP Error: ${gasRes?.status}`);
         }
 
-        const gasJson = await gasRes.json();
+        const gasJson: GasPostResponse = await gasRes.json();
 
         if (gasJson.status === "success") {
           addLog(`Success: ${kpi.table} synced.`, "success");
@@ -351,9 +418,9 @@ export default function SyncPage() {
         } else {
           throw new Error(gasJson.message || "Unknown GAS Error");
         }
-      } catch (error: any) {
+      } catch (error) {
         console.error(error);
-        addLog(`Failed ${kpi.table}: ${error.message}`, "error");
+        addLog(`Failed ${kpi.table}: ${errorMessage(error)}`, "error");
         failCount++;
       }
 
@@ -477,7 +544,7 @@ export default function SyncPage() {
             <p className="text-amber-700 break-words">{metaError}</p>
             <p className="mt-2 text-xs text-amber-600">
               Check that Code.gs is deployed with the latest version, then click
-              "Retry config load".
+              &ldquo;Retry config load&rdquo;.
             </p>
           </div>
         )}
@@ -561,7 +628,7 @@ export default function SyncPage() {
                   } else {
                     dateStrOut = String(lastUpdated);
                   }
-                } catch (e) {
+                } catch {
                   dateStrOut = String(lastUpdated);
                 }
               }

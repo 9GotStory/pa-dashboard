@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState, type MouseEvent } from "react";
 import { KPISummary } from "@/lib/types";
 import { computeAggregate } from "@/lib/kpi-utils";
 import {
@@ -16,12 +16,12 @@ interface KPICardProps {
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
 }
 
-export const KPICard: React.FC<KPICardProps> = ({
+export function KPICard({
   kpi,
   onClick,
   selectedFacilities = [],
   hospitalMap = {},
-}) => {
+}: KPICardProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   // Determine Stats based on Filter (shared with table + summary views)
@@ -37,8 +37,9 @@ export const KPICard: React.FC<KPICardProps> = ({
   const period = kpi.period;
   const isQuarter = period && period.includes("(Q");
 
-  // Facility Ranking Logic (Only when Expanded & All selected or multiple selected)
-  const getTopFacilities = () => {
+  // Facility Ranking Logic — React Compiler (enabled via reactCompiler: true
+  // in next.config.ts) auto-memoizes this computation, so no manual useMemo.
+  const topFacilities = (() => {
     if (!kpi.breakdown) return [];
 
     let entries = Object.entries(kpi.breakdown);
@@ -53,9 +54,9 @@ export const KPICard: React.FC<KPICardProps> = ({
         ...stats,
       }))
       .sort((a, b) => b.percentage - a.percentage); // Sort by % Desc
-  };
+  })();
 
-  const handleExpand = (e: React.MouseEvent) => {
+  const handleExpand = (e: MouseEvent) => {
     e.stopPropagation();
     setIsExpanded(!isExpanded);
   };
@@ -133,7 +134,7 @@ export const KPICard: React.FC<KPICardProps> = ({
             <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wide">
               Target ≥ {targetVal}{" "}
               <span className="normal-case tracking-normal">
-                ({kpi.targetMonths ?? 12} เดือน)
+                ({kpi.targetMonths} เดือน)
               </span>
             </p>
             <div className="text-xs text-neutral-600 mt-0.5 font-medium flex items-center justify-end gap-1">
@@ -178,7 +179,7 @@ export const KPICard: React.FC<KPICardProps> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-neutral-200/50">
-                {getTopFacilities().map((fac) => {
+                {topFacilities.map((fac) => {
                   const facPass = fac.percentage >= targetVal;
                   return (
                     <tr key={fac.code}>
@@ -202,4 +203,4 @@ export const KPICard: React.FC<KPICardProps> = ({
         )}
     </div>
   );
-};
+}

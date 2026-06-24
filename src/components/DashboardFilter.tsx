@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import {
   Filter,
   X,
@@ -79,22 +79,6 @@ export default function DashboardFilter({
       onKPIsChange(selectedKPIs.filter((v) => v !== value));
     } else {
       onKPIsChange([...selectedKPIs, value]);
-    }
-  };
-
-  const handleSelectAllFacilities = () => {
-    if (selectedFacilities.length === facilityOptions.length) {
-      onFacilitiesChange([]);
-    } else {
-      onFacilitiesChange(facilityOptions.map((f) => f.value));
-    }
-  };
-
-  const handleSelectAllKPIs = () => {
-    if (selectedKPIs.length === kpiOptions.length) {
-      onKPIsChange([]);
-    } else {
-      onKPIsChange(kpiOptions.map((k) => k.value));
     }
   };
 

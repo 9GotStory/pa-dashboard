@@ -4,7 +4,7 @@ export interface MophReportData {
   areacode: string;
   date_com: string;
   b_year: string;
-  
+
   // Standard fields
   target?: number | string;
   result?: number | string;
@@ -19,17 +19,23 @@ export interface MophReportData {
   targetq4?: number | string;
   result1q4?: number | string;
 
-  // Catch-all
-  [key: string]: any;
+  // Catch-all for dynamic columns from MOPH API (target_9, result_9, a, b, etc.)
+  // `unknown` forces callers to narrow before use, unlike `any`.
+  [key: string]: unknown;
 }
 
-export type KPIReportType = 
-  | 's_kpi_anc12' 
+/**
+ * Authoritative list of KPI table names. Must match `Code.gs` `CONFIG.KPIS`
+ * (see memory: project_table_name_source_of_truth.md). Code.gs is the source
+ * of truth because it talks to the live MOPH API.
+ */
+export type KPIReportType =
+  | 's_kpi_anc12'
   | 's_anc5'
-  | 's_kpi_food' 
-  | 's_kpi_childdev4'
+  | 's_kpi_food'
+  | 's_childdev_specialpp'
   | 's_kpi_childdev2'
-  | 's_aged9_w'
+  | 's_aged9'
   | 's_dm_screen'
   | 's_ht_screen'
   | 's_ncd_screen_repleate1'
@@ -47,7 +53,7 @@ export interface KPISummary {
   data: MophReportData[];
   breakdown: Record<string, { target: number; result: number; percentage: number }>;
   targetValue: number; // The goal (e.g. 70%)
-  targetMonths?: number; // Resolved target period in months (for "Target (N เดือน)" label)
+  targetMonths: number; // Resolved target period in months — annual=12, quarterly=currentQuarter×3
   link?: string;
   period?: string; // e.g. "Q2"
 }
