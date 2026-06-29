@@ -10,7 +10,7 @@ const TABLE_NAMES = [
   's_kpi_anc12',
   's_anc5',
   's_kpi_food',
-  's_childdev_specialpp',
+  's_kpi_childdev4',
   's_kpi_childdev2',
   's_aged9',
   's_dm_screen',
