@@ -245,7 +245,7 @@ export function useKPIData(): UseKPIDataResult {
           //   1. kpi_master `target_months` override — used as-is for both the
           //      badge ("สะสม 8 เดือน") and Target column. This handles KPIs
           //      whose service window doesn't match quarter boundaries
-          //      (e.g. s_childdev_specialpp: Oct–May = 8 months).
+          //      (e.g. s_kpi_childdev4: Oct–May = 8 months).
           //   2. Otherwise derive from isQuarterly + currentQuarter:
           //        Annual    → 12, "รายปี"
           //        Quarterly → currentQuarter × 3, "สะสม N เดือน (Qn)"

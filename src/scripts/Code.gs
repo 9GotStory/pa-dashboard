@@ -13,7 +13,7 @@ const CONFIG = {
     { table: "s_kpi_anc12", sheet: "s_kpi_anc12" },
     { table: "s_anc5", sheet: "s_anc5" },
     { table: "s_kpi_food", sheet: "s_kpi_food" },
-    { table: "s_childdev_specialpp", sheet: "s_childdev_specialpp" },
+    { table: "s_kpi_childdev4", sheet: "s_kpi_childdev4", isQuarterly: true },
     { table: "s_kpi_childdev2", sheet: "s_kpi_childdev2", isQuarterly: true },
     { table: "s_aged9", sheet: "s_aged9" },
     { table: "s_dm_screen", sheet: "s_dm_screen" },
@@ -234,7 +234,7 @@ function readSettings() {
  *                                 current_quarter from `settings`.
  *
  * Why target_months and effective_quarter are separate: some KPIs (e.g.
- * s_childdev_specialpp, s_kpi_childdev2) have a service window like
+ * s_kpi_childdev4, s_kpi_childdev2) have a service window like
  * Oct–May (8 months) but the data only comes in quarter columns, so the real
  * sum is 9 months (Q1+Q2+Q3) while the reported period is "8 เดือน".
  */
@@ -847,24 +847,14 @@ function calculateKPIOnServer(item, tableName, currentQuarter, kpiCfg) {
     r = Number(item["a"] || 0);
     return { t: t, r: r };
   }
-  // 2. Child Development Special PP (Sum by Age Groups: 9, 18, 30, 42, 60 months)
-  if (tableName === "s_childdev_specialpp") {
-    const ageGroups = [9, 18, 30, 42, 60];
-    ageGroups.forEach((age) => {
-      t += Number(item[`target_${age}`] || 0);
-      r += Number(item[`result_${age}`] || 0);
-    });
-    return { t: t, r: r };
-  }
-
-  // 3. Aged 9 (No Quarter Sum)
+  // 2. Aged 9 (No Quarter Sum)
   if (tableName === "s_aged9") {
     t = Number(item["target"] || 0);
     r = Number(item["result"] || 0);
     return { t: t, r: r };
   }
 
-  // 4. Standard Logic (Auto Quarter Sum)
+  // 3. Standard Logic (Auto Quarter Sum)
   // Try main target first
   const tMain = Number(item["target"] || 0);
   const rMain = Number(item["result"] || 0);
