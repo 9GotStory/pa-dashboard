@@ -55,7 +55,8 @@ function parsePositiveInt(v) {
 // doGet requests. Bump the cache keys below whenever the shape of the
 // cached payload changes (e.g. adding a new setting field).
 const SETTINGS_CACHE_KEY = "settings_v2";
-const KPI_MASTER_CACHE_KEY = "kpi_master_v1";
+// Bumped v1 → v2: added target_months + effective_quarter to the cached shape.
+const KPI_MASTER_CACHE_KEY = "kpi_master_v2";
 const CONFIG_CACHE_TTL_SECONDS = 60;
 
 /**
@@ -217,13 +218,25 @@ function readSettings() {
 }
 
 /**
- * Read `kpi_master` into {table_name: {isQuarterly}} (cached ~60s).
- * Single source of truth for per-KPI config. Missing column/cell → null
- * (consumer falls back to CONFIG.KPIS).
+ * Read `kpi_master` into {table_name: {isQuarterly, targetMonths, effectiveQuarter}}
+ * (cached ~60s). Single source of truth for per-KPI config. Missing column/cell
+ * → null (consumer falls back to CONFIG.KPIS / global settings).
  *
- * The `target_months` field was removed — the frontend now derives the target
- * period directly from `is_quarterly` + `current_quarter` so the period badge
- * and the Target column always show the same N months.
+ * Fields:
+ *   - is_quarterly       (bool):  force quarterly sum for this KPI
+ *   - target_months      (1-12):  overrides the DISPLAY period ("สะสม N เดือน"
+ *                                 badge + Target column). null → derive from
+ *                                 is_quarterly + current_quarter.
+ *   - effective_quarter  (1-4):   overrides how many quarters are SUMMED for
+ *                                 this KPI (independent of target_months, since
+ *                                 MOPH stores quarterly columns — the real sum
+ *                                 is always N×3 months). null → use the global
+ *                                 current_quarter from `settings`.
+ *
+ * Why target_months and effective_quarter are separate: some KPIs (e.g.
+ * s_childdev_specialpp, s_kpi_childdev2) have a service window like
+ * Oct–May (8 months) but the data only comes in quarter columns, so the real
+ * sum is 9 months (Q1+Q2+Q3) while the reported period is "8 เดือน".
  */
 function readKpiMasterConfig() {
   const cache = CacheService.getScriptCache();
@@ -265,13 +278,28 @@ function readKpiMasterConfig() {
       });
       const idxTable = headers.indexOf("table_name");
       const idxQuarterly = headers.indexOf("is_quarterly");
+      const idxTargetMonths = headers.indexOf("target_months");
+      const idxEffQuarter = headers.indexOf("effective_quarter");
       if (idxTable < 0) return map;
       for (let i = 1; i < values.length; i++) {
         const row = values[i];
         const table = String(row[idxTable] || "").trim();
         if (!table) continue;
+        // Reuse validateSetting (the same helper used for the `settings`
+        // sheet) so int-range validation is uniform across both config
+        // sources. Missing column or out-of-range → null (fall back to default).
+        const tmRule = { type: "int", min: 1, max: 12, default: null };
+        const eqRule = { type: "int", min: 1, max: 4, default: null };
         map[table] = {
           isQuarterly: idxQuarterly >= 0 ? parseBool(row[idxQuarterly]) : null,
+          targetMonths:
+            idxTargetMonths >= 0
+              ? validateSetting(row[idxTargetMonths], tmRule).value
+              : null,
+          effectiveQuarter:
+            idxEffQuarter >= 0
+              ? validateSetting(row[idxEffQuarter], eqRule).value
+              : null,
         };
       }
     } catch (err) {
@@ -635,10 +663,11 @@ function doGet(e) {
     });
 
     // Merge CONFIG.KPIS with sheet overrides so every KPI is represented and
-    // the frontend gets clean {table, sheet, isQuarterly} values.
-    // Including `sheet` here lets the sync page avoid duplicating CONFIG.KPIS.
-    // The frontend derives target_months from isQuarterly + current_quarter
-    // (annual=12, quarterly=currentQuarter×3) so it's not emitted here.
+    // the frontend gets clean {table, sheet, isQuarterly, target_months,
+    // effective_quarter} values. Including `sheet` here lets the sync page
+    // avoid duplicating CONFIG.KPIS. target_months (display period) and
+    // effective_quarter (sum override) are null when not set in kpi_master —
+    // the frontend then derives target_months from isQuarterly + current_quarter.
     const kpiConfigOut = CONFIG.KPIS.map((kpi) => {
       const sheetCfg = kpiCfg[kpi.table] || {};
       const isQuarterly =
@@ -649,6 +678,8 @@ function doGet(e) {
         table: kpi.table,
         sheet: kpi.sheet,
         isQuarterly: isQuarterly,
+        target_months: sheetCfg.targetMonths ?? null,
+        effective_quarter: sheetCfg.effectiveQuarter ?? null,
       };
     });
 
@@ -848,15 +879,23 @@ function calculateKPIOnServer(item, tableName, currentQuarter, kpiCfg) {
     forceQuarterly = kpiConfig ? !!kpiConfig.isQuarterly : false;
   }
 
+  // Resolve effective_quarter: per-KPI override of how many quarters to sum.
+  // Falls back to the global current_quarter from `settings` when not set.
+  // This is independent of target_months (display) — see readKpiMasterConfig.
+  const effectiveQuarter =
+    sheetCfg && sheetCfg.effectiveQuarter
+      ? sheetCfg.effectiveQuarter
+      : currentQuarter;
+
   if (tMain > 0 && !forceQuarterly) {
     // Annual target exists and KPI is not quarterly:
     // Prefer the annual result; fall back to quarter sum only when annual is missing/zero.
     t = tMain;
-    r = rMain > 0 ? rMain : getQuarterSum(item, "result", currentQuarter);
+    r = rMain > 0 ? rMain : getQuarterSum(item, "result", effectiveQuarter);
   } else {
     // Sum quarters (If Force Quarterly OR No Annual Target)
-    t = getQuarterSum(item, "target", currentQuarter);
-    r = getQuarterSum(item, "result", currentQuarter);
+    t = getQuarterSum(item, "target", effectiveQuarter);
+    r = getQuarterSum(item, "result", effectiveQuarter);
   }
 
   return { t: t, r: r };

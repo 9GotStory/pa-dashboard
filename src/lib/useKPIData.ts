@@ -37,6 +37,9 @@ async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
 
 type KpiConfigEntry = {
   isQuarterly: boolean;
+  // Per-KPI display-period override from kpi_master ("สะสม N เดือน").
+  // null/undefined → derive from isQuarterly + currentQuarter.
+  targetMonths?: number | null;
 };
 
 type BatchMeta = {
@@ -45,6 +48,8 @@ type BatchMeta = {
     table: string;
     sheet?: string;
     isQuarterly?: boolean;
+    target_months?: number | null;
+    effective_quarter?: number | null;
   }>;
 };
 
@@ -219,6 +224,7 @@ export function useKPIData(): UseKPIDataResult {
             meta.kpi_config.forEach((k) => {
               kpiCfgMap.set(k.table, {
                 isQuarterly: !!k.isQuarterly,
+                targetMonths: k.target_months ?? null,
               });
             });
           }
@@ -235,15 +241,25 @@ export function useKPIData(): UseKPIDataResult {
           const report = processReportData(rows, config.table_name, config.title);
           const cfg = kpiCfgMap.get(config.table_name);
           const isQuarterly = !!cfg?.isQuarterly;
-          // Derive target_months directly from the data accumulation period:
-          //   Annual KPI    → 12
-          //   Quarterly KPI → currentQuarter × 3 (9 at Q3, 12 at Q4)
-          // The badge ("สะสม N เดือน") and Target column ("≥X (N เดือน)")
-          // share the same N, so pass/fail coloring stays meaningful.
-          report.targetMonths = isQuarterly ? currentQuarter * 3 : 12;
+          // Resolve display period (months + label):
+          //   1. kpi_master `target_months` override — used as-is for both the
+          //      badge ("สะสม 8 เดือน") and Target column. This handles KPIs
+          //      whose service window doesn't match quarter boundaries
+          //      (e.g. s_childdev_specialpp: Oct–May = 8 months).
+          //   2. Otherwise derive from isQuarterly + currentQuarter:
+          //        Annual    → 12, "รายปี"
+          //        Quarterly → currentQuarter × 3, "สะสม N เดือน (Qn)"
+          // The badge and Target column share the same N so pass/fail coloring
+          // stays meaningful.
+          if (cfg?.targetMonths != null) {
+            report.targetMonths = cfg.targetMonths;
+            report.period = `สะสม ${cfg.targetMonths} เดือน`;
+          } else {
+            report.targetMonths = isQuarterly ? currentQuarter * 3 : 12;
+            report.period = isQuarterly ? quarterLabel : annualLabel;
+          }
           report.targetValue = config.target;
           report.link = config.link;
-          report.period = isQuarterly ? quarterLabel : annualLabel;
           return report;
         });
 
