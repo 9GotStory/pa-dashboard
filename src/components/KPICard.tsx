@@ -1,6 +1,6 @@
 import { useState, type MouseEvent } from "react";
-import { KPISummary } from "@/lib/types";
-import { computeAggregate } from "@/lib/kpi-utils";
+import type { KPISummary } from "@/lib/types";
+import { computeAggregate, DEFAULT_TARGET, formatPct } from "@/lib/kpi-utils";
 import {
   ExternalLink,
   Calendar,
@@ -31,7 +31,7 @@ export function KPICard({
   );
 
   const isRawCount = totalTarget === 0;
-  const targetVal = kpi.targetValue || 80;
+  const targetVal = kpi.targetValue || DEFAULT_TARGET;
   const isPass = percentage >= targetVal;
 
   const period = kpi.period;
@@ -122,7 +122,7 @@ export function KPICard({
               >
                 {isRawCount
                   ? totalResult.toLocaleString()
-                  : percentage.toFixed(2)}
+                  : formatPct(percentage)}
               </span>
               {!isRawCount && (
                 <span className="text-xs text-neutral-500 font-medium">%</span>
@@ -192,7 +192,7 @@ export function KPICard({
                       <td
                         className={`py-2 text-right font-bold ${facPass ? "text-success-600" : "text-error-600"}`}
                       >
-                        {fac.percentage.toFixed(2)}%
+                        {formatPct(fac.percentage)}%
                       </td>
                     </tr>
                   );

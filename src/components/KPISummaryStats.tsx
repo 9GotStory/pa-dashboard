@@ -1,5 +1,5 @@
-import { KPISummary } from "@/lib/types";
-import { computeAggregate } from "@/lib/kpi-utils";
+import type { KPISummary } from "@/lib/types";
+import { computeAggregate, DEFAULT_TARGET } from "@/lib/kpi-utils";
 import { Target, TrendingUp, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface KPISummaryStatsProps {
@@ -16,7 +16,7 @@ export default function KPISummaryStats({
   // Calculate Passed/Failed based on Selected Facilities (shared logic)
   const passed = data.filter((kpi) => {
     const { percentage } = computeAggregate(kpi, selectedFacilities);
-    const target = kpi.targetValue || 80;
+    const target = kpi.targetValue || DEFAULT_TARGET;
     return percentage >= target;
   }).length;
 

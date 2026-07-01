@@ -10,7 +10,7 @@ import DashboardFilter from "@/components/DashboardFilter";
 
 import DataStatusNotifier from "@/components/DataStatusNotifier";
 import { useKPIData } from "@/lib/useKPIData";
-import { KPIMaster } from "@/lib/types";
+import type { KPIMaster } from "@/lib/types";
 
 export default function Home() {
   const {

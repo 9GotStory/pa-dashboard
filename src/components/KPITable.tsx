@@ -8,10 +8,10 @@ import {
   createColumnHelper,
   type Row,
 } from "@tanstack/react-table";
-import { KPISummary, MophReportData } from "@/lib/types";
+import type { KPISummary, MophReportData } from "@/lib/types";
 import { KPIDetailModal } from "./KPIDetailModal";
 import { exportToExcel } from "@/lib/excel-export";
-import { computeAggregate } from "@/lib/kpi-utils";
+import { computeAggregate, DEFAULT_TARGET, formatPct } from "@/lib/kpi-utils";
 import {
   ExternalLink,
   CalendarClock,
@@ -117,14 +117,11 @@ export default function KPITable({
         title: kpi.title,
         facilityName: facilityName,
         data: facilityRawData,
-        targetValue: kpi.targetValue || 80,
+        targetValue: kpi.targetValue || DEFAULT_TARGET,
       });
     },
     [hospitalMap],
   );
-
-  // Helper to format percentage
-  const formatPct = (val: number) => val.toFixed(2);
 
   const columns = useMemo(() => {
     return [
@@ -231,7 +228,7 @@ export default function KPITable({
               kpi,
               selectedFacilities,
             );
-            const targetVal = kpi.targetValue || 80;
+            const targetVal = kpi.targetValue || DEFAULT_TARGET;
             const isRawCount = totalTarget === 0;
 
             // Common Sticky Style + Separator
@@ -291,7 +288,7 @@ export default function KPITable({
                   <span className="text-neutral-300 text-[10px]">-</span>
                 ) : (
                   <span className="text-xs font-bold">
-                    {Math.round(facilityData.percentage)}%
+                    {formatPct(facilityData.percentage)}%
                   </span>
                 )}
               </button>
@@ -302,7 +299,7 @@ export default function KPITable({
               "px-2 py-2 text-center min-w-17.5 w-17.5 bg-slate-50 border-b border-slate-200 align-middle overflow-hidden",
             getCellClassName: (row: Row<KPISummary>) => {
               const kpi = row.original;
-              const targetVal = kpi.targetValue || 80;
+              const targetVal = kpi.targetValue || DEFAULT_TARGET;
               const facilityData = kpi.breakdown?.[key];
               const isRawCount = kpi.totalTarget === 0;
 
@@ -334,7 +331,7 @@ export default function KPITable({
         header: "Target",
         cell: (info) => (
           <span className="text-xs">
-            ≥{info.getValue() || 80}
+            ≥{info.getValue() || DEFAULT_TARGET}
             <span className="block text-[9px] font-normal text-warning-600/80">
               ({info.row.original.targetMonths} เดือน)
             </span>

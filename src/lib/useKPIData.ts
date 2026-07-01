@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { KPISummary, KPIMaster, KPIReportType, MophReportData } from './types';
+import type { KPISummary, KPIMaster, KPIReportType, MophReportData } from './types';
 import { calculateKPIValue } from './kpi-utils';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H/exec';
@@ -21,13 +21,25 @@ export interface UseKPIDataResult {
   lastUpdated: string;
 }
 
-async function fetchWithRetry(url: string, retries = 3): Promise<Response> {
+function isAbortError(err: unknown): boolean {
+  return err instanceof DOMException && err.name === 'AbortError';
+}
+
+async function fetchWithRetry(
+  url: string,
+  retries = 3,
+  signal?: AbortSignal,
+): Promise<Response> {
   for (let i = 0; i < retries; i++) {
+    // Bail out immediately if the caller already aborted — no point retrying.
+    if (signal?.aborted) throw new DOMException('Aborted', 'AbortError');
     try {
-      const res = await fetch(url);
+      const res = await fetch(url, { signal });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       return res;
     } catch (err) {
+      // User-initiated cancel: surface right away, don't burn retries.
+      if (isAbortError(err)) throw err;
       if (i === retries - 1) throw err;
       await new Promise(r => setTimeout(r, 1000 * (i + 1)));
     }
@@ -95,7 +107,7 @@ function processReportData(
     tableName: tableName as KPIReportType,
     totalTarget,
     totalResult,
-    percentage: parseFloat(percentage.toFixed(2)),
+    percentage,
     data: filteredData,
     breakdown,
     targetValue: 0,
@@ -114,7 +126,8 @@ export function useKPIData(): UseKPIDataResult {
   const [lastUpdated, setLastUpdated] = useState('');
 
   useEffect(() => {
-    let isMounted = true;
+    const controller = new AbortController();
+    const { signal } = controller;
     // Track cache hits locally so the catch block knows whether the user is
     // already seeing cached data. Reading React state inside the async catch
     // would always see the initial empty array (closure captures mount-time
@@ -158,12 +171,14 @@ export function useKPIData(): UseKPIDataResult {
       setError(null);
 
       try {
-        // Parallel fetch all data
+        // Parallel fetch all data. Each fetch honors the AbortController so
+        // unmounting the component cancels in-flight requests immediately
+        // rather than burning bandwidth in the background.
         const [kpiMasterRes, hospitalsRes, tambonRes, batchRes] = await Promise.all([
-          fetchWithRetry(`${API_URL}?sheet=kpi_master`),
-          fetchWithRetry(`${API_URL}?sheet=hospitals`),
-          fetchWithRetry(`${API_URL}?sheet=tambon_master`),
-          fetchWithRetry(`${API_URL}?sheet=BATCH_ALL`)
+          fetchWithRetry(`${API_URL}?sheet=kpi_master`, 3, signal),
+          fetchWithRetry(`${API_URL}?sheet=hospitals`, 3, signal),
+          fetchWithRetry(`${API_URL}?sheet=tambon_master`, 3, signal),
+          fetchWithRetry(`${API_URL}?sheet=BATCH_ALL`, 3, signal),
         ]);
 
         const kpiMasterData: KpiMasterRow[] = await kpiMasterRes.json();
@@ -293,22 +308,30 @@ export function useKPIData(): UseKPIDataResult {
         }
 
         // Bail out if the component unmounted mid-fetch so we don't
-        // write state onto an unmounted component (React 18 warns).
-        if (!isMounted) return;
+        // write state onto an unmounted component. Aborted requests also
+        // short-circuit earlier via the catch block below.
+        if (signal.aborted) return;
 
         setData(reports);
         setLastUpdated(formattedLastUpdated);
 
-        // Cache the fresh data
-        localStorage.setItem(CACHE_KEY, JSON.stringify({
-           data: reports,
-           hospitalMap: hMap,
-           tambonMap: tMap,
-           lastUpdated: formattedLastUpdated,
-           timestamp: Date.now()
-        }));
+        // Cache the fresh data. Isolated try-catch so a quota error never
+        // surfaces as a "fetch failed" message — the UI already has the data.
+        try {
+          localStorage.setItem(CACHE_KEY, JSON.stringify({
+            data: reports,
+            hospitalMap: hMap,
+            tambonMap: tMap,
+            lastUpdated: formattedLastUpdated,
+            timestamp: Date.now(),
+          }));
+        } catch (e) {
+          console.warn('Failed to save cache', e);
+        }
 
       } catch (err) {
+        // Expected when the component unmounts mid-fetch — no error UI.
+        if (isAbortError(err)) return;
         console.error('Error fetching KPI data:', err);
         // Only surface the error to UI if the user has nothing to look at.
         // If cache was loaded synchronously above, keep showing it (SWR-style).
@@ -316,14 +339,14 @@ export function useKPIData(): UseKPIDataResult {
            setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
         }
       } finally {
-        if (isMounted) setIsLoading(false);
+        if (!signal.aborted) setIsLoading(false);
       }
     }
 
     fetchAllData();
 
     return () => {
-      isMounted = false;
+      controller.abort();
     };
   }, []);
 

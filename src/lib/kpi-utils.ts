@@ -1,8 +1,34 @@
 import type { KPISummary, MophReportData } from "./types";
 
+/**
+ * Fallback target used when a KPI has no explicit targetValue in kpi_master.
+ * All "pass/fail" comparisons across components must resolve through this
+ * constant so the default stays consistent everywhere.
+ */
+export const DEFAULT_TARGET = 80;
+
 export interface KPIValue {
   t: number;
   r: number;
+}
+
+/**
+ * Format a percentage for display, always with 2 decimals.
+ * Use this everywhere a percentage is rendered as text so the rounding
+ * shown to the user matches the value used for pass/fail coloring.
+ */
+export function formatPct(val: number): string {
+  return val.toFixed(2);
+}
+
+/**
+ * Round a percentage to 2 decimals as a number. Reuses formatPct so the
+ * numeric value exported to Excel matches what the UI shows exactly
+ * (toFixed-based rounding, not Math.round — they diverge on .xx5 due to
+ * IEEE-754 float representation, e.g. 89.585 → 89.58 not 89.59).
+ */
+export function roundPct(val: number): number {
+  return parseFloat(formatPct(val));
 }
 
 /**

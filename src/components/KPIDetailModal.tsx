@@ -1,5 +1,5 @@
-import { MophReportData } from '@/lib/types';
-import { calculateKPIValue } from '@/lib/kpi-utils';
+import type { MophReportData } from '@/lib/types';
+import { calculateKPIValue, formatPct } from '@/lib/kpi-utils';
 
 interface KPIDetailModalProps {
   isOpen: boolean;
@@ -150,7 +150,7 @@ export function KPIDetailModal({
                         <span className={`inline-block px-1.5 py-0.5 md:px-2 md:py-1 rounded text-xs font-bold whitespace-nowrap ring-1 ring-inset ${
                           isPass ? 'bg-success-50 text-success-700 ring-success-600/20' : 'bg-error-50 text-error-700 ring-error-600/20'
                         }`}>
-                          {pct.toFixed(2)}%
+                          {formatPct(pct)}%
                         </span>
                       ) : (
                         <span className="text-neutral-400 text-xs">(N/A)</span>

@@ -1,6 +1,7 @@
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
-import { KPISummary } from './types';
+import type { KPISummary } from './types';
+import { DEFAULT_TARGET, roundPct } from './kpi-utils';
 
 // Color Constants (ARGB format for ExcelJS)
 const COLORS = {
@@ -59,13 +60,13 @@ export async function exportToExcel(
   // --- 3. Add Data Rows ---
   data.forEach((kpi, index) => {
     const isRawCount = kpi.totalTarget === 0;
-    const targetVal = kpi.targetValue || 80;
-    
+    const targetVal = kpi.targetValue || DEFAULT_TARGET;
+
     const rowValues: Record<string, string | number> = {
       index: index + 1,
       title: kpi.title,
       target: `≥ ${targetVal} (${kpi.targetMonths} เดือน)`,
-      result: isRawCount ? kpi.totalResult : parseFloat(kpi.percentage.toFixed(2)),
+      result: isRawCount ? kpi.totalResult : roundPct(kpi.percentage),
     };
 
     // Fill Facility Data
@@ -78,7 +79,7 @@ export async function exportToExcel(
        } else if (breakdown.target === 0) { // Target is 0 -> usually means N/A or special case
           rowValues[key] = '-';
        } else { // Normal %
-          rowValues[key] = parseFloat(breakdown.percentage.toFixed(2));
+          rowValues[key] = roundPct(breakdown.percentage);
        }
     });
 

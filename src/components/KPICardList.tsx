@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { KPISummary, MophReportData } from "@/lib/types";
+import type { KPISummary, MophReportData } from "@/lib/types";
+import { DEFAULT_TARGET } from "@/lib/kpi-utils";
 import { KPICard } from "./KPICard";
 import { KPIDetailModal } from "./KPIDetailModal";
 
@@ -59,7 +60,7 @@ export default function KPICardList({
       title: kpi.title,
       facilityName: modalTitle,
       data: modalData,
-      targetValue: kpi.targetValue || 80,
+      targetValue: kpi.targetValue || DEFAULT_TARGET,
     });
   };
 

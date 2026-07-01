@@ -11,7 +11,7 @@ import {
   Building2,
   BarChart2,
 } from "lucide-react";
-import { KPIMaster } from "@/lib/types";
+import type { KPIMaster } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 interface DashboardFilterProps {
