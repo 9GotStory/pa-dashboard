@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "gas:push": "clasp push -f",
+    "gas:deploy": "clasp deploy -i AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H",
+    "gas:sync": "npm run gas:push && npm run gas:deploy"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",

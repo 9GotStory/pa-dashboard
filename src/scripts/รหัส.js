@@ -8,6 +8,9 @@ const CONFIG = {
   YEAR: "2569",
   PROVINCE: "54",
   API_URL: "https://opendata.moph.go.th/api/report_data",
+  // PIN for the ?action=diag diagnostic endpoint. Change this to something
+  // of your own — it guards trigger info + MOPH probes + system_logs reads.
+  DIAG_PIN: "diag-5406-2026",
   CURRENT_QUARTER: 2, // Adjust this to control how many quarters are summed (1-4)
   KPIS: [
     { table: "s_kpi_anc12", sheet: "s_kpi_anc12" },
@@ -358,6 +361,9 @@ function syncAllData() {
     Logger.log("syncAllData: tryLock error: " + e.toString());
   }
   if (!hasLock) {
+    // Log it too — a toast alone is invisible unless someone is watching
+    // the spreadsheet, which hid skipped syncs in the past.
+    logToSheet("WARNING", "Sync skipped", "Another sync holds the lock");
     SpreadsheetApp.getActiveSpreadsheet().toast(
       "Another sync is already running. Try again in a minute.",
       "Sync Skipped",
@@ -370,52 +376,17 @@ function syncAllData() {
     // changed without redeploying). Falls back to CONFIG defaults on errors.
     const settings = readSettings();
 
-    // Build all requests up front so UrlFetchApp.fetchAll can fire them in
-    // parallel — much faster than sequential fetch() calls for 13 KPIs.
-    const requests = CONFIG.KPIS.map(function (kpi) {
-      const payload = {
-        tableName: kpi.table,
-        year: settings.current_year,
-        province: settings.province_code,
-        type: "json",
-      };
-      return {
-        url: CONFIG.API_URL,
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true,
-      };
-    });
-
-    let responses;
-    try {
-      responses = UrlFetchApp.fetchAll(requests);
-    } catch (e) {
-      Logger.log("syncAllData: fetchAll failed: " + e.toString());
-      logToSheet("ERROR", "Sync fetchAll failed", e.toString());
-      SpreadsheetApp.getActiveSpreadsheet().toast("Sync failed: " + e.toString(), "Error");
-      return;
-    }
-
+    // Fetch SEQUENTIALLY with spacing — NOT UrlFetchApp.fetchAll. MOPH's
+    // rate limiter returns 429 when all 13 requests arrive as one burst
+    // (system_logs shows whole KPI batches failing with "Status: 429" on
+    // burst days). A 1.5–2.5s randomized gap per KPI plus per-request
+    // retry/backoff keeps every table green; total runtime stays ~1–2 min,
+    // far under the 6-minute trigger quota.
     let okCount = 0;
-    responses.forEach(function (response, i) {
-      const kpi = CONFIG.KPIS[i];
-      const code = response.getResponseCode();
-      if (code !== 200 && code !== 201) {
-        Logger.log("Error: API returned status " + code + " for " + kpi.table);
-        logToSheet("ERROR", "API Error " + kpi.table, "Status: " + code);
-        return;
-      }
-      let data;
-      try {
-        data = JSON.parse(response.getContentText());
-      } catch (parseErr) {
-        Logger.log("Error: Invalid JSON for " + kpi.table);
-        logToSheet("ERROR", "JSON Parse Error " + kpi.table, "Invalid JSON format");
-        return;
-      }
-      if (saveDataToSheet(kpi.table, data, kpi.sheet)) okCount++;
+    CONFIG.KPIS.forEach(function (kpi) {
+      const data = fetchMophForKpi(kpi, settings);
+      if (data !== null && saveDataToSheet(kpi.table, data, kpi.sheet)) okCount++;
+      Utilities.sleep(1500 + Math.floor(Math.random() * 1000));
     });
 
     SpreadsheetApp.getActiveSpreadsheet().toast(
@@ -429,6 +400,60 @@ function syncAllData() {
       Logger.log("syncAllData: releaseLock error: " + e.toString());
     }
   }
+}
+
+/**
+ * Fetch one KPI from the MOPH API with retry/backoff on 429/5xx.
+ * Returns the parsed JSON (array or envelope — saveDataToSheet unwraps),
+ * or null after logging the failure. Called sequentially by syncAllData.
+ */
+function fetchMophForKpi(kpi, settings) {
+  const options = {
+    method: "post",
+    contentType: "application/json",
+    payload: JSON.stringify({
+      tableName: kpi.table,
+      year: settings.current_year,
+      province: settings.province_code,
+      type: "json",
+    }),
+    muteHttpExceptions: true,
+    followRedirects: true,
+  };
+
+  const maxAttempts = 3;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    let response;
+    try {
+      response = UrlFetchApp.fetch(CONFIG.API_URL, options);
+    } catch (err) {
+      Logger.log("Error: fetch threw for " + kpi.table + ": " + err.toString());
+      logToSheet("ERROR", "Fetch Error " + kpi.table, String(err));
+      return null;
+    }
+
+    const code = response.getResponseCode();
+    if (code === 200 || code === 201) {
+      try {
+        return JSON.parse(response.getContentText());
+      } catch (parseErr) {
+        Logger.log("Error: Invalid JSON for " + kpi.table);
+        logToSheet("ERROR", "JSON Parse Error " + kpi.table, "Invalid JSON format");
+        return null;
+      }
+    }
+
+    // 429 (rate limit) / 5xx — back off and retry before giving up.
+    if (attempt < maxAttempts) {
+      Logger.log("Retrying " + kpi.table + " (status " + code + ", attempt " + attempt + ")");
+      Utilities.sleep(5000 * attempt);
+      continue;
+    }
+    Logger.log("Error: API returned status " + code + " for " + kpi.table);
+    logToSheet("ERROR", "API Error " + kpi.table, "Status: " + code);
+    return null;
+  }
+  return null;
 }
 
 function testConnection() {
@@ -457,6 +482,18 @@ function testConnection() {
       "Response Body (First 500 chars): " +
         response.getContentText().substring(0, 500),
     );
+
+    // Parse and report the effective row count so shape regressions (e.g.
+    // the envelope change from a bare array to {"data": [...]}) are visible
+    // at a glance from the execution log.
+    try {
+      const json = JSON.parse(response.getContentText());
+      const rows = Array.isArray(json) ? json : json && json.data;
+      Logger.log("Parsed rows: " + (Array.isArray(rows) ? rows.length : "N/A — unexpected shape"));
+    } catch (parseErr) {
+      Logger.log("testConnection: could not parse response as JSON");
+    }
+
     SpreadsheetApp.getActiveSpreadsheet().toast(
       "API responded with status " + response.getResponseCode(),
       "Connection OK",
@@ -471,6 +508,13 @@ function testConnection() {
 }
 
 function saveDataToSheet(tableName, data, sheetName) {
+  // MOPH now wraps rows in an envelope {"data": [...]}. Older responses were
+  // a bare array — unwrap either shape before validating. Doing it here
+  // covers both callers: syncAllData (server-side fetch) and doPost
+  // (browser-pushed payload).
+  if (data && !Array.isArray(data) && Array.isArray(data.data)) {
+    data = data.data;
+  }
   if (!Array.isArray(data)) {
     Logger.log("Error: API response is not an array for " + tableName);
     logToSheet(
@@ -611,6 +655,14 @@ const MASTER_SHEETS = ["hospitals", "tambon_master", "kpi_master"];
  * (settings, system_logs, …) cannot be exposed via the public endpoint.
  */
 function doGet(e) {
+  // Diagnostic endpoint (?action=diag&pin=...): inspect triggers, probe the
+  // MOPH API from GAS egress, and read recent system_logs. Exists because
+  // the daily trigger's failures are otherwise invisible — no linked GCP
+  // project for clasp logs, and system_logs is not on the sheet whitelist.
+  if (e.parameter.action === "diag") {
+    return handleDiag(e);
+  }
+
   const sheetName = e.parameter.sheet;
 
   // 0. Safety Check
@@ -764,6 +816,137 @@ function serveRawSheet(sheetName) {
  *
  * Expected body: { action: "save_kpi_data", tableName, sheetName?, data: [] }
  */
+/**
+ * Diagnostic endpoint — answers "why doesn't the server-side sync work?"
+ * from inside GAS. Query params:
+ *   pin           (required) must match CONFIG.DIAG_PIN
+ *   setup=trigger (optional) create the daily syncAllData trigger if missing
+ *   run=sync      (optional) force a full server-side syncAllData() now
+ *   logs=N        (optional) number of system_logs rows to return (default 15, max 200)
+ */
+function handleDiag(e) {
+  if (String(e.parameter.pin || "") !== CONFIG.DIAG_PIN) {
+    return createJsonError("Invalid or missing PIN");
+  }
+
+  const out = { time: new Date().toISOString() };
+
+  // 1. Triggers actually registered on this project
+  try {
+    out.triggers = ScriptApp.getProjectTriggers().map(function (t) {
+      return {
+        handler: t.getHandlerFunction(),
+        eventType: String(t.getEventType()),
+      };
+    });
+  } catch (err) {
+    out.triggers = { error: String(err) };
+  }
+
+  // Optional one-shot: ensure the daily trigger exists
+  if (e.parameter.setup === "trigger") {
+    try {
+      const has = ScriptApp.getProjectTriggers().some(function (t) {
+        return t.getHandlerFunction() === "syncAllData";
+      });
+      out.setupTrigger = has ? "already exists" : (createDailyTrigger(), "created");
+    } catch (err) {
+      out.setupTrigger = "error: " + String(err);
+    }
+  }
+
+  // Optional: force a full server-side sync now — proves the exact code path
+  // the daily trigger executes, without waiting for the next 14:00 run.
+  if (e.parameter.run === "sync") {
+    const started = new Date();
+    try {
+      syncAllData();
+      out.forcedSync = { ok: true, seconds: (new Date() - started) / 1000 };
+    } catch (err) {
+      out.forcedSync = { ok: false, error: String(err) };
+    }
+  }
+
+  // 2. Probe MOPH two ways: exactly like syncAllData does (plain), and with
+  //    browser-like headers. Reveals WAF/UA filtering on Google egress IPs.
+  const settings = readSettings();
+  const payload = JSON.stringify({
+    tableName: "s_kpi_anc12",
+    year: settings.current_year,
+    province: settings.province_code,
+    type: "json",
+  });
+
+  function probe(options) {
+    try {
+      const res = UrlFetchApp.fetch(CONFIG.API_URL, options);
+      const body = res.getContentText();
+      let parsed = "not-json";
+      try {
+        const json = JSON.parse(body);
+        parsed = Array.isArray(json)
+          ? "array:" + json.length
+          : json && Array.isArray(json.data)
+            ? "envelope:" + json.data.length
+            : "json-other";
+      } catch (parseErr) {
+        parsed = "not-json";
+      }
+      return {
+        status: res.getResponseCode(),
+        parsed: parsed,
+        bodyStart: body.substring(0, 200),
+      };
+    } catch (err) {
+      return { error: String(err) };
+    }
+  }
+
+  const base = {
+    method: "post",
+    contentType: "application/json",
+    payload: payload,
+    muteHttpExceptions: true,
+    followRedirects: true,
+  };
+  out.mophPlain = probe(base);
+  out.mophBrowserHeaders = probe(
+    Object.assign({}, base, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36",
+        Accept: "application/json, text/plain, */*",
+      },
+    }),
+  );
+
+  // 3. Recent sync history from system_logs (configurable depth)
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const sheet = ss.getSheetByName("system_logs");
+    if (!sheet) {
+      out.recentLogs = "no system_logs sheet";
+    } else {
+      const depth = Math.min(200, Math.max(1, Number(e.parameter.logs) || 15));
+      const values = sheet.getDataRange().getValues();
+      const headers = values[0];
+      out.recentLogs = values
+        .slice(Math.max(1, values.length - depth))
+        .map(function (row) {
+          const obj = {};
+          headers.forEach(function (h, i) {
+            obj[h] = row[i];
+          });
+          return obj;
+        });
+    }
+  } catch (err) {
+    out.recentLogs = { error: String(err) };
+  }
+
+  return createJsonOutput(out);
+}
+
 function doPost(e) {
   try {
     if (!e || !e.postData || !e.postData.contents) {

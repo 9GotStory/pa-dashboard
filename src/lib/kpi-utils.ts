@@ -32,8 +32,8 @@ export function roundPct(val: number): number {
 }
 
 /**
- * Read the pre-calculated `target` and `result` fields that Code.gs emits
- * (see calculateKPIOnServer in src/scripts/Code.gs). The frontend no longer
+ * Read the pre-calculated `target` and `result` fields that รหัส.js emits
+ * (see calculateKPIOnServer in src/scripts/รหัส.js). The frontend no longer
  * does any KPI-specific math — the server is the single source of truth.
  */
 export function calculateKPIValue(item: MophReportData): KPIValue {

@@ -2,7 +2,7 @@
 // or just: node src/scripts/verify-all.js (Node 20+ supports .js ESM via package "type": "module",
 // but this repo uses CommonJS package.json, so we use dynamic import for `fs` not needed here).
 
-// Config — TABLE_NAMES must mirror Code.gs CONFIG.KPIS (source of truth).
+// Config — TABLE_NAMES must mirror รหัส.js CONFIG.KPIS (source of truth).
 // See memory: project_table_name_source_of_truth.md.
 const PROVINCE = '54';
 const DISTRICT_PREFIX = '5406'; // Song
@@ -38,7 +38,11 @@ async function fetchData(tableName) {
       body: JSON.stringify(payload)
     });
     if (!response.ok) throw new Error(response.statusText);
-    return await response.json();
+    const json = await response.json();
+    // MOPH wraps rows in {"data": [...]} (previously a bare array) — accept both.
+    if (Array.isArray(json)) return json;
+    if (json && Array.isArray(json.data)) return json.data;
+    throw new Error('Unexpected response shape (not an array or {data: [...]})');
   } catch (e) {
     console.error(`Failed to fetch ${tableName}:`, e.message);
     return [];
@@ -56,8 +60,8 @@ async function verifyAll() {
     // Filter
     const data = rawData.filter(d => d.areacode && String(d.areacode).startsWith(DISTRICT_PREFIX));
 
-    // Logic mirroring calculateKPIOnServer in src/scripts/Code.gs.
-    // (src/lib/moph-api.ts has been removed; Code.gs is the source of truth.)
+    // Logic mirroring calculateKPIOnServer in src/scripts/รหัส.js.
+    // (src/lib/moph-api.ts has been removed; รหัส.js is the source of truth.)
     // 1. Dental 0-5 Swap
     let targetCols = ['target'];
     let resultCols = ['result'];

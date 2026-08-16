@@ -16,7 +16,9 @@ async function checkDental() {
     body: JSON.stringify(payload)
   });
 
-  const data = await response.json();
+  const json = await response.json();
+  // MOPH wraps rows in {"data": [...]} (previously a bare array) — accept both.
+  const data = Array.isArray(json) ? json : (json && json.data);
   const districtData = data.filter(d => d.areacode && String(d.areacode).startsWith('5406'));
 
   let sumTarget = 0;

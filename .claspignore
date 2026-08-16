@@ -1,0 +1,4 @@
+# Node-only debug/verification scripts — never push these to Apps Script.
+**/verify-all.js
+**/debug-dental.js
+**/sync-moph-to-gas.js

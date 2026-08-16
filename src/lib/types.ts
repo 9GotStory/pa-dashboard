@@ -25,8 +25,8 @@ export interface MophReportData {
 }
 
 /**
- * Authoritative list of KPI table names. Must match `Code.gs` `CONFIG.KPIS`
- * (see memory: project_table_name_source_of_truth.md). Code.gs is the source
+ * Authoritative list of KPI table names. Must match `รหัส.js` `CONFIG.KPIS`
+ * (see memory: project_table_name_source_of_truth.md). รหัส.js is the source
  * of truth because it talks to the live MOPH API.
  */
 export type KPIReportType =

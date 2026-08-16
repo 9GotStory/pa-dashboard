@@ -18,7 +18,7 @@ import {
 // --- CONFIGURATION ---
 // Only static, non-configurable values live here. Year, province, and the
 // KPI list itself are pulled from BATCH_ALL meta at runtime so the frontend
-// never duplicates Code.gs CONFIG (which caused drift in the past).
+// never duplicates รหัส.js CONFIG (which caused drift in the past).
 const API_URL = "https://opendata.moph.go.th/api/report_data";
 
 interface KpiListItem {
@@ -66,6 +66,21 @@ function errorMessage(err: unknown, fallback = "Unknown error"): string {
 function isNetworkError(err: unknown): boolean {
   if (!(err instanceof Error)) return false;
   return err.message === "Failed to fetch" || err.name === "TypeError";
+}
+
+/**
+ * Type guard for MOPH's response envelope {"data": [...]}.
+ * The API previously returned a bare row array; it now wraps rows in an
+ * envelope. Sync must accept both shapes so a revert or A/B on MOPH's side
+ * doesn't break the pipeline again.
+ */
+function isMophEnvelope(v: unknown): v is { data: unknown[] } {
+  return (
+    typeof v === "object" &&
+    v !== null &&
+    "data" in v &&
+    Array.isArray((v as { data: unknown }).data)
+  );
 }
 
 type LogType =
@@ -157,11 +172,11 @@ export default function SyncPage() {
       const json: { meta?: BatchMeta } = await res.json();
       const meta = json?.meta;
       if (!meta) {
-        throw new Error("BATCH_ALL response is missing meta — deploy the latest Code.gs version.");
+        throw new Error("BATCH_ALL response is missing meta — deploy the latest รหัส.js version.");
       }
 
       if (Array.isArray(meta.kpi_config)) {
-        // Only `table` is required. If `sheet` is missing (older Code.gs
+        // Only `table` is required. If `sheet` is missing (older รหัส.js
         // deployments before the sheet field was added), fall back to using
         // the table name as the sheet name — they are identical for every
         // entry in CONFIG.KPIS today.
@@ -177,7 +192,7 @@ export default function SyncPage() {
         // would miss the case where the rest of the list is stale.
         if (list.length > 0 && rawList.some((k) => !k.sheet)) {
           addLog(
-            "Note: deployed Code.gs is older — using table name as sheet fallback. Deploy latest Code.gs to remove this warning.",
+            "Note: deployed รหัส.js is older — using table name as sheet fallback. Deploy latest รหัส.js to remove this warning.",
             "warn",
           );
         }
@@ -348,6 +363,12 @@ export default function SyncPage() {
             );
           }
           throw new Error("Invalid JSON response");
+        }
+
+        // MOPH now wraps rows in {"data": [...]}. Older responses were a bare
+        // array — unwrap the envelope so both shapes continue to sync.
+        if (!Array.isArray(data) && isMophEnvelope(data)) {
+          data = data.data;
         }
 
         if (!Array.isArray(data))
@@ -543,7 +564,7 @@ export default function SyncPage() {
             <p className="font-semibold mb-1">Could not load config from server.</p>
             <p className="text-amber-700 break-words">{metaError}</p>
             <p className="mt-2 text-xs text-amber-600">
-              Check that Code.gs is deployed with the latest version, then click
+              Check that รหัส.js is deployed with the latest version, then click
               &ldquo;Retry config load&rdquo;.
             </p>
           </div>
