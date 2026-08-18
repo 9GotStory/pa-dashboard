@@ -12,6 +12,7 @@ import {
   BarChart2,
 } from "lucide-react";
 import type { KPIMaster } from "@/lib/types";
+import { sortKpisByGroup } from "@/lib/kpi-grouping";
 import { cn } from "@/lib/utils";
 
 interface DashboardFilterProps {
@@ -48,21 +49,57 @@ export default function DashboardFilter({
       .sort((a, b) => a.label.localeCompare(b.label));
   }, [hospitalMap]);
 
-  // Prepare KPI Options
+  // Prepare KPI Options — grouped by category → subgroup. Entries keep
+  // category/subgroup so the KPI tab can render sections; grouping fields
+  // default to "" for stale lists that lack them.
   const kpiOptions = useMemo(() => {
-    return kpiList.map((kpi) => ({
+    return sortKpisByGroup(kpiList).map((kpi) => ({
       value: kpi.table_name,
       label: kpi.title,
+      category: kpi.category ?? "",
+      subgroup: kpi.subgroup ?? "",
     }));
   }, [kpiList]);
+
+  // Grouped view model for the KPI tab: category → subgroup → items.
+  // With no categories present this yields a single unlabelled section —
+  // identical to the previous flat list.
+  const kpiGroups = useMemo(() => {
+    const categories = new Set(kpiOptions.map((k) => k.category).filter(Boolean));
+    const showCategories = categories.size >= 2;
+
+    const groups: {
+      category: string;
+      showHeader: boolean;
+      subgroups: { label: string; showHeader: boolean; items: typeof kpiOptions }[];
+    }[] = [];
+    kpiOptions.forEach((k) => {
+      let group = groups.find((g) => g.category === k.category);
+      if (!group) {
+        group = { category: k.category, showHeader: showCategories && !!k.category, subgroups: [] };
+        groups.push(group);
+      }
+      let sub = group.subgroups.find((s) => s.label === k.subgroup);
+      if (!sub) {
+        sub = { label: k.subgroup, showHeader: false, items: [] };
+        group.subgroups.push(sub);
+      }
+      sub.items.push(k);
+    });
+    // Subgroup headers only when the category actually has ≥2 named subgroups
+    groups.forEach((g) => {
+      const named = g.subgroups.filter((s) => s.label);
+      const showSubs = named.length >= 2;
+      g.subgroups.forEach((s) => {
+        s.showHeader = showSubs && !!s.label;
+      });
+    });
+    return groups;
+  }, [kpiOptions]);
 
   // Filtering Options based on Search
   const displayFacilities = facilityOptions.filter((f) =>
     f.label.toLowerCase().includes(searchQuery.toLowerCase()),
-  );
-
-  const displayKPIs = kpiOptions.filter((k) =>
-    k.label.toLowerCase().includes(searchQuery.toLowerCase()),
   );
 
   // Handlers
@@ -290,39 +327,108 @@ export default function DashboardFilter({
 
                 {activeTab === "kpis" && (
                   <div className="flex flex-col gap-1 p-2">
-                    {displayKPIs.length === 0 ? (
+                    {kpiGroups.length === 0 ||
+                    kpiGroups.every((g) =>
+                      g.subgroups.every((s) => s.items.length === 0),
+                    ) ? (
                       <div className="py-10 text-center text-slate-500 text-sm">
                         ไม่พบข้อมูลที่ค้นหา
                       </div>
                     ) : (
-                      displayKPIs.map((k) => (
-                        <div
-                          key={k.value}
-                          onClick={() => toggleKPI(k.value)}
-                          className={cn(
-                            "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border border-transparent hover:bg-slate-50",
-                            selectedKPIs.includes(k.value)
-                              ? "bg-brand-50/50 border-brand-100"
-                              : "",
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              "mt-0.5 flex shrink-0 items-center justify-center w-5 h-5 rounded border transition-colors",
-                              selectedKPIs.includes(k.value)
-                                ? "bg-brand-600 border-brand-600 text-white"
-                                : "border-slate-300 bg-white",
+                      kpiGroups.map((group) => {
+                        // Search-aware view: filter subgroup items; a group
+                        // with no surviving items is hidden entirely.
+                        const subs = group.subgroups
+                          .map((s) => ({
+                            ...s,
+                            items: s.items.filter((k) =>
+                              k.label
+                                .toLowerCase()
+                                .includes(searchQuery.toLowerCase()),
+                            ),
+                          }))
+                          .filter((s) => s.items.length > 0);
+                        if (subs.length === 0) return null;
+
+                        const categoryValues = subs.flatMap((s) =>
+                          s.items.map((k) => k.value),
+                        );
+                        const allSelected =
+                          categoryValues.length > 0 &&
+                          categoryValues.every((v) => selectedKPIs.includes(v));
+
+                        return (
+                          <div key={group.category || "default"} className="mb-2">
+                            {group.showHeader && (
+                              <div className="flex items-center justify-between px-2 py-1.5 rounded-md bg-slate-50 border border-slate-100 sticky top-0 z-10">
+                                <span className="font-prompt text-[13px] font-bold text-brand-800">
+                                  {group.category}
+                                  <span className="ml-1.5 text-[10px] font-medium text-slate-400">
+                                    ({categoryValues.length})
+                                  </span>
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    allSelected
+                                      ? onKPIsChange(
+                                          selectedKPIs.filter(
+                                            (v) => !categoryValues.includes(v),
+                                          ),
+                                        )
+                                      : onKPIsChange([
+                                          ...new Set([
+                                            ...selectedKPIs,
+                                            ...categoryValues,
+                                          ]),
+                                        ])
+                                  }
+                                  className="text-[11px] font-medium text-brand-600 hover:text-brand-700 hover:bg-brand-50 px-2 py-1 rounded transition-colors"
+                                >
+                                  {allSelected ? "เลิกเลือกหมวด" : "เลือกทั้งหมวด"}
+                                </button>
+                              </div>
                             )}
-                          >
-                            {selectedKPIs.includes(k.value) && (
-                              <Check className="w-3.5 h-3.5" />
-                            )}
+                            {subs.map((sub) => (
+                              <div key={sub.label || "default"}>
+                                {sub.showHeader && (
+                                  <div className="px-2 pt-2 pb-1 font-prompt text-[11px] font-semibold text-slate-500">
+                                    {sub.label}
+                                  </div>
+                                )}
+                                {sub.items.map((k) => (
+                                  <div
+                                    key={k.value}
+                                    onClick={() => toggleKPI(k.value)}
+                                    className={cn(
+                                      "flex items-start gap-3 p-3 rounded-lg cursor-pointer transition-colors border border-transparent hover:bg-slate-50",
+                                      selectedKPIs.includes(k.value)
+                                        ? "bg-brand-50/50 border-brand-100"
+                                        : "",
+                                    )}
+                                  >
+                                    <div
+                                      className={cn(
+                                        "mt-0.5 flex shrink-0 items-center justify-center w-5 h-5 rounded border transition-colors",
+                                        selectedKPIs.includes(k.value)
+                                          ? "bg-brand-600 border-brand-600 text-white"
+                                          : "border-slate-300 bg-white",
+                                      )}
+                                    >
+                                      {selectedKPIs.includes(k.value) && (
+                                        <Check className="w-3.5 h-3.5" />
+                                      )}
+                                    </div>
+                                    <span className="text-xs sm:text-sm leading-relaxed text-slate-700 select-none">
+                                      {k.label}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ))}
                           </div>
-                          <span className="text-xs sm:text-sm leading-relaxed text-slate-700 select-none">
-                            {k.label}
-                          </span>
-                        </div>
-                      ))
+                        );
+                      })
                     )}
                   </div>
                 )}

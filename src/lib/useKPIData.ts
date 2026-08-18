@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import type { KPISummary, KPIMaster, KPIReportType, MophReportData } from './types';
 import { calculateKPIValue } from './kpi-utils';
+import { sortKpisByGroup } from './kpi-grouping';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H/exec';
 const TARGET_AREA_PREFIX = '5406';
@@ -63,7 +64,20 @@ type BatchMeta = {
     target_months?: number | null;
     effective_quarter?: number | null;
   }>;
+  // Manifest of KPI registry tabs (one per category). Older GAS deployments
+  // omit it — fall back to the built-in pair.
+  registry?: Array<{
+    sheet: string;
+    category: string;
+    categoryOrder: number;
+  }>;
 };
+
+// Fallback used when BATCH_ALL meta has no `registry` (pre-manifest GAS).
+const DEFAULT_REGISTRY = [
+  { sheet: 'kpi_master', category: 'ตัวชี้วัดพื้นฐาน', categoryOrder: 1 },
+  { sheet: 'kpi_epi', category: 'สร้างเสริมภูมิคุ้มกันโรค', categoryOrder: 2 },
+];
 
 type HospitalRow = Record<string, unknown>;
 type TambonRow = { id?: unknown; name_th?: unknown };
@@ -115,7 +129,9 @@ function processReportData(
   };
 }
 
-const CACHE_KEY = 'PA_DASHBOARD_CACHE_V1';
+// Bumped V3 → V4: registry tabs now come from meta.kpi_registry (manifest
+// driven) instead of a hardcoded pair.
+const CACHE_KEY = 'PA_DASHBOARD_CACHE_V4';
 
 export function useKPIData(): UseKPIDataResult {
   const [data, setData] = useState<KPISummary[]>([]);
@@ -174,29 +190,61 @@ export function useKPIData(): UseKPIDataResult {
         // Parallel fetch all data. Each fetch honors the AbortController so
         // unmounting the component cancels in-flight requests immediately
         // rather than burning bandwidth in the background.
-        const [kpiMasterRes, hospitalsRes, tambonRes, batchRes] = await Promise.all([
-          fetchWithRetry(`${API_URL}?sheet=kpi_master`, 3, signal),
+        // Two-phase fetch: BATCH_ALL first (its meta.registry names the KPI
+        // registry tabs to pull), then those tabs in parallel. Registry tabs
+        // = one per category, so a new category tab is fetched automatically.
+        const [batchRes, hospitalsRes, tambonRes] = await Promise.all([
+          fetchWithRetry(`${API_URL}?sheet=BATCH_ALL`, 3, signal),
           fetchWithRetry(`${API_URL}?sheet=hospitals`, 3, signal),
           fetchWithRetry(`${API_URL}?sheet=tambon_master`, 3, signal),
-          fetchWithRetry(`${API_URL}?sheet=BATCH_ALL`, 3, signal),
         ]);
 
-        const kpiMasterData: KpiMasterRow[] = await kpiMasterRes.json();
+        const batchJson = await batchRes.json();
         const hospitalsData: HospitalRow[] = await hospitalsRes.json();
         const tambonData: TambonRow[] = await tambonRes.json();
-        const batchJson = await batchRes.json();
 
-        // Process KPI Master
-        const configs: KPIMaster[] = (Array.isArray(kpiMasterData) ? kpiMasterData : [])
-          .map((row: KpiMasterRow) => ({
-            table_name: String(row.table_name ?? ''),
-            title: String(row.title ?? 'Unknown KPI'),
-            target: Number(row.target ?? 0),
-            order: Number(row.order ?? 999),
-            link: row.link ? String(row.link) : undefined,
-          }))
-          .filter((k: KPIMaster) => k.table_name)
-          .sort((a: KPIMaster, b: KPIMaster) => a.order - b.order);
+        const registry: Array<{ sheet: string; category: string; categoryOrder: number }> =
+          Array.isArray(batchJson?.meta?.registry) && batchJson.meta.registry.length > 0
+            ? batchJson.meta.registry
+            : DEFAULT_REGISTRY;
+        const registryRows = await Promise.all(
+          registry.map((entry) => fetchWithRetry(`${API_URL}?sheet=${encodeURIComponent(entry.sheet)}`, 3, signal)),
+        );
+        const registryJson: KpiMasterRow[][] = await Promise.all(
+          registryRows.map((res) => res.json() as Promise<KpiMasterRow[]>),
+        );
+        const registryData: Array<{ rows: KpiMasterRow[]; defCategory: string; defOrder: number }> =
+          registry.map((entry, i) => ({
+            rows: registryJson[i],
+            defCategory: entry.category,
+            defOrder: entry.categoryOrder,
+          }));
+
+        // Process KPI registries — one tab per category, defaults from the
+        // manifest (registry). Explicit category columns (when present)
+        // override, so a sheet can still host extra categories.
+        const parsedOrder = (v: unknown): number => {
+          const n = Number(v);
+          return Number.isFinite(n) && n > 0 ? n : 999;
+        };
+        const parseSheet = (rows: KpiMasterRow[], defCategory: string, defOrder: number): KPIMaster[] =>
+          (Array.isArray(rows) ? rows : [])
+            .map((row: KpiMasterRow) => ({
+              table_name: String(row.table_name ?? ''),
+              title: String(row.title ?? 'Unknown KPI'),
+              target: Number(row.target ?? 0),
+              order: Number(row.order ?? 999),
+              link: row.link ? String(row.link) : undefined,
+              category: row.category ? String(row.category) : defCategory,
+              subgroup: row.subgroup ? String(row.subgroup) : '',
+              category_order: parsedOrder(row.category_order ?? defOrder),
+            }))
+            .filter((k: KPIMaster) => k.table_name)
+            .sort((a: KPIMaster, b: KPIMaster) => a.order - b.order);
+
+        const configs: KPIMaster[] = registryData.flatMap((entry) =>
+          parseSheet(entry.rows, entry.defCategory, entry.defOrder),
+        );
 
         // Process Hospital Map
         const hMap: Record<string, HospitalDetail> = {};
@@ -260,7 +308,7 @@ export function useKPIData(): UseKPIDataResult {
           //   1. kpi_master `target_months` override — used as-is for both the
           //      badge ("สะสม 8 เดือน") and Target column. This handles KPIs
           //      whose service window doesn't match quarter boundaries
-          //      (e.g. s_kpi_childdev4: Oct–May = 8 months).
+          //      (e.g. s_kpi_childdev4: Oct–Jun = 9 months = q1..q3).
           //   2. Otherwise derive from isQuarterly + currentQuarter:
           //        Annual    → 12, "รายปี"
           //        Quarterly → currentQuarter × 3, "สะสม N เดือน (Qn)"
@@ -275,22 +323,34 @@ export function useKPIData(): UseKPIDataResult {
           }
           report.targetValue = config.target;
           report.link = config.link;
+          report.order = config.order;
+          report.category = config.category;
+          report.subgroup = config.subgroup;
+          report.categoryOrder = config.category_order;
           return report;
         });
 
-        // Calculate last updated date
+        // Display order: category_order → subgroup (by its min order) → order.
+        // Degenerates to the legacy flat order when no categories are set.
+        const orderedReports = sortKpisByGroup(reports);
+
+        // Calculate last updated date. MOPH emits date_com as YYYYMMDDHHmm
+        // (12 digits) — except s_epi1, which adds seconds (14 digits).
+        // Compare as strings (same-prefix longer string = newer) and accept
+        // both lengths so one odd table can't blank the footer.
         let maxDateStr = '';
         reports.forEach(r => {
           if (r.data && r.data.length > 0) {
             r.data.forEach((d: MophReportData) => {
-              if (d.date_com && d.date_com > maxDateStr) maxDateStr = d.date_com;
+              const v = String(d.date_com ?? '');
+              if (v > maxDateStr) maxDateStr = v;
             });
           }
         });
 
         let formattedLastUpdated = '';
-        if (/^\d{12}$/.test(String(maxDateStr))) {
-          const str = String(maxDateStr);
+        if (/^\d{12,14}$/.test(maxDateStr)) {
+          const str = maxDateStr.substring(0, 12); // drop seconds when present
           const d = new Date(
             parseInt(str.substring(0, 4)),
             parseInt(str.substring(4, 6)) - 1,
@@ -312,14 +372,14 @@ export function useKPIData(): UseKPIDataResult {
         // short-circuit earlier via the catch block below.
         if (signal.aborted) return;
 
-        setData(reports);
+        setData(orderedReports);
         setLastUpdated(formattedLastUpdated);
 
         // Cache the fresh data. Isolated try-catch so a quota error never
         // surfaces as a "fetch failed" message — the UI already has the data.
         try {
           localStorage.setItem(CACHE_KEY, JSON.stringify({
-            data: reports,
+            data: orderedReports,
             hospitalMap: hMap,
             tambonMap: tMap,
             lastUpdated: formattedLastUpdated,

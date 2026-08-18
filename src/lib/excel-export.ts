@@ -25,6 +25,8 @@ export async function exportToExcel(
   // Static columns
   const columns = [
     { header: '#', key: 'index', width: 5 },
+    { header: 'หมวด', key: 'category', width: 22 },
+    { header: 'กลุ่มย่อย', key: 'subgroup', width: 16 },
     { header: 'ตัวชี้วัด (Indicator)', key: 'title', width: 40 },
     { header: 'Target', key: 'target', width: 18 },
     { header: 'Result (%)', key: 'result', width: 15 },
@@ -64,6 +66,9 @@ export async function exportToExcel(
 
     const rowValues: Record<string, string | number> = {
       index: index + 1,
+      // Repeated values (not merged cells) → filterable/pivotable in Excel
+      category: kpi.category ?? '',
+      subgroup: kpi.subgroup ?? '',
       title: kpi.title,
       target: `≥ ${targetVal} (${kpi.targetMonths} เดือน)`,
       result: isRawCount ? kpi.totalResult : roundPct(kpi.percentage),

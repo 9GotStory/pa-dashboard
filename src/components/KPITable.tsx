@@ -12,6 +12,7 @@ import type { KPISummary, MophReportData } from "@/lib/types";
 import { KPIDetailModal } from "./KPIDetailModal";
 import { exportToExcel } from "@/lib/excel-export";
 import { computeAggregate, DEFAULT_TARGET, formatPct } from "@/lib/kpi-utils";
+import { partitionByCategory } from "@/lib/kpi-grouping";
 import {
   ExternalLink,
   CalendarClock,
@@ -354,6 +355,21 @@ export default function KPITable({
     getCoreRowModel: getCoreRowModel(),
   });
 
+  // Render as one self-contained block per category: each block carries its
+  // own section title and table (own scroll container so per-block sticky
+  // headers behave), while columns/facilities stay computed from ALL data.
+  // Subgroup header rows interleave inside each block's body (not injected
+  // into tanstack's data — accessors stay typed).
+  const blocks = useMemo(() => partitionByCategory(data), [data]);
+  const columnCount = table.getAllLeafColumns().length;
+  const rowModel = table.getRowModel();
+  // Identity map KPI → tanstack row: block item dataIndexes are per-slice,
+  // so look rows up by object instead of by global index.
+  const rowByKpi = useMemo(
+    () => new Map(rowModel.rows.map((row) => [row.original, row])),
+    [rowModel],
+  );
+
   const [isExporting, setIsExporting] = useState(false);
 
   const handleExport = async () => {
@@ -398,69 +414,99 @@ export default function KPITable({
           </button>
         </div>
 
-        <div className="relative w-full overflow-auto">
-          <Table className="w-full table-fixed text-sm text-left border-separate border-spacing-0">
-            <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
-              {table.getHeaderGroups().map((headerGroup) => (
-                <TableRow
-                  key={headerGroup.id}
-                  className="h-auto hover:bg-transparent border-b border-slate-200"
-                >
-                  {headerGroup.headers.map((header) => {
-                    const meta = header.column.columnDef.meta;
-                    const className = meta?.getHeaderClassName
-                      ? meta.getHeaderClassName()
-                      : meta?.headerClassName;
+        {blocks.map((block) => (
+          <div key={block.key} className="border-t border-slate-200 first:border-t-0">
+            {/* Block title bar — one per category. Hidden when only one
+                category is in view (the tab already labels it). */}
+            {blocks.length > 1 && (
+              <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+                <h4 className="font-prompt text-base font-bold text-brand-800">
+                  {block.label || "ตัวชี้วัด"}
+                </h4>
+                <span className="text-xs font-medium text-slate-500 font-prompt">
+                  {block.count} ตัวชี้วัด
+                </span>
+              </div>
+            )}
+            <div className="relative w-full overflow-auto">
+              <Table className="w-full table-fixed text-sm text-left border-separate border-spacing-0">
+                <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
+                  {table.getHeaderGroups().map((headerGroup) => (
+                    <TableRow
+                      key={headerGroup.id}
+                      className="h-auto hover:bg-transparent border-b border-slate-200"
+                    >
+                      {headerGroup.headers.map((header) => {
+                        const meta = header.column.columnDef.meta;
+                        const className = meta?.getHeaderClassName
+                          ? meta.getHeaderClassName()
+                          : meta?.headerClassName;
 
-                    return (
-                      <TableHead
-                        key={header.id}
-                        className={cn(
-                          "h-auto px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide",
-                          className,
-                        )}
-                      >
-                        {header.isPlaceholder
-                          ? null
-                          : flexRender(
-                              header.column.columnDef.header,
-                              header.getContext(),
+                        return (
+                          <TableHead
+                            key={header.id}
+                            className={cn(
+                              "h-auto px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide",
+                              className,
                             )}
-                      </TableHead>
-                    );
-                  })}
-                </TableRow>
-              ))}
-            </TableHeader>
-            <TableBody>
-              {table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.id}
-                  className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors"
-                >
-                  {row.getVisibleCells().map((cell) => {
-                    const meta = cell.column.columnDef.meta;
-                    const className = meta?.getCellClassName
-                      ? meta.getCellClassName(row)
-                      : meta?.className;
-
+                          >
+                            {header.isPlaceholder
+                              ? null
+                              : flexRender(
+                                  header.column.columnDef.header,
+                                  header.getContext(),
+                                )}
+                          </TableHead>
+                        );
+                      })}
+                    </TableRow>
+                  ))}
+                </TableHeader>
+                <TableBody>
+                  {block.items.map((item) => {
+                    if (item.type === "subgroup") {
+                      return (
+                        <TableRow key={item.key} className="bg-slate-50 hover:bg-slate-50 border-b border-slate-100">
+                          <TableCell colSpan={columnCount} className="py-1.5 pl-6 font-prompt text-xs font-semibold text-slate-600">
+                            {item.label}
+                          </TableCell>
+                        </TableRow>
+                      );
+                    }
+                    if (item.type !== "kpi") return null; // category headers never occur inside a block
+                    const row = rowByKpi.get(item.kpi);
+                    if (!row) return null;
                     return (
-                      <TableCell
-                        key={cell.id}
-                        className={cn("p-0 h-10", className)}
+                      <TableRow
+                        key={row.id}
+                        className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors"
                       >
-                        {flexRender(
-                          cell.column.columnDef.cell,
-                          cell.getContext(),
-                        )}
-                      </TableCell>
+                        {row.getVisibleCells().map((cell) => {
+                          const meta = cell.column.columnDef.meta;
+                          const className = meta?.getCellClassName
+                            ? meta.getCellClassName(row)
+                            : meta?.className;
+
+                          return (
+                            <TableCell
+                              key={cell.id}
+                              className={cn("p-0 h-10", className)}
+                            >
+                              {flexRender(
+                                cell.column.columnDef.cell,
+                                cell.getContext(),
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
                     );
                   })}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        ))}
       </div>
 
       <KPIDetailModal

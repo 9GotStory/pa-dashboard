@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { KPISummary, MophReportData } from "@/lib/types";
 import { DEFAULT_TARGET } from "@/lib/kpi-utils";
+import { partitionByCategory } from "@/lib/kpi-grouping";
 import { KPICard } from "./KPICard";
 import { KPIDetailModal } from "./KPIDetailModal";
 
@@ -66,15 +67,49 @@ export default function KPICardList({
 
   return (
     <>
-      <div className="flex flex-col gap-3 pb-8">
-        {data.map((kpi, index) => (
-          <KPICard
-            key={index}
-            kpi={kpi}
-            hospitalMap={hospitalMap}
-            selectedFacilities={selectedFacilities}
-            onClick={() => openDrillDown(kpi)}
-          />
+      <div className="flex flex-col gap-5 pb-8">
+        {partitionByCategory(data).map((block, _blockIndex, all) => (
+          <div
+            key={block.key}
+            className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+          >
+            {/* Title hidden when only one category is in view (the tab
+                already labels it). */}
+            {all.length > 1 && (
+              <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+                <h3 className="font-prompt text-sm font-bold text-brand-800">
+                  {block.label || "ตัวชี้วัด"}
+                </h3>
+                <span className="text-[11px] font-medium text-slate-500 font-prompt">
+                  {block.count} ตัวชี้วัด
+                </span>
+              </div>
+            )}
+            <div className="flex flex-col gap-3 p-3">
+              {block.items.map((item) => {
+                if (item.type === "subgroup") {
+                  return (
+                    <div
+                      key={item.key}
+                      className="pb-1 px-1 font-prompt text-xs font-semibold text-slate-500"
+                    >
+                      {item.label}
+                    </div>
+                  );
+                }
+                if (item.type !== "kpi") return null; // category headers never occur inside a block
+                return (
+                  <KPICard
+                    key={item.key}
+                    kpi={item.kpi}
+                    hospitalMap={hospitalMap}
+                    selectedFacilities={selectedFacilities}
+                    onClick={() => openDrillDown(item.kpi)}
+                  />
+                );
+              })}
+            </div>
+          </div>
         ))}
       </div>
 

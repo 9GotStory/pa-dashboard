@@ -25,13 +25,15 @@ async function fetchMetadata() {
   return json.meta;
 }
 
-async function fetchMoph(tableName, year, province, retries = 3) {
+async function fetchMoph(tableName, year, province, limit, retries = 3) {
   for (let i = 0; i < retries; i++) {
     try {
       const res = await fetch(MOPH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tableName, year, province, type: 'json' }),
+        // `limit` (when set) raises the page size for tables MOPH truncates
+        // at 1000 rows — s_epi_complete has ~2.4k rows for a province.
+        body: JSON.stringify({ tableName, year, province, type: 'json', ...(limit ? { limit } : {}) }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const json = await res.json();
@@ -63,7 +65,7 @@ async function pushToGas(tableName, rows) {
 async function main() {
   console.log('Loading config from BATCH_ALL...');
   const meta = await fetchMetadata();
-  const kpis = (meta.kpi_config || []).filter((k) => k.table);
+  const kpis = (meta.kpi_config || []).filter((k) => k.table).map((k) => ({ ...k, limit: Number(k.limit) > 0 ? Number(k.limit) : null }));
   const settings = {
     year: String(meta.current_year || '2569'),
     province: String(meta.province_code || '54'),
@@ -79,7 +81,7 @@ async function main() {
   let fail = 0;
   for (const kpi of targets) {
     try {
-      const rows = await fetchMoph(kpi.table, settings.year, settings.province);
+      const rows = await fetchMoph(kpi.table, settings.year, settings.province, kpi.limit);
       if (rows.length === 0) throw new Error('MOPH returned 0 rows');
       const count = await pushToGas(kpi.table, rows);
       console.log(`  ✓ ${kpi.table}: ${count} rows saved`);

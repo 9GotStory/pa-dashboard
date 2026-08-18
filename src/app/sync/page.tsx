@@ -24,11 +24,14 @@ const API_URL = "https://opendata.moph.go.th/api/report_data";
 interface KpiListItem {
   table: string;
   sheet: string;
+  // Larger page size for tables MOPH truncates at 1000 rows (s_epi_complete)
+  limit?: number | null;
 }
 
 interface KpiConfigRaw {
   table?: unknown;
   sheet?: unknown;
+  limit?: unknown;
 }
 
 interface BatchMeta {
@@ -186,6 +189,7 @@ export default function SyncPage() {
         const list: KpiListItem[] = rawList.map((k) => ({
           table: String(k.table),
           sheet: String(k.sheet ?? k.table),
+          limit: Number(k.limit) > 0 ? Number(k.limit) : null,
         }));
         setKpiList(list);
         // Warn if ANY KPI is missing `sheet` — checking only the first entry
@@ -325,6 +329,8 @@ export default function SyncPage() {
                 year: settings.current_year,
                 province: settings.province_code,
                 type: "json",
+                // Larger page size for tables MOPH truncates at 1000 rows
+                ...(kpi.limit ? { limit: kpi.limit } : {}),
               }),
             });
             break; // Success, exit retry loop
@@ -617,9 +623,11 @@ export default function SyncPage() {
                 try {
                   let d = new Date(lastUpdated);
 
-                  // Handle MOPH format YYYYMMDDHHmm (e.g., "202602221224")
+                  // Handle MOPH format YYYYMMDDHHmm (e.g., "202602221224").
+                  // s_epi1 adds seconds (14 digits) — accept both, parse the
+                  // first 12.
                   const dateStr = String(lastUpdated);
-                  if (dateStr.length === 12 && /^\d+$/.test(dateStr)) {
+                  if ((dateStr.length === 12 || dateStr.length === 14) && /^\d+$/.test(dateStr)) {
                     const y = parseInt(dateStr.substring(0, 4));
                     const m = parseInt(dateStr.substring(4, 6)) - 1;
                     const day = parseInt(dateStr.substring(6, 8));

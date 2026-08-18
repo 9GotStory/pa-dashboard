@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { CalendarClock } from "lucide-react";
+import { useState, useMemo, useEffect } from "react";
+import { CalendarClock, LayoutGrid } from "lucide-react";
 import KPITable from "@/components/KPITable";
 import KPICardList from "@/components/KPICardList";
 import KPISummaryStats from "@/components/KPISummaryStats";
@@ -11,6 +11,7 @@ import DashboardFilter from "@/components/DashboardFilter";
 import DataStatusNotifier from "@/components/DataStatusNotifier";
 import { useKPIData } from "@/lib/useKPIData";
 import type { KPIMaster } from "@/lib/types";
+import { cn } from "@/lib/utils";
 
 export default function Home() {
   const {
@@ -26,15 +27,69 @@ export default function Home() {
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
   const [selectedKPIs, setSelectedKPIs] = useState<string[]>([]);
 
+  // Active category tab: "" = ทั้งหมด, otherwise a category name. Derived
+  // from the data (kpi_registry manifest), so future categories appear as
+  // tabs automatically. Synced to ?cat= for shareable deep links. Lazy-init
+  // from the URL: safe even under SSR because the first paint is always the
+  // loading skeleton (tabs render only after client-side data arrives).
+  const [activeCategory, setActiveCategory] = useState(() =>
+    typeof window !== "undefined"
+      ? new URLSearchParams(window.location.search).get("cat") ?? ""
+      : "",
+  );
+
+  // Categories in display order (category_order → first appearance).
+  const categories = useMemo(() => {
+    const seen = new Map<string, number>();
+    data.forEach((kpi) => {
+      const cat = kpi.category ?? "";
+      if (!cat || seen.has(cat)) return;
+      seen.set(cat, kpi.categoryOrder ?? 999);
+    });
+    return Array.from(seen.entries())
+      .sort((a, b) => a[1] - b[1])
+      .map(([name]) => name);
+  }, [data]);
+
+  // Derived guard: if the selected category no longer exists (data reload,
+  // registry edit), view falls back to ทั้งหมด without a state reset.
+  const currentCategory =
+    activeCategory && categories.length > 0 && !categories.includes(activeCategory)
+      ? ""
+      : activeCategory;
+
+  // Persist tab to URL (external system sync — no setState here).
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (currentCategory) params.set("cat", currentCategory);
+    else params.delete("cat");
+    const qs = params.toString();
+    window.history.replaceState(
+      null,
+      "",
+      qs ? `${window.location.pathname}?${qs}` : window.location.pathname,
+    );
+  }, [currentCategory]);
+
   // Filter Data based on Selected KPIs
   const filteredData = useMemo(() => {
     if (selectedKPIs.length === 0) return data;
     return data.filter((kpi) => selectedKPIs.includes(kpi.tableName));
   }, [data, selectedKPIs]);
 
+  // What the current tab shows (summary stats + table/cards follow the tab).
+  const tabData = useMemo(
+    () =>
+      currentCategory
+        ? filteredData.filter((kpi) => (kpi.category ?? "") === currentCategory)
+        : filteredData,
+    [filteredData, currentCategory],
+  );
+
   // Derive the KPI list for the filter from the loaded reports. useKPIData
   // used to expose kpiMasterList but the state was never populated (always []),
-  // so this derivation has always been the effective path.
+  // so this derivation has always been the effective path. Grouping fields
+  // ride along so the filter can render category/subgroup sections.
   // NOTE: must run before any early return — React Hooks order rule.
   const dynamicKPIList: KPIMaster[] = useMemo(
     () =>
@@ -42,7 +97,10 @@ export default function Home() {
         table_name: d.tableName,
         title: d.title,
         target: d.targetValue,
-        order: 0,
+        order: d.order ?? 0,
+        category: d.category ?? "",
+        subgroup: d.subgroup ?? "",
+        category_order: d.categoryOrder ?? 999,
       })),
     [data],
   );
@@ -102,9 +160,52 @@ export default function Home() {
           onKPIsChange={setSelectedKPIs}
         />
 
-        {/* 2. SUMMARY STATS (Inverted Pyramid Level 1) */}
+        {/* CATEGORY TABS — one per registry tab + ทั้งหมด */}
+        {categories.length > 1 && (
+          <div className="mb-6 flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
+            <button
+              onClick={() => setActiveCategory("")}
+              className={cn(
+                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all shadow-sm border font-prompt",
+                currentCategory === ""
+                  ? "bg-brand-600 border-brand-600 text-white"
+                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+              )}
+            >
+              <LayoutGrid className="w-3.5 h-3.5" />
+              ทั้งหมด
+            </button>
+            {categories.map((cat) => {
+              const count = data.filter((k) => (k.category ?? "") === cat).length;
+              return (
+                <button
+                  key={cat}
+                  onClick={() => setActiveCategory(cat)}
+                  className={cn(
+                    "px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all shadow-sm border font-prompt",
+                    currentCategory === cat
+                      ? "bg-brand-600 border-brand-600 text-white"
+                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  {cat}
+                  <span
+                    className={cn(
+                      "ml-1.5 text-[10px] font-medium",
+                      currentCategory === cat ? "text-white/80" : "text-slate-400",
+                    )}
+                  >
+                    {count}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* 2. SUMMARY STATS — follows the active tab */}
         <KPISummaryStats
-          data={filteredData}
+          data={tabData}
           selectedFacilities={selectedFacilities}
         />
 
@@ -113,7 +214,7 @@ export default function Home() {
           {/* Desktop Table View */}
           <div className="hidden md:block">
             <KPITable
-              data={filteredData}
+              data={tabData}
               hospitalMap={hospitalMap}
               tambonMap={tambonMap}
               selectedFacilities={selectedFacilities}
@@ -123,7 +224,7 @@ export default function Home() {
           {/* Mobile Card View */}
           <div className="block md:hidden p-4 bg-slate-50/50">
             <KPICardList
-              data={filteredData}
+              data={tabData}
               hospitalMap={hospitalMap}
               tambonMap={tambonMap}
               selectedFacilities={selectedFacilities}
