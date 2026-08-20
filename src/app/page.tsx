@@ -210,26 +210,24 @@ export default function Home() {
         />
 
         {/* 3. DETAILED REPORT (Inverted Pyramid Level 2) */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 md:overflow-hidden">
-          {/* Desktop Table View */}
-          <div className="hidden md:block">
-            <KPITable
-              data={tabData}
-              hospitalMap={hospitalMap}
-              tambonMap={tambonMap}
-              selectedFacilities={selectedFacilities}
-            />
-          </div>
+        {/* Desktop: KPITable renders its own toolbar + one card per category.
+            Mobile: gray backdrop panel behind the KPI cards. */}
+        <div className="hidden md:block">
+          <KPITable
+            data={tabData}
+            hospitalMap={hospitalMap}
+            tambonMap={tambonMap}
+            selectedFacilities={selectedFacilities}
+          />
+        </div>
 
-          {/* Mobile Card View */}
-          <div className="block md:hidden p-4 bg-slate-50/50">
-            <KPICardList
-              data={tabData}
-              hospitalMap={hospitalMap}
-              tambonMap={tambonMap}
-              selectedFacilities={selectedFacilities}
-            />
-          </div>
+        <div className="block md:hidden p-4 bg-slate-50/50 rounded-xl">
+          <KPICardList
+            data={tabData}
+            hospitalMap={hospitalMap}
+            tambonMap={tambonMap}
+            selectedFacilities={selectedFacilities}
+          />
         </div>
 
         {/* 4. FOOTER META (Moved from Top) */}

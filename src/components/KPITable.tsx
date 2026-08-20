@@ -386,9 +386,9 @@ export default function KPITable({
 
   return (
     <>
-      <div className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm">
-        {/* Table Actions Header */}
-        <div className="px-6 py-4 bg-white border-b border-slate-100 flex justify-between items-center sticky left-0 z-10 w-full">
+      <div className="flex flex-col gap-6">
+        {/* Table Actions Header — standalone toolbar above the category cards */}
+        <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-4 flex justify-between items-center">
           <div>
             <h3 className="font-bold text-slate-800 font-prompt text-lg">
               ผลการดำเนินงาน
@@ -415,14 +415,23 @@ export default function KPITable({
         </div>
 
         {blocks.map((block) => (
-          <div key={block.key} className="border-t border-slate-200 first:border-t-0">
+          <div
+            key={block.key}
+            className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm"
+          >
             {/* Block title bar — one per category. Hidden when only one
                 category is in view (the tab already labels it). */}
             {blocks.length > 1 && (
               <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-                <h4 className="font-prompt text-base font-bold text-brand-800">
-                  {block.label || "ตัวชี้วัด"}
-                </h4>
+                <div className="flex items-center gap-2.5">
+                  <span
+                    aria-hidden
+                    className="w-1 h-5 rounded-full bg-brand-600"
+                  />
+                  <h4 className="font-prompt text-base font-bold text-brand-800">
+                    {block.label || "ตัวชี้วัด"}
+                  </h4>
+                </div>
                 <span className="text-xs font-medium text-slate-500 font-prompt">
                   {block.count} ตัวชี้วัด
                 </span>

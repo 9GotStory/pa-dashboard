@@ -77,9 +77,15 @@ export default function KPICardList({
                 already labels it). */}
             {all.length > 1 && (
               <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
-                <h3 className="font-prompt text-sm font-bold text-brand-800">
-                  {block.label || "ตัวชี้วัด"}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <span
+                    aria-hidden
+                    className="w-1 h-4 rounded-full bg-brand-600"
+                  />
+                  <h3 className="font-prompt text-sm font-bold text-brand-800">
+                    {block.label || "ตัวชี้วัด"}
+                  </h3>
+                </div>
                 <span className="text-[11px] font-medium text-slate-500 font-prompt">
                   {block.count} ตัวชี้วัด
                 </span>
