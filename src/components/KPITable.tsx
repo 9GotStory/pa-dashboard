@@ -422,17 +422,17 @@ export default function KPITable({
             {/* Block title bar — one per category. Hidden when only one
                 category is in view (the tab already labels it). */}
             {blocks.length > 1 && (
-              <div className="px-6 py-3 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+              <div className="px-6 py-3 bg-brand-600 border-b border-brand-700 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <span
                     aria-hidden
-                    className="w-1 h-5 rounded-full bg-brand-600"
+                    className="w-1 h-5 rounded-full bg-white/60"
                   />
-                  <h4 className="font-prompt text-base font-bold text-brand-800">
+                  <h4 className="font-prompt text-base font-bold text-white">
                     {block.label || "ตัวชี้วัด"}
                   </h4>
                 </div>
-                <span className="text-xs font-medium text-slate-500 font-prompt">
+                <span className="text-xs font-medium text-white/80 font-prompt">
                   {block.count} ตัวชี้วัด
                 </span>
               </div>
@@ -475,8 +475,8 @@ export default function KPITable({
                   {block.items.map((item) => {
                     if (item.type === "subgroup") {
                       return (
-                        <TableRow key={item.key} className="bg-slate-50 hover:bg-slate-50 border-b border-slate-100">
-                          <TableCell colSpan={columnCount} className="py-1.5 pl-6 font-prompt text-xs font-semibold text-slate-600">
+                        <TableRow key={item.key} className="bg-accent-50 hover:bg-accent-50 border-b border-accent-100">
+                          <TableCell colSpan={columnCount} className="py-1.5 pl-6 font-prompt text-xs font-semibold text-accent-700 border-l-4 border-accent-500">
                             {item.label}
                           </TableCell>
                         </TableRow>

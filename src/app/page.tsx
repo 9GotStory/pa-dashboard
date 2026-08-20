@@ -138,8 +138,8 @@ export default function Home() {
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
         <DataStatusNotifier recordCount={data.length} />
 
-        {/* 1. HEADER & META ACTIONS */}
-        <div className="mt-6 mb-8 text-center md:text-left">
+        {/* 1. HEADER & LAST-UPDATED META */}
+        <div className="mt-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3 text-center md:text-left">
           <div>
             <h1 className="text-2xl font-bold text-brand-700 font-prompt tracking-tight">
               PA Dashboard
@@ -147,6 +147,14 @@ export default function Home() {
             <p className="text-slate-500 text-sm font-medium mt-0.5">
               คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง
             </p>
+          </div>
+          <div className="flex justify-center md:justify-end opacity-80 hover:opacity-100 transition-opacity">
+            <div className="flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm backdrop-blur-sm">
+              <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
+              <span className="text-xs font-medium text-slate-500 font-prompt">
+                อัปเดตล่าสุด: {lastUpdated || "N/A"}
+              </span>
+            </div>
           </div>
         </div>
 
@@ -230,15 +238,6 @@ export default function Home() {
           />
         </div>
 
-        {/* 4. FOOTER META (Moved from Top) */}
-        <div className="mt-8 flex justify-center items-center gap-3 pb-8 opacity-80 hover:opacity-100 transition-opacity">
-          <div className="flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm backdrop-blur-sm">
-            <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
-            <span className="text-xs font-medium text-slate-500 font-prompt">
-              อัปเดตล่าสุด: {lastUpdated || "N/A"}
-            </span>
-          </div>
-        </div>
       </div>
     </main>
   );
