@@ -1,154 +1,355 @@
-import ExcelJS from 'exceljs';
-import { saveAs } from 'file-saver';
-import type { KPISummary } from './types';
-import { DEFAULT_TARGET, roundPct } from './kpi-utils';
+import writeExcelFile from "write-excel-file/browser";
 
-// Color Constants (ARGB format for ExcelJS)
+import type { KPISummary } from "./types";
+import {
+  DEFAULT_TARGET,
+  roundPct,
+} from "./kpi-utils";
+
 const COLORS = {
-  HEADER_BG: 'FFF1F5F9', // slate-100
-  PASS_BG: 'FFD1FAE5',   // emerald-100
-  PASS_TEXT: 'FF047857', // emerald-700
-  FAIL_BG: 'FFFFE4E6',   // rose-100
-  FAIL_TEXT: 'FFBE123C', // rose-700
-  BORDER: 'FFCBD5E1',    // slate-300
+  HEADER_BG: "#F1F5F9",
+  PASS_BG: "#D1FAE5",
+  PASS_TEXT: "#047857",
+  FAIL_BG: "#FFE4E6",
+  FAIL_TEXT: "#BE123C",
+  BORDER: "#CBD5E1",
+} as const;
+
+type HorizontalAlignment =
+  | "left"
+  | "center"
+  | "right";
+
+type VerticalAlignment =
+  | "top"
+  | "center"
+  | "bottom";
+
+type CellStyle = {
+  height?: number;
+
+  align?: HorizontalAlignment;
+  alignVertical?: VerticalAlignment;
+
+  wrap?: boolean;
+
+  fontFamily?: string;
+  fontSize?: number;
+  fontWeight?: "bold";
+
+  textColor?: string;
+  backgroundColor?: string;
+
+  borderColor?: string;
+  borderStyle?: "thin";
 };
+
+type ExcelCell = CellStyle & {
+  value: string | number;
+};
+
+type ExcelRow = ExcelCell[];
+
+function createCell(
+  value: string | number,
+  style: CellStyle = {},
+): ExcelCell {
+  return {
+    value,
+
+    height: 24,
+
+    borderColor: COLORS.BORDER,
+    borderStyle: "thin",
+
+    ...style,
+  };
+}
+
+function createHeaderCell(
+  value: string,
+): ExcelCell {
+  return {
+    value,
+
+    height: 30,
+
+    fontFamily: "Sarabun",
+    fontSize: 12,
+    fontWeight: "bold",
+
+    backgroundColor:
+      COLORS.HEADER_BG,
+
+    align: "center",
+    alignVertical: "center",
+
+    wrap: true,
+
+    borderColor: COLORS.BORDER,
+    borderStyle: "thin",
+  };
+}
+
+function createResultStyle(
+  isPass: boolean,
+): CellStyle {
+  return {
+    align: "center",
+    alignVertical: "center",
+
+    backgroundColor:
+      isPass
+        ? COLORS.PASS_BG
+        : COLORS.FAIL_BG,
+
+    textColor:
+      isPass
+        ? COLORS.PASS_TEXT
+        : COLORS.FAIL_TEXT,
+
+    fontWeight: "bold",
+  };
+}
+
+function createFacilityStyle(
+  isPass?: boolean,
+): CellStyle {
+  if (isPass === undefined) {
+    return {
+      align: "center",
+      alignVertical: "center",
+    };
+  }
+
+  return {
+    align: "center",
+    alignVertical: "center",
+
+    backgroundColor:
+      isPass
+        ? COLORS.PASS_BG
+        : COLORS.FAIL_BG,
+
+    textColor:
+      isPass
+        ? COLORS.PASS_TEXT
+        : COLORS.FAIL_TEXT,
+  };
+}
 
 export async function exportToExcel(
   data: KPISummary[],
-  hospitalMap: Record<string, { name: string; tambon_id: string }>,
-  facilityKeys: string[]
-) {
-  const workbook = new ExcelJS.Workbook();
-  const sheet = workbook.addWorksheet('PA Dashboard 2569');
 
-  // --- 1. Define Columns ---
-  // Static columns
-  const columns = [
-    { header: '#', key: 'index', width: 5 },
-    { header: 'หมวด', key: 'category', width: 22 },
-    { header: 'กลุ่มย่อย', key: 'subgroup', width: 16 },
-    { header: 'ตัวชี้วัด (Indicator)', key: 'title', width: 40 },
-    { header: 'Target', key: 'target', width: 18 },
-    { header: 'Result (%)', key: 'result', width: 15 },
+  hospitalMap: Record<
+    string,
+    {
+      name: string;
+      tambon_id: string;
+    }
+  >,
+
+  facilityKeys: string[],
+) {
+  const staticColumns = [
+    {
+      header: "#",
+      width: 5,
+    },
+    {
+      header: "หมวด",
+      width: 22,
+    },
+    {
+      header: "กลุ่มย่อย",
+      width: 16,
+    },
+    {
+      header:
+        "ตัวชี้วัด (Indicator)",
+      width: 40,
+    },
+    {
+      header: "Target",
+      width: 18,
+    },
+    {
+      header: "Result (%)",
+      width: 15,
+    },
   ];
 
-  // Dynamic Facility Columns
-  facilityKeys.forEach(key => {
-    const hospName = hospitalMap[key]?.name || key;
-    columns.push({ header: hospName, key: key, width: 12 });
-  });
+  const facilityColumns =
+    facilityKeys.map(
+      (key) => ({
+        header:
+          hospitalMap[key]?.name ||
+          key,
 
-  sheet.columns = columns;
+        width: 12,
+      }),
+    );
 
-  // --- 2. Style Header Row ---
-  const headerRow = sheet.getRow(1);
-  headerRow.height = 30;
-  headerRow.font = { bold: true, size: 12, name: 'Sarabun' }; // Fallback font
-  headerRow.eachCell((cell) => {
-    cell.fill = {
-      type: 'pattern',
-      pattern: 'solid',
-      fgColor: { argb: COLORS.HEADER_BG },
-    };
-    cell.alignment = { vertical: 'middle', horizontal: 'center', wrapText: true };
-    cell.border = {
-      top: { style: 'thin', color: { argb: COLORS.BORDER } },
-      left: { style: 'thin', color: { argb: COLORS.BORDER } },
-      bottom: { style: 'thin', color: { argb: COLORS.BORDER } },
-      right: { style: 'thin', color: { argb: COLORS.BORDER } },
-    };
-  });
+  const columnDefinitions = [
+    ...staticColumns,
+    ...facilityColumns,
+  ];
 
-  // --- 3. Add Data Rows ---
-  data.forEach((kpi, index) => {
-    const isRawCount = kpi.totalTarget === 0;
-    const targetVal = kpi.targetValue || DEFAULT_TARGET;
+  const columns =
+    columnDefinitions.map(
+      ({ width }) => ({
+        width,
+      }),
+    );
 
-    const rowValues: Record<string, string | number> = {
-      index: index + 1,
-      // Repeated values (not merged cells) → filterable/pivotable in Excel
-      category: kpi.category ?? '',
-      subgroup: kpi.subgroup ?? '',
-      title: kpi.title,
-      target: `≥ ${targetVal} (${kpi.targetMonths} เดือน)`,
-      result: isRawCount ? kpi.totalResult : roundPct(kpi.percentage),
-    };
+  const headerRow: ExcelRow =
+    columnDefinitions.map(
+      ({ header }) =>
+        createHeaderCell(header),
+    );
 
-    // Fill Facility Data
-    facilityKeys.forEach(key => {
-       const breakdown = kpi.breakdown?.[key];
-       if (!breakdown) { // No data
-          rowValues[key] = '-';
-       } else if (isRawCount) { // Count only
-          rowValues[key] = breakdown.result; 
-       } else if (breakdown.target === 0) { // Target is 0 -> usually means N/A or special case
-          rowValues[key] = '-';
-       } else { // Normal %
-          rowValues[key] = roundPct(breakdown.percentage);
-       }
-    });
+  const rows: ExcelRow[] =
+    data.map(
+      (kpi, index) => {
+        const isRawCount =
+          kpi.totalTarget === 0;
 
-    const row = sheet.addRow(rowValues);
-    row.height = 24;
+        const targetValue =
+          kpi.targetValue ||
+          DEFAULT_TARGET;
 
-    // --- 4. Apply Row Styling ---
-    
-    // Title Column (Wrap Text)
-    const titleCell = row.getCell('title');
-    titleCell.alignment = { vertical: 'middle', wrapText: true };
+        const resultValue =
+          isRawCount
+            ? kpi.totalResult
+            : roundPct(
+                kpi.percentage,
+              );
 
-    // Result Column (Total)
-    const resultCell = row.getCell('result');
-    resultCell.alignment = { vertical: 'middle', horizontal: 'center' };
-    
-    if (!isRawCount) {
-       const isPass = kpi.percentage >= targetVal;
-       resultCell.fill = {
-         type: 'pattern',
-         pattern: 'solid',
-         fgColor: { argb: isPass ? COLORS.PASS_BG : COLORS.FAIL_BG }
-       };
-       resultCell.font = {
-         color: { argb: isPass ? COLORS.PASS_TEXT : COLORS.FAIL_TEXT },
-         bold: true
-       };
-    }
+        const row: ExcelRow = [
+          createCell(
+            index + 1,
+          ),
 
-    // Facility Columns Styling
-    facilityKeys.forEach(key => {
-       const cell = row.getCell(key);
-       cell.alignment = { vertical: 'middle', horizontal: 'center' };
-       
-       const breakdown = kpi.breakdown?.[key];
-       if (breakdown && !isRawCount && breakdown.target > 0) {
-          const isPass = breakdown.percentage >= targetVal;
-          cell.fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: isPass ? COLORS.PASS_BG : COLORS.FAIL_BG }
-          };
-          cell.font = {
-            color: { argb: isPass ? COLORS.PASS_TEXT : COLORS.FAIL_TEXT }
-          };
-       }
-    });
+          createCell(
+            kpi.category ?? "",
+          ),
 
-    // Apply Borders to all cells in row
-    row.eachCell((cell) => {
-       cell.border = {
-        top: { style: 'thin', color: { argb: COLORS.BORDER } },
-        left: { style: 'thin', color: { argb: COLORS.BORDER } },
-        bottom: { style: 'thin', color: { argb: COLORS.BORDER } },
-        right: { style: 'thin', color: { argb: COLORS.BORDER } },
-      };
-    });
-  });
+          createCell(
+            kpi.subgroup ?? "",
+          ),
 
-  // --- 5. Write Buffer & Save ---
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
-  
-  // File Name: pa-dashboard-YYYY-MM-DD.xlsx
-  const dateStr = new Date().toISOString().split('T')[0];
-  saveAs(blob, `pa-dashboard-${dateStr}.xlsx`);
+          createCell(
+            kpi.title,
+            {
+              alignVertical:
+                "center",
+
+              wrap: true,
+            },
+          ),
+
+          createCell(
+            `≥ ${targetValue} (${kpi.targetMonths} เดือน)`,
+          ),
+
+          createCell(
+            resultValue,
+
+            isRawCount
+              ? {
+                  align:
+                    "center",
+
+                  alignVertical:
+                    "center",
+                }
+              : createResultStyle(
+                  kpi.percentage >=
+                    targetValue,
+                ),
+          ),
+        ];
+
+        for (
+          const key
+          of facilityKeys
+        ) {
+          const breakdown =
+            kpi.breakdown?.[key];
+
+          if (!breakdown) {
+            row.push(
+              createCell(
+                "-",
+                createFacilityStyle(),
+              ),
+            );
+
+            continue;
+          }
+
+          if (isRawCount) {
+            row.push(
+              createCell(
+                breakdown.result,
+
+                createFacilityStyle(),
+              ),
+            );
+
+            continue;
+          }
+
+          if (
+            breakdown.target === 0
+          ) {
+            row.push(
+              createCell(
+                "-",
+                createFacilityStyle(),
+              ),
+            );
+
+            continue;
+          }
+
+          row.push(
+            createCell(
+              roundPct(
+                breakdown.percentage,
+              ),
+
+              createFacilityStyle(
+                breakdown.percentage >=
+                  targetValue,
+              ),
+            ),
+          );
+        }
+
+        return row;
+      },
+    );
+
+  const sheetData: ExcelRow[] = [
+    headerRow,
+    ...rows,
+  ];
+
+  const date =
+    new Date()
+      .toISOString()
+      .split("T")[0];
+
+  await writeExcelFile(
+    sheetData,
+    {
+      sheet:
+        "PA Dashboard 2569",
+
+      columns,
+    },
+  ).toFile(
+    `pa-dashboard-${date}.xlsx`,
+  );
 }
