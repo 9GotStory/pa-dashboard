@@ -383,7 +383,10 @@ test(
 
           assert.deepEqual(
             first.applied,
-            ["0001"],
+            [
+              "0001",
+              "0002",
+            ],
           );
 
           assert.deepEqual(
@@ -401,7 +404,10 @@ test(
 
           assert.deepEqual(
             second.skipped,
-            ["0001"],
+            [
+              "0001",
+              "0002",
+            ],
           );
         },
       );
@@ -1218,6 +1224,109 @@ test(
         );
 
       await t.test(
+        "failed run cannot return to running",
+        async () => {
+          await expectPgCode(
+            () =>
+              pool.query(
+                `
+                  UPDATE sync_runs
+                  SET
+                    status = 'running',
+                    failed_source_count = 0,
+                    finished_at = NULL
+                  WHERE id = $1
+                `,
+                [
+                  failedRunId,
+                ],
+              ),
+            "23514",
+          );
+        },
+      );
+
+      await t.test(
+        "succeeded run cannot return to running",
+        async () => {
+          await expectPgCode(
+            () =>
+              pool.query(
+                `
+                  UPDATE sync_runs
+                  SET
+                    status = 'running',
+                    completed_source_count = 0,
+                    finished_at = NULL
+                  WHERE id = $1
+                `,
+                [
+                  succeededRunA,
+                ],
+              ),
+            "23514",
+          );
+        },
+      );
+
+      await t.test(
+        "config snapshot cannot change",
+        async () => {
+          await expectPgCode(
+            () =>
+              pool.query(
+                `
+                  UPDATE sync_runs
+                  SET config_snapshot =
+                    '{"mutated":true}'::JSONB
+                  WHERE id = $1
+                `,
+                [
+                  runningRunId,
+                ],
+              ),
+            "23514",
+          );
+
+          await expectPgCode(
+            () =>
+              pool.query(
+                `
+                  UPDATE sync_runs
+                  SET config_snapshot =
+                    '{"mutated":true}'::JSONB
+                  WHERE id = $1
+                `,
+                [
+                  succeededRunA,
+                ],
+              ),
+            "23514",
+          );
+        },
+      );
+
+      await t.test(
+        "activated_at cannot be forged before activation",
+        async () => {
+          await expectPgCode(
+            () =>
+              pool.query(
+                `
+                  UPDATE sync_runs
+                  SET activated_at = NOW()
+                  WHERE id = $1
+                `,
+                [
+                  succeededRunA,
+                ],
+              ),
+            "23514",
+          );
+        },
+      );
+
+      await t.test(
         "activation guard rejects ineligible runs",
         async () => {
           await expectPgCode(
@@ -1304,6 +1413,70 @@ test(
           assert.ok(
             result.rows[0]
               ?.activated_at,
+          );
+        },
+      );
+
+      await t.test(
+        "activated_at cannot be rewritten after activation",
+        async () => {
+          const before =
+            await pool.query<{
+              readonly activated_at:
+                Date | null;
+            }>(
+              `
+                SELECT activated_at
+                FROM sync_runs
+                WHERE id = $1
+              `,
+              [
+                succeededRunA,
+              ],
+            );
+
+          const activatedAt =
+            before.rows[0]
+              ?.activated_at;
+
+          assert.ok(activatedAt);
+
+          await expectPgCode(
+            () =>
+              pool.query(
+                `
+                  UPDATE sync_runs
+                  SET activated_at =
+                    activated_at
+                    + INTERVAL '1 second'
+                  WHERE id = $1
+                `,
+                [
+                  succeededRunA,
+                ],
+              ),
+            "23514",
+          );
+
+          const after =
+            await pool.query<{
+              readonly activated_at:
+                Date | null;
+            }>(
+              `
+                SELECT activated_at
+                FROM sync_runs
+                WHERE id = $1
+              `,
+              [
+                succeededRunA,
+              ],
+            );
+
+          assert.equal(
+            after.rows[0]
+              ?.activated_at?.getTime(),
+            activatedAt.getTime(),
           );
         },
       );
