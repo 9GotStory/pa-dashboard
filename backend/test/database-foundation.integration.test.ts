@@ -851,6 +851,170 @@ test(
       await resetPublicSchema(pool);
 
       await t.test(
+        "KPI registry seed refuses pre-existing authority collisions",
+        async () => {
+          const directory =
+            await mkdtemp(
+              join(
+                tmpdir(),
+                "pa-dashboard-seed-collision-",
+              ),
+            );
+
+          try {
+            for (
+              const filename
+              of [
+                "0001_database_foundation.sql",
+                "0002_sync_run_lifecycle_guard.sql",
+                "0003_kpi_target_months_scalar.sql",
+              ]
+            ) {
+              await copyFile(
+                resolve(
+                  "migrations",
+                  filename,
+                ),
+                join(
+                  directory,
+                  filename,
+                ),
+              );
+            }
+
+            await resetPublicSchema(pool);
+
+            const foundation =
+              await runMigrations(
+                pool,
+                directory,
+              );
+
+            assert.deepEqual(
+              foundation.applied,
+              [
+                "0001",
+                "0002",
+                "0003",
+              ],
+            );
+
+            await pool.query(`
+              INSERT INTO app_settings (
+                key,
+                value,
+                updated_at
+              )
+              VALUES (
+                'current_year',
+                to_jsonb(
+                  '9999'::TEXT
+                ),
+                NOW()
+              )
+            `);
+
+            await copyFile(
+              resolve(
+                "migrations",
+                "0004_kpi_registry_seed.sql",
+              ),
+              join(
+                directory,
+                "0004_kpi_registry_seed.sql",
+              ),
+            );
+
+            await expectPgCode(
+              () =>
+                runMigrations(
+                  pool,
+                  directory,
+                ),
+              "23505",
+            );
+
+            const preserved =
+              await pool.query<{
+                readonly value: unknown;
+              }>(`
+                SELECT value
+                FROM app_settings
+                WHERE key =
+                  'current_year'
+              `);
+
+            assert.deepEqual(
+              preserved.rows[0]?.value,
+              "9999",
+            );
+
+            const categories =
+              await pool.query<{
+                readonly count: number;
+              }>(`
+                SELECT
+                  COUNT(*)::INTEGER
+                    AS count
+                FROM kpi_categories
+              `);
+
+            const definitions =
+              await pool.query<{
+                readonly count: number;
+              }>(`
+                SELECT
+                  COUNT(*)::INTEGER
+                    AS count
+                FROM kpi_definitions
+              `);
+
+            assert.equal(
+              categories.rows[0]?.count,
+              0,
+            );
+
+            assert.equal(
+              definitions.rows[0]?.count,
+              0,
+            );
+
+            const ledger =
+              await pool.query<{
+                readonly version: string;
+              }>(`
+                SELECT version
+                FROM schema_migrations
+                ORDER BY version
+              `);
+
+            assert.deepEqual(
+              ledger.rows.map(
+                (row) => row.version,
+              ),
+              [
+                "0001",
+                "0002",
+                "0003",
+              ],
+            );
+          } finally {
+            await resetPublicSchema(pool);
+
+            await rm(
+              directory,
+              {
+                recursive: true,
+                force: true,
+              },
+            );
+          }
+        },
+      );
+
+      await resetPublicSchema(pool);
+
+      await t.test(
         "clean migration applies and replay skips",
         async () => {
           const first =
@@ -862,6 +1026,7 @@ test(
               "0001",
               "0002",
               "0003",
+              "0004",
             ],
           );
 
@@ -884,7 +1049,1158 @@ test(
               "0001",
               "0002",
               "0003",
+              "0004",
             ],
+          );
+        },
+      );
+
+      await t.test(
+        "KPI/settings registry seed matches frozen 52-definition authority",
+        async () => {
+          const settingsResult =
+            await pool.query<{
+              readonly settings: unknown;
+            }>(`
+              SELECT
+                jsonb_object_agg(
+                  key,
+                  value
+                ) AS settings
+              FROM app_settings
+            `);
+
+          assert.deepEqual(
+            settingsResult.rows[0]
+              ?.settings,
+{
+            "current_quarter": 4,
+            "current_year": "2569",
+            "province_code": "54"
+},
+          );
+
+          const categoriesResult =
+            await pool.query<{
+              readonly categories: unknown;
+            }>(`
+              SELECT
+                COALESCE(
+                  jsonb_agg(
+                    jsonb_build_object(
+                      'code',
+                        code,
+                      'name',
+                        name,
+                      'sort_order',
+                        sort_order,
+                      'metadata',
+                        metadata
+                    )
+                    ORDER BY
+                      sort_order,
+                      code
+                  ),
+                  '[]'::JSONB
+                ) AS categories
+              FROM kpi_categories
+            `);
+
+          assert.deepEqual(
+            categoriesResult.rows[0]
+              ?.categories,
+[
+            {
+                        "code": "kpi_master",
+                        "metadata": {},
+                        "name": "ตัวชี้วัดพื้นฐาน",
+                        "sort_order": 1
+            },
+            {
+                        "code": "kpi_epi",
+                        "metadata": {},
+                        "name": "สร้างเสริมภูมิคุ้มกันโรค",
+                        "sort_order": 2
+            }
+],
+          );
+
+          const counts =
+            await pool.query<{
+              readonly physical: number;
+              readonly virtual: number;
+              readonly total: number;
+              readonly source_only: number;
+            }>(`
+              SELECT
+                COUNT(*) FILTER (
+                  WHERE kind =
+                    'physical'
+                )::INTEGER
+                  AS physical,
+
+                COUNT(*) FILTER (
+                  WHERE kind =
+                    'virtual'
+                )::INTEGER
+                  AS virtual,
+
+                COUNT(*)::INTEGER
+                  AS total,
+
+                COUNT(*) FILTER (
+                  WHERE metadata @>
+                    '{"source_only":true}'::JSONB
+                )::INTEGER
+                  AS source_only
+              FROM kpi_definitions
+            `);
+
+          assert.deepEqual(
+            counts.rows[0],
+            {
+              physical: 18,
+              virtual: 34,
+              total: 52,
+              source_only: 5,
+            },
+          );
+
+          const definitionsResult =
+            await pool.query<{
+              readonly definitions: unknown;
+            }>(`
+              SELECT
+                COALESCE(
+                  jsonb_agg(
+                    jsonb_build_object(
+                      'kpi_key',
+                        definition.kpi_key,
+                      'title',
+                        definition.title,
+                      'category',
+                        category.code,
+                      'kind',
+                        definition.kind,
+                      'source_sheet',
+                        definition.source_sheet,
+                      'source_id',
+                        definition.source_id,
+                      'value_prefix',
+                        definition.value_prefix,
+                      'subgroup',
+                        definition.subgroup,
+                      'link',
+                        definition.link,
+                      'target_value',
+                        definition.target_value,
+                      'is_quarterly',
+                        definition.is_quarterly,
+                      'target_months',
+                        definition.target_months,
+                      'effective_quarter',
+                        definition.effective_quarter,
+                      'sort_order',
+                        definition.sort_order,
+                      'is_active',
+                        definition.is_active,
+                      'metadata',
+                        definition.metadata
+                    )
+                    ORDER BY
+                      definition.sort_order,
+                      definition.kpi_key
+                  ),
+                  '[]'::JSONB
+                ) AS definitions
+              FROM kpi_definitions
+                AS definition
+              JOIN kpi_categories
+                AS category
+                ON category.id =
+                   definition.category_id
+            `);
+
+          assert.deepEqual(
+            definitionsResult.rows[0]
+              ?.definitions,
+[
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_kpi_anc12",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/1c1b8e24aff59258a806f122e264031e",
+                        "metadata": {},
+                        "sort_order": 1,
+                        "source_id": null,
+                        "source_sheet": "s_kpi_anc12",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 75,
+                        "title": "ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_anc5",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/bd63b8d99f7054560fcf9c3b96f39c13",
+                        "metadata": {},
+                        "sort_order": 2,
+                        "source_id": null,
+                        "source_sheet": "s_anc5",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 75,
+                        "title": "ร้อยละหญิงตั้งครรภ์ที่ได้รับการดูแลก่อนคลอด 5 ครั้ง ตามเกณฑ์",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_kpi_food",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/4164a7c49fcb2b8c3ccca67dcdf28bd0",
+                        "metadata": {},
+                        "sort_order": 3,
+                        "source_id": null,
+                        "source_sheet": "s_kpi_food",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 50,
+                        "title": "ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": 3,
+                        "is_active": true,
+                        "is_quarterly": true,
+                        "kind": "physical",
+                        "kpi_key": "s_kpi_childdev4",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/1b60d68b1cb5b003fcba38a4a0e4027b",
+                        "metadata": {},
+                        "sort_order": 4,
+                        "source_id": null,
+                        "source_sheet": "s_kpi_childdev4",
+                        "subgroup": null,
+                        "target_months": 9,
+                        "target_value": 87,
+                        "title": "ร้อยละของเด็กอายุ 0-5 ปี ทั้งหมดตามช่วงอายุที่กำหนดมีพัฒนาการสมวัย",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": 3,
+                        "is_active": true,
+                        "is_quarterly": true,
+                        "kind": "physical",
+                        "kpi_key": "s_kpi_childdev2",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/684e99dc7538c8b1a97f19f91a100f08",
+                        "metadata": {},
+                        "sort_order": 5,
+                        "source_id": null,
+                        "source_sheet": "s_kpi_childdev2",
+                        "subgroup": null,
+                        "target_months": 9,
+                        "target_value": 20,
+                        "title": "ร้อยละของเด็กอายุ 0-5 ปี ที่ได้รับการคัดกรองพัฒนาการ พบสงสัยล่าช้า",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_aged9",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/aa86b13e8cb60cae6c3216b7e3e5f151",
+                        "metadata": {},
+                        "sort_order": 6,
+                        "source_id": null,
+                        "source_sheet": "s_aged9",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 80,
+                        "title": "การคัดกรองผู้สูงอายุ 9 ด้าน",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_dm_screen",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/626c89f6b8d9f7ed90c72c719775eb07",
+                        "metadata": {},
+                        "sort_order": 7,
+                        "source_id": null,
+                        "source_sheet": "s_dm_screen",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_ht_screen",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/9702fa28cd2ec73ecc6af89d14f46874",
+                        "metadata": {},
+                        "sort_order": 8,
+                        "source_id": null,
+                        "source_sheet": "s_ht_screen",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยโรคความดันโลหิตสูง",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": true,
+                        "kind": "physical",
+                        "kpi_key": "s_ncd_screen_repleate1",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/e9e461e793e8258f47d46d6956f12832",
+                        "metadata": {},
+                        "sort_order": 9,
+                        "source_id": null,
+                        "source_sheet": "s_ncd_screen_repleate1",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 70,
+                        "title": "ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคเบาหวาน",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": true,
+                        "kind": "physical",
+                        "kpi_key": "s_ht_screen_follow",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/b57439ff27302ade8c38d1dd189644a4",
+                        "metadata": {},
+                        "sort_order": 10,
+                        "source_id": null,
+                        "source_sheet": "s_ht_screen_follow",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 80,
+                        "title": "ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคความดันโลหิตสูง",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_dental_0_5_cavity_free",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/abt2t2k4z4xeqzytwbave",
+                        "metadata": {},
+                        "sort_order": 11,
+                        "source_id": null,
+                        "source_sheet": "s_dental_0_5_cavity_free",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 80,
+                        "title": "ร้อยละของเด็กอายุ 0-5 ปี ฟันดีไม่มีผุ",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_kpi_dental28",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/e07a6ff3cd63d34a759be4bff5c1a4c6",
+                        "metadata": {},
+                        "sort_order": 12,
+                        "source_id": null,
+                        "source_sheet": "s_kpi_dental28",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 25,
+                        "title": "ร้อยละเด็ก 6 ปี ได้รับการเคลือบหลุมร่องฟันแท้",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_master",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_kpi_dental33",
+                        "link": "https://hdc.moph.go.th/pre/public/standard-report-detail/1fb6b46f1d1fd42362f97072f4b3b653",
+                        "metadata": {},
+                        "sort_order": 13,
+                        "source_id": null,
+                        "source_sheet": "s_kpi_dental33",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": 50,
+                        "title": "การตรวจช่องปากผู้สูงอายุโดยทันตบุคลากร",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_epi1",
+                        "link": null,
+                        "metadata": {
+                                    "source_only": true
+                        },
+                        "sort_order": 14,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": null,
+                        "title": "s_epi1",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_epi2",
+                        "link": null,
+                        "metadata": {
+                                    "source_only": true
+                        },
+                        "sort_order": 15,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": null,
+                        "title": "s_epi2",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_epi3",
+                        "link": null,
+                        "metadata": {
+                                    "source_only": true
+                        },
+                        "sort_order": 16,
+                        "source_id": null,
+                        "source_sheet": "s_epi3",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": null,
+                        "title": "s_epi3",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_epi5",
+                        "link": null,
+                        "metadata": {
+                                    "source_only": true
+                        },
+                        "sort_order": 17,
+                        "source_id": null,
+                        "source_sheet": "s_epi5",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": null,
+                        "title": "s_epi5",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "physical",
+                        "kpi_key": "s_epi_complete",
+                        "link": null,
+                        "metadata": {
+                                    "limit": 5000,
+                                    "source_only": true
+                        },
+                        "sort_order": 18,
+                        "source_id": null,
+                        "source_sheet": "s_epi_complete",
+                        "subgroup": null,
+                        "target_months": null,
+                        "target_value": null,
+                        "title": "s_epi_complete",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__bcg",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 100,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน BCG",
+                        "value_prefix": "bcg"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__dtp1",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 101,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน DTP1",
+                        "value_prefix": "dtp1"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__dtp2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 102,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน DTP2",
+                        "value_prefix": "dtp2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__dtp_hb3",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 103,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน DTP-HB3",
+                        "value_prefix": "dtp_hb3"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hbv",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 104,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน HBV",
+                        "value_prefix": "hbv"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hbv2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 105,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน HBV2",
+                        "value_prefix": "hbv2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hbv3",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 106,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน HBV3",
+                        "value_prefix": "hbv3"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hbv4",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 107,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน HBV4",
+                        "value_prefix": "hbv4"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hib1",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 108,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน Hib1",
+                        "value_prefix": "hib1"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hib2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 109,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน Hib2",
+                        "value_prefix": "hib2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__hib3",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 110,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน Hib3",
+                        "value_prefix": "hib3"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__ipv",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 111,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน IPV",
+                        "value_prefix": "ipv"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__ipv1",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 112,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน IPV1",
+                        "value_prefix": "ipv1"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__mmr",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 113,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน MMR",
+                        "value_prefix": "mmr"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__opv3",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 114,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน OPV3",
+                        "value_prefix": "opv3"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__pcv1",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 115,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน PCV1",
+                        "value_prefix": "pcv1"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__pcv2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 116,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน PCV2",
+                        "value_prefix": "pcv2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__pcv3",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 117,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน PCV3",
+                        "value_prefix": "pcv3"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__rota",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 118,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน Rota",
+                        "value_prefix": "rota"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi1__rota1",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 119,
+                        "source_id": null,
+                        "source_sheet": "s_epi1",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีน Rota1",
+                        "value_prefix": "rota1"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi_complete__1y",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 120,
+                        "source_id": "28dd2c7955ce926456240b2ff0100bde",
+                        "source_sheet": "s_epi_complete",
+                        "subgroup": "กลุ่มอายุ 1 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 1 ปี ได้รับวัคซีนครบตามเกณฑ์ (fully immunized)",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi2__dtp4",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 121,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีน DTP4",
+                        "value_prefix": "dtp4"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi2__opv4",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 122,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีน OPV4",
+                        "value_prefix": "opv4"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi2__mmr1",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 123,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีน MMR เข็มที่ 1",
+                        "value_prefix": "mmr1"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi2__mmr2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 124,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีน MMR เข็มที่ 2",
+                        "value_prefix": "mmr2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi2__je2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 125,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีน JE2",
+                        "value_prefix": "je2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi2__pcv4",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 126,
+                        "source_id": null,
+                        "source_sheet": "s_epi2",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 95,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีน PCV4",
+                        "value_prefix": "pcv4"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi_complete__2y",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 127,
+                        "source_id": "35f4a8d465e6e1edc05f3d8ab658c551",
+                        "source_sheet": "s_epi_complete",
+                        "subgroup": "กลุ่มอายุ 2 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 2 ปี ได้รับวัคซีนครบตามเกณฑ์ (fully immunized)",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi3__je3",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 128,
+                        "source_id": null,
+                        "source_sheet": "s_epi3",
+                        "subgroup": "กลุ่มอายุ 3 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 3 ปี ได้รับวัคซีน JE3",
+                        "value_prefix": "je3"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi3__mmr2",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 129,
+                        "source_id": null,
+                        "source_sheet": "s_epi3",
+                        "subgroup": "กลุ่มอายุ 3 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 3 ปี ได้รับวัคซีน MMR เข็มที่ 2",
+                        "value_prefix": "mmr2"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi_complete__3y",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 130,
+                        "source_id": "d1fe173d08e959397adf34b1d77e88d7",
+                        "source_sheet": "s_epi_complete",
+                        "subgroup": "กลุ่มอายุ 3 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 3 ปี ได้รับวัคซีนครบตามเกณฑ์ (fully immunized)",
+                        "value_prefix": null
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi5__dtp5",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 131,
+                        "source_id": null,
+                        "source_sheet": "s_epi5",
+                        "subgroup": "กลุ่มอายุ 5 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 5 ปี ได้รับวัคซีน DTP5",
+                        "value_prefix": "dtp5"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi5__opv5",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 132,
+                        "source_id": null,
+                        "source_sheet": "s_epi5",
+                        "subgroup": "กลุ่มอายุ 5 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 5 ปี ได้รับวัคซีน OPV5",
+                        "value_prefix": "opv5"
+            },
+            {
+                        "category": "kpi_epi",
+                        "effective_quarter": null,
+                        "is_active": true,
+                        "is_quarterly": false,
+                        "kind": "virtual",
+                        "kpi_key": "s_epi_complete__5y",
+                        "link": null,
+                        "metadata": {},
+                        "sort_order": 133,
+                        "source_id": "f033ab37c30201f73f142449d037028d",
+                        "source_sheet": "s_epi_complete",
+                        "subgroup": "กลุ่มอายุ 5 ปี",
+                        "target_months": null,
+                        "target_value": 90,
+                        "title": "เด็กครบ 5 ปี ได้รับวัคซีนครบตามเกณฑ์ (fully immunized)",
+                        "value_prefix": null
+            }
+],
+          );
+
+          const migrations =
+            await loadMigrations();
+
+          const seedMigration =
+            migrations.find(
+              (migration) =>
+                migration.version ===
+                "0004",
+            );
+
+          assert.ok(seedMigration);
+
+          const ledger =
+            await pool.query<{
+              readonly checksum_sha256:
+                string;
+            }>(`
+              SELECT checksum_sha256
+              FROM schema_migrations
+              WHERE version = '0004'
+            `);
+
+          assert.equal(
+            ledger.rows[0]
+              ?.checksum_sha256,
+            seedMigration.checksumSha256,
           );
         },
       );

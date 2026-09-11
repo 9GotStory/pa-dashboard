@@ -284,6 +284,7 @@ test(
         "0001",
         "0002",
         "0003",
+        "0004",
       ],
     );
 
@@ -345,5 +346,122 @@ test(
       migration.sql,
       /target_months IS NULL[\s\S]*?target_months BETWEEN 1 AND 12/i,
     );
+  },
+);
+
+test(
+  "KPI registry seed migration is bounded and complete",
+  async () => {
+    const migrations =
+      await loadMigrations();
+
+    assert.deepEqual(
+      migrations.map(
+        (migration) =>
+          migration.version,
+      ),
+      [
+        "0001",
+        "0002",
+        "0003",
+        "0004",
+      ],
+    );
+
+    const migration =
+      migrations.find(
+        (candidate) =>
+          candidate.version ===
+          "0004",
+      );
+
+    assert.ok(migration);
+
+    assert.equal(
+      migration.filename,
+      "0004_kpi_registry_seed.sql",
+    );
+
+    assert.match(
+      migration.sql,
+      /02878bd3f367c2451149464815b8244ac0de5383470e80140082410dc4482278/,
+    );
+
+    assert.match(
+      migration.sql,
+      /KPI_DEFINITION_COUNT: 52/,
+    );
+
+    assert.match(
+      migration.sql,
+      /KPI_PHYSICAL_COUNT: 18/,
+    );
+
+    assert.match(
+      migration.sql,
+      /KPI_VIRTUAL_COUNT: 34/,
+    );
+
+    assert.match(
+      migration.sql,
+      /SOURCE_ONLY_COUNT: 5/,
+    );
+
+    assert.match(
+      migration.sql,
+      /PCV_CORRECTION_COUNT: 4/,
+    );
+
+    assert.match(
+      migration.sql,
+      /"source_only":true/,
+    );
+
+    assert.match(
+      migration.sql,
+      /"limit":5000/,
+    );
+
+    for (
+      const key
+      of [
+        "s_epi1__pcv1",
+        "s_epi1__pcv2",
+        "s_epi1__pcv3",
+        "s_epi2__pcv4",
+      ]
+    ) {
+      assert.match(
+        migration.sql,
+        new RegExp(key),
+      );
+    }
+
+    const prohibited = [
+      /\bON\s+CONFLICT\b/i,
+      /\bUPDATE\s+/i,
+      /\bDELETE\s+FROM\b/i,
+      /\bTRUNCATE\b/i,
+      /\bDROP\s+/i,
+      /\bALTER\s+/i,
+      /\bCREATE\s+(?:TABLE|FUNCTION|TRIGGER|EXTENSION)\b/i,
+      /diag-5406-2026/i,
+      /opendata\.moph\.go\.th/i,
+      /script\.google\.com/i,
+      /\bdblink\b/i,
+      /\bhttp_get\b/i,
+      /\bhttp_post\b/i,
+      /COPY[\s\S]*PROGRAM/i,
+    ];
+
+    for (
+      const pattern
+      of prohibited
+    ) {
+      assert.doesNotMatch(
+        migration.sql,
+        pattern,
+      );
+    }
   },
 );
