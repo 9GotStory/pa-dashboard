@@ -152,9 +152,9 @@ export default function SyncPage() {
     ]);
   }, []);
 
-  // Fetch Metadata after login. useCallback keeps the identity stable so the
-  // useEffect below does not refetch on every render — only when auth flips.
-  // Also reused by the "Retry config load" button and post-sync refresh.
+  // Fetch Metadata after login, from the retry button, and after sync.
+  // The login path invokes this from the submit event rather than an effect,
+  // avoiding synchronous state updates inside an effect.
   const fetchMetadata = useCallback(async () => {
     setIsFetchingMeta(true);
     setMetaError(null);
@@ -233,13 +233,6 @@ export default function SyncPage() {
     }
   }, [addLog]);
 
-  // Fetch Metadata after login
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMetadata();
-    }
-  }, [isAuthenticated, fetchMetadata]);
-
   // ComponentProps<'form'>['onSubmit'] is the canonical type for form submit
   // handlers in React 19 — avoids the deprecated `FormEvent`/`FormEventHandler`.
   const checkPin: ComponentProps<"form">["onSubmit"] = async (e) => {
@@ -254,6 +247,7 @@ export default function SyncPage() {
 
     if (pin === serverPin) {
       setIsAuthenticated(true);
+      await fetchMetadata();
     } else {
       toast.error("Incorrect PIN");
       setPin("");
