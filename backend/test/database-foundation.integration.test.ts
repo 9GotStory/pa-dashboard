@@ -24,6 +24,7 @@ import {
 } from "pg";
 
 import {
+  loadMigrations,
   MigrationChecksumError,
   runMigrations,
 } from "../src/db/migrate.js";
@@ -376,6 +377,480 @@ test(
       await resetPublicSchema(pool);
 
       await t.test(
+        "target_months migration refuses multi-value arrays and rolls back",
+        async () => {
+          const directory =
+            await mkdtemp(
+              join(
+                tmpdir(),
+                "pa-dashboard-target-months-refusal-",
+              ),
+            );
+
+          try {
+            for (
+              const filename
+              of [
+                "0001_database_foundation.sql",
+                "0002_sync_run_lifecycle_guard.sql",
+              ]
+            ) {
+              await copyFile(
+                resolve(
+                  "migrations",
+                  filename,
+                ),
+                join(
+                  directory,
+                  filename,
+                ),
+              );
+            }
+
+            await resetPublicSchema(pool);
+
+            const foundation =
+              await runMigrations(
+                pool,
+                directory,
+              );
+
+            assert.deepEqual(
+              foundation.applied,
+              [
+                "0001",
+                "0002",
+              ],
+            );
+
+            const category =
+              await pool.query<{
+                readonly id: string;
+              }>(`
+                INSERT INTO kpi_categories (
+                  code,
+                  name
+                )
+                VALUES (
+                  'target-months-refusal',
+                  'Target Months Refusal'
+                )
+                RETURNING id
+              `);
+
+            const categoryId =
+              category.rows[0]?.id;
+
+            assert.ok(categoryId);
+
+            await pool.query(
+              `
+                INSERT INTO kpi_definitions (
+                  kpi_key,
+                  title,
+                  category_id,
+                  kind,
+                  source_sheet,
+                  target_months,
+                  updated_at
+                )
+                VALUES (
+                  'target-months.refusal',
+                  'Target Months Refusal',
+                  $1,
+                  'physical',
+                  's_refusal',
+                  ARRAY[1, 2]::SMALLINT[],
+                  NOW()
+                )
+              `,
+              [
+                categoryId,
+              ],
+            );
+
+            await copyFile(
+              resolve(
+                "migrations",
+                "0003_kpi_target_months_scalar.sql",
+              ),
+              join(
+                directory,
+                "0003_kpi_target_months_scalar.sql",
+              ),
+            );
+
+            await assert.rejects(
+              () =>
+                runMigrations(
+                  pool,
+                  directory,
+                ),
+              (error: unknown) =>
+                error instanceof Error &&
+                error.message.includes(
+                  "multi-value target_months arrays exist",
+                ),
+            );
+
+            const schema =
+              await pool.query<{
+                readonly data_type: string;
+                readonly udt_name: string;
+                readonly is_nullable: string;
+              }>(`
+                SELECT
+                  data_type,
+                  udt_name,
+                  is_nullable
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'kpi_definitions'
+                  AND column_name = 'target_months'
+              `);
+
+            assert.equal(
+              schema.rows[0]?.data_type,
+              "ARRAY",
+            );
+
+            assert.equal(
+              schema.rows[0]?.udt_name,
+              "_int2",
+            );
+
+            assert.equal(
+              schema.rows[0]?.is_nullable,
+              "NO",
+            );
+
+            const preserved =
+              await pool.query<{
+                readonly target_months:
+                  number[];
+              }>(`
+                SELECT target_months
+                FROM kpi_definitions
+                WHERE kpi_key =
+                  'target-months.refusal'
+              `);
+
+            assert.deepEqual(
+              preserved.rows[0]
+                ?.target_months,
+              [
+                1,
+                2,
+              ],
+            );
+
+            const ledger =
+              await pool.query<{
+                readonly version: string;
+              }>(`
+                SELECT version
+                FROM schema_migrations
+                ORDER BY version
+              `);
+
+            assert.deepEqual(
+              ledger.rows.map(
+                (row) => row.version,
+              ),
+              [
+                "0001",
+                "0002",
+              ],
+            );
+          } finally {
+            await resetPublicSchema(pool);
+
+            await rm(
+              directory,
+              {
+                recursive: true,
+                force: true,
+              },
+            );
+          }
+        },
+      );
+
+      await t.test(
+        "target_months migration converts safe arrays and records checksum",
+        async () => {
+          const directory =
+            await mkdtemp(
+              join(
+                tmpdir(),
+                "pa-dashboard-target-months-conversion-",
+              ),
+            );
+
+          try {
+            for (
+              const filename
+              of [
+                "0001_database_foundation.sql",
+                "0002_sync_run_lifecycle_guard.sql",
+              ]
+            ) {
+              await copyFile(
+                resolve(
+                  "migrations",
+                  filename,
+                ),
+                join(
+                  directory,
+                  filename,
+                ),
+              );
+            }
+
+            await resetPublicSchema(pool);
+
+            const foundation =
+              await runMigrations(
+                pool,
+                directory,
+              );
+
+            assert.deepEqual(
+              foundation.applied,
+              [
+                "0001",
+                "0002",
+              ],
+            );
+
+            const category =
+              await pool.query<{
+                readonly id: string;
+              }>(`
+                INSERT INTO kpi_categories (
+                  code,
+                  name
+                )
+                VALUES (
+                  'target-months-conversion',
+                  'Target Months Conversion'
+                )
+                RETURNING id
+              `);
+
+            const categoryId =
+              category.rows[0]?.id;
+
+            assert.ok(categoryId);
+
+            await pool.query(
+              `
+                INSERT INTO kpi_definitions (
+                  kpi_key,
+                  title,
+                  category_id,
+                  kind,
+                  source_sheet,
+                  target_months,
+                  updated_at
+                )
+                VALUES
+                  (
+                    'target-months.empty',
+                    'Target Months Empty',
+                    $1,
+                    'physical',
+                    's_empty',
+                    ARRAY[]::SMALLINT[],
+                    NOW()
+                  ),
+                  (
+                    'target-months.single',
+                    'Target Months Single',
+                    $1,
+                    'physical',
+                    's_single',
+                    ARRAY[9]::SMALLINT[],
+                    NOW()
+                  )
+              `,
+              [
+                categoryId,
+              ],
+            );
+
+            await copyFile(
+              resolve(
+                "migrations",
+                "0003_kpi_target_months_scalar.sql",
+              ),
+              join(
+                directory,
+                "0003_kpi_target_months_scalar.sql",
+              ),
+            );
+
+            const correction =
+              await runMigrations(
+                pool,
+                directory,
+              );
+
+            assert.deepEqual(
+              correction.applied,
+              [
+                "0003",
+              ],
+            );
+
+            assert.deepEqual(
+              correction.skipped,
+              [
+                "0001",
+                "0002",
+              ],
+            );
+
+            const converted =
+              await pool.query<{
+                readonly kpi_key: string;
+                readonly target_months:
+                  number | null;
+              }>(`
+                SELECT
+                  kpi_key,
+                  target_months
+                FROM kpi_definitions
+                WHERE kpi_key LIKE
+                  'target-months.%'
+                ORDER BY kpi_key
+              `);
+
+            assert.deepEqual(
+              converted.rows,
+              [
+                {
+                  kpi_key:
+                    "target-months.empty",
+                  target_months:
+                    null,
+                },
+                {
+                  kpi_key:
+                    "target-months.single",
+                  target_months:
+                    9,
+                },
+              ],
+            );
+
+            const schema =
+              await pool.query<{
+                readonly data_type: string;
+                readonly udt_name: string;
+                readonly is_nullable: string;
+                readonly column_default:
+                  string | null;
+              }>(`
+                SELECT
+                  data_type,
+                  udt_name,
+                  is_nullable,
+                  column_default
+                FROM information_schema.columns
+                WHERE table_schema = 'public'
+                  AND table_name = 'kpi_definitions'
+                  AND column_name = 'target_months'
+              `);
+
+            assert.equal(
+              schema.rows[0]?.data_type,
+              "smallint",
+            );
+
+            assert.equal(
+              schema.rows[0]?.udt_name,
+              "int2",
+            );
+
+            assert.equal(
+              schema.rows[0]?.is_nullable,
+              "YES",
+            );
+
+            assert.equal(
+              schema.rows[0]?.column_default,
+              null,
+            );
+
+            const migrations =
+              await loadMigrations(
+                directory,
+              );
+
+            const migration =
+              migrations.find(
+                (candidate) =>
+                  candidate.version ===
+                  "0003",
+              );
+
+            assert.ok(migration);
+
+            const ledger =
+              await pool.query<{
+                readonly checksum_sha256:
+                  string;
+              }>(
+                `
+                  SELECT checksum_sha256
+                  FROM schema_migrations
+                  WHERE version = '0003'
+                `,
+              );
+
+            assert.equal(
+              ledger.rows[0]
+                ?.checksum_sha256,
+              migration.checksumSha256,
+            );
+
+            const replay =
+              await runMigrations(
+                pool,
+                directory,
+              );
+
+            assert.deepEqual(
+              replay.applied,
+              [],
+            );
+
+            assert.deepEqual(
+              replay.skipped,
+              [
+                "0001",
+                "0002",
+                "0003",
+              ],
+            );
+          } finally {
+            await resetPublicSchema(pool);
+
+            await rm(
+              directory,
+              {
+                recursive: true,
+                force: true,
+              },
+            );
+          }
+        },
+      );
+
+      await resetPublicSchema(pool);
+
+      await t.test(
         "clean migration applies and replay skips",
         async () => {
           const first =
@@ -386,6 +861,7 @@ test(
             [
               "0001",
               "0002",
+              "0003",
             ],
           );
 
@@ -407,6 +883,7 @@ test(
             [
               "0001",
               "0002",
+              "0003",
             ],
           );
         },
@@ -632,6 +1109,151 @@ test(
 
       assert.ok(categoryId);
 
+      await t.test(
+        "target_months is nullable scalar constrained to 1 through 12",
+        async () => {
+          const schema =
+            await pool.query<{
+              readonly data_type: string;
+              readonly udt_name: string;
+              readonly is_nullable: string;
+              readonly column_default:
+                string | null;
+            }>(`
+              SELECT
+                data_type,
+                udt_name,
+                is_nullable,
+                column_default
+              FROM information_schema.columns
+              WHERE table_schema = 'public'
+                AND table_name = 'kpi_definitions'
+                AND column_name = 'target_months'
+            `);
+
+          assert.equal(
+            schema.rows[0]?.data_type,
+            "smallint",
+          );
+
+          assert.equal(
+            schema.rows[0]?.udt_name,
+            "int2",
+          );
+
+          assert.equal(
+            schema.rows[0]?.is_nullable,
+            "YES",
+          );
+
+          assert.equal(
+            schema.rows[0]?.column_default,
+            null,
+          );
+
+          const validValues:
+            readonly [
+              string,
+              number | null,
+            ][] = [
+              [
+                "null",
+                null,
+              ],
+              [
+                "one",
+                1,
+              ],
+              [
+                "nine",
+                9,
+              ],
+              [
+                "twelve",
+                12,
+              ],
+            ];
+
+          for (
+            const [
+              suffix,
+              value,
+            ]
+            of validValues
+          ) {
+            await pool.query(
+              `
+                INSERT INTO kpi_definitions (
+                  kpi_key,
+                  title,
+                  category_id,
+                  kind,
+                  source_sheet,
+                  target_months,
+                  updated_at
+                )
+                VALUES (
+                  $1,
+                  $2,
+                  $3,
+                  'physical',
+                  $4,
+                  $5,
+                  NOW()
+                )
+              `,
+              [
+                `target-months.valid.${suffix}`,
+                `Target Months Valid ${suffix}`,
+                categoryId,
+                `s_target_months_${suffix}`,
+                value,
+              ],
+            );
+          }
+
+          for (
+            const invalid
+            of [
+              0,
+              13,
+            ]
+          ) {
+            await expectPgCode(
+              () =>
+                pool.query(
+                  `
+                    INSERT INTO kpi_definitions (
+                      kpi_key,
+                      title,
+                      category_id,
+                      kind,
+                      source_sheet,
+                      target_months,
+                      updated_at
+                    )
+                    VALUES (
+                      $1,
+                      'Invalid Target Months',
+                      $2,
+                      'physical',
+                      's_invalid_target_months',
+                      $3,
+                      NOW()
+                    )
+                  `,
+                  [
+                    `target-months.invalid.${invalid}`,
+                    categoryId,
+                    invalid,
+                  ],
+                ),
+              "23514",
+            );
+          }
+        },
+      );
+
       const definitionResult =
         await pool.query<{
           readonly id: string;
@@ -652,7 +1274,7 @@ test(
               $1,
               'physical',
               's_foundation',
-              ARRAY[1, 2, 3]::SMALLINT[],
+              9,
               NOW()
             )
             RETURNING id
@@ -808,7 +1430,7 @@ test(
                     $1,
                     'physical',
                     'probe',
-                    ARRAY[13]::SMALLINT[],
+                    13,
                     NOW()
                   )
                 `,

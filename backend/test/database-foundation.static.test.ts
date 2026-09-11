@@ -268,3 +268,82 @@ test(
     }
   },
 );
+
+test(
+  "target_months scalar correction migration is forward-only and guarded",
+  async () => {
+    const migrations =
+      await loadMigrations();
+
+    assert.deepEqual(
+      migrations.map(
+        (migration) =>
+          migration.version,
+      ),
+      [
+        "0001",
+        "0002",
+        "0003",
+      ],
+    );
+
+    const migration =
+      migrations.find(
+        (candidate) =>
+          candidate.version ===
+          "0003",
+      );
+
+    assert.ok(migration);
+
+    assert.equal(
+      migration.filename,
+      "0003_kpi_target_months_scalar.sql",
+    );
+
+    assert.match(
+      migration.sql,
+      /cardinality\s*\(\s*target_months\s*\)\s*>\s*1/,
+    );
+
+    assert.match(
+      migration.sql,
+      /multi-value target_months arrays exist/,
+    );
+
+    assert.match(
+      migration.sql,
+      /DROP CONSTRAINT\s+ck_kpi_definitions_target_months/i,
+    );
+
+    assert.match(
+      migration.sql,
+      /ALTER COLUMN target_months\s+DROP DEFAULT/i,
+    );
+
+    assert.match(
+      migration.sql,
+      /ALTER COLUMN target_months\s+DROP NOT NULL/i,
+    );
+
+    assert.match(
+      migration.sql,
+      /TYPE SMALLINT/i,
+    );
+
+    assert.match(
+      migration.sql,
+      /cardinality\s*\(\s*target_months\s*\)\s*=\s*0[\s\S]*?THEN NULL/i,
+    );
+
+    assert.match(
+      migration.sql,
+      /target_months\s*\[\s*1\s*\]/,
+    );
+
+    assert.match(
+      migration.sql,
+      /target_months IS NULL[\s\S]*?target_months BETWEEN 1 AND 12/i,
+    );
+  },
+);
