@@ -1027,6 +1027,7 @@ test(
               "0002",
               "0003",
               "0004",
+              "0005",
             ],
           );
 
@@ -1050,7 +1051,64 @@ test(
               "0002",
               "0003",
               "0004",
+              "0005",
             ],
+          );
+        },
+      );
+
+      await t.test(
+        "district scope setting is recorded by migration 0005 as JSON text",
+        async () => {
+          const ledger =
+            await pool.query<{
+              readonly version: string;
+            }>(`
+              SELECT version
+              FROM schema_migrations
+              ORDER BY version
+            `);
+
+          assert.deepEqual(
+            ledger.rows.map(
+              (row) =>
+                row.version,
+            ),
+            [
+              "0001",
+              "0002",
+              "0003",
+              "0004",
+              "0005",
+            ],
+          );
+
+          const scope =
+            await pool.query<{
+              readonly value: unknown;
+            }>(`
+              SELECT value
+              FROM app_settings
+              WHERE key =
+                'district_area_prefix'
+            `);
+
+          assert.equal(
+            scope.rows.length,
+            1,
+          );
+
+          assert.equal(
+            typeof scope
+              .rows[0]
+              ?.value,
+            "string",
+          );
+
+          assert.equal(
+            scope.rows[0]
+              ?.value,
+            "5406",
           );
         },
       );
@@ -1076,6 +1134,7 @@ test(
 {
             "current_quarter": 4,
             "current_year": "2569",
+            "district_area_prefix": "5406",
             "province_code": "54"
 },
           );

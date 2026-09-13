@@ -285,6 +285,7 @@ test(
         "0002",
         "0003",
         "0004",
+        "0005",
       ],
     );
 
@@ -365,6 +366,7 @@ test(
         "0002",
         "0003",
         "0004",
+        "0005",
       ],
     );
 
@@ -446,6 +448,99 @@ test(
       /\bALTER\s+/i,
       /\bCREATE\s+(?:TABLE|FUNCTION|TRIGGER|EXTENSION)\b/i,
       /diag-5406-2026/i,
+      /opendata\.moph\.go\.th/i,
+      /script\.google\.com/i,
+      /\bdblink\b/i,
+      /\bhttp_get\b/i,
+      /\bhttp_post\b/i,
+      /COPY[\s\S]*PROGRAM/i,
+    ];
+
+    for (
+      const pattern
+      of prohibited
+    ) {
+      assert.doesNotMatch(
+        migration.sql,
+        pattern,
+      );
+    }
+  },
+);
+
+test(
+  "sync scope setting migration is a bounded INSERT-only text authority",
+  async () => {
+    const migrations =
+      await loadMigrations();
+
+    assert.deepEqual(
+      migrations.map(
+        (migration) =>
+          migration.version,
+      ),
+      [
+        "0001",
+        "0002",
+        "0003",
+        "0004",
+        "0005",
+      ],
+    );
+
+    const migration =
+      migrations.find(
+        (candidate) =>
+          candidate.version ===
+          "0005",
+      );
+
+    assert.ok(migration);
+
+    assert.equal(
+      migration.filename,
+      "0005_sync_scope_setting.sql",
+    );
+
+    assert.match(
+      migration.sql,
+      /district_area_prefix/,
+    );
+
+    assert.match(
+      migration.sql,
+      /to_jsonb\(\s*'5406'::TEXT\s*\)/,
+    );
+
+    assert.doesNotMatch(
+      migration.sql,
+      /to_jsonb\(\s*5406\b/,
+    );
+
+    assert.match(
+      migration.sql,
+      /INSERT\s+INTO\s+app_settings/i,
+    );
+
+    const insertCount = (
+      migration.sql.match(
+        /INSERT\s+INTO/gi,
+      ) ?? []
+    ).length;
+
+    assert.equal(
+      insertCount,
+      1,
+    );
+
+    const prohibited = [
+      /\bON\s+CONFLICT\b/i,
+      /\bUPDATE\s+/i,
+      /\bDELETE\s+FROM\b/i,
+      /\bTRUNCATE\b/i,
+      /\bDROP\s+/i,
+      /\bALTER\s+/i,
+      /\bCREATE\s+(?:TABLE|FUNCTION|TRIGGER|EXTENSION)\b/i,
       /opendata\.moph\.go\.th/i,
       /script\.google\.com/i,
       /\bdblink\b/i,

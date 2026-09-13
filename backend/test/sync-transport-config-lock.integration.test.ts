@@ -237,7 +237,7 @@ test(
       );
 
       await t.test(
-        "migrations 0001 through 0004 apply",
+        "migrations 0001 through 0005 apply",
         async () => {
           const summary =
             await runMigrations(
@@ -251,6 +251,7 @@ test(
               "0002",
               "0003",
               "0004",
+              "0005",
             ],
           );
 
@@ -276,6 +277,7 @@ test(
               "0002",
               "0003",
               "0004",
+              "0005",
             ],
           );
         },
