@@ -416,8 +416,7 @@ async function persistSourceRecords(
         index,
       ) => {
         const start =
-          (offset + index) *
-          10;
+          index * 10;
 
         tuples.push(
           `(${tuplePlaceholders(start + 1, 9)}, $${start + 10}::JSONB)`,
@@ -550,8 +549,7 @@ async function persistKpiResultsAndComplete(
           index,
         ) => {
           const start =
-            (offset + index) *
-            10;
+            index * 10;
 
           tuples.push(
             `(${tuplePlaceholders(start + 1, 8)}, $${start + 9}::JSONB, $${start + 10})`,

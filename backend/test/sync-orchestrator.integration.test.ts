@@ -193,6 +193,11 @@ function createDeterministicClock():
 interface FakeRowsOptions {
   readonly outsideDistrictSheets?:
     ReadonlySet<string>;
+
+  readonly expandedSheet?: {
+    readonly sheet: string;
+    readonly rowCount: number;
+  };
 }
 
 function buildFakeRowsBySheet(
@@ -470,6 +475,47 @@ function buildFakeRowsBySheet(
           id: sourceId,
           target: 20,
           result: 10,
+        },
+      );
+    }
+  }
+
+  if (
+    options.expandedSheet !==
+    undefined
+  ) {
+    const list =
+      requireDefined(
+        rowsBySheet.get(
+          options.expandedSheet.sheet,
+        ),
+        options.expandedSheet.sheet,
+      );
+
+    const base =
+      requireDefined(
+        list[0],
+        `${options.expandedSheet.sheet} base row`,
+      );
+
+    for (
+      let extra = 1;
+      extra <=
+      options.expandedSheet.rowCount;
+      extra += 1
+    ) {
+      list.push(
+        {
+          ...base,
+
+          areacode: `5406${String(
+            extra + 1,
+          ).padStart(2, "0")}`,
+
+          hospcode:
+            String(
+              extra,
+            ).padStart(5, "0"),
         },
       );
     }
@@ -1803,6 +1849,187 @@ test(
                 pa_test_activation_fault()
             `);
           }
+        },
+      );
+
+      await t.test(
+        "multi-batch persistence crosses the 64-row boundary in one orchestration run",
+        async () => {
+          const snapshot =
+            await loadSnapshot(
+              pool,
+            );
+
+          const expandedDefinition =
+            requireDefined(
+              snapshot.physicalDefinitions.find(
+                (definition) =>
+                  !definition.sourceOnly,
+              ),
+              "first public physical definition",
+            );
+
+          const rowsBySheet =
+            buildFakeRowsBySheet(
+              snapshot,
+              {
+                expandedSheet: {
+                  sheet:
+                    expandedDefinition.sourceSheet,
+                  rowCount: 70,
+                },
+              },
+            );
+
+          const expectedExpandedRows =
+            requireDefined(
+              rowsBySheet[
+                expandedDefinition.sourceSheet
+              ],
+              expandedDefinition.sourceSheet,
+            );
+
+          assert.ok(
+            expectedExpandedRows.length >
+              64,
+          );
+
+          const fake =
+            createFakeMophClient(
+              {
+                rowsBySheet,
+              },
+            );
+
+          const summary =
+            await runMophSynchronization(
+              pool,
+              {
+                mophClient:
+                  fake.client,
+
+                now:
+                  createDeterministicClock(),
+              },
+            );
+
+          assert.equal(
+            summary.status,
+            "succeeded",
+          );
+
+          assert.equal(
+            summary.activated,
+            true,
+          );
+
+          assert.equal(
+            summary
+              .completedSourceCount,
+            18,
+          );
+
+          assert.ok(
+            summary.resultCount >
+              64,
+          );
+
+          const expanded =
+            await pool.query<{
+              readonly row_count:
+                number;
+              readonly min_sequence:
+                number;
+              readonly max_sequence:
+                number;
+            }>(
+              `
+                SELECT
+                  COUNT(*)::INTEGER
+                    AS row_count,
+                  MIN(source_sequence)::INTEGER
+                    AS min_sequence,
+                  MAX(source_sequence)::INTEGER
+                    AS max_sequence
+                FROM source_records
+                WHERE sync_run_id = $1
+                  AND source_name = $2
+              `,
+              [
+                summary.syncRunId,
+                expandedDefinition.sourceSheet,
+              ],
+            );
+
+          const expandedStats =
+            requireDefined(
+              expanded.rows[0],
+              "expanded source stats",
+            );
+
+          assert.ok(
+            expandedStats.row_count >
+              64,
+          );
+
+          assert.equal(
+            expandedStats.row_count,
+            expectedExpandedRows.length,
+          );
+
+          assert.equal(
+            expandedStats.min_sequence,
+            1,
+          );
+
+          assert.equal(
+            expandedStats.max_sequence,
+            expectedExpandedRows.length,
+          );
+
+          assert.equal(
+            await countKpiResults(
+              pool,
+              summary.syncRunId,
+            ),
+            summary.resultCount,
+          );
+
+          const run =
+            await readLatestSyncRun(
+              pool,
+            );
+
+          assert.equal(
+            run.id,
+            summary.syncRunId,
+          );
+
+          assert.equal(
+            run.status,
+            "succeeded",
+          );
+
+          assert.equal(
+            run.completed_source_count,
+            18,
+          );
+
+          assert.equal(
+            run.failed_source_count,
+            0,
+          );
+
+          assert.ok(
+            run.activated_at,
+          );
+
+          assert.equal(
+            await readActiveSyncRunId(
+              pool,
+            ),
+            summary.syncRunId,
+          );
         },
       );
     } finally {
