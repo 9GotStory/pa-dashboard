@@ -9,8 +9,15 @@ import {
   type HealthDatabase,
 } from "./observability/health.js";
 
+import {
+  registerReadApiRoutes,
+  type ReadApiDatabase,
+} from "./modules/read-api.js";
+
 export interface AppDependencies {
-  readonly db: HealthDatabase;
+  readonly db:
+    HealthDatabase
+    & ReadApiDatabase;
 }
 
 export function buildApp(
@@ -19,6 +26,11 @@ export function buildApp(
   const app = Fastify();
 
   registerHealthRoutes(
+    app,
+    dependencies.db,
+  );
+
+  registerReadApiRoutes(
     app,
     dependencies.db,
   );
