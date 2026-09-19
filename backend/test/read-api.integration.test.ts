@@ -254,30 +254,41 @@ test(
       max: 2,
     });
 
-    const app = buildApp({
-      db: pool,
-    });
+    let app:
+      | ReturnType<
+        typeof buildApp
+      >
+      | undefined;
+
+    let destructiveSchemaMutationStarted =
+      false;
 
     try {
+      const versionResult =
+        await pool.query<{
+          readonly server_version_num:
+            string;
+        }>(
+          `
+            SHOW server_version_num
+          `,
+        );
+
+      const version =
+        versionResult.rows[0]
+          ?.server_version_num;
+
+      assert.ok(version);
+
+      assert.match(
+        version,
+        /^18\d{4}$/,
+        "PostgreSQL 18 is required before destructive test setup",
+      );
+
       await t.test(
         "runtime is PostgreSQL major 18",
         async () => {
-          const result =
-            await pool.query<{
-              readonly server_version_num:
-                string;
-            }>(
-              `
-                SHOW server_version_num
-              `,
-            );
-
-          const version =
-            result.rows[0]
-              ?.server_version_num;
-
-          assert.ok(version);
-
           assert.match(
             version,
             /^18\d{4}$/,
@@ -285,7 +296,17 @@ test(
         },
       );
 
+      destructiveSchemaMutationStarted =
+        true;
+
       await resetPublicSchema(pool);
+
+      const fastify =
+        buildApp({
+          db: pool,
+        });
+
+      app = fastify;
 
       await t.test(
         "canonical migrations apply cleanly",
@@ -317,7 +338,7 @@ test(
         "sync status reports no history after clean migrations",
         async () => {
           const response =
-            await app.inject({
+            await fastify.inject({
               method: "GET",
               url: "/api/v1/sync-status",
             });
@@ -343,7 +364,7 @@ test(
 
         async () => {
           const response =
-            await app.inject({
+            await fastify.inject({
               method: "GET",
               url: "/api/v1/kpis",
             });
@@ -545,7 +566,7 @@ test(
             );
 
           const response =
-            await app.inject({
+            await fastify.inject({
               method: "GET",
               url: "/api/v1/sync-status",
             });
@@ -600,12 +621,18 @@ test(
       );
     } finally {
       try {
-        await app.close();
+        if (app !== undefined) {
+          await app.close();
+        }
       } finally {
         try {
-          await resetPublicSchema(
-            pool,
-          );
+          if (
+            destructiveSchemaMutationStarted
+          ) {
+            await resetPublicSchema(
+              pool,
+            );
+          }
         } finally {
           await pool.end();
         }
