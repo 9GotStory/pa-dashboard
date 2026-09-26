@@ -176,6 +176,63 @@ async function activateRun(
   }
 }
 
+async function insertReferenceDataset(
+  pool: Pool,
+): Promise<void> {
+  await pool.query(`
+    INSERT INTO tambons (
+      id,
+      district_id,
+      name_th,
+      zip_code,
+      metadata,
+      updated_at
+    )
+    VALUES
+      (
+        '540602',
+        '5406',
+        'บ้านกลาง',
+        '53110',
+        '{"source":"tambon_master"}'::JSONB,
+        NOW()
+      ),
+      (
+        '540601',
+        '5406',
+        'บ้านหนุน',
+        '53110',
+        '{"source":"tambon_master"}'::JSONB,
+        NOW()
+      )
+  `);
+
+  await pool.query(`
+    INSERT INTO facilities (
+      hospcode,
+      hospname,
+      tambon_id,
+      metadata,
+      updated_at
+    )
+    VALUES
+      (
+        '10702',
+        'โรงพยาบาลท่าวังทอง',
+        '540602',
+        '{"source":"hospital_master"}'::JSONB,
+        NOW()
+      ),
+      (
+        '06413',
+        'บ้านหนุน',
+        '540601',
+        '{"source":"hospital_master"}'::JSONB,
+        NOW()
+      )
+  `);
+}
+
 interface PublicKpiItem {
   readonly key: string;
   readonly title: string;
@@ -354,6 +411,247 @@ test(
               activeSyncRunId:
                 null,
               latestRun: null,
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "reference read API returns empty catalogs before population",
+
+        async () => {
+          const facilitiesResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/facilities",
+            });
+
+          assert.equal(
+            facilitiesResponse
+              .statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            facilitiesResponse.json(),
+            {
+              facilities: [],
+            },
+          );
+
+          const tambonsResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/tambons",
+            });
+
+          assert.equal(
+            tambonsResponse
+              .statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            tambonsResponse.json(),
+            {
+              tambons: [],
+            },
+          );
+        },
+      );
+
+      await insertReferenceDataset(
+        pool,
+      );
+
+      await t.test(
+        "reference read API exposes only public reference fields in deterministic order",
+
+        async () => {
+          const tambonsResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/tambons",
+            });
+
+          assert.equal(
+            tambonsResponse
+              .statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            tambonsResponse.json(),
+            {
+              tambons: [
+                {
+                  id: "540601",
+                  nameTh:
+                    "บ้านหนุน",
+                },
+                {
+                  id: "540602",
+                  nameTh:
+                    "บ้านกลาง",
+                },
+              ],
+            },
+          );
+
+          for (
+            const privateFragment
+            of [
+              "name_th",
+              "district_id",
+              "districtId",
+              "zip_code",
+              "zipCode",
+              "metadata",
+              "updated_at",
+              "updatedAt",
+            ]
+          ) {
+            assert.equal(
+              tambonsResponse.body.includes(
+                privateFragment,
+              ),
+              false,
+              `Tambon payload must not expose: ${privateFragment}`,
+            );
+          }
+
+          const facilitiesResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/facilities",
+            });
+
+          assert.equal(
+            facilitiesResponse
+              .statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            facilitiesResponse.json(),
+            {
+              facilities: [
+                {
+                  hospcode:
+                    "06413",
+                  hospname:
+                    "บ้านหนุน",
+                  tambonId:
+                    "540601",
+                },
+                {
+                  hospcode:
+                    "10702",
+                  hospname:
+                    "โรงพยาบาลท่าวังทอง",
+                  tambonId:
+                    "540602",
+                },
+              ],
+            },
+          );
+
+          for (
+            const privateFragment
+            of [
+              "tambon_id",
+              "metadata",
+              "updated_at",
+              "updatedAt",
+            ]
+          ) {
+            assert.equal(
+              facilitiesResponse.body.includes(
+                privateFragment,
+              ),
+              false,
+              `Facility payload must not expose: ${privateFragment}`,
+            );
+          }
+        },
+      );
+
+      await t.test(
+        "reference read API fails closed on a facility row without tambon linkage",
+
+        async () => {
+          await pool.query(`
+            INSERT INTO facilities (
+              hospcode,
+              hospname,
+              tambon_id,
+              metadata,
+              updated_at
+            )
+            VALUES (
+              '99999',
+              'แถวข้อมูลทดสอบไร้ตำบล',
+              NULL,
+              '{}'::JSONB,
+              NOW()
+            )
+          `);
+
+          try {
+            const response =
+              await fastify.inject({
+                method: "GET",
+                url: "/api/v1/facilities",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await pool.query(`
+              DELETE FROM facilities
+              WHERE hospcode = '99999'
+            `);
+          }
+
+          const recovered =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/facilities",
+            });
+
+          assert.equal(
+            recovered.statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            recovered.json(),
+            {
+              facilities: [
+                {
+                  hospcode:
+                    "06413",
+                  hospname:
+                    "บ้านหนุน",
+                  tambonId:
+                    "540601",
+                },
+                {
+                  hospcode:
+                    "10702",
+                  hospname:
+                    "โรงพยาบาลท่าวังทอง",
+                  tambonId:
+                    "540602",
+                },
+              ],
             },
           );
         },

@@ -31,6 +31,8 @@ function createFakeDatabase(
   behavior: {
     readonly kpiRows?: readonly unknown[];
     readonly syncRows?: readonly unknown[];
+    readonly facilityRows?: readonly unknown[];
+    readonly tambonRows?: readonly unknown[];
     readonly error?: Error;
   },
 ): FakeDatabase {
@@ -47,10 +49,18 @@ function createFakeDatabase(
       }
 
       const rows = text.includes(
-        "kpi_definitions",
-      )
+          "kpi_definitions",
+        )
         ? behavior.kpiRows
-        : behavior.syncRows;
+        : text.includes(
+            "facilities",
+          )
+          ? behavior.facilityRows
+          : text.includes(
+              "tambons",
+            )
+            ? behavior.tambonRows
+            : behavior.syncRows;
 
       return {
         rows: (rows ??
@@ -863,6 +873,755 @@ test(
               await app.inject({
                 method: "GET",
                 url: "/api/v1/sync-status",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await app.close();
+          }
+        },
+      );
+    }
+  },
+);
+
+test(
+  "facilities endpoint returns only public fields in SQL order",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        facilityRows: [
+          {
+            hospcode: "06413",
+            hospname: "บ้านหนุน",
+            tambon_id:
+              "540601",
+          },
+          {
+            hospcode: "10702",
+            hospname:
+              "โรงพยาบาลท่าวังทอง",
+            tambon_id:
+              "540602",
+          },
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/facilities",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      assert.deepEqual(
+        response.json(),
+        {
+          facilities: [
+            {
+              hospcode:
+                "06413",
+              hospname:
+                "บ้านหนุน",
+              tambonId:
+                "540601",
+            },
+            {
+              hospcode:
+                "10702",
+              hospname:
+                "โรงพยาบาลท่าวังทอง",
+              tambonId:
+                "540602",
+            },
+          ],
+        },
+      );
+
+      const body =
+        response.body;
+
+      assert.equal(
+        body.includes(
+          "tambon_id",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "metadata",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "updated_at",
+        ),
+        false,
+      );
+
+      const facilities =
+        (response.json() as {
+          readonly facilities:
+            readonly Record<
+              string,
+              unknown
+            >[];
+        }).facilities;
+
+      assert.deepEqual(
+        Object.keys(
+          facilities[0] ?? {},
+        ).sort(),
+        [
+          "hospcode",
+          "hospname",
+          "tambonId",
+        ],
+      );
+
+      const queries =
+        db.getQueries();
+
+      assert.equal(
+        queries.length,
+        1,
+      );
+
+      const sql = (queries[0] ??
+        "").replace(/\s+/g, " ");
+
+      assert.ok(
+        sql.includes(
+          "SELECT hospcode, hospname, tambon_id",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "FROM facilities",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ORDER BY hospcode ASC",
+        ),
+      );
+
+      assert.equal(
+        sql.includes(
+          "metadata",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "updated_at",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "district_id",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "zip_code",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "JOIN",
+        ),
+        false,
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "facilities endpoint returns an empty catalog without rows",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        facilityRows: [],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/facilities",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      assert.equal(
+        response.body,
+        '{"facilities":[]}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "facilities endpoint fails closed without leaking database errors",
+
+  async () => {
+    const internalMessage =
+      "password authentication failed for user pa_admin at postgres://pa_admin:hunter2@10.0.0.8:5432/pa_prod";
+
+    const db =
+      createFakeDatabase({
+        error: new Error(
+          internalMessage,
+        ),
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/facilities",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+
+      assert.equal(
+        response.body.includes(
+          internalMessage,
+        ),
+        false,
+      );
+
+      assert.equal(
+        response.body.includes(
+          "hunter2",
+        ),
+        false,
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "facilities endpoint fails closed on malformed reference rows",
+
+  async (t) => {
+    const validRow = {
+      hospcode: "06413",
+      hospname: "บ้านหนุน",
+      tambon_id: "540601",
+    };
+
+    const malformedRows = [
+      {
+        reason:
+          "hospcode too short",
+        row: {
+          ...validRow,
+          hospcode: "6413",
+        },
+      },
+      {
+        reason:
+          "hospcode not numeric",
+        row: {
+          ...validRow,
+          hospcode: "abcde",
+        },
+      },
+      {
+        reason:
+          "hospcode not a string",
+        row: {
+          ...validRow,
+          hospcode: 6413,
+        },
+      },
+      {
+        reason:
+          "blank hospname",
+        row: {
+          ...validRow,
+          hospname: "   ",
+        },
+      },
+      {
+        reason:
+          "null tambon_id",
+        row: {
+          ...validRow,
+          tambon_id: null,
+        },
+      },
+      {
+        reason:
+          "invalid tambon_id",
+        row: {
+          ...validRow,
+          tambon_id:
+            "54060",
+        },
+      },
+    ];
+
+    for (
+      const malformed
+      of malformedRows
+    ) {
+      await t.test(
+        malformed.reason,
+
+        async () => {
+          const db =
+            createFakeDatabase({
+              facilityRows: [
+                validRow,
+                malformed.row,
+              ],
+            });
+
+          const app = buildApp({
+            db,
+          });
+
+          try {
+            const response =
+              await app.inject({
+                method: "GET",
+                url: "/api/v1/facilities",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await app.close();
+          }
+        },
+      );
+    }
+  },
+);
+
+test(
+  "tambons endpoint returns only public fields in SQL order",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        tambonRows: [
+          {
+            id: "540601",
+            name_th: "บ้านหนุน",
+          },
+          {
+            id: "540602",
+            name_th:
+              "บ้านกลาง",
+          },
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/tambons",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      assert.deepEqual(
+        response.json(),
+        {
+          tambons: [
+            {
+              id: "540601",
+              nameTh:
+                "บ้านหนุน",
+            },
+            {
+              id: "540602",
+              nameTh:
+                "บ้านกลาง",
+            },
+          ],
+        },
+      );
+
+      const body =
+        response.body;
+
+      assert.equal(
+        body.includes(
+          "name_th",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "district_id",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "districtId",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "zip_code",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "zipCode",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "metadata",
+        ),
+        false,
+      );
+
+      assert.equal(
+        body.includes(
+          "updated_at",
+        ),
+        false,
+      );
+
+      const tambons =
+        (response.json() as {
+          readonly tambons:
+            readonly Record<
+              string,
+              unknown
+            >[];
+        }).tambons;
+
+      assert.deepEqual(
+        Object.keys(
+          tambons[0] ?? {},
+        ).sort(),
+        [
+          "id",
+          "nameTh",
+        ],
+      );
+
+      const queries =
+        db.getQueries();
+
+      assert.equal(
+        queries.length,
+        1,
+      );
+
+      const sql = (queries[0] ??
+        "").replace(/\s+/g, " ");
+
+      assert.ok(
+        sql.includes(
+          "SELECT id, name_th",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "FROM tambons",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ORDER BY id ASC",
+        ),
+      );
+
+      assert.equal(
+        sql.includes(
+          "district_id",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "zip_code",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "metadata",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "updated_at",
+        ),
+        false,
+      );
+
+      assert.equal(
+        sql.includes(
+          "JOIN",
+        ),
+        false,
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "tambons endpoint returns an empty catalog without rows",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        tambonRows: [],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/tambons",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      assert.equal(
+        response.body,
+        '{"tambons":[]}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "tambons endpoint fails closed without leaking database errors",
+
+  async () => {
+    const internalMessage =
+      "password authentication failed for user pa_admin at postgres://pa_admin:hunter2@10.0.0.8:5432/pa_prod";
+
+    const db =
+      createFakeDatabase({
+        error: new Error(
+          internalMessage,
+        ),
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/tambons",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+
+      assert.equal(
+        response.body.includes(
+          internalMessage,
+        ),
+        false,
+      );
+
+      assert.equal(
+        response.body.includes(
+          "hunter2",
+        ),
+        false,
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "tambons endpoint fails closed on malformed reference rows",
+
+  async (t) => {
+    const validRow = {
+      id: "540601",
+      name_th: "บ้านหนุน",
+    };
+
+    const malformedRows = [
+      {
+        reason: "id too long",
+        row: {
+          ...validRow,
+          id: "5406011",
+        },
+      },
+      {
+        reason:
+          "id not numeric",
+        row: {
+          ...validRow,
+          id: "5406ab",
+        },
+      },
+      {
+        reason: "null id",
+        row: {
+          ...validRow,
+          id: null,
+        },
+      },
+      {
+        reason:
+          "blank name_th",
+        row: {
+          ...validRow,
+          name_th: "",
+        },
+      },
+      {
+        reason:
+          "whitespace name_th",
+        row: {
+          ...validRow,
+          name_th: "   ",
+        },
+      },
+    ];
+
+    for (
+      const malformed
+      of malformedRows
+    ) {
+      await t.test(
+        malformed.reason,
+
+        async () => {
+          const db =
+            createFakeDatabase({
+              tambonRows: [
+                validRow,
+                malformed.row,
+              ],
+            });
+
+          const app = buildApp({
+            db,
+          });
+
+          try {
+            const response =
+              await app.inject({
+                method: "GET",
+                url: "/api/v1/tambons",
               });
 
             assert.equal(

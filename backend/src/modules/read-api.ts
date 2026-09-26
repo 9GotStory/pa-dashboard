@@ -85,6 +85,23 @@ const SYNC_STATUS_QUERY = `
   WHERE state.singleton_id = 1
 `;
 
+const FACILITIES_QUERY = `
+  SELECT
+    hospcode,
+    hospname,
+    tambon_id
+  FROM facilities
+  ORDER BY hospcode ASC
+`;
+
+const TAMBONS_QUERY = `
+  SELECT
+    id,
+    name_th
+  FROM tambons
+  ORDER BY id ASC
+`;
+
 const SYNC_RUN_STATUSES = [
   "running",
   "succeeded",
@@ -119,6 +136,44 @@ function requireString(
   if (typeof value !== "string") {
     throw new Error(
       `Field ${field} is not a string`,
+    );
+  }
+
+  return value;
+}
+
+function requireDigitCode(
+  row: Record<string, unknown>,
+  field: string,
+  length: number,
+): string {
+  const value = row[field];
+
+  if (
+    typeof value !== "string" ||
+    value.length !== length ||
+    !/^\d+$/.test(value)
+  ) {
+    throw new Error(
+      `Field ${field} is not a ${length}-digit code`,
+    );
+  }
+
+  return value;
+}
+
+function requireNonblankString(
+  row: Record<string, unknown>,
+  field: string,
+): string {
+  const value = row[field];
+
+  if (
+    typeof value !== "string" ||
+    value.trim().length === 0
+  ) {
+    throw new Error(
+      `Field ${field} is not a nonblank string`,
     );
   }
 
@@ -335,6 +390,17 @@ interface PublicSyncStatus {
     | null;
 }
 
+interface PublicFacility {
+  readonly hospcode: string;
+  readonly hospname: string;
+  readonly tambonId: string;
+}
+
+interface PublicTambon {
+  readonly id: string;
+  readonly nameTh: string;
+}
+
 function normalizeKpi(
   row: unknown,
 ): PublicKpi {
@@ -388,6 +454,47 @@ function normalizeKpi(
     effectiveQuarter: optionalInteger(
       source,
       "effective_quarter",
+    ),
+  };
+}
+
+function normalizeFacility(
+  row: unknown,
+): PublicFacility {
+  const source = asRowObject(row);
+
+  return {
+    hospcode: requireDigitCode(
+      source,
+      "hospcode",
+      5,
+    ),
+    hospname: requireNonblankString(
+      source,
+      "hospname",
+    ),
+    tambonId: requireDigitCode(
+      source,
+      "tambon_id",
+      6,
+    ),
+  };
+}
+
+function normalizeTambon(
+  row: unknown,
+): PublicTambon {
+  const source = asRowObject(row);
+
+  return {
+    id: requireDigitCode(
+      source,
+      "id",
+      6,
+    ),
+    nameTh: requireNonblankString(
+      source,
+      "name_th",
     ),
   };
 }
@@ -498,6 +605,70 @@ export function registerReadApiRoutes(
         request.log.error(
           error,
           "KPI catalog read failed",
+        );
+
+        reply.code(503);
+
+        return SERVICE_UNAVAILABLE;
+      }
+    },
+  );
+
+  app.get(
+    "/api/v1/facilities",
+
+    async (request, reply) => {
+      try {
+        const result =
+          await db.query(
+            FACILITIES_QUERY,
+          );
+
+        const facilities =
+          result.rows.map(
+            (row) =>
+              normalizeFacility(
+                row,
+              ),
+          );
+
+        return { facilities };
+      } catch (error) {
+        request.log.error(
+          error,
+          "Facility reference read failed",
+        );
+
+        reply.code(503);
+
+        return SERVICE_UNAVAILABLE;
+      }
+    },
+  );
+
+  app.get(
+    "/api/v1/tambons",
+
+    async (request, reply) => {
+      try {
+        const result =
+          await db.query(
+            TAMBONS_QUERY,
+          );
+
+        const tambons =
+          result.rows.map(
+            (row) =>
+              normalizeTambon(
+                row,
+              ),
+          );
+
+        return { tambons };
+      } catch (error) {
+        request.log.error(
+          error,
+          "Tambon reference read failed",
         );
 
         reply.code(503);
