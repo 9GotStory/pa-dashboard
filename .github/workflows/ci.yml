@@ -112,3 +112,28 @@ jobs:
           PA_ALLOW_DESTRUCTIVE_DB_TESTS: ""
           PA_REFERENCE_SOURCE_URL: ""
           PA_ALLOW_EXTERNAL_REFERENCE_FETCH: ""
+
+  deployment:
+    name: Deployment Contract and OCI Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Run deployment contract tests
+        run: node --test infra/test/deployment-contract.test.mjs
+
+      # OCI build verification only: GitHub-hosted runners provide a Docker
+      # engine, which is used to prove both Containerfiles build. Images are
+      # never pushed, published or deployed.
+      - name: Build web OCI image
+        run: docker build -f infra/containers/web.Containerfile -t pa-dashboard-web:ci .
+
+      - name: Build API OCI image
+        run: docker build -f infra/containers/api.Containerfile -t pa-dashboard-api:ci .

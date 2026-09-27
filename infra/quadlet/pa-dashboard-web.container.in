@@ -1,0 +1,26 @@
+# PA Dashboard web frontend (Next.js standalone).
+#
+# Template only — rendered by infra/render-quadlets.mjs with a digest-pinned
+# image reference. Joins ONLY the private application network — public routing
+# via the existing platform `edge` network is a separate, future gate and is
+# intentionally NOT established here. Publishes no host port.
+
+[Unit]
+Description=PA Dashboard web frontend
+Requires=pa-dashboard-api.service
+After=pa-dashboard-api.service
+
+[Container]
+Image=@@PA_WEB_IMAGE@@
+ContainerName=pa-dashboard-web
+Network=pa-dashboard-app.network
+NetworkAlias=pa-dashboard-web
+Environment=HOSTNAME=0.0.0.0
+Environment=PORT=3000
+Environment=NODE_ENV=production
+
+[Service]
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

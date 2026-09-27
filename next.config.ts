@@ -1,15 +1,20 @@
 import type { NextConfig } from "next";
 
-const isProd = process.env.NODE_ENV === 'production';
-
 const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
-  output: 'export',
-  // GitHub Pages repository name
-  basePath: isProd ? '/pa-dashboard' : '',
+  output: 'standalone',
   images: {
     unoptimized: true,
+  },
+  async rewrites() {
+    return [
+      {
+        source: '/api/v1/:path*',
+        // Internal service name and port are frozen deployment topology.
+        destination: 'http://pa-dashboard-api:3001/api/v1/:path*',
+      },
+    ];
   },
 };
 
