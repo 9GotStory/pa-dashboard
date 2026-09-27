@@ -11,6 +11,7 @@ import {
   readdir,
   mkdtemp,
   rm,
+  writeFile,
 } from "node:fs/promises";
 
 import {
@@ -376,6 +377,129 @@ test("renderer rejects malformed digests", async () => {
       recursive: true,
       force: true,
     },
+  );
+});
+
+test("renderer fails closed on a non-empty output directory and writes nothing", async (t) => {
+  const outputDirectory =
+    await mkdtemp(
+      join(
+        tmpdir(),
+        "pa-render-nonempty-",
+      ),
+    );
+
+  t.after(
+    () =>
+      rm(
+        outputDirectory,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+  );
+
+  // A stale Quadlet-shaped file must trigger rejection and must survive the
+  // failed render byte-for-byte, with no generated artifacts beside it.
+  const stalePath = join(
+    outputDirectory,
+    "stale-danger.container",
+  );
+
+  const staleContent =
+    "# stale unit that must never ride along into an install\n";
+
+  await writeFile(
+    stalePath,
+    staleContent,
+  );
+
+  await assert.rejects(
+    runRenderer(
+      [
+        "--web-image",
+        VALID_WEB_IMAGE,
+        "--api-image",
+        VALID_API_IMAGE,
+        "--db-image",
+        VALID_DB_IMAGE,
+        "--output",
+        outputDirectory,
+      ],
+    ),
+    (error) => {
+      assert.notEqual(
+        error.code,
+        0,
+        "renderer must exit non-zero",
+      );
+
+      assert.match(
+        error.stderr,
+        /not empty|existing entries|entrie/i,
+      );
+
+      return true;
+    },
+  );
+
+  assert.equal(
+    await readFile(
+      stalePath,
+      "utf8",
+    ),
+    staleContent,
+    "the stale file must remain unchanged",
+  );
+
+  const remaining =
+    await readdir(
+      outputDirectory,
+    );
+
+  assert.deepEqual(
+    remaining,
+    [
+      "stale-danger.container",
+    ],
+    "no generated .container/.network/.volume artifacts may be written",
+  );
+});
+
+test("renderer accepts an existing empty output directory", async (t) => {
+  const outputDirectory =
+    await mkdtemp(
+      join(
+        tmpdir(),
+        "pa-render-empty-",
+      ),
+    );
+
+  t.after(
+    () =>
+      rm(
+        outputDirectory,
+        {
+          recursive: true,
+          force: true,
+        },
+      ),
+  );
+
+  await renderValidBundle(
+    outputDirectory,
+  );
+
+  const emitted =
+    await readdir(
+      outputDirectory,
+    );
+
+  assert.equal(
+    emitted.length,
+    8,
+    "the full generated bundle must be written into the empty directory",
   );
 });
 

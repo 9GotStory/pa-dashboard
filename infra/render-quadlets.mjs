@@ -4,8 +4,10 @@
 // All .container.in templates carry digest placeholders (@@PA_*_IMAGE@@);
 // this script substitutes immutable image references and writes the complete
 // generated bundle (containers, network, volume) to an output directory of
-// the caller's choice. It never installs anything: no systemctl, no podman,
-// no writes to ~/.config/containers/systemd.
+// the caller's choice. The output directory must not exist yet or must be
+// empty — rendering fails closed on any pre-existing entry so a stale file
+// can never ride along into an installed bundle. It never installs anything:
+// no systemctl, no podman, no writes to ~/.config/containers/systemd.
 
 import {
   mkdir,
@@ -162,6 +164,46 @@ function validateImageReference(
       `${flag} must be an immutable image reference of the form ` +
         `registry/repository@sha256:<64 lowercase hex characters>; ` +
         `received: ${value}`,
+    );
+  }
+}
+
+// Fail-closed output precondition, checked before any generated artifact is
+// written: the target must not exist yet, or must be an empty directory. Any
+// existing entry (file, directory, symlink, hidden file) is rejected without
+// deleting or overwriting anything.
+async function assertOutputDirectoryEmpty(
+  outputDirectory,
+) {
+  let entries;
+
+  try {
+    entries =
+      await readdir(
+        outputDirectory,
+      );
+  } catch (error) {
+    if (
+      error?.code ===
+      "ENOENT"
+    ) {
+      // The directory does not exist yet and will be created.
+      return;
+    }
+
+    fail(
+      `output path exists but is not a readable directory: ${outputDirectory}`,
+    );
+  }
+
+  if (
+    entries.length > 0
+  ) {
+    fail(
+      `output directory is not empty (${entries.length} existing ` +
+        `entries); refusing to render into a directory that already ` +
+        `holds files — use a fresh or empty directory so stale files ` +
+        `cannot contaminate the generated bundle: ${outputDirectory}`,
     );
   }
 }
@@ -334,6 +376,10 @@ if (
       "render to a staging directory and review before installing",
   );
 }
+
+await assertOutputDirectoryEmpty(
+  outputDirectory,
+);
 
 renderQuadletBundle(
   IMAGE_ARGUMENTS.map(
