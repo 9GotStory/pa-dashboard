@@ -130,6 +130,20 @@ function optionalNonblankString(
   return value;
 }
 
+// Backend contract for nullable plain strings (e.g. link/subgroup): any
+// string — including "" — is valid; only non-string non-null is not.
+function optionalString(
+  record: Record<string, unknown>,
+  field: string,
+): string | null {
+  const value = record[field];
+  if (value === null) return null;
+  if (typeof value !== 'string') {
+    throw new Error(`Field ${field} is not a string or null`);
+  }
+  return value;
+}
+
 function requireBoolean(
   record: Record<string, unknown>,
   field: string,
@@ -279,11 +293,11 @@ export function parseKpiCatalogResponse(value: unknown): PublicKpi[] {
           ? null
           : requireFiniteNumber(record, 'target'),
       order: requireInteger(record, 'order'),
-      link: optionalNonblankString(record, 'link'),
+      link: optionalString(record, 'link'),
       categoryCode: requireNonblankString(record, 'categoryCode'),
       category: requireNonblankString(record, 'category'),
       categoryOrder: requireInteger(record, 'categoryOrder'),
-      subgroup: optionalNonblankString(record, 'subgroup'),
+      subgroup: optionalString(record, 'subgroup'),
       isQuarterly: requireBoolean(record, 'isQuarterly'),
       targetMonths:
         record.targetMonths === null

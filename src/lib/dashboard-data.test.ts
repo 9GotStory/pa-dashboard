@@ -451,3 +451,37 @@ test('period authority: annual catalog entry rejects quarterly result and vice v
     }),
   );
 });
+
+// R1-02 regression: link/subgroup are nullable plain strings — "" is a
+// valid value and must survive parsing and presentation-model building.
+test('R1-02 A/B: catalog accepts and preserves empty-string link and subgroup', () => {
+  const kpis = parseKpiCatalogResponse({
+    kpis: [
+      wireKpi({ key: 'empty_strs', link: '', subgroup: '' }),
+      wireKpi({ key: 'null_strs', link: null, subgroup: null }),
+    ],
+  });
+  assert.equal(kpis[0].link, '');
+  assert.equal(kpis[0].subgroup, '');
+  assert.equal(kpis[1].link, null);
+  assert.equal(kpis[1].subgroup, null);
+});
+
+test('R1-02 C: empty subgroup builds a valid presentation model with subgroup ""', () => {
+  const model = buildModel({
+    kpis: [wireKpi({ key: 'empty_sub', subgroup: '' })],
+    rows: [wireRow({ kpiKey: 'empty_sub' })],
+  });
+  assert.equal(model.summaries[0].subgroup, '');
+});
+
+test('R1-02 D/E: non-string non-null link and subgroup are still rejected', () => {
+  for (const bad of [1, true, {}, []]) {
+    assert.throws(() =>
+      parseKpiCatalogResponse({ kpis: [wireKpi({ link: bad })] }),
+    );
+    assert.throws(() =>
+      parseKpiCatalogResponse({ kpis: [wireKpi({ subgroup: bad })] }),
+    );
+  }
+});

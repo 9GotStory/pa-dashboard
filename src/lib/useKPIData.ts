@@ -32,6 +32,37 @@ function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError';
 }
 
+/**
+ * Retry-backoff delay that abort exits immediately. A plain setTimeout
+ * delay would keep the caller waiting after abort; this one rejects with
+ * AbortError the moment the signal fires, cancelling its timer and
+ * cleaning up the listener so no retry attempt can follow an abort.
+ */
+function abortableDelay(ms: number, signal?: AbortSignal): Promise<void> {
+  // Pre-check: an already-aborted signal rejects before any timer starts.
+  if (signal?.aborted) {
+    return Promise.reject(new DOMException('Aborted', 'AbortError'));
+  }
+  return new Promise<void>((resolve, reject) => {
+    // Re-check inside the promise to close the race between the pre-check
+    // above and listener registration below.
+    if (signal?.aborted) {
+      reject(new DOMException('Aborted', 'AbortError'));
+      return;
+    }
+    const onAbort = () => {
+      clearTimeout(timer);
+      signal?.removeEventListener('abort', onAbort);
+      reject(new DOMException('Aborted', 'AbortError'));
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    if (signal) signal.addEventListener('abort', onAbort);
+  });
+}
+
 async function fetchWithRetry(
   url: string,
   retries = 3,
@@ -48,7 +79,7 @@ async function fetchWithRetry(
       // User-initiated cancel: surface right away, don't burn retries.
       if (isAbortError(err)) throw err;
       if (i === retries - 1) throw err;
-      await new Promise(r => setTimeout(r, 1000 * (i + 1)));
+      await abortableDelay(1000 * (i + 1), signal);
     }
   }
   throw new Error('Retries failed');
