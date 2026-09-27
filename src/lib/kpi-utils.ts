@@ -1,9 +1,9 @@
-import type { KPISummary, MophReportData } from "./types";
+import type { KPISummary, DashboardResultRow } from "./types";
 
 /**
- * Fallback target used when a KPI has no explicit targetValue in kpi_master.
- * All "pass/fail" comparisons across components must resolve through this
- * constant so the default stays consistent everywhere.
+ * Fallback target used when a KPI has no explicit targetValue in the API
+ * catalog. All "pass/fail" comparisons across components must resolve
+ * through this constant so the default stays consistent everywhere.
  */
 export const DEFAULT_TARGET = 80;
 
@@ -32,13 +32,13 @@ export function roundPct(val: number): number {
 }
 
 /**
- * Read the pre-calculated `target` and `result` fields that รหัส.js emits
- * (see calculateKPIOnServer in src/scripts/รหัส.js). The frontend no longer
- * does any KPI-specific math — the server is the single source of truth.
+ * Read the already-calculated `target` and `result` of a normalized
+ * DashboardResultRow from Backend v2. Pure API validation guarantees both
+ * are finite numbers — no normalization happens here.
  */
-export function calculateKPIValue(item: MophReportData): KPIValue {
-  const t = Number(item.target ?? 0);
-  const r = Number(item.result ?? 0);
+export function calculateKPIValue(item: DashboardResultRow): KPIValue {
+  const t = item.target;
+  const r = item.result;
 
   return { t, r };
 }

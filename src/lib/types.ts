@@ -1,27 +1,31 @@
-export interface MophReportData {
-  id: string;
-  hospcode: string;
+export type DashboardPeriodCode =
+  | "annual"
+  | "q1"
+  | "q2"
+  | "q3"
+  | "q4";
+
+/**
+ * One backend-calculated KPI result row, normalized from
+ * /api/v1/dashboard. The backend is the calculation authority — the
+ * frontend reads target/result as-is and never recomputes them.
+ */
+export interface DashboardResultRow {
+  kpiKey: string;
+  periodCode: DashboardPeriodCode;
   areacode: string;
-  date_com: string;
-  b_year: string;
+  hospcode: string | null;
+  target: number;
+  result: number;
+}
 
-  // Standard fields
-  target?: number | string;
-  result?: number | string;
-
-  // Quarterly fields
-  targetq1?: number | string;
-  result1q1?: number | string;
-  targetq2?: number | string;
-  result1q2?: number | string;
-  targetq3?: number | string;
-  result1q3?: number | string;
-  targetq4?: number | string;
-  result1q4?: number | string;
-
-  // Catch-all for dynamic columns from MOPH API (target_9, result_9, a, b, etc.)
-  // `unknown` forces callers to narrow before use, unlike `any`.
-  [key: string]: unknown;
+/** Metadata of the currently active dataset. */
+export interface DashboardDataset {
+  syncRunId: string;
+  fiscalYear: number;
+  currentQuarter: number;
+  activatedAt: string;
+  sourceLastUpdated: string | null;
 }
 
 /**
@@ -73,7 +77,7 @@ export interface KPISummary {
   totalTarget: number;
   totalResult: number;
   percentage: number;
-  data: MophReportData[];
+  data: DashboardResultRow[];
   breakdown: Record<string, { target: number; result: number; percentage: number }>;
   targetValue: number; // The goal (e.g. 70%)
   targetMonths: number; // Resolved target period in months — annual=12, quarterly=currentQuarter×3

@@ -30,6 +30,29 @@ jobs:
         env:
           NODE_ENV: production
 
+      # Pure dashboard-data contract tests. The repo has no test runner
+      # dependency, so compile the pure test graph to a temporary directory
+      # with the existing TypeScript and run Node's built-in test runner on
+      # the emitted JavaScript. trap removes the temp dir even on failure.
+      - name: Run frontend dashboard data contract tests
+        run: |
+          TEST_OUT="$(mktemp -d)"
+          trap 'rm -rf "$TEST_OUT"' EXIT
+          npx tsc \
+            --noEmit false \
+            --incremental false \
+            --module commonjs \
+            --moduleResolution node \
+            --target ES2022 \
+            --esModuleInterop \
+            --skipLibCheck \
+            --outDir "$TEST_OUT" \
+            src/lib/dashboard-data.ts \
+            src/lib/dashboard-data.test.ts \
+            src/lib/types.ts \
+            src/lib/kpi-grouping.ts
+          node --test "$TEST_OUT/dashboard-data.test.js"
+
   backend:
     name: Backend Typecheck and Build
     runs-on: ubuntu-latest

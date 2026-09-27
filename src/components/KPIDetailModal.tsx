@@ -1,4 +1,4 @@
-import type { MophReportData } from '@/lib/types';
+import type { DashboardResultRow } from '@/lib/types';
 import { calculateKPIValue, formatPct } from '@/lib/kpi-utils';
 
 interface KPIDetailModalProps {
@@ -6,9 +6,11 @@ interface KPIDetailModalProps {
   onClose: () => void;
   title: string;
   facilityName: string;
-  data: MophReportData[];
+  data: DashboardResultRow[];
   targetValue: number;
   tambonMap?: Record<string, string>;
+  // Already-formatted dataset freshness (same value as the page header).
+  lastUpdated?: string;
 }
 
 export function KPIDetailModal({
@@ -18,17 +20,17 @@ export function KPIDetailModal({
   facilityName,
   data,
   targetValue,
-  tambonMap = {}
+  tambonMap = {},
+  lastUpdated = ''
 }: KPIDetailModalProps) {
   if (!isOpen) return null;
 
   // Helper to format numbers with commas
   const fmt = (n: number | undefined) => (n || 0).toLocaleString();
-  
+
   // Helper to safely calc pct
   const calcPct = (t: number, r: number) => t > 0 ? (r / t) * 100 : 0;
 
-  // Helper to get Tambon Name
   // Helper to get Tambon Name
   const getTambonName = (areacode: string) => {
      if (!areacode || areacode.length < 6) return '-';
@@ -38,43 +40,6 @@ export function KPIDetailModal({
 
   const totalT = data.reduce((acc, item) => acc + calculateKPIValue(item).t, 0);
   const totalR = data.reduce((acc, item) => acc + calculateKPIValue(item).r, 0);
-
-  // Get Data Date
-  const lastUpdated = data.length > 0 && data[0].date_com ? data[0].date_com : '';
-
-  // Date formatter
-  const formatDate = (dateStr: string) => {
-    try {
-      if (!dateStr) return '';
-      
-      // Handle YYYYMMDDHHmm format (e.g., "202602021245")
-      // If we pass this directly to new Date(), it parses as ms since epoch -> 1976!
-      let d = new Date(dateStr);
-      
-      const str = String(dateStr).trim();
-      if (/^\d{12}$/.test(str)) {
-         const year = parseInt(str.substring(0, 4));
-         const month = parseInt(str.substring(4, 6)) - 1; // 0-indexed
-         const day = parseInt(str.substring(6, 8));
-         const hour = parseInt(str.substring(8, 10));
-         const minute = parseInt(str.substring(10, 12));
-         d = new Date(year, month, day, hour, minute);
-      } else if (!isNaN(Number(dateStr)) && Number(dateStr) > 20000000) {
-         // Fallback if it's strictly a large number input (though regex covers standard case)
-      }
-      
-      // Explicitly request ONLY date parts
-      return d.toLocaleDateString('th-TH', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch {
-      return '';
-    }
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
@@ -97,7 +62,7 @@ export function KPIDetailModal({
             <p className="text-xs md:text-sm text-neutral-500 truncate">{title}</p>
             {lastUpdated && (
                <p className="text-[10px] md:text-xs text-neutral-400 mt-0.5">
-                 ข้อมูลล่าสุด: {formatDate(lastUpdated)}
+                 ข้อมูลล่าสุด: {lastUpdated}
                </p>
             )}
           </div>
@@ -129,7 +94,7 @@ export function KPIDetailModal({
                 const pct = calcPct(t, r);
                 const isPass = pct >= targetValue;
                 const isRaw = t === 0;
-                const tambonName = getTambonName(item.areacode as string);
+                const tambonName = getTambonName(item.areacode);
                 
                 // Extract Moo (Village No) - last 2 digits
                 let moo = '';

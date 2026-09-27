@@ -15,6 +15,7 @@ import { cn } from "@/lib/utils";
 
 export default function Home() {
   const {
+    dataset,
     data,
     hospitalMap,
     tambonMap,
@@ -133,6 +134,22 @@ export default function Home() {
     );
   }
 
+  // Authoritative "no active dataset" state — a normal empty dashboard, not
+  // a connection error or stale cache. No KPI tables/cards, no success toast.
+  if (dataset === null) {
+    return (
+      <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
+        <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
+          <div className="mt-20 text-center">
+            <p className="text-slate-500 font-medium font-prompt">
+              ยังไม่มีชุดข้อมูลที่พร้อมใช้งาน
+            </p>
+          </div>
+        </div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
@@ -226,6 +243,7 @@ export default function Home() {
             hospitalMap={hospitalMap}
             tambonMap={tambonMap}
             selectedFacilities={selectedFacilities}
+            lastUpdated={lastUpdated}
           />
         </div>
 
@@ -235,6 +253,7 @@ export default function Home() {
             hospitalMap={hospitalMap}
             tambonMap={tambonMap}
             selectedFacilities={selectedFacilities}
+            lastUpdated={lastUpdated}
           />
         </div>
 

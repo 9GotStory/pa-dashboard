@@ -8,7 +8,7 @@ import {
   createColumnHelper,
   type Row,
 } from "@tanstack/react-table";
-import type { KPISummary, MophReportData } from "@/lib/types";
+import type { KPISummary, DashboardResultRow } from "@/lib/types";
 import { KPIDetailModal } from "./KPIDetailModal";
 import { exportToExcel } from "@/lib/excel-export";
 import { computeAggregate, DEFAULT_TARGET, formatPct } from "@/lib/kpi-utils";
@@ -50,6 +50,7 @@ interface KPITableProps {
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
   tambonMap?: Record<string, string>;
   selectedFacilities?: string[];
+  lastUpdated?: string;
 }
 
 export default function KPITable({
@@ -57,13 +58,14 @@ export default function KPITable({
   hospitalMap = {},
   tambonMap = {},
   selectedFacilities = [],
+  lastUpdated = "",
 }: KPITableProps) {
   // Modal State
   const [modalState, setModalState] = useState<{
     isOpen: boolean;
     title: string;
     facilityName: string;
-    data: MophReportData[];
+    data: DashboardResultRow[];
     targetValue: number;
   }>({
     isOpen: false,
@@ -526,6 +528,7 @@ export default function KPITable({
         data={modalState.data}
         targetValue={modalState.targetValue}
         tambonMap={tambonMap}
+        lastUpdated={lastUpdated}
       />
     </>
   );

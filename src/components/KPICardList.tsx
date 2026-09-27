@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { KPISummary, MophReportData } from "@/lib/types";
+import type { KPISummary, DashboardResultRow } from "@/lib/types";
 import { DEFAULT_TARGET } from "@/lib/kpi-utils";
 import { partitionByCategory } from "@/lib/kpi-grouping";
 import { KPICard } from "./KPICard";
@@ -12,6 +12,7 @@ interface KPICardListProps {
   hospitalMap?: Record<string, { name: string; tambon_id: string }>;
   tambonMap?: Record<string, string>;
   selectedFacilities?: string[];
+  lastUpdated?: string;
 }
 
 export default function KPICardList({
@@ -19,6 +20,7 @@ export default function KPICardList({
   hospitalMap = {},
   tambonMap = {},
   selectedFacilities = [],
+  lastUpdated = "",
 }: KPICardListProps) {
   // Helper to get Hospital Name
   const getFacilityName = (code: string) => {
@@ -30,7 +32,7 @@ export default function KPICardList({
     isOpen: boolean;
     title: string;
     facilityName: string;
-    data: MophReportData[];
+    data: DashboardResultRow[];
     targetValue: number;
   }>({
     isOpen: false,
@@ -45,9 +47,11 @@ export default function KPICardList({
     let modalTitle = "ภาพรวมอำเภอ";
 
     if (selectedFacilities.length > 0) {
-      // Filter raw data for these facilities
-      modalData = kpi.data.filter((row) =>
-        selectedFacilities.includes(row.hospcode),
+      // Filter result rows for these facilities. hospcode can be null
+      // (district-level rows) — those never match a selected facility.
+      modalData = kpi.data.filter(
+        (row) =>
+          row.hospcode !== null && selectedFacilities.includes(row.hospcode),
       );
       if (selectedFacilities.length === 1) {
         modalTitle = getFacilityName(selectedFacilities[0]);
@@ -127,6 +131,7 @@ export default function KPICardList({
         data={modalState.data}
         targetValue={modalState.targetValue}
         tambonMap={tambonMap}
+        lastUpdated={lastUpdated}
       />
     </>
   );
