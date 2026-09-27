@@ -233,6 +233,129 @@ async function insertReferenceDataset(
   `);
 }
 
+async function insertSourceRecord(
+  pool: Pool,
+  options: {
+    readonly syncRunId: string;
+    readonly sourceSequence: number;
+    readonly dateCom: string | null;
+  },
+): Promise<void> {
+  await pool.query(
+    `
+      INSERT INTO source_records (
+        sync_run_id,
+        source_name,
+        source_sequence,
+        hospcode,
+        areacode,
+        date_com,
+        b_year,
+        target,
+        result,
+        raw_payload
+      )
+      VALUES (
+        $1,
+        'ci_source',
+        $2,
+        NULL,
+        '54060101',
+        $3,
+        2569,
+        NULL,
+        NULL,
+        '{}'::JSONB
+      )
+    `,
+    [
+      options.syncRunId,
+      options.sourceSequence,
+      options.dateCom,
+    ],
+  );
+}
+
+async function insertKpiResult(
+  pool: Pool,
+  options: {
+    readonly syncRunId: string;
+    readonly kpiKey: string;
+    readonly periodCode: string;
+    readonly areacode: string | null;
+    readonly hospcode: string | null;
+    readonly target: string;
+    readonly result: string;
+  },
+): Promise<string> {
+  const definition =
+    await pool.query<{
+      readonly id: string;
+    }>(
+      `
+        SELECT id
+        FROM kpi_definitions
+        WHERE kpi_key = $1
+      `,
+      [
+        options.kpiKey,
+      ],
+    );
+
+  const definitionId =
+    definition.rows[0]?.id;
+
+  assert.ok(definitionId);
+
+  const inserted =
+    await pool.query<{
+      readonly id: string;
+    }>(
+      `
+        INSERT INTO kpi_results (
+          sync_run_id,
+          kpi_definition_id,
+          fiscal_year,
+          period_code,
+          areacode,
+          hospcode,
+          target,
+          result,
+          details,
+          calculated_at
+        )
+        VALUES (
+          $1,
+          $2,
+          2569,
+          $3,
+          $4,
+          $5,
+          $6,
+          $7,
+          '{}'::JSONB,
+          NOW()
+        )
+        RETURNING id
+      `,
+      [
+        options.syncRunId,
+        definitionId,
+        options.periodCode,
+        options.areacode,
+        options.hospcode,
+        options.target,
+        options.result,
+      ],
+    );
+
+  const id = inserted.rows[0]?.id;
+
+  assert.ok(id);
+
+  return id;
+}
+
 interface PublicKpiItem {
   readonly key: string;
   readonly title: string;
@@ -411,6 +534,31 @@ test(
               activeSyncRunId:
                 null,
               latestRun: null,
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "dashboard returns the normal empty state before dataset activation",
+
+        async () => {
+          const response =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+
+          assert.equal(
+            response.statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            response.json(),
+            {
+              dataset: null,
+              results: [],
             },
           );
         },
@@ -914,6 +1062,617 @@ test(
               internalSecret,
             ),
             false,
+          );
+        },
+      );
+
+      const activeRunId =
+        await insertSyncRun(
+          pool,
+          {
+            status: "succeeded",
+            startedAt:
+              new Date(
+                "2026-09-20T00:00:00.000Z",
+              ),
+            finishedAt:
+              new Date(
+                "2026-09-20T00:05:00.000Z",
+              ),
+            errorSummary: null,
+          },
+        );
+
+      await activateRun(
+        pool,
+        activeRunId,
+      );
+
+      const activatedAtResult =
+        await pool.query<{
+          readonly activated_at: Date;
+        }>(
+          `
+            SELECT activated_at
+            FROM sync_runs
+            WHERE id = $1
+          `,
+          [
+            activeRunId,
+          ],
+        );
+
+      const activatedAt =
+        activatedAtResult.rows[0]
+          ?.activated_at;
+
+      assert.ok(activatedAt);
+
+      await t.test(
+        "dashboard fails closed while the active dataset has zero KPI results",
+
+        async () => {
+          const response =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+
+          assert.equal(
+            response.statusCode,
+            503,
+          );
+
+          assert.equal(
+            response.body,
+            '{"error":"service_unavailable"}',
+          );
+        },
+      );
+
+      // KPI results for the active run, inserted in reverse of
+      // the deterministic public order.
+      await insertKpiResult(pool, {
+        syncRunId: activeRunId,
+        kpiKey: "s_kpi_food",
+        periodCode: "q2",
+        areacode: "54060101",
+        hospcode: "06413",
+        target: "50",
+        result: "25",
+      });
+
+      await insertKpiResult(pool, {
+        syncRunId: activeRunId,
+        kpiKey: "s_anc5",
+        periodCode: "q1",
+        areacode: "54060101",
+        hospcode: null,
+        target: "75",
+        result: "60.5",
+      });
+
+      await insertKpiResult(pool, {
+        syncRunId: activeRunId,
+        kpiKey: "s_kpi_anc12",
+        periodCode: "q2",
+        areacode: "54060102",
+        hospcode: "10702",
+        target: "100",
+        result: "82",
+      });
+
+      await insertKpiResult(pool, {
+        syncRunId: activeRunId,
+        kpiKey: "s_kpi_anc12",
+        periodCode: "q2",
+        areacode: "54060101",
+        hospcode: "06413",
+        target: "100",
+        result: "81",
+      });
+
+      await insertKpiResult(pool, {
+        syncRunId: activeRunId,
+        kpiKey: "s_kpi_anc12",
+        periodCode: "q2",
+        areacode: "54060101",
+        hospcode: null,
+        target: "100",
+        result: "80",
+      });
+
+      await insertKpiResult(pool, {
+        syncRunId: activeRunId,
+        kpiKey: "s_kpi_anc12",
+        periodCode: "annual",
+        areacode: "54060101",
+        hospcode: null,
+        target: "100",
+        result: "80",
+      });
+
+      const expectedDashboardDataset = {
+        syncRunId: activeRunId,
+        fiscalYear: 2569,
+        currentQuarter: 4,
+        activatedAt:
+          activatedAt.toISOString(),
+      };
+
+      const expectedDashboardResults = [
+        {
+          kpiKey: "s_kpi_anc12",
+          periodCode: "annual",
+          areacode: "54060101",
+          hospcode: null,
+          target: 100,
+          result: 80,
+        },
+        {
+          kpiKey: "s_kpi_anc12",
+          periodCode: "q2",
+          areacode: "54060101",
+          hospcode: null,
+          target: 100,
+          result: 80,
+        },
+        {
+          kpiKey: "s_kpi_anc12",
+          periodCode: "q2",
+          areacode: "54060101",
+          hospcode: "06413",
+          target: 100,
+          result: 81,
+        },
+        {
+          kpiKey: "s_kpi_anc12",
+          periodCode: "q2",
+          areacode: "54060102",
+          hospcode: "10702",
+          target: 100,
+          result: 82,
+        },
+        {
+          kpiKey: "s_anc5",
+          periodCode: "q1",
+          areacode: "54060101",
+          hospcode: null,
+          target: 75,
+          result: 60.5,
+        },
+        {
+          kpiKey: "s_kpi_food",
+          periodCode: "q2",
+          areacode: "54060101",
+          hospcode: "06413",
+          target: 50,
+          result: 25,
+        },
+      ];
+
+      await t.test(
+        "dashboard exposes the active dataset with null freshness before source records exist",
+
+        async () => {
+          const response =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+
+          assert.equal(
+            response.statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            response.json(),
+            {
+              dataset: {
+                ...expectedDashboardDataset,
+                sourceLastUpdated:
+                  null,
+              },
+              results:
+                expectedDashboardResults,
+            },
+          );
+        },
+      );
+
+      const newerSucceededRunId =
+        await insertSyncRun(
+          pool,
+          {
+            status: "succeeded",
+            startedAt:
+              new Date(
+                "2026-09-21T00:00:00.000Z",
+              ),
+            finishedAt:
+              new Date(
+                "2026-09-21T00:05:00.000Z",
+              ),
+            errorSummary: null,
+          },
+        );
+
+      const dashboardInternalSecret =
+        "hunter2-dashboard-internal-token";
+
+      const newerFailedRunId =
+        await insertSyncRun(
+          pool,
+          {
+            status: "failed",
+            startedAt:
+              new Date(
+                "2026-09-22T00:00:00.000Z",
+              ),
+            finishedAt:
+              new Date(
+                "2026-09-22T00:05:00.000Z",
+              ),
+            errorSummary:
+              JSON.stringify({
+                internal_secret:
+                  dashboardInternalSecret,
+              }),
+          },
+        );
+
+      await insertKpiResult(pool, {
+        syncRunId:
+          newerSucceededRunId,
+        kpiKey: "s_kpi_anc12",
+        periodCode: "q2",
+        areacode: "54060101",
+        hospcode: null,
+        target: "999",
+        result: "999",
+      });
+
+      await insertKpiResult(pool, {
+        syncRunId: newerFailedRunId,
+        kpiKey: "s_kpi_anc12",
+        periodCode: "q2",
+        areacode: "54060101",
+        hospcode: null,
+        target: "888",
+        result: "888",
+      });
+
+      // Only some active-run markers match the accepted
+      // freshness formats; the rest must be ignored.
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 1,
+        dateCom: "20260925120000",
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 2,
+        dateCom: "20260926",
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 3,
+        dateCom: "202609261230",
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 4,
+        dateCom: "2026092612304",
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 5,
+        dateCom: "20260926123045",
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 6,
+        dateCom: null,
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: activeRunId,
+        sourceSequence: 7,
+        dateCom: "2026092612ab",
+      });
+
+      // Non-active runs carry markers that would win if
+      // freshness were not restricted to the active run.
+      await insertSourceRecord(pool, {
+        syncRunId: newerSucceededRunId,
+        sourceSequence: 1,
+        dateCom: "20260927999999",
+      });
+
+      await insertSourceRecord(pool, {
+        syncRunId: newerFailedRunId,
+        sourceSequence: 1,
+        dateCom: "99999999999999",
+      });
+
+      await t.test(
+        "dashboard derives freshness and results only from the active run",
+
+        async () => {
+          const response =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+
+          assert.equal(
+            response.statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            response.json(),
+            {
+              dataset: {
+                ...expectedDashboardDataset,
+                sourceLastUpdated:
+                  "20260926123045",
+              },
+              results:
+                expectedDashboardResults,
+            },
+          );
+
+          assert.equal(
+            response.body.includes(
+              "999",
+            ),
+            false,
+          );
+
+          assert.equal(
+            response.body.includes(
+              "888",
+            ),
+            false,
+          );
+
+          assert.equal(
+            response.body.includes(
+              dashboardInternalSecret,
+            ),
+            false,
+          );
+        },
+      );
+
+      await t.test(
+        "dashboard live response exposes only public fields",
+
+        async () => {
+          const response =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+
+          assert.equal(
+            response.statusCode,
+            200,
+          );
+
+          const body =
+            response.json() as {
+              readonly dataset:
+                Record<string, unknown>;
+              readonly results:
+                readonly Record<
+                  string,
+                  unknown
+                >[];
+            };
+
+          assert.deepEqual(
+            Object.keys(
+              body.dataset,
+            ).sort(),
+            [
+              "activatedAt",
+              "currentQuarter",
+              "fiscalYear",
+              "sourceLastUpdated",
+              "syncRunId",
+            ],
+          );
+
+          assert.deepEqual(
+            Object.keys(
+              body.results[0] ?? {},
+            ).sort(),
+            [
+              "areacode",
+              "hospcode",
+              "kpiKey",
+              "periodCode",
+              "result",
+              "target",
+            ],
+          );
+
+          for (
+            const privateFragment
+            of [
+              "active_sync_run_id",
+              "run_status",
+              "status",
+              "expected_source_count",
+              "completed_source_count",
+              "failed_source_count",
+              "finished_at",
+              "started_at",
+              "config_snapshot",
+              "error_summary",
+              "kpi_definition_id",
+              "definition_id",
+              "sort_order",
+              "details",
+              "raw_payload",
+              "date_com",
+              "source_last_updated",
+              "calculated_at",
+              "fiscal_year",
+              "current_quarter",
+              "period_code",
+              "kpi_key",
+            ]
+          ) {
+            assert.equal(
+              response.body.includes(
+                privateFragment,
+              ),
+              false,
+              `Dashboard payload must not expose: ${privateFragment}`,
+            );
+          }
+        },
+      );
+
+      const malformedResultId =
+        await insertKpiResult(pool, {
+          syncRunId: activeRunId,
+          kpiKey: "s_dm_screen",
+          periodCode: "q2",
+          areacode: null,
+          hospcode: null,
+          target: "10",
+          result: "5",
+        });
+
+      await t.test(
+        "dashboard fails closed on a malformed live result row without partial output",
+
+        async () => {
+          try {
+            const response =
+              await fastify.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await pool.query(
+              `
+                DELETE FROM kpi_results
+                WHERE id = $1
+              `,
+              [
+                malformedResultId,
+              ],
+            );
+          }
+
+          const recovered =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+
+          assert.equal(
+            recovered.statusCode,
+            200,
+          );
+
+          assert.deepEqual(
+            recovered.json(),
+            {
+              dataset: {
+                ...expectedDashboardDataset,
+                sourceLastUpdated:
+                  "20260926123045",
+              },
+              results:
+                expectedDashboardResults,
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "existing read API surfaces remain available after dashboard proofs",
+
+        async () => {
+          const kpisResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/kpis",
+            });
+
+          assert.equal(
+            kpisResponse.statusCode,
+            200,
+          );
+
+          assert.equal(
+            (kpisResponse.json() as {
+              readonly kpis: readonly unknown[];
+            }).kpis.length,
+            47,
+          );
+
+          const facilitiesResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/facilities",
+            });
+
+          assert.equal(
+            facilitiesResponse.statusCode,
+            200,
+          );
+
+          const tambonsResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/tambons",
+            });
+
+          assert.equal(
+            tambonsResponse.statusCode,
+            200,
+          );
+
+          const syncStatusResponse =
+            await fastify.inject({
+              method: "GET",
+              url: "/api/v1/sync-status",
+            });
+
+          assert.equal(
+            syncStatusResponse.statusCode,
+            200,
+          );
+
+          assert.equal(
+            (syncStatusResponse.json() as {
+              readonly activeSyncRunId:
+                string | null;
+            }).activeSyncRunId,
+            activeRunId,
           );
         },
       );

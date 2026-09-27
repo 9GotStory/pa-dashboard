@@ -33,6 +33,7 @@ function createFakeDatabase(
     readonly syncRows?: readonly unknown[];
     readonly facilityRows?: readonly unknown[];
     readonly tambonRows?: readonly unknown[];
+    readonly dashboardRows?: readonly unknown[];
     readonly error?: Error;
   },
 ): FakeDatabase {
@@ -49,18 +50,22 @@ function createFakeDatabase(
       }
 
       const rows = text.includes(
-          "kpi_definitions",
+          "kpi_results",
         )
-        ? behavior.kpiRows
+        ? behavior.dashboardRows
         : text.includes(
-            "facilities",
+            "kpi_definitions",
           )
-          ? behavior.facilityRows
+          ? behavior.kpiRows
           : text.includes(
-              "tambons",
+              "facilities",
             )
-            ? behavior.tambonRows
-            : behavior.syncRows;
+            ? behavior.facilityRows
+            : text.includes(
+                "tambons",
+              )
+              ? behavior.tambonRows
+              : behavior.syncRows;
 
       return {
         rows: (rows ??
@@ -69,6 +74,40 @@ function createFakeDatabase(
     },
 
     getQueries: () => queries,
+  };
+}
+
+function createDashboardRow(
+  overrides: Record<
+    string,
+    unknown
+  > = {},
+): Record<string, unknown> {
+  return {
+    active_sync_run_id: "42",
+    run_id: "42",
+    run_status: "succeeded",
+    fiscal_year: 2569,
+    current_quarter: 4,
+    expected_source_count: 1,
+    completed_source_count: 1,
+    failed_source_count: 0,
+    finished_at: new Date(
+      "2026-09-27T01:25:00.000Z",
+    ),
+    activated_at: new Date(
+      "2026-09-27T01:30:00.000Z",
+    ),
+    source_last_updated:
+      "202609261230",
+    definition_sort_order: 1,
+    kpi_key: "s_kpi_anc12",
+    period_code: "q2",
+    areacode: "54060101",
+    hospcode: "06413",
+    target: "100",
+    result: "80",
+    ...overrides,
   };
 }
 
@@ -1639,6 +1678,1127 @@ test(
         },
       );
     }
+  },
+);
+
+test(
+  "dashboard returns the active dataset with the exact public shape",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow(),
+          createDashboardRow({
+            definition_sort_order: 2,
+            kpi_key: "s_anc5",
+            period_code: "q1",
+            areacode: "54060101",
+            hospcode: null,
+            target: "87.5",
+            result: "60.5",
+          }),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      const body =
+        response.json() as {
+          readonly dataset: {
+            readonly syncRunId: string;
+            readonly sourceLastUpdated:
+              string | null;
+          };
+          readonly results:
+            readonly {
+              readonly target: number;
+              readonly result: number;
+            }[];
+        };
+
+      assert.equal(
+        typeof body.results[0]
+          ?.target,
+        "number",
+      );
+
+      assert.deepEqual(
+        response.json(),
+        {
+          dataset: {
+            syncRunId: "42",
+            fiscalYear: 2569,
+            currentQuarter: 4,
+            activatedAt:
+              "2026-09-27T01:30:00.000Z",
+            sourceLastUpdated:
+              "202609261230",
+          },
+          results: [
+            {
+              kpiKey:
+                "s_kpi_anc12",
+              periodCode: "q2",
+              areacode:
+                "54060101",
+              hospcode:
+                "06413",
+              target: 100,
+              result: 80,
+            },
+            {
+              kpiKey: "s_anc5",
+              periodCode: "q1",
+              areacode:
+                "54060101",
+              hospcode: null,
+              target: 87.5,
+              result: 60.5,
+            },
+          ],
+        },
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard preserves BIGINT sync run identity as an exact string",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow({
+            active_sync_run_id:
+              "9007199254740993",
+            run_id:
+              "9007199254740993",
+          }),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      const body =
+        response.json() as {
+          readonly dataset: {
+            readonly syncRunId: string;
+          };
+        };
+
+      assert.equal(
+        body.dataset.syncRunId,
+        "9007199254740993",
+      );
+
+      assert.equal(
+        typeof body.dataset
+          .syncRunId,
+        "string",
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard exposes only public dataset and result fields",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow(),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      const body =
+        response.json() as {
+          readonly dataset:
+            Record<string, unknown>;
+          readonly results:
+            readonly Record<
+              string,
+              unknown
+            >[];
+        };
+
+      assert.deepEqual(
+        Object.keys(
+          body.dataset,
+        ).sort(),
+        [
+          "activatedAt",
+          "currentQuarter",
+          "fiscalYear",
+          "sourceLastUpdated",
+          "syncRunId",
+        ],
+      );
+
+      assert.deepEqual(
+        Object.keys(
+          body.results[0] ?? {},
+        ).sort(),
+        [
+          "areacode",
+          "hospcode",
+          "kpiKey",
+          "periodCode",
+          "result",
+          "target",
+        ],
+      );
+
+      for (
+        const privateFragment
+        of [
+          "active_sync_run_id",
+          "run_id",
+          "run_status",
+          "status",
+          "expected_source_count",
+          "expectedSourceCount",
+          "completed_source_count",
+          "completedSourceCount",
+          "failed_source_count",
+          "failedSourceCount",
+          "finished_at",
+          "finishedAt",
+          "started_at",
+          "startedAt",
+          "config_snapshot",
+          "configSnapshot",
+          "error_summary",
+          "errorSummary",
+          "kpi_definition_id",
+          "kpiDefinitionId",
+          "details",
+          "raw_payload",
+          "rawPayload",
+          "payload",
+          "calculated_at",
+          "calculatedAt",
+          "sort_order",
+          "definition_sort_order",
+          "source_last_updated",
+        ]
+      ) {
+        assert.equal(
+          response.body.includes(
+            privateFragment,
+          ),
+          false,
+          `Dashboard payload must not expose: ${privateFragment}`,
+        );
+      }
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard query observes the whole active dataset in one bounded statement",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow(),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      await app.inject({
+        method: "GET",
+        url: "/api/v1/dashboard",
+      });
+
+      const queries =
+        db.getQueries();
+
+      assert.equal(
+        queries.length,
+        1,
+      );
+
+      const sql = (queries[0] ??
+        "").replace(/\s+/g, " ");
+
+      assert.ok(
+        sql.includes(
+          "FROM app_state",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "active_sync_run_id",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "FROM sync_runs",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi_results",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi_definitions",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "source_records",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "date_com",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "MAX(source.date_com)",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi.sync_run_id = state.active_sync_run_id",
+        ),
+        "Results must be restricted to the active run",
+      );
+
+      assert.ok(
+        sql.includes(
+          "source.sync_run_id = state.active_sync_run_id",
+        ),
+        "Freshness must be restricted to the active run",
+      );
+
+      assert.ok(
+        sql.includes(
+          "ORDER BY",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "definition.sort_order ASC",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "definition.kpi_key ASC",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi.period_code ASC",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi.areacode ASC",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi.hospcode ASC NULLS FIRST",
+        ),
+      );
+
+      for (
+        const forbiddenFragment
+        of [
+          "raw_payload",
+          "config_snapshot",
+          "error_summary",
+          "started_at",
+          "details",
+        ]
+      ) {
+        assert.equal(
+          sql.includes(
+            forbiddenFragment,
+          ),
+          false,
+          `Dashboard statement must not read: ${forbiddenFragment}`,
+        );
+      }
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard returns the normal empty state when no dataset is activated",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          {
+            active_sync_run_id:
+              null,
+            run_id: null,
+            run_status: null,
+            fiscal_year: null,
+            current_quarter: null,
+            expected_source_count:
+              null,
+            completed_source_count:
+              null,
+            failed_source_count:
+              null,
+            finished_at: null,
+            activated_at: null,
+            source_last_updated:
+              null,
+            definition_sort_order:
+              null,
+            kpi_key: null,
+            period_code: null,
+            areacode: null,
+            hospcode: null,
+            target: null,
+            result: null,
+          },
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        200,
+      );
+
+      assert.equal(
+        response.body,
+        '{"dataset":null,"results":[]}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed without leaking database errors",
+
+  async () => {
+    const internalMessage =
+      "password authentication failed for user pa_admin at postgres://pa_admin:hunter2@10.0.0.8:5432/pa_prod";
+
+    const db =
+      createFakeDatabase({
+        error: new Error(
+          internalMessage,
+        ),
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+
+      assert.equal(
+        response.body.includes(
+          internalMessage,
+        ),
+        false,
+      );
+
+      assert.equal(
+        response.body.includes(
+          "hunter2",
+        ),
+        false,
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed when the app_state singleton is missing",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed when the active run is malformed or ineligible",
+
+  async (t) => {
+    const ineligibleRows = [
+      {
+        reason:
+          "running run",
+        overrides: {
+          run_status: "running",
+        },
+      },
+      {
+        reason: "failed run",
+        overrides: {
+          run_status: "failed",
+        },
+      },
+      {
+        reason:
+          "active run metadata missing",
+        overrides: {
+          run_id: null,
+          run_status: null,
+        },
+      },
+      {
+        reason:
+          "run id not decimal",
+        overrides: {
+          run_id: "sync-42",
+        },
+      },
+      {
+        reason:
+          "empty run id",
+        overrides: {
+          run_id: "",
+        },
+      },
+      {
+        reason:
+          "fiscal year not an integer",
+        overrides: {
+          fiscal_year: "2569",
+        },
+      },
+      {
+        reason:
+          "quarter below range",
+        overrides: {
+          current_quarter: 0,
+        },
+      },
+      {
+        reason:
+          "quarter above range",
+        overrides: {
+          current_quarter: 5,
+        },
+      },
+      {
+        reason:
+          "quarter not an integer",
+        overrides: {
+          current_quarter: 4.5,
+        },
+      },
+      {
+        reason:
+          "zero expected sources",
+        overrides: {
+          expected_source_count: 0,
+          completed_source_count: 0,
+        },
+      },
+      {
+        reason:
+          "incomplete run",
+        overrides: {
+          completed_source_count: 0,
+        },
+      },
+      {
+        reason:
+          "run with failed sources",
+        overrides: {
+          failed_source_count: 1,
+        },
+      },
+      {
+        reason:
+          "null finished timestamp",
+        overrides: {
+          finished_at: null,
+        },
+      },
+      {
+        reason:
+          "string finished timestamp",
+        overrides: {
+          finished_at:
+            "2026-09-27T01:25:00.000Z",
+        },
+      },
+      {
+        reason:
+          "null activated timestamp",
+        overrides: {
+          activated_at: null,
+        },
+      },
+      {
+        reason:
+          "invalid activated timestamp",
+        overrides: {
+          activated_at: new Date(
+            "not-a-timestamp",
+          ),
+        },
+      },
+      {
+        reason:
+          "string activated timestamp",
+        overrides: {
+          activated_at:
+            "2026-09-27T01:30:00.000Z",
+        },
+      },
+    ];
+
+    for (
+      const ineligible
+      of ineligibleRows
+    ) {
+      await t.test(
+        ineligible.reason,
+
+        async () => {
+          const db =
+            createFakeDatabase({
+              dashboardRows: [
+                createDashboardRow(
+                  ineligible.overrides,
+                ),
+              ],
+            });
+
+          const app = buildApp({
+            db,
+          });
+
+          try {
+            const response =
+              await app.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await app.close();
+          }
+        },
+      );
+    }
+  },
+);
+
+test(
+  "dashboard fails closed when the active dataset has zero results",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow({
+            definition_sort_order:
+              null,
+            kpi_key: null,
+            period_code: null,
+            areacode: null,
+            hospcode: null,
+            target: null,
+            result: null,
+          }),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed on malformed result rows without partial output",
+
+  async (t) => {
+    const malformedRows = [
+      {
+        reason:
+          "blank kpi key",
+        overrides: {
+          kpi_key: "",
+        },
+      },
+      {
+        reason:
+          "whitespace kpi key",
+        overrides: {
+          kpi_key: "   ",
+        },
+      },
+      {
+        reason:
+          "invalid period",
+        overrides: {
+          period_code: "monthly",
+        },
+      },
+      {
+        reason:
+          "uppercase period",
+        overrides: {
+          period_code: "Q2",
+        },
+      },
+      {
+        reason:
+          "numeric period",
+        overrides: {
+          period_code: 2,
+        },
+      },
+      {
+        reason:
+          "null period",
+        overrides: {
+          period_code: null,
+        },
+      },
+      {
+        reason:
+          "blank areacode",
+        overrides: {
+          areacode: "",
+        },
+      },
+      {
+        reason:
+          "whitespace areacode",
+        overrides: {
+          areacode: "   ",
+        },
+      },
+      {
+        reason:
+          "null areacode",
+        overrides: {
+          areacode: null,
+        },
+      },
+      {
+        reason:
+          "numeric areacode",
+        overrides: {
+          areacode: 54060101,
+        },
+      },
+      {
+        reason:
+          "blank hospcode",
+        overrides: {
+          hospcode: "  ",
+        },
+      },
+      {
+        reason:
+          "numeric hospcode",
+        overrides: {
+          hospcode: 6413,
+        },
+      },
+      {
+        reason:
+          "non-numeric target",
+        overrides: {
+          target: "not-a-number",
+        },
+      },
+      {
+        reason:
+          "blank target",
+        overrides: {
+          target: "  ",
+        },
+      },
+      {
+        reason:
+          "null target",
+        overrides: {
+          target: null,
+        },
+      },
+      {
+        reason:
+          "boolean target",
+        overrides: {
+          target: true,
+        },
+      },
+      {
+        reason:
+          "object target",
+        overrides: {
+          target: {
+            value: 100,
+          },
+        },
+      },
+      {
+        reason:
+          "null result",
+        overrides: {
+          result: null,
+        },
+      },
+      {
+        reason:
+          "non-numeric result",
+        overrides: {
+          result: "eighty",
+        },
+      },
+      {
+        reason:
+          "boolean result",
+        overrides: {
+          result: false,
+        },
+      },
+    ];
+
+    for (
+      const malformed
+      of malformedRows
+    ) {
+      await t.test(
+        malformed.reason,
+
+        async () => {
+          const db =
+            createFakeDatabase({
+              dashboardRows: [
+                createDashboardRow(),
+                createDashboardRow(
+                  malformed.overrides,
+                ),
+              ],
+            });
+
+          const app = buildApp({
+            db,
+          });
+
+          try {
+            const response =
+              await app.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await app.close();
+          }
+        },
+      );
+    }
+  },
+);
+
+test(
+  "dashboard derives sourceLastUpdated only from valid source markers",
+
+  async (t) => {
+    const markerCases = [
+      {
+        reason:
+          "valid 12-digit marker",
+        marker:
+          "202609261230",
+      },
+      {
+        reason:
+          "valid 14-digit marker",
+        marker:
+          "20260926123045",
+      },
+      {
+        reason:
+          "null marker",
+        marker: null,
+      },
+    ];
+
+    for (
+      const markerCase
+      of markerCases
+    ) {
+      await t.test(
+        markerCase.reason,
+
+        async () => {
+          const db =
+            createFakeDatabase({
+              dashboardRows: [
+                createDashboardRow({
+                  source_last_updated:
+                    markerCase.marker,
+                }),
+              ],
+            });
+
+          const app = buildApp({
+            db,
+          });
+
+          try {
+            const response =
+              await app.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              response.statusCode,
+              200,
+            );
+
+            const body =
+              response.json() as {
+                readonly dataset: {
+                  readonly sourceLastUpdated:
+                    string | null;
+                };
+              };
+
+            assert.equal(
+              body.dataset
+                .sourceLastUpdated,
+              markerCase.marker,
+            );
+          } finally {
+            await app.close();
+          }
+        },
+      );
+    }
+
+    await t.test(
+      "invalid marker lengths fail closed",
+
+      async () => {
+        for (
+          const invalidMarker
+          of [
+            "2026092612304",
+            "20260926",
+            "2026092612304599",
+            "2026-09-26 12:30",
+            202609261230,
+          ]
+        ) {
+          const db =
+            createFakeDatabase({
+              dashboardRows: [
+                createDashboardRow({
+                  source_last_updated:
+                    invalidMarker,
+                }),
+              ],
+            });
+
+          const app = buildApp({
+            db,
+          });
+
+          try {
+            const response =
+              await app.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              response.statusCode,
+              503,
+            );
+
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await app.close();
+          }
+        }
+      },
+    );
   },
 );
 

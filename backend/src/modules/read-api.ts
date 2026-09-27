@@ -102,6 +102,71 @@ const TAMBONS_QUERY = `
   ORDER BY id ASC
 `;
 
+const DASHBOARD_QUERY = `
+  SELECT
+    state.active_sync_run_id::TEXT
+      AS active_sync_run_id,
+    run.id::TEXT AS run_id,
+    run.status AS run_status,
+    run.fiscal_year AS fiscal_year,
+    run.current_quarter AS current_quarter,
+    run.expected_source_count
+      AS expected_source_count,
+    run.completed_source_count
+      AS completed_source_count,
+    run.failed_source_count
+      AS failed_source_count,
+    run.finished_at AS finished_at,
+    run.activated_at AS activated_at,
+    fresh.source_last_updated
+      AS source_last_updated,
+    definition.kpi_key AS kpi_key,
+    kpi.period_code AS period_code,
+    kpi.areacode AS areacode,
+    kpi.hospcode AS hospcode,
+    kpi.target AS target,
+    kpi.result AS result
+  FROM app_state AS state
+  LEFT JOIN LATERAL (
+    SELECT
+      id,
+      status,
+      fiscal_year,
+      current_quarter,
+      expected_source_count,
+      completed_source_count,
+      failed_source_count,
+      finished_at,
+      activated_at
+    FROM sync_runs
+    WHERE id = state.active_sync_run_id
+  ) AS run ON TRUE
+  LEFT JOIN LATERAL (
+    SELECT
+      MAX(source.date_com)
+        AS source_last_updated
+    FROM source_records AS source
+    WHERE source.sync_run_id
+        = state.active_sync_run_id
+      AND (
+        source.date_com ~ '^[0-9]{12}$'
+        OR source.date_com ~ '^[0-9]{14}$'
+      )
+  ) AS fresh ON TRUE
+  LEFT JOIN kpi_results AS kpi
+    ON kpi.sync_run_id
+      = state.active_sync_run_id
+  LEFT JOIN kpi_definitions AS definition
+    ON definition.id = kpi.kpi_definition_id
+  WHERE state.singleton_id = 1
+  ORDER BY
+    definition.sort_order ASC,
+    definition.kpi_key ASC,
+    kpi.period_code ASC,
+    kpi.areacode ASC,
+    kpi.hospcode ASC NULLS FIRST
+`;
+
 const SYNC_RUN_STATUSES = [
   "running",
   "succeeded",
@@ -110,6 +175,14 @@ const SYNC_RUN_STATUSES = [
 
 type SyncRunStatus =
   (typeof SYNC_RUN_STATUSES)[number];
+
+const DASHBOARD_PERIOD_CODES = [
+  "annual",
+  "q1",
+  "q2",
+  "q3",
+  "q4",
+] as const;
 
 function asRowObject(
   row: unknown,
@@ -280,6 +353,117 @@ function normalizeTarget(
   return target;
 }
 
+function requirePeriodCode(
+  row: Record<string, unknown>,
+  field: string,
+): string {
+  const value = row[field];
+
+  if (
+    typeof value === "string" &&
+    (DASHBOARD_PERIOD_CODES as readonly string[])
+      .includes(value)
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `Field ${field} is not a period code`,
+  );
+}
+
+function requireDecimalIdentity(
+  row: Record<string, unknown>,
+  field: string,
+): string {
+  const value = row[field];
+
+  if (
+    typeof value === "string" &&
+    value.length > 0 &&
+    /^[0-9]+$/.test(value)
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `Field ${field} is not a decimal identity`,
+  );
+}
+
+function optionalNonblankString(
+  row: Record<string, unknown>,
+  field: string,
+): string | null {
+  const value = row[field];
+
+  if (value === null) {
+    return null;
+  }
+
+  if (
+    typeof value === "string" &&
+    value.trim().length > 0
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    `Field ${field} is not a nonblank string`,
+  );
+}
+
+function requireFiniteNumber(
+  row: Record<string, unknown>,
+  field: string,
+): number {
+  const value = row[field];
+
+  if (typeof value === "number") {
+    if (Number.isFinite(value)) {
+      return value;
+    }
+
+    throw new Error(
+      `Field ${field} is not a finite number`,
+    );
+  }
+
+  if (
+    typeof value === "string" &&
+    value.trim().length > 0 &&
+    Number.isFinite(Number(value))
+  ) {
+    return Number(value);
+  }
+
+  throw new Error(
+    `Field ${field} is not a finite number`,
+  );
+}
+
+function requireSourceLastUpdated(
+  row: Record<string, unknown>,
+): string | null {
+  const value = row.source_last_updated;
+
+  if (value === null) {
+    return null;
+  }
+
+  if (
+    typeof value === "string" &&
+    (/^[0-9]{12}$/.test(value) ||
+      /^[0-9]{14}$/.test(value))
+  ) {
+    return value;
+  }
+
+  throw new Error(
+    "Field source_last_updated is not a valid source marker",
+  );
+}
+
 function normalizeId(
   row: Record<string, unknown>,
   field: string,
@@ -399,6 +583,28 @@ interface PublicFacility {
 interface PublicTambon {
   readonly id: string;
   readonly nameTh: string;
+}
+
+interface PublicDashboardDataset {
+  readonly syncRunId: string;
+  readonly fiscalYear: number;
+  readonly currentQuarter: number;
+  readonly activatedAt: string;
+  readonly sourceLastUpdated: string | null;
+}
+
+interface PublicDashboardResult {
+  readonly kpiKey: string;
+  readonly periodCode: string;
+  readonly areacode: string;
+  readonly hospcode: string | null;
+  readonly target: number;
+  readonly result: number;
+}
+
+interface PublicDashboard {
+  readonly dataset: PublicDashboardDataset | null;
+  readonly results: readonly PublicDashboardResult[];
 }
 
 function normalizeKpi(
@@ -582,6 +788,175 @@ function buildSyncStatus(
   };
 }
 
+function normalizeDashboardResult(
+  row: unknown,
+): PublicDashboardResult {
+  const source = asRowObject(row);
+
+  return {
+    kpiKey: requireNonblankString(
+      source,
+      "kpi_key",
+    ),
+    periodCode: requirePeriodCode(
+      source,
+      "period_code",
+    ),
+    areacode: requireNonblankString(
+      source,
+      "areacode",
+    ),
+    hospcode: optionalNonblankString(
+      source,
+      "hospcode",
+    ),
+    target: requireFiniteNumber(
+      source,
+      "target",
+    ),
+    result: requireFiniteNumber(
+      source,
+      "result",
+    ),
+  };
+}
+
+function validateDashboardRun(
+  source: Record<string, unknown>,
+): Omit<
+  PublicDashboardDataset,
+  "sourceLastUpdated"
+> {
+  const syncRunId = requireDecimalIdentity(
+    source,
+    "run_id",
+  );
+
+  if (source.run_status !== "succeeded") {
+    throw new Error(
+      "Active sync run is not succeeded",
+    );
+  }
+
+  const fiscalYear = requireInteger(
+    source,
+    "fiscal_year",
+  );
+
+  const currentQuarter = requireInteger(
+    source,
+    "current_quarter",
+  );
+
+  if (
+    currentQuarter < 1 ||
+    currentQuarter > 4
+  ) {
+    throw new Error(
+      "Active sync run quarter is out of range",
+    );
+  }
+
+  const expectedSourceCount = requireInteger(
+    source,
+    "expected_source_count",
+  );
+
+  if (expectedSourceCount <= 0) {
+    throw new Error(
+      "Active sync run expects no sources",
+    );
+  }
+
+  const completedSourceCount = requireInteger(
+    source,
+    "completed_source_count",
+  );
+
+  if (completedSourceCount !== expectedSourceCount) {
+    throw new Error(
+      "Active sync run is incomplete",
+    );
+  }
+
+  if (
+    requireInteger(
+      source,
+      "failed_source_count",
+    ) !== 0
+  ) {
+    throw new Error(
+      "Active sync run has failed sources",
+    );
+  }
+
+  normalizeTimestamp(
+    source,
+    "finished_at",
+  );
+
+  return {
+    syncRunId,
+    fiscalYear,
+    currentQuarter,
+    activatedAt: normalizeTimestamp(
+      source,
+      "activated_at",
+    ),
+  };
+}
+
+function buildDashboard(
+  rows: readonly unknown[],
+): PublicDashboard {
+  const first = rows[0];
+
+  if (first === undefined) {
+    throw new Error(
+      "app_state singleton row is missing",
+    );
+  }
+
+  const source = asRowObject(first);
+
+  if (
+    optionalString(
+      source,
+      "active_sync_run_id",
+    ) === null
+  ) {
+    if (rows.length !== 1) {
+      throw new Error(
+        "Unexpected dashboard rows without an active dataset",
+      );
+    }
+
+    return {
+      dataset: null,
+      results: [],
+    };
+  }
+
+  const dataset = validateDashboardRun(source);
+
+  if (source.kpi_key === null) {
+    throw new Error(
+      "Active dataset has no KPI results",
+    );
+  }
+
+  return {
+    dataset: {
+      ...dataset,
+      sourceLastUpdated:
+        requireSourceLastUpdated(source),
+    },
+    results: rows.map((row) =>
+      normalizeDashboardResult(row),
+    ),
+  };
+}
+
 export function registerReadApiRoutes(
   app: FastifyInstance,
   db: ReadApiDatabase,
@@ -718,6 +1093,45 @@ export function registerReadApiRoutes(
         request.log.error(
           error,
           "Sync status row normalization failed",
+        );
+
+        reply.code(503);
+
+        return SERVICE_UNAVAILABLE;
+      }
+    },
+  );
+
+  app.get(
+    "/api/v1/dashboard",
+
+    async (request, reply) => {
+      let rows: readonly unknown[];
+
+      try {
+        const result =
+          await db.query(
+            DASHBOARD_QUERY,
+          );
+
+        rows = result.rows;
+      } catch (error) {
+        request.log.error(
+          error,
+          "Dashboard database query failed",
+        );
+
+        reply.code(503);
+
+        return SERVICE_UNAVAILABLE;
+      }
+
+      try {
+        return buildDashboard(rows);
+      } catch (error) {
+        request.log.error(
+          error,
+          "Dashboard read failed",
         );
 
         reply.code(503);
