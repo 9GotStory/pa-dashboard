@@ -487,21 +487,31 @@ export function buildDashboardModel(input: {
 
     let totalTarget = 0;
     let totalResult = 0;
-    const breakdown: Record<
+    // Aggregate in a Map: hospcode is contractually any nonblank string, so
+    // keys like "__proto__"/"constructor" must be ordinary data keys — never
+    // inherited Object properties — and each bucket is guarded against
+    // overflow independently of the global totals.
+    const buckets = new Map<
       string,
       { target: number; result: number; percentage: number }
-    > = {};
+    >();
     for (const row of rows) {
       totalTarget += row.target;
       totalResult += row.result;
       const key = row.hospcode || row.areacode;
-      let bucket = breakdown[key];
+      let bucket = buckets.get(key);
       if (!bucket) {
         bucket = { target: 0, result: 0, percentage: 0 };
-        breakdown[key] = bucket;
+        buckets.set(key, bucket);
       }
-      bucket.target += row.target;
-      bucket.result += row.result;
+      bucket.target = guardFinite(
+        bucket.target + row.target,
+        `KPI ${kpi.key} breakdown ${key} target`,
+      );
+      bucket.result = guardFinite(
+        bucket.result + row.result,
+        `KPI ${kpi.key} breakdown ${key} result`,
+      );
     }
     guardFinite(totalTarget, `KPI ${kpi.key} totalTarget`);
     guardFinite(totalResult, `KPI ${kpi.key} totalResult`);
@@ -509,12 +519,20 @@ export function buildDashboardModel(input: {
       totalTarget > 0 ? (totalResult / totalTarget) * 100 : 0,
       `KPI ${kpi.key} percentage`,
     );
-    for (const key of Object.keys(breakdown)) {
-      const bucket = breakdown[key];
+    // Convert to a prototype-safe record for KPISummary consumers (direct
+    // lookup, Object.keys, Object.entries, Excel export). Object.create(null)
+    // has no inherited "__proto__" setter, so every key lands as a plain
+    // own property.
+    const breakdown: Record<
+      string,
+      { target: number; result: number; percentage: number }
+    > = Object.create(null);
+    for (const [key, bucket] of buckets) {
       bucket.percentage = guardFinite(
         bucket.target > 0 ? (bucket.result / bucket.target) * 100 : 0,
         `KPI ${kpi.key} breakdown ${key} percentage`,
       );
+      breakdown[key] = bucket;
     }
 
     return {

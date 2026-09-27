@@ -485,3 +485,81 @@ test('R1-02 D/E: non-string non-null link and subgroup are still rejected', () =
     );
   }
 });
+
+// R2-01 regression: hospcode is contractually any nonblank string, so
+// "__proto__"/"constructor" must aggregate as ordinary data keys without
+// touching prototypes.
+test('R2-01 A/B/D: "__proto__" and "constructor" hospcodes are ordinary breakdown keys with expected values', () => {
+  const model = buildModel({
+    rows: [
+      wireRow({ hospcode: '__proto__', areacode: '54060101', target: 10, result: 4 }),
+      wireRow({ hospcode: 'constructor', areacode: '54060102', target: 5, result: 5 }),
+      wireRow({ hospcode: '__proto__', areacode: '54060103', target: 2, result: 1 }),
+    ],
+  });
+  const breakdown = model.summaries[0].breakdown;
+  // Own-key lookup finds the data bucket (not Object.prototype / the Object
+  // constructor) and the rows aggregated into it correctly.
+  assert.equal(breakdown['__proto__'].target, 12);
+  assert.equal(breakdown['__proto__'].result, 5);
+  assert.ok(Math.abs(breakdown['__proto__'].percentage - (5 / 12) * 100) < 1e-9);
+  assert.deepEqual(
+    ['percentage', 'result', 'target'],
+    Object.keys(breakdown['__proto__']).sort(),
+  );
+  assert.deepEqual(breakdown['constructor'], { target: 5, result: 5, percentage: 100 });
+  // Both appear as own record keys alongside the null-hospcode fallback.
+  assert.ok(Object.keys(breakdown).includes('__proto__'));
+  assert.ok(Object.keys(breakdown).includes('constructor'));
+  assert.equal(model.summaries[0].totalTarget, 17);
+});
+
+test('R2-01 C: prototype-key rows do not mutate Object.prototype, Object, or plain objects', () => {
+  buildModel({
+    rows: [
+      wireRow({ hospcode: '__proto__', target: 1, result: 1 }),
+      wireRow({ hospcode: 'constructor', target: 2, result: 2 }),
+      wireRow({ hospcode: 'toString', target: 3, result: 3 }),
+    ],
+  });
+  assert.equal(Object.prototype.hasOwnProperty('target'), false);
+  assert.equal(Object.prototype.hasOwnProperty('result'), false);
+  const probe: Record<string, unknown> = {};
+  assert.equal(probe.target, undefined);
+  assert.equal(probe.result, undefined);
+  assert.equal(Object.keys(probe).length, 0);
+  // Inherited methods and the Object constructor stay intact.
+  assert.equal(typeof probe.toString, 'function');
+  assert.equal(
+    (Object as unknown as Record<string, unknown>).result,
+    undefined,
+  );
+});
+
+// R2-02 regression: bucket accumulation itself must stay finite even when
+// the interleaved global total remains finite.
+test('R2-02 E: per-bucket target overflow is rejected while the global total stays finite', () => {
+  const MAX = Number.MAX_VALUE;
+  assert.throws(() =>
+    buildModel({
+      rows: [
+        wireRow({ hospcode: 'overflow_a', target: MAX, result: 0 }),
+        wireRow({ hospcode: 'sink_b', target: -MAX, result: 0 }),
+        wireRow({ hospcode: 'overflow_a', target: MAX, result: 0 }),
+      ],
+    }),
+  );
+});
+
+test('R2-02 F: per-bucket result overflow is rejected while the global result stays finite', () => {
+  const MAX = Number.MAX_VALUE;
+  assert.throws(() =>
+    buildModel({
+      rows: [
+        wireRow({ hospcode: 'overflow_r', target: 0, result: MAX }),
+        wireRow({ hospcode: 'sink_r', target: 0, result: -MAX }),
+        wireRow({ hospcode: 'overflow_r', target: 0, result: MAX }),
+      ],
+    }),
+  );
+});
