@@ -141,6 +141,50 @@ break initialization. Do not override `PGDATA`.
 Neither image contains credentials. Base images are referenced by tag for
 builds; the application images are digest-pinned at host-deployment time.
 
+## OCI release
+
+`.github/workflows/oci-release.yml` is the release machinery for the two
+application images. It exists as a repository workflow only: nothing has been
+published through it yet, and the GHCR packages are not created until the
+first tagged release actually runs.
+
+Canonical image names (`linux/amd64` only):
+
+- `ghcr.io/9gotstory/pa-dashboard-web`
+- `ghcr.io/9gotstory/pa-dashboard-api`
+
+Release contract:
+
+- Publishing is gated on an explicit Git tag
+  `oci-<first 12 chars of the canonical 40-char commit SHA>`, pushed as a
+  lightweight tag carrying the commit SHA (an annotated tag object would not
+  match `GITHUB_SHA` and fails closed).
+- The published image tag is `sha-<full 40-char commit SHA>`. There is no
+  `latest` tag and no branch, pull-request, scheduled or manual-dispatch
+  publishing.
+- Before registry login or any push, the workflow fails closed unless the
+  tag name, `GITHUB_SHA` and the freshly fetched `origin/develop` tip all
+  resolve to the same commit: the tagged SHA must equal the current
+  `origin/develop` at publish time.
+- Production consumes immutable `@sha256:` digest references, never tags.
+
+Authentication: the workflow uses only the automatic GitHub Actions
+`GITHUB_TOKEN` with `contents: read` and `packages: write`. No personal
+access token (PAT) secret is configured or required.
+
+Release ≠ deployment:
+
+- Publishing the two packages is not atomic. The follow-up **OCI RELEASE
+  VERIFY** gate must confirm **both** image digests resolve from the same
+  source SHA before either image may be authorized for deployment.
+- Initial GHCR package visibility must be verified after the first
+  publication; package existence/visibility verification is a separate gate,
+  not part of the workflow.
+- The production `websvc` user is **not** logged into GHCR by this gate, and
+  host installation/deployment remains a separate gate.
+- If the packages turn out to be private, do not silently add registry
+  credentials; stop for an explicit visibility/auth decision first.
+
 ## Verification
 
 From the repository root:

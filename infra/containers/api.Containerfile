@@ -29,6 +29,8 @@ RUN npm run build
 
 FROM docker.io/library/node:24-alpine AS runtime
 
+LABEL org.opencontainers.image.source="https://github.com/9GotStory/pa-dashboard"
+
 WORKDIR /app
 
 ENV NODE_ENV=production

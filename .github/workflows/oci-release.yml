@@ -1,0 +1,135 @@
+# OCI Release — tag-gated GHCR publication of the two application images.
+#
+# Contract (see infra/README.md, "OCI release"):
+#   - triggers only on an explicit `oci-*` tag push; no branch, pull-request,
+#     schedule or manual dispatch publishing
+#   - the tag must be oci-<first 12 chars of the canonical 40-char commit
+#     SHA>, and that SHA must be exactly what origin/develop resolves to at
+#     publish time; the fail-closed authority step below re-proves this
+#     before any registry login or push
+#   - the published image tag is sha-<full 40-char commit SHA>; there is no
+#     `latest` or any other mutable tag
+#   - production consumes immutable @sha256 digest references only, emitted
+#     to the step summary after digest validation
+#
+# This workflow only publishes images. It never changes package visibility,
+# never mutates the production host and never modifies Git refs.
+
+name: OCI Release
+
+on:
+  push:
+    tags:
+      - "oci-*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    name: Publish sha-pinned images to GHCR
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out the tagged commit
+        uses: actions/checkout@v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Fail-closed release authority validation
+        run: |
+          set -euo pipefail
+
+          if [[ ! "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::GITHUB_SHA must be exactly 40 lowercase hex characters: ${GITHUB_SHA}"
+            exit 1
+          fi
+
+          if [[ "${GITHUB_REF_TYPE}" != "tag" ]]; then
+            echo "::error::GITHUB_REF_TYPE must be 'tag': ${GITHUB_REF_TYPE}"
+            exit 1
+          fi
+
+          expected_ref_name="oci-${GITHUB_SHA:0:12}"
+
+          if [[ "${GITHUB_REF_NAME}" != "${expected_ref_name}" ]]; then
+            echo "::error::GITHUB_REF_NAME must be ${expected_ref_name}: ${GITHUB_REF_NAME}"
+            exit 1
+          fi
+
+          git fetch --no-tags origin develop
+
+          develop_sha="$(git rev-parse refs/remotes/origin/develop)"
+
+          if [[ "${develop_sha}" != "${GITHUB_SHA}" ]]; then
+            echo "::error::refs/remotes/origin/develop (${develop_sha}) does not equal GITHUB_SHA (${GITHUB_SHA})"
+            exit 1
+          fi
+
+      - name: Run deployment contract tests
+        run: node --test infra/test/deployment-contract.test.mjs
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v4.3.0
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push web image
+        id: build-web
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: ./infra/containers/web.Containerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/9gotstory/pa-dashboard-web:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/9GotStory/pa-dashboard
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
+
+      - name: Build and push API image
+        id: build-api
+        uses: docker/build-push-action@v7.4.0
+        with:
+          context: .
+          file: ./infra/containers/api.Containerfile
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/9gotstory/pa-dashboard-api:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/9GotStory/pa-dashboard
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.version=sha-${{ github.sha }}
+
+      - name: Fail-closed digest validation and release summary
+        run: |
+          set -euo pipefail
+
+          digest_pattern='^sha256:[0-9a-f]{64}$'
+
+          if [[ ! "${WEB_DIGEST}" =~ ${digest_pattern} ]]; then
+            echo "::error::web image digest must match sha256:<64 lowercase hex>: ${WEB_DIGEST}"
+            exit 1
+          fi
+
+          if [[ ! "${API_DIGEST}" =~ ${digest_pattern} ]]; then
+            echo "::error::api image digest must match sha256:<64 lowercase hex>: ${API_DIGEST}"
+            exit 1
+          fi
+
+          {
+            echo "source_sha=${GITHUB_SHA}"
+            echo "release_tag=${GITHUB_REF_NAME}"
+            echo "web_image=ghcr.io/9gotstory/pa-dashboard-web@${WEB_DIGEST}"
+            echo "api_image=ghcr.io/9gotstory/pa-dashboard-api@${API_DIGEST}"
+          } >> "${GITHUB_STEP_SUMMARY}"
+        env:
+          WEB_DIGEST: ${{ steps.build-web.outputs.digest }}
+          API_DIGEST: ${{ steps.build-api.outputs.digest }}

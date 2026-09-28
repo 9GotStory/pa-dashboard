@@ -2,9 +2,10 @@
 //
 // Uses only the Node.js built-in test runner. The tests inspect the source
 // artifacts in this repository (next.config.ts, Containerfiles, Quadlet
-// templates, backend/package.json, CI workflow) and execute the Quadlet
-// renderer in temporary directories. They never touch the host systemd
-// configuration, never call podman, and never start containers.
+// templates, backend/package.json, CI workflow, OCI release workflow,
+// infra/README.md) and execute the Quadlet renderer in temporary directories.
+// They never touch the host systemd configuration, never call podman, and
+// never start containers.
 
 import {
   readFile,
@@ -1337,4 +1338,850 @@ test("CI never pushes images or mutates a host", async () => {
       pattern,
     );
   }
+});
+
+// ---------------------------------------------------------------- K. OCI release workflow
+
+const OCI_RELEASE_WORKFLOW_PATH =
+  ".github/workflows/oci-release.yml";
+
+const OCI_SOURCE_URL =
+  "https://github.com/9GotStory/pa-dashboard";
+
+const OCI_WEB_IMAGE_NAMESPACE =
+  "ghcr.io/9gotstory/pa-dashboard-web";
+
+const OCI_API_IMAGE_NAMESPACE =
+  "ghcr.io/9gotstory/pa-dashboard-api";
+
+// Contract assertions run against comment-stripped text so a contract that
+// only exists in a YAML comment cannot satisfy (or trip) them.
+function stripCommentLines(
+  source,
+) {
+  return source
+    .split("\n")
+    .filter(
+      (line) =>
+        !/^\s*#/.test(
+          line,
+        ),
+    )
+    .join("\n");
+}
+
+function nonEmptyLines(
+  source,
+) {
+  return source
+    .split("\n")
+    .filter(
+      (line) =>
+        line.trim() !== "",
+    );
+}
+
+// Returns the indented lines directly under a top-level `key:` before the
+// next top-level key, so trigger/permission blocks can be asserted as a
+// whole instead of via loose greps.
+function extractTopLevelBlock(
+  source,
+  key,
+) {
+  const lines =
+    source.split(
+      "\n",
+    );
+
+  const startIndex =
+    lines.findIndex(
+      (line) =>
+        line === `${key}:`,
+    );
+
+  assert.ok(
+    startIndex >= 0,
+    `workflow must declare a top-level ${key}: key`,
+  );
+
+  const blockLines = [];
+
+  for (
+    let index = startIndex + 1;
+    index < lines.length;
+    index += 1
+  ) {
+    const line =
+      lines[index];
+
+    if (
+      /^\S/.test(
+        line,
+      )
+    ) {
+      break;
+    }
+
+    if (
+      line.trim() !== ""
+    ) {
+      blockLines.push(
+        line,
+      );
+    }
+  }
+
+  return blockLines;
+}
+
+async function readOciReleaseWorkflow() {
+  return stripCommentLines(
+    await readRepositoryFile(
+      OCI_RELEASE_WORKFLOW_PATH,
+    ),
+  );
+}
+
+test("OCI release workflow exists and pins its actions", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.match(
+    workflow,
+    /^name: OCI Release$/m,
+  );
+
+  for (const action of [
+    "actions/checkout@v7.0.1",
+    "docker/setup-buildx-action@v4.3.0",
+    "docker/login-action@v4.6.0",
+    "docker/build-push-action@v7.4.0",
+  ]) {
+    assert.ok(
+      workflow.includes(
+        `uses: ${action}`,
+      ),
+      `workflow must use ${action}`,
+    );
+  }
+});
+
+test("OCI release workflow triggers only on explicit oci-* tag push", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const triggerLines =
+    extractTopLevelBlock(
+      workflow,
+      "on",
+    );
+
+  const eventLines =
+    triggerLines.filter(
+      (line) =>
+        /^ {2}\S.*:$/.test(
+          line,
+        ),
+    );
+
+  assert.deepEqual(
+    eventLines,
+    ["  push:"],
+    "push must be the only trigger event",
+  );
+
+  const pushFilterLines =
+    triggerLines.filter(
+      (line) =>
+        /^ {4}\S/.test(
+          line,
+        ),
+    );
+
+  assert.deepEqual(
+    pushFilterLines,
+    ["    tags:"],
+    "the push trigger must filter on tags only",
+  );
+
+  const tagPatterns =
+    triggerLines
+      .filter(
+        (line) =>
+          /^ {6}-\s/.test(
+            line,
+          ),
+      )
+      .map(
+        (line) =>
+          line.trim(),
+      );
+
+  assert.deepEqual(
+    tagPatterns,
+    ['- "oci-*"'],
+    "the only accepted tag pattern must be oci-*",
+  );
+
+  for (const forbidden of [
+    /^ *(branches|branches-ignore):/m,
+    /^ *(pull_request|pull_request_target):/m,
+    /^ *workflow_dispatch:/m,
+    /^ *(schedule|workflow_call|workflow_run):/m,
+  ]) {
+    assert.doesNotMatch(
+      workflow,
+      forbidden,
+    );
+  }
+});
+
+test("OCI release permissions are exactly contents read and packages write", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const permissionLines =
+    extractTopLevelBlock(
+      workflow,
+      "permissions",
+    ).map(
+      (line) =>
+        line.trim(),
+    );
+
+  assert.deepEqual(
+    [...new Set(
+      permissionLines,
+    )].sort(),
+    ["contents: read", "packages: write"],
+  );
+
+  assert.doesNotMatch(
+    workflow,
+    /^ +permissions:/m,
+    "no job-level permissions block may widen or duplicate the top-level grant",
+  );
+
+  const writeRequests =
+    nonEmptyLines(
+      workflow,
+    ).filter(
+      (line) =>
+        /^ *\S.*:\s*write$/.test(
+          line,
+        ),
+    );
+
+  assert.deepEqual(
+    writeRequests,
+    ["  packages: write"],
+    "packages: write must be the only write permission requested anywhere",
+  );
+});
+
+test("OCI release workflow targets exactly the two frozen GHCR namespaces", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const namespaces = [
+    OCI_WEB_IMAGE_NAMESPACE,
+    OCI_API_IMAGE_NAMESPACE,
+  ];
+
+  const references =
+    workflow.match(
+      /ghcr\.io\/[^\s'"@:]+/g,
+    ) ?? [];
+
+  assert.ok(
+    references.length >= 2,
+    "workflow must reference both image namespaces",
+  );
+
+  for (const reference of references) {
+    assert.ok(
+      namespaces.includes(
+        reference,
+      ),
+      `unexpected GHCR image reference: ${reference}`,
+    );
+  }
+
+  for (const namespace of namespaces) {
+    assert.ok(
+      references.includes(
+        namespace,
+      ),
+      `workflow must reference ${namespace}`,
+    );
+  }
+});
+
+test("both builds target linux/amd64 with exactly sha-<full SHA> image tags", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.equal(
+    workflow.split(
+      "docker/build-push-action@",
+    ).length - 1,
+    2,
+    "workflow must contain exactly two build/push steps",
+  );
+
+  const platformLines =
+    nonEmptyLines(
+      workflow,
+    )
+      .filter(
+        (line) =>
+          /^\s+platforms:/.test(
+            line,
+          ),
+      )
+      .map(
+        (line) =>
+          line.trim(),
+      );
+
+  assert.deepEqual(
+    platformLines,
+    ["platforms: linux/amd64", "platforms: linux/amd64"],
+  );
+
+  const tagLines =
+    nonEmptyLines(
+      workflow,
+    )
+      .filter(
+        (line) =>
+          /^\s+tags:\s*\S/.test(
+            line,
+          ),
+      )
+      .map(
+        (line) =>
+          line.trim(),
+      );
+
+  assert.deepEqual(
+    tagLines,
+    [
+      `tags: ${OCI_WEB_IMAGE_NAMESPACE}:sha-\${{ github.sha }}`,
+      `tags: ${OCI_API_IMAGE_NAMESPACE}:sha-\${{ github.sha }}`,
+    ],
+    "the only published tags must be sha-<full commit SHA> for each image",
+  );
+
+  assert.doesNotMatch(
+    workflow,
+    /:latest\b/,
+    "no image may be published under a latest tag",
+  );
+
+  assert.doesNotMatch(
+    workflow,
+    /^\s+-\s+latest\s*$/m,
+  );
+});
+
+test("both builds stamp identical OCI traceability labels", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const expectedLabels = [
+    `org.opencontainers.image.source=${OCI_SOURCE_URL}`,
+    "org.opencontainers.image.revision=${{ github.sha }}",
+    "org.opencontainers.image.version=sha-${{ github.sha }}",
+  ];
+
+  for (const label of expectedLabels) {
+    assert.equal(
+      workflow.split(
+        label,
+      ).length - 1,
+      2,
+      `label must be applied by both builds: ${label}`,
+    );
+  }
+});
+
+test("authority step proves the release tag is oci-<first 12 chars of GITHUB_SHA>", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.ok(
+    workflow.includes(
+      '[[ ! "${GITHUB_SHA}" =~ ^[0-9a-f]{40}$ ]]',
+    ),
+    "GITHUB_SHA must be validated as exactly 40 lowercase hex characters",
+  );
+
+  assert.ok(
+    workflow.includes(
+      '[[ "${GITHUB_REF_TYPE}" != "tag" ]]',
+    ),
+    "the workflow must fail closed unless the event is a tag",
+  );
+
+  assert.ok(
+    workflow.includes(
+      'expected_ref_name="oci-${GITHUB_SHA:0:12}"',
+    ),
+    "the expected tag must be derived from the first 12 chars of GITHUB_SHA",
+  );
+
+  assert.ok(
+    workflow.includes(
+      '[[ "${GITHUB_REF_NAME}" != "${expected_ref_name}" ]]',
+    ),
+    "GITHUB_REF_NAME must be compared against the derived oci- tag",
+  );
+});
+
+test("authority step proves fetched origin/develop equals GITHUB_SHA", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.match(
+    workflow,
+    /git fetch[^\n]* origin develop/,
+    "origin/develop must be fetched explicitly",
+  );
+
+  assert.ok(
+    workflow.includes(
+      "git rev-parse refs/remotes/origin/develop",
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      '[[ "${develop_sha}" != "${GITHUB_SHA}" ]]',
+    ),
+    "the fetched develop tip must be compared against GITHUB_SHA",
+  );
+});
+
+test("authority validation and contract tests run before registry login and publication", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const anchors = {
+    authority:
+      workflow.indexOf(
+        "refs/remotes/origin/develop",
+      ),
+    contractTests:
+      workflow.indexOf(
+        "node --test infra/test/deployment-contract.test.mjs",
+      ),
+    buildx:
+      workflow.indexOf(
+        "docker/setup-buildx-action@",
+      ),
+    login:
+      workflow.indexOf(
+        "docker/login-action@",
+      ),
+    firstPush:
+      workflow.indexOf(
+        "docker/build-push-action@",
+      ),
+    digestValidation:
+      workflow.indexOf(
+        "^sha256:[0-9a-f]{64}$",
+      ),
+  };
+
+  for (const [
+    name,
+    offset,
+  ] of Object.entries(
+    anchors,
+  )) {
+    assert.ok(
+      offset >= 0,
+      `workflow must contain the ${name} contract element`,
+    );
+  }
+
+  assert.ok(
+    anchors.authority < anchors.contractTests,
+  );
+
+  assert.ok(
+    anchors.contractTests < anchors.buildx,
+  );
+
+  assert.ok(
+    anchors.buildx < anchors.login,
+  );
+
+  assert.ok(
+    anchors.login < anchors.firstPush,
+  );
+
+  assert.ok(
+    anchors.firstPush < anchors.digestValidation,
+    "digest validation must run after both pushes",
+  );
+});
+
+test("GHCR login uses only the workflow GITHUB_TOKEN", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.ok(
+    workflow.includes(
+      "username: ${{ github.actor }}",
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      "password: ${{ secrets.GITHUB_TOKEN }}",
+    ),
+  );
+
+  const secretReferences =
+    workflow.match(
+      /secrets\.[A-Za-z_][A-Za-z0-9_]*/g,
+    ) ?? [];
+
+  assert.ok(
+    secretReferences.length > 0,
+  );
+
+  assert.deepEqual(
+    [...new Set(
+      secretReferences,
+    )],
+    ["secrets.GITHUB_TOKEN"],
+    "no custom PAT or any other secret may be referenced",
+  );
+});
+
+test("both build digests are validated as sha256:<64 lowercase hex>", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.ok(
+    workflow.includes(
+      "id: build-web",
+    ),
+    "the web build/push step needs a stable id for its digest output",
+  );
+
+  assert.ok(
+    workflow.includes(
+      "id: build-api",
+    ),
+    "the API build/push step needs a stable id for its digest output",
+  );
+
+  assert.ok(
+    workflow.includes(
+      "${{ steps.build-web.outputs.digest }}",
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      "${{ steps.build-api.outputs.digest }}",
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      "digest_pattern='^sha256:[0-9a-f]{64}$'",
+    ),
+  );
+
+  for (const digestVariable of [
+    "WEB_DIGEST",
+    "API_DIGEST",
+  ]) {
+    assert.match(
+      workflow,
+      new RegExp(
+        `!.*\\$\\{${digestVariable}\\}.*digest_pattern`,
+      ),
+      `${digestVariable} must be validated against the digest pattern`,
+    );
+  }
+});
+
+test("release summary emits immutable name@sha256 digest references", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  assert.ok(
+    workflow.includes(
+      '>> "${GITHUB_STEP_SUMMARY}"',
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      "source_sha=${GITHUB_SHA}",
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      "release_tag=${GITHUB_REF_NAME}",
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      `web_image=${OCI_WEB_IMAGE_NAMESPACE}@`,
+    ),
+  );
+
+  assert.ok(
+    workflow.includes(
+      `api_image=${OCI_API_IMAGE_NAMESPACE}@`,
+    ),
+  );
+});
+
+test("workflow mutates no packages and reaches no deployment surface", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const forbiddenPatterns = [
+    /\bgh\s+api\b/,
+    /api\.github\.com/,
+    /graphql/i,
+    /visibility/i,
+    /systemctl/,
+    /\bssh\b/i,
+    /\bscp\b/i,
+    /\bpodman\b/i,
+    /appleboy/i,
+    /traefik/i,
+    /cloudflar/i,
+    /quadlet/i,
+  ];
+
+  for (const pattern of forbiddenPatterns) {
+    assert.doesNotMatch(
+      workflow,
+      pattern,
+    );
+  }
+
+  // "deploy" may appear only as the required contract-test invocation; any
+  // deployment step, action or command would surface as another line here.
+  const deployLines =
+    nonEmptyLines(
+      workflow,
+    ).filter(
+      (line) =>
+        /\bdeploy/i.test(
+          line,
+        ),
+    );
+
+  assert.deepEqual(
+    deployLines,
+    [
+      "      - name: Run deployment contract tests",
+      "        run: node --test infra/test/deployment-contract.test.mjs",
+    ],
+    "the only deploy references allowed are the contract test step",
+  );
+});
+
+// ---------------------------------------------------------------- L. OCI source labels
+
+async function readFinalBuildStageLines(
+  relativePath,
+) {
+  const source =
+    await readRepositoryFile(
+      relativePath,
+    );
+
+  const lines =
+    source.split(
+      "\n",
+    );
+
+  let lastFromIndex = -1;
+
+  lines.forEach(
+    (line, index) => {
+      if (
+        /^FROM\s/i.test(
+          line,
+        )
+      ) {
+        lastFromIndex =
+          index;
+      }
+    },
+  );
+
+  assert.ok(
+    lastFromIndex >= 0,
+    `${relativePath} must declare a build stage`,
+  );
+
+  return lines.slice(
+    lastFromIndex,
+  );
+}
+
+test("web Containerfile final runtime stage declares the OCI source label", async () => {
+  const finalStageLines =
+    await readFinalBuildStageLines(
+      "infra/containers/web.Containerfile",
+    );
+
+  assert.ok(
+    finalStageLines.includes(
+      `LABEL org.opencontainers.image.source="${OCI_SOURCE_URL}"`,
+    ),
+    "the exact OCI source label must be present in the final runtime stage",
+  );
+});
+
+test("API Containerfile final runtime stage declares the OCI source label", async () => {
+  const finalStageLines =
+    await readFinalBuildStageLines(
+      "infra/containers/api.Containerfile",
+    );
+
+  assert.ok(
+    finalStageLines.includes(
+      `LABEL org.opencontainers.image.source="${OCI_SOURCE_URL}"`,
+    ),
+    "the exact OCI source label must be present in the final runtime stage",
+  );
+});
+
+// ---------------------------------------------------------------- M. OCI release documentation
+
+test("README documents the OCI release contract", async () => {
+  const readme =
+    await readRepositoryFile(
+      "infra/README.md",
+    );
+
+  assert.match(
+    readme,
+    /^## OCI release$/m,
+  );
+
+  for (const namespace of [
+    OCI_WEB_IMAGE_NAMESPACE,
+    OCI_API_IMAGE_NAMESPACE,
+  ]) {
+    assert.ok(
+      readme.includes(
+        namespace,
+      ),
+    );
+  }
+
+  assert.match(
+    readme,
+    /linux\/amd64/,
+  );
+
+  assert.match(
+    readme,
+    /oci-<first 12 chars/,
+  );
+
+  assert.match(
+    readme,
+    /sha-<full 40-char commit SHA>/,
+  );
+
+  assert.match(
+    readme,
+    /origin\/develop/,
+  );
+
+  assert.match(
+    readme,
+    /never\s+tags/,
+  );
+
+  assert.match(
+    readme,
+    /no\s+`latest`\s+tag/,
+  );
+
+  assert.match(
+    readme,
+    /contents: read/,
+  );
+
+  assert.match(
+    readme,
+    /packages: write/,
+  );
+
+  assert.ok(
+    readme.includes(
+      "GITHUB_TOKEN",
+    ),
+  );
+
+  assert.match(
+    readme,
+    /no personal\s+access\s+token/i,
+  );
+});
+
+test("README documents the release/deployment boundary and post-publish visibility verification", async () => {
+  const readme =
+    await readRepositoryFile(
+      "infra/README.md",
+    );
+
+  assert.match(
+    readme,
+    /not atomic/,
+  );
+
+  assert.match(
+    readme,
+    /same\s+source\s+SHA/,
+  );
+
+  assert.match(
+    readme,
+    /both[^.]*digests/s,
+  );
+
+  assert.match(
+    readme,
+    /visibility/i,
+  );
+
+  assert.match(
+    readme,
+    /after the first\s+publication/,
+  );
+
+  assert.match(
+    readme,
+    /websvc/,
+  );
+
+  assert.match(
+    readme,
+    /separate gate/,
+  );
+
+  assert.match(
+    readme,
+    /do not silently add/,
+  );
 });
