@@ -1442,7 +1442,7 @@ async function readOciReleaseWorkflow() {
   );
 }
 
-test("OCI release workflow exists and pins its actions", async () => {
+test("OCI release workflow exists and pins its actions to verified commits", async () => {
   const workflow =
     await readOciReleaseWorkflow();
 
@@ -1452,16 +1452,59 @@ test("OCI release workflow exists and pins its actions", async () => {
   );
 
   for (const action of [
-    "actions/checkout@v7.0.1",
-    "docker/setup-buildx-action@v4.3.0",
-    "docker/login-action@v4.6.0",
-    "docker/build-push-action@v7.4.0",
+    "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1",
+    "docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e",
+    "docker/login-action@dbcb813823bdd20940b903addbd779551569679f",
+    "docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc",
   ]) {
     assert.ok(
       workflow.includes(
         `uses: ${action}`,
       ),
       `workflow must use ${action}`,
+    );
+  }
+
+  assert.equal(
+    workflow.split(
+      "docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc",
+    ).length - 1,
+    2,
+    "both build/push steps must use the same verified build-push-action SHA",
+  );
+});
+
+test("every effective action reference is an immutable commit SHA", async () => {
+  const workflow =
+    await readOciReleaseWorkflow();
+
+  const usesLines =
+    nonEmptyLines(
+      workflow,
+    ).filter(
+      (line) =>
+        /^\s*uses:\s*\S/.test(
+          line,
+        ),
+    );
+
+  assert.equal(
+    usesLines.length,
+    5,
+    "workflow must reference exactly five actions",
+  );
+
+  for (const line of usesLines) {
+    assert.match(
+      line,
+      /^\s*uses:\s*\S+@[0-9a-f]{40}\s*$/,
+      `action reference must end in a 40 lowercase hex commit SHA: ${line.trim()}`,
+    );
+
+    assert.doesNotMatch(
+      line,
+      /@(v[\w.-]+|main|master)\s*$/i,
+      `action reference must not be a mutable tag or branch: ${line.trim()}`,
     );
   }
 });
