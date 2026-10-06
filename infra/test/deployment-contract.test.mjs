@@ -735,18 +735,45 @@ test("no application Quadlet attaches to the platform edge network", async () =>
   }
 });
 
-test("no application Quadlet publishes host ports", async () => {
+test("only the API Quadlet publishes one loopback-only host port", async () => {
   for (const name of CONTAINER_TEMPLATES) {
     const template =
       await readQuadletTemplate(
         name,
       );
 
-    assert.doesNotMatch(
-      template,
-      /^\s*PublishPort\s*=/m,
-      `${name} must not publish host ports`,
-    );
+    const publishLines =
+      template
+        .split("\n")
+        .filter(
+          (line) =>
+            /^\s*PublishPort\s*=/.test(
+              line,
+            ),
+        )
+        .map(
+          (line) =>
+            line.trim(),
+        );
+
+    if (
+      name ===
+      "pa-dashboard-api.container.in"
+    ) {
+      assert.deepEqual(
+        publishLines,
+        [
+          "PublishPort=127.0.0.1:13001:3001",
+        ],
+        "API ingress must bind only the designated loopback port",
+      );
+    } else {
+      assert.deepEqual(
+        publishLines,
+        [],
+        `${name} must not publish host ports`,
+      );
+    }
   }
 });
 
@@ -858,6 +885,24 @@ test("API exposes a readiness healthcheck endpoint", async () => {
   assert.match(
     template,
     /^Notify=healthy$/m,
+  );
+});
+
+test("API reads public CORS policy from host configuration", async () => {
+  const template =
+    await readQuadletTemplate(
+      "pa-dashboard-api.container.in",
+    );
+
+  assert.match(
+    template,
+    /^EnvironmentFile=%h\/\.config\/pa-dashboard\/public-api\.env$/m,
+  );
+
+  assert.doesNotMatch(
+    template,
+    /9gotstory\.github\.io/i,
+    "environment-specific public origins must not be hardcoded in the Quadlet",
   );
 });
 
