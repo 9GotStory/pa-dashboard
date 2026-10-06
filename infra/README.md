@@ -22,7 +22,9 @@ Production architecture:
 - **no Git worktree at runtime** — containers run only from OCI images, never
   from a checkout of this repository
 - PostgreSQL 18 with persistent named volume
-- private API and private database (no host ports)
+- private database with no host port
+- API stays on the private application network and additionally publishes only
+  `127.0.0.1:13001 -> 3001` for host-local ingress such as Tailscale Funnel
 - same-origin browser API: the web frontend proxies `/api/v1/*` to the API
   container via a Next.js rewrite (`pa-dashboard-api:3001` is frozen
   deployment topology, not host configuration)
@@ -35,8 +37,9 @@ Grafana. These are **external platform assets**. This repository does not
 recreate, modify, or attach to them.
 
 This foundation does **NOT** establish public routing. `pa-dashboard-web`
-joins only the private `pa-dashboard-app` network. Connecting the web tier to
-`edge` (and therefore public ingress) is a separate future gate.
+joins only the private `pa-dashboard-app` network. The API loopback publish is
+not public by itself; configuring Tailscale Funnel (or any other public ingress)
+is a separate host-side gate. The application units never join `edge`.
 
 ## Generated Quadlet bundle
 
@@ -94,6 +97,7 @@ paths are expected:
 | --- | --- | --- |
 | `%h/.config/pa-dashboard/postgres.env` | `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` | PostgreSQL image initialization (read once at first volume init) |
 | `%h/.config/pa-dashboard/database.env` | `DATABASE_URL` | Application connection string used by API, migration, reference and sync units |
+| `%h/.config/pa-dashboard/public-api.env` | `PA_CORS_ORIGINS` | Comma-separated exact browser origins allowed to read the public API; values are host configuration and are never committed |
 | `%h/.config/pa-dashboard/reference.env` | `PA_REFERENCE_SOURCE_URL` | Reference source for hospital/tambon population |
 
 Notes:
@@ -103,6 +107,9 @@ Notes:
 - Synchronization needs no separate MOPH credential file: the current MOPH
   transport uses the existing public endpoint and config stored in the
   database.
+- `PA_CORS_ORIGINS` is an exact-origin allowlist, for example a host may set
+  `https://9gotstory.github.io`. Do not use `*`; CORS is a browser policy,
+  not authentication, and public ingress must still be configured separately.
 
 ## Operational roles of the units
 
@@ -110,7 +117,7 @@ Notes:
 | --- | --- | --- |
 | `pa-dashboard-db.service` | long-running | PostgreSQL 18 on the private network, health-gated (`pg_isready`), no host port |
 | `pa-dashboard-migrate.service` | oneshot, `RemainAfterExit=yes` | Applies checksum-protected SQL migrations from the API image; boot dependency ordered after a healthy database |
-| `pa-dashboard-api.service` | long-running | Backend-v2 API (`0.0.0.0:3001`, container-only), readiness via `/api/v1/health/ready`, ordered after successful migration |
+| `pa-dashboard-api.service` | long-running | Backend-v2 API (`0.0.0.0:3001` in-container), private-network alias plus loopback-only host ingress `127.0.0.1:13001`, readiness via `/api/v1/health/ready`, ordered after successful migration |
 | `pa-dashboard-web.service` | long-running | Next.js standalone server (`0.0.0.0:3000`, container-only), ordered after a healthy API |
 | `pa-dashboard-reference.service` | oneshot, manual | Populates hospital/tambon reference data; no auto-start, re-runnable |
 | `pa-dashboard-sync.service` | oneshot, manual | One MOPH synchronization pass; no auto-start, re-runnable, timer-ready but **no timer exists yet** |
@@ -125,7 +132,9 @@ break initialization. Do not override `PGDATA`.
 
 ### Port policy
 
-- API: no `PublishPort` — reachable only inside `pa-dashboard-app`
+- API: exactly `PublishPort=127.0.0.1:13001:3001` — reachable on the private
+  `pa-dashboard-app` network and from the Fedora host loopback only; never
+  bind the API to `0.0.0.0` or `[::]` on the host
 - DB: no `PublishPort` — 5432 is never exposed on the host
 - Web: no `PublishPort` — public routing is deferred (see above)
 
