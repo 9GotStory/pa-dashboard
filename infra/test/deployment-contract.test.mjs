@@ -1015,7 +1015,7 @@ test("no synchronization timer exists", async () => {
 
 test("Quadlet templates only read the expected host env file paths", async () => {
   const expectedPattern =
-    /^EnvironmentFile=%h\/\.config\/pa-dashboard\/(postgres|database|reference)\.env$/;
+    /^EnvironmentFile=%h\/\.config\/pa-dashboard\/(postgres|database|public-api|reference)\.env$/;
 
   for (const name of CONTAINER_TEMPLATES) {
     const template =
@@ -1118,9 +1118,23 @@ test("no Podman socket access, privileged mode, or host networking", async () =>
   }
 });
 
-test("API and database expose no public ports", async () => {
+test("API ingress is loopback-only while database and web expose no host ports", async () => {
+  const api =
+    await readQuadletTemplate(
+      "pa-dashboard-api.container.in",
+    );
+
+  assert.match(
+    api,
+    /^PublishPort=127\.0\.0\.1:13001:3001$/m,
+  );
+
+  assert.doesNotMatch(
+    api,
+    /^PublishPort=(0\.0\.0\.0|\[::\]):/m,
+  );
+
   for (const name of [
-    "pa-dashboard-api.container.in",
     "pa-dashboard-db.container.in",
     "pa-dashboard-web.container.in",
   ]) {
@@ -1131,7 +1145,7 @@ test("API and database expose no public ports", async () => {
 
     assert.doesNotMatch(
       template,
-      /PublishPort/,
+      /^\s*PublishPort\s*=/m,
     );
   }
 });
