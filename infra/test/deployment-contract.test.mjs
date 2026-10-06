@@ -735,18 +735,45 @@ test("no application Quadlet attaches to the platform edge network", async () =>
   }
 });
 
-test("no application Quadlet publishes host ports", async () => {
+test("only the API Quadlet publishes one loopback-only host port", async () => {
   for (const name of CONTAINER_TEMPLATES) {
     const template =
       await readQuadletTemplate(
         name,
       );
 
-    assert.doesNotMatch(
-      template,
-      /^\s*PublishPort\s*=/m,
-      `${name} must not publish host ports`,
-    );
+    const publishLines =
+      template
+        .split("\n")
+        .filter(
+          (line) =>
+            /^\s*PublishPort\s*=/.test(
+              line,
+            ),
+        )
+        .map(
+          (line) =>
+            line.trim(),
+        );
+
+    if (
+      name ===
+      "pa-dashboard-api.container.in"
+    ) {
+      assert.deepEqual(
+        publishLines,
+        [
+          "PublishPort=127.0.0.1:13001:3001",
+        ],
+        "API ingress must bind only the designated loopback port",
+      );
+    } else {
+      assert.deepEqual(
+        publishLines,
+        [],
+        `${name} must not publish host ports`,
+      );
+    }
   }
 });
 
@@ -861,6 +888,24 @@ test("API exposes a readiness healthcheck endpoint", async () => {
   );
 });
 
+test("API reads public CORS policy from host configuration", async () => {
+  const template =
+    await readQuadletTemplate(
+      "pa-dashboard-api.container.in",
+    );
+
+  assert.match(
+    template,
+    /^EnvironmentFile=%h\/\.config\/pa-dashboard\/public-api\.env$/m,
+  );
+
+  assert.doesNotMatch(
+    template,
+    /9gotstory\.github\.io/i,
+    "environment-specific public origins must not be hardcoded in the Quadlet",
+  );
+});
+
 test("web depends on the API service", async () => {
   const template =
     await readQuadletTemplate(
@@ -970,7 +1015,7 @@ test("no synchronization timer exists", async () => {
 
 test("Quadlet templates only read the expected host env file paths", async () => {
   const expectedPattern =
-    /^EnvironmentFile=%h\/\.config\/pa-dashboard\/(postgres|database|reference)\.env$/;
+    /^EnvironmentFile=%h\/\.config\/pa-dashboard\/(postgres|database|public-api|reference)\.env$/;
 
   for (const name of CONTAINER_TEMPLATES) {
     const template =
@@ -1073,9 +1118,23 @@ test("no Podman socket access, privileged mode, or host networking", async () =>
   }
 });
 
-test("API and database expose no public ports", async () => {
+test("API ingress is loopback-only while database and web expose no host ports", async () => {
+  const api =
+    await readQuadletTemplate(
+      "pa-dashboard-api.container.in",
+    );
+
+  assert.match(
+    api,
+    /^PublishPort=127\.0\.0\.1:13001:3001$/m,
+  );
+
+  assert.doesNotMatch(
+    api,
+    /^PublishPort=(0\.0\.0\.0|\[::\]):/m,
+  );
+
   for (const name of [
-    "pa-dashboard-api.container.in",
     "pa-dashboard-db.container.in",
     "pa-dashboard-web.container.in",
   ]) {
@@ -1086,7 +1145,7 @@ test("API and database expose no public ports", async () => {
 
     assert.doesNotMatch(
       template,
-      /PublishPort/,
+      /^\s*PublishPort\s*=/m,
     );
   }
 });

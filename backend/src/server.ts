@@ -27,6 +27,8 @@ async function startServer(): Promise<void> {
 
   const app = buildApp({
     db: pool,
+    corsOrigins:
+      config.corsOrigins,
   });
 
   let resourcesClosed = false;

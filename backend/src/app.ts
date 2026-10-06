@@ -5,6 +5,10 @@ import type {
 } from "fastify";
 
 import {
+  registerCors,
+} from "./http/cors.js";
+
+import {
   registerHealthRoutes,
   type HealthDatabase,
 } from "./observability/health.js";
@@ -18,12 +22,20 @@ export interface AppDependencies {
   readonly db:
     HealthDatabase
     & ReadApiDatabase;
+
+  readonly corsOrigins?:
+    readonly string[];
 }
 
 export function buildApp(
   dependencies: AppDependencies,
 ): FastifyInstance {
   const app = Fastify();
+
+  registerCors(
+    app,
+    dependencies.corsOrigins ?? [],
+  );
 
   registerHealthRoutes(
     app,

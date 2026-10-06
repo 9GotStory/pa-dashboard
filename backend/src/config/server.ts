@@ -12,6 +12,9 @@ export interface ServerConfig {
   readonly host: string;
 
   readonly port: number;
+
+  readonly corsOrigins:
+    readonly string[];
 }
 
 function parseHost(
@@ -30,6 +33,66 @@ function parseHost(
   }
 
   return host;
+}
+
+function parseCorsOrigins(
+  raw: string | undefined,
+): readonly string[] {
+  if (raw === undefined) {
+    return Object.freeze([]);
+  }
+
+  const value = raw.trim();
+
+  if (!value) {
+    throw new ServerConfigError(
+      "PA_CORS_ORIGINS must not be blank when set",
+    );
+  }
+
+  const origins: string[] = [];
+
+  for (
+    const item
+    of value.split(",")
+  ) {
+    const candidate =
+      item.trim();
+
+    if (!candidate) {
+      throw new ServerConfigError(
+        "PA_CORS_ORIGINS must contain only nonblank origins",
+      );
+    }
+
+    let parsed: URL;
+
+    try {
+      parsed = new URL(candidate);
+    } catch {
+      throw new ServerConfigError(
+        `PA_CORS_ORIGINS contains an invalid origin: ${candidate}`,
+      );
+    }
+
+    if (
+      (
+        parsed.protocol !== "https:" &&
+        parsed.protocol !== "http:"
+      ) ||
+      parsed.origin !== candidate
+    ) {
+      throw new ServerConfigError(
+        `PA_CORS_ORIGINS must contain exact HTTP(S) origins without paths: ${candidate}`,
+      );
+    }
+
+    if (!origins.includes(candidate)) {
+      origins.push(candidate);
+    }
+  }
+
+  return Object.freeze(origins);
 }
 
 function parsePort(
@@ -76,5 +139,10 @@ export function loadServerConfig(
     host: parseHost(env.PA_API_HOST),
 
     port: parsePort(env.PA_API_PORT),
+
+    corsOrigins:
+      parseCorsOrigins(
+        env.PA_CORS_ORIGINS,
+      ),
   });
 }
