@@ -15,7 +15,7 @@ export interface DashboardResultRow {
   periodCode: DashboardPeriodCode;
   areacode: string;
   hospcode: string | null;
-  target: number | null;
+  target: number;
   result: number;
 }
 
@@ -93,7 +93,7 @@ export interface KPISummary {
 export interface KPIMaster {
   table_name: string;
   title: string;
-  target: number;
+  target: number | null;
   order: number;
   link?: string;
   // Grouping columns from the kpi_master sheet. All optional — the 13
