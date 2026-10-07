@@ -15,7 +15,7 @@ export interface DashboardResultRow {
   periodCode: DashboardPeriodCode;
   areacode: string;
   hospcode: string | null;
-  target: number;
+  target: number | null;
   result: number;
 }
 
