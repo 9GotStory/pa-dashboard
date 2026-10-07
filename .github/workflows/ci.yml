@@ -49,13 +49,19 @@ jobs:
             --outDir "$TEST_OUT" \
             src/lib/dashboard-data.ts \
             src/lib/dashboard-data.test.ts \
+            src/lib/dashboard-url-state.ts \
+            src/lib/dashboard-url-state.test.ts \
             src/lib/kpi-utils.ts \
             src/lib/kpi-utils.test.ts \
             src/lib/types.ts \
             src/lib/kpi-grouping.ts
           node --test \
             "$TEST_OUT/dashboard-data.test.js" \
+            "$TEST_OUT/dashboard-url-state.test.js" \
             "$TEST_OUT/kpi-utils.test.js"
+
+      - name: Run frontend dashboard URL history contract tests
+        run: node --test src/app/dashboard-url-state-contract.test.mjs
 
       - name: Run frontend accessibility contract tests
         run: node --test src/components/accessibility-contract.test.mjs
