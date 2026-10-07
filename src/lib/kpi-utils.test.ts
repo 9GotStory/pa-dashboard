@@ -162,12 +162,26 @@ test("summary evaluation reconciles pass, fail, raw-count, and unavailable perce
     percentage: 90,
     totalResult: 90,
     targetValue: 80,
+    breakdown: {
+      "06413": {
+        target: 50,
+        result: 45,
+        percentage: 90,
+      },
+    },
   });
   const failing = summary({
     title: "Failing",
     percentage: 70,
     totalResult: 70,
     targetValue: 80,
+    breakdown: {
+      "06413": {
+        target: 50,
+        result: 35,
+        percentage: 70,
+      },
+    },
   });
   const rawCount = summary({
     title: "Raw count",
