@@ -293,7 +293,7 @@ test(
 );
 
 test(
-  "KPI catalog query binds active membership while preserving pre-activation registry fallback",
+  "KPI catalog query binds active membership and semantics while preserving legacy fallback",
 
   async () => {
     const db =
@@ -361,6 +361,48 @@ test(
       assert.ok(
         sql.includes(
           "active_result.kpi_definition_id = definition.id",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "sync_runs",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "config_snapshot",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "jsonb_array_elements",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition ? 'targetValue'",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition ? 'isQuarterly'",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition ? 'targetMonths'",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition ? 'effectiveQuarter'",
         ),
       );
 
