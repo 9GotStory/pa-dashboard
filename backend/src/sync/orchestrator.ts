@@ -229,6 +229,8 @@ function freezeRunConfiguration(
             definition.sourceId,
           valuePrefix:
             definition.valuePrefix,
+          targetValue:
+            definition.targetValue,
           isQuarterly:
             definition.isQuarterly,
           targetMonths:

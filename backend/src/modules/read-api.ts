@@ -18,27 +18,71 @@ const SERVICE_UNAVAILABLE = {
 
 const KPI_CATALOG_QUERY = `
   WITH active_state AS (
-    SELECT active_sync_run_id
-    FROM app_state
-    WHERE singleton_id = 1
+    SELECT
+      state.active_sync_run_id,
+      run.config_snapshot
+    FROM app_state AS state
+    LEFT JOIN sync_runs AS run
+      ON run.id = state.active_sync_run_id
+    WHERE state.singleton_id = 1
   )
   SELECT
     definition.kpi_key,
     definition.title,
-    definition.target_value,
+    CASE
+      WHEN state.active_sync_run_id IS NOT NULL
+        AND snapshot.definition ? 'targetValue'
+        THEN
+          (snapshot.definition ->> 'targetValue')::NUMERIC
+      ELSE definition.target_value
+    END AS target_value,
     definition.sort_order,
     definition.link,
     category.code AS category_code,
     category.name AS category_name,
     category.sort_order AS category_order,
     definition.subgroup,
-    definition.is_quarterly,
-    definition.target_months,
-    definition.effective_quarter
+    CASE
+      WHEN state.active_sync_run_id IS NOT NULL
+        AND snapshot.definition ? 'isQuarterly'
+        THEN
+          (snapshot.definition ->> 'isQuarterly')::BOOLEAN
+      ELSE definition.is_quarterly
+    END AS is_quarterly,
+    CASE
+      WHEN state.active_sync_run_id IS NOT NULL
+        AND snapshot.definition ? 'targetMonths'
+        THEN
+          (snapshot.definition ->> 'targetMonths')::SMALLINT
+      ELSE definition.target_months
+    END AS target_months,
+    CASE
+      WHEN state.active_sync_run_id IS NOT NULL
+        AND snapshot.definition ? 'effectiveQuarter'
+        THEN
+          (snapshot.definition ->> 'effectiveQuarter')::SMALLINT
+      ELSE definition.effective_quarter
+    END AS effective_quarter
   FROM kpi_definitions AS definition
   INNER JOIN kpi_categories AS category
     ON category.id = definition.category_id
   CROSS JOIN active_state AS state
+  LEFT JOIN LATERAL (
+    SELECT item AS definition
+    FROM jsonb_array_elements(
+      CASE
+        WHEN jsonb_typeof(
+          state.config_snapshot -> 'definitions'
+        ) = 'array'
+          THEN state.config_snapshot -> 'definitions'
+        ELSE '[]'::JSONB
+      END
+    ) AS item
+    WHERE item ->> 'id'
+      = definition.id::TEXT
+    LIMIT 1
+  ) AS snapshot
+    ON state.active_sync_run_id IS NOT NULL
   WHERE (
       state.active_sync_run_id IS NULL
       AND definition.is_active = TRUE

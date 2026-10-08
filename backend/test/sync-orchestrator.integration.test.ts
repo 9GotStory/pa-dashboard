@@ -1036,6 +1036,36 @@ test(
             52,
           );
 
+          const persistedDefinitions =
+            snapshotDefinitions as
+              readonly Record<
+                string,
+                unknown
+              >[];
+
+          for (
+            const definition
+            of snapshot.definitions
+          ) {
+            const persisted =
+              persistedDefinitions.find(
+                (candidate) =>
+                  candidate.id ===
+                  definition.id,
+              );
+
+            assert.ok(
+              persisted,
+              `Missing persisted definition snapshot: ${definition.kpiKey}`,
+            );
+
+            assert.equal(
+              persisted.targetValue,
+              definition.targetValue,
+              `Persisted targetValue drifted for ${definition.kpiKey}`,
+            );
+          }
+
           assert.equal(
             await readActiveSyncRunId(
               pool,

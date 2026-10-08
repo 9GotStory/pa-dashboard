@@ -46,6 +46,8 @@ async function insertSyncRun(
     readonly errorSummary:
       | string
       | null;
+    readonly configSnapshot?:
+      Readonly<Record<string, unknown>>;
   },
 ): Promise<string> {
   const expected = 1;
@@ -84,10 +86,10 @@ async function insertSyncRun(
           $2,
           $3,
           $4,
-          '{}'::JSONB,
-          $5,
+          $5::JSONB,
           $6,
-          $7::JSONB
+          $7,
+          $8::JSONB
         )
         RETURNING id
       `,
@@ -96,6 +98,9 @@ async function insertSyncRun(
         expected,
         completed,
         failed,
+        JSON.stringify(
+          options.configSnapshot ?? {},
+        ),
         options.startedAt,
         options.finishedAt,
         options.errorSummary,
@@ -1066,6 +1071,70 @@ test(
         },
       );
 
+      const activeSemanticRows =
+        await pool.query<{
+          readonly id: string;
+          readonly kpi_key: string;
+          readonly target_value:
+            string | null;
+          readonly is_quarterly:
+            boolean;
+          readonly target_months:
+            number | null;
+          readonly effective_quarter:
+            number | null;
+        }>(
+          `
+            SELECT
+              id::TEXT AS id,
+              kpi_key,
+              target_value::TEXT
+                AS target_value,
+              is_quarterly,
+              target_months,
+              effective_quarter
+            FROM kpi_definitions
+            WHERE kpi_key = ANY(
+              $1::TEXT[]
+            )
+            ORDER BY kpi_key
+          `,
+          [[
+            "s_anc5",
+            "s_kpi_anc12",
+            "s_kpi_food",
+          ]],
+        );
+
+      assert.equal(
+        activeSemanticRows
+          .rows.length,
+        3,
+      );
+
+      const activeRunConfigSnapshot = {
+        definitions:
+          activeSemanticRows.rows.map(
+            (row) => ({
+              id: row.id,
+              kpiKey:
+                row.kpi_key,
+              targetValue:
+                row.target_value === null
+                  ? null
+                  : Number(
+                      row.target_value,
+                    ),
+              isQuarterly:
+                row.is_quarterly,
+              targetMonths:
+                row.target_months,
+              effectiveQuarter:
+                row.effective_quarter,
+            }),
+          ),
+      };
+
       const activeRunId =
         await insertSyncRun(
           pool,
@@ -1080,6 +1149,8 @@ test(
                 "2026-09-20T00:05:00.000Z",
               ),
             errorSummary: null,
+            configSnapshot:
+              activeRunConfigSnapshot,
           },
         );
 
@@ -1561,6 +1632,135 @@ test(
                   metadata - 'source_only'
                 WHERE kpi_key = 's_kpi_food'
               `,
+            );
+          }
+        },
+      );
+
+      await t.test(
+        "KPI catalog preserves active-run semantics while descriptive metadata stays live",
+
+        async () => {
+          const readAnc12 =
+            async (): Promise<PublicKpiItem> => {
+              const response =
+                await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+
+              assert.equal(
+                response.statusCode,
+                200,
+              );
+
+              const kpi =
+                (
+                  response.json() as {
+                    readonly kpis:
+                      readonly PublicKpiItem[];
+                  }
+                ).kpis.find(
+                  (item) =>
+                    item.key ===
+                    "s_kpi_anc12",
+                );
+
+              assert.ok(kpi);
+
+              return kpi;
+            };
+
+          const baseline =
+            await readAnc12();
+
+          const editedTitle =
+            `${baseline.title} (live metadata edit)`;
+
+          const editedTarget =
+            baseline.target === 42
+              ? 43
+              : 42;
+
+          const editedTargetMonths =
+            baseline.targetMonths === 2
+              ? 3
+              : 2;
+
+          const editedEffectiveQuarter =
+            baseline.effectiveQuarter === 1
+              ? 2
+              : 1;
+
+          try {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET
+                  title = $2,
+                  target_value = $3,
+                  is_quarterly = $4,
+                  target_months = $5,
+                  effective_quarter = $6
+                WHERE kpi_key = $1
+              `,
+              [
+                "s_kpi_anc12",
+                editedTitle,
+                editedTarget,
+                !baseline.isQuarterly,
+                editedTargetMonths,
+                editedEffectiveQuarter,
+              ],
+            );
+
+            const afterDrift =
+              await readAnc12();
+
+            assert.equal(
+              afterDrift.title,
+              editedTitle,
+            );
+
+            assert.equal(
+              afterDrift.target,
+              baseline.target,
+            );
+
+            assert.equal(
+              afterDrift.isQuarterly,
+              baseline.isQuarterly,
+            );
+
+            assert.equal(
+              afterDrift.targetMonths,
+              baseline.targetMonths,
+            );
+
+            assert.equal(
+              afterDrift.effectiveQuarter,
+              baseline.effectiveQuarter,
+            );
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET
+                  title = $2,
+                  target_value = $3,
+                  is_quarterly = $4,
+                  target_months = $5,
+                  effective_quarter = $6
+                WHERE kpi_key = $1
+              `,
+              [
+                "s_kpi_anc12",
+                baseline.title,
+                baseline.target,
+                baseline.isQuarterly,
+                baseline.targetMonths,
+                baseline.effectiveQuarter,
+              ],
             );
           }
         },
