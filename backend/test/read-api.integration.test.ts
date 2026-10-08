@@ -1453,6 +1453,120 @@ test(
       );
 
       await t.test(
+        "KPI catalog membership follows the active dataset despite registry visibility drift",
+
+        async () => {
+          const readKeys =
+            async (): Promise<string[]> => {
+              const response =
+                await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+
+              assert.equal(
+                response.statusCode,
+                200,
+              );
+
+              return (
+                response.json() as {
+                  readonly kpis:
+                    readonly PublicKpiItem[];
+                }
+              ).kpis.map(
+                (kpi) => kpi.key,
+              );
+            };
+
+          const expectedKeys = [
+            "s_kpi_anc12",
+            "s_anc5",
+            "s_kpi_food",
+          ];
+
+          assert.deepEqual(
+            await readKeys(),
+            expectedKeys,
+          );
+
+          try {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET is_active = FALSE
+                WHERE kpi_key = 's_anc5'
+              `,
+            );
+
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET metadata =
+                  metadata
+                    || '{"source_only":true}'::JSONB
+                WHERE kpi_key = 's_kpi_food'
+              `,
+            );
+
+            assert.deepEqual(
+              await readKeys(),
+              expectedKeys,
+            );
+
+            const dashboardResponse =
+              await fastify.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              dashboardResponse.statusCode,
+              200,
+            );
+
+            const dashboardKeys =
+              new Set(
+                (
+                  dashboardResponse.json() as {
+                    readonly results:
+                      readonly {
+                        readonly kpiKey:
+                          string;
+                      }[];
+                  }
+                ).results.map(
+                  (row) =>
+                    row.kpiKey,
+                ),
+              );
+
+            assert.deepEqual(
+              [...dashboardKeys],
+              expectedKeys,
+            );
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET is_active = TRUE
+                WHERE kpi_key = 's_anc5'
+              `,
+            );
+
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET metadata =
+                  metadata - 'source_only'
+                WHERE kpi_key = 's_kpi_food'
+              `,
+            );
+          }
+        },
+      );
+
+      await t.test(
         "dashboard live response exposes only public fields",
 
         async () => {
@@ -1631,7 +1745,7 @@ test(
             (kpisResponse.json() as {
               readonly kpis: readonly unknown[];
             }).kpis.length,
-            47,
+            3,
           );
 
           const facilitiesResponse =

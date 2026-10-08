@@ -17,6 +17,11 @@ const SERVICE_UNAVAILABLE = {
 } as const;
 
 const KPI_CATALOG_QUERY = `
+  WITH active_state AS (
+    SELECT active_sync_run_id
+    FROM app_state
+    WHERE singleton_id = 1
+  )
   SELECT
     definition.kpi_key,
     definition.title,
@@ -33,10 +38,25 @@ const KPI_CATALOG_QUERY = `
   FROM kpi_definitions AS definition
   INNER JOIN kpi_categories AS category
     ON category.id = definition.category_id
-  WHERE definition.is_active = TRUE
-    AND NOT (
-      definition.metadata
-        @> '{"source_only": true}'::JSONB
+  CROSS JOIN active_state AS state
+  WHERE (
+      state.active_sync_run_id IS NULL
+      AND definition.is_active = TRUE
+      AND NOT (
+        definition.metadata
+          @> '{"source_only": true}'::JSONB
+      )
+    )
+    OR (
+      state.active_sync_run_id IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM kpi_results AS active_result
+        WHERE active_result.sync_run_id
+            = state.active_sync_run_id
+          AND active_result.kpi_definition_id
+            = definition.id
+      )
     )
   ORDER BY
     category.sort_order ASC,
