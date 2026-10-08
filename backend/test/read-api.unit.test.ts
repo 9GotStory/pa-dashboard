@@ -50,13 +50,13 @@ function createFakeDatabase(
       }
 
       const rows = text.includes(
-          "kpi_results",
+          "AS category_code",
         )
-        ? behavior.dashboardRows
+        ? behavior.kpiRows
         : text.includes(
-            "kpi_definitions",
+            "kpi_results",
           )
-          ? behavior.kpiRows
+          ? behavior.dashboardRows
           : text.includes(
               "facilities",
             )
@@ -293,7 +293,7 @@ test(
 );
 
 test(
-  "KPI catalog query targets the authoritative registry tables",
+  "KPI catalog query binds active membership while preserving pre-activation registry fallback",
 
   async () => {
     const db =
@@ -331,6 +331,36 @@ test(
       assert.ok(
         sql.includes(
           "kpi_categories",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "app_state",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "active_sync_run_id",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "kpi_results",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "active_result.sync_run_id = state.active_sync_run_id",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "active_result.kpi_definition_id = definition.id",
         ),
       );
 
