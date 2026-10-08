@@ -1638,6 +1638,135 @@ test(
       );
 
       await t.test(
+        "KPI catalog preserves active-run semantics while descriptive metadata stays live",
+
+        async () => {
+          const readAnc12 =
+            async (): Promise<PublicKpiItem> => {
+              const response =
+                await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+
+              assert.equal(
+                response.statusCode,
+                200,
+              );
+
+              const kpi =
+                (
+                  response.json() as {
+                    readonly kpis:
+                      readonly PublicKpiItem[];
+                  }
+                ).kpis.find(
+                  (item) =>
+                    item.key ===
+                    "s_kpi_anc12",
+                );
+
+              assert.ok(kpi);
+
+              return kpi;
+            };
+
+          const baseline =
+            await readAnc12();
+
+          const editedTitle =
+            `${baseline.title} (live metadata edit)`;
+
+          const editedTarget =
+            baseline.target === 42
+              ? 43
+              : 42;
+
+          const editedTargetMonths =
+            baseline.targetMonths === 2
+              ? 3
+              : 2;
+
+          const editedEffectiveQuarter =
+            baseline.effectiveQuarter === 1
+              ? 2
+              : 1;
+
+          try {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET
+                  title = $2,
+                  target_value = $3,
+                  is_quarterly = $4,
+                  target_months = $5,
+                  effective_quarter = $6
+                WHERE kpi_key = $1
+              `,
+              [
+                "s_kpi_anc12",
+                editedTitle,
+                editedTarget,
+                !baseline.isQuarterly,
+                editedTargetMonths,
+                editedEffectiveQuarter,
+              ],
+            );
+
+            const afterDrift =
+              await readAnc12();
+
+            assert.equal(
+              afterDrift.title,
+              editedTitle,
+            );
+
+            assert.equal(
+              afterDrift.target,
+              baseline.target,
+            );
+
+            assert.equal(
+              afterDrift.isQuarterly,
+              baseline.isQuarterly,
+            );
+
+            assert.equal(
+              afterDrift.targetMonths,
+              baseline.targetMonths,
+            );
+
+            assert.equal(
+              afterDrift.effectiveQuarter,
+              baseline.effectiveQuarter,
+            );
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET
+                  title = $2,
+                  target_value = $3,
+                  is_quarterly = $4,
+                  target_months = $5,
+                  effective_quarter = $6
+                WHERE kpi_key = $1
+              `,
+              [
+                "s_kpi_anc12",
+                baseline.title,
+                baseline.target,
+                baseline.isQuarterly,
+                baseline.targetMonths,
+                baseline.effectiveQuarter,
+              ],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "dashboard live response exposes only public fields",
 
         async () => {
