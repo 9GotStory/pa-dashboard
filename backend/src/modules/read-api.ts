@@ -27,7 +27,12 @@ const KPI_CATALOG_QUERY = `
     WHERE state.singleton_id = 1
   )
   SELECT
-    definition.kpi_key,
+    CASE
+      WHEN state.active_sync_run_id IS NOT NULL
+        AND snapshot.definition ? 'kpiKey'
+        THEN snapshot.definition ->> 'kpiKey'
+      ELSE definition.kpi_key
+    END AS kpi_key,
     definition.title,
     CASE
       WHEN state.active_sync_run_id IS NOT NULL
@@ -184,7 +189,11 @@ const DASHBOARD_QUERY = `
     run.activated_at AS activated_at,
     fresh.source_last_updated
       AS source_last_updated,
-    definition.kpi_key AS kpi_key,
+    CASE
+      WHEN snapshot.definition ? 'kpiKey'
+        THEN snapshot.definition ->> 'kpiKey'
+      ELSE definition.kpi_key
+    END AS kpi_key,
     kpi.period_code AS period_code,
     kpi.areacode AS areacode,
     kpi.hospcode AS hospcode,
@@ -201,7 +210,8 @@ const DASHBOARD_QUERY = `
       completed_source_count,
       failed_source_count,
       finished_at,
-      activated_at
+      activated_at,
+      config_snapshot
     FROM sync_runs
     WHERE id = state.active_sync_run_id
   ) AS run ON TRUE
@@ -222,6 +232,22 @@ const DASHBOARD_QUERY = `
       = state.active_sync_run_id
   LEFT JOIN kpi_definitions AS definition
     ON definition.id = kpi.kpi_definition_id
+  LEFT JOIN LATERAL (
+    SELECT item AS definition
+    FROM jsonb_array_elements(
+      CASE
+        WHEN jsonb_typeof(
+          run.config_snapshot -> 'definitions'
+        ) = 'array'
+          THEN run.config_snapshot -> 'definitions'
+        ELSE '[]'::JSONB
+      END
+    ) AS item
+    WHERE item ->> 'id'
+      = definition.id::TEXT
+    LIMIT 1
+  ) AS snapshot
+    ON state.active_sync_run_id IS NOT NULL
   WHERE state.singleton_id = 1
   ORDER BY
     definition.sort_order ASC,
