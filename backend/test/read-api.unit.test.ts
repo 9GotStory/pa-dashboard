@@ -384,6 +384,18 @@ test(
 
       assert.ok(
         sql.includes(
+          "snapshot.definition ? 'kpiKey'",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ELSE definition.kpi_key",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
           "snapshot.definition ? 'targetValue'",
         ),
       );
@@ -2102,6 +2114,30 @@ test(
       assert.ok(
         sql.includes(
           "kpi_definitions",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "config_snapshot",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "jsonb_array_elements",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition ? 'kpiKey'",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ELSE definition.kpi_key",
         ),
       );
 
