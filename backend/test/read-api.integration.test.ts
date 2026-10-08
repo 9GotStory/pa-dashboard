@@ -1767,6 +1767,143 @@ test(
       );
 
       await t.test(
+        "active dataset preserves KPI key identity after registry rename",
+
+        async () => {
+          const originalKey =
+            "s_kpi_anc12";
+          const renamedKey =
+            "s_kpi_anc12__renamed_after_activation";
+
+          const readCatalogKeys =
+            async (): Promise<string[]> => {
+              const response =
+                await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+
+              assert.equal(
+                response.statusCode,
+                200,
+              );
+
+              return (
+                response.json() as {
+                  readonly kpis:
+                    readonly PublicKpiItem[];
+                }
+              ).kpis.map(
+                (kpi) => kpi.key,
+              );
+            };
+
+          const readDashboardKeys =
+            async (): Promise<string[]> => {
+              const response =
+                await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/dashboard",
+                });
+
+              assert.equal(
+                response.statusCode,
+                200,
+              );
+
+              return [
+                ...new Set(
+                  (
+                    response.json() as {
+                      readonly results:
+                        readonly {
+                          readonly kpiKey:
+                            string;
+                        }[];
+                    }
+                  ).results.map(
+                    (row) =>
+                      row.kpiKey,
+                  ),
+                ),
+              ];
+            };
+
+          const expectedKeys = [
+            originalKey,
+            "s_anc5",
+            "s_kpi_food",
+          ];
+
+          assert.deepEqual(
+            await readCatalogKeys(),
+            expectedKeys,
+          );
+
+          assert.deepEqual(
+            await readDashboardKeys(),
+            expectedKeys,
+          );
+
+          try {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET kpi_key = $2
+                WHERE kpi_key = $1
+              `,
+              [
+                originalKey,
+                renamedKey,
+              ],
+            );
+
+            const liveRegistry =
+              await pool.query<{
+                readonly kpi_key: string;
+              }>(
+                `
+                  SELECT kpi_key
+                  FROM kpi_definitions
+                  WHERE kpi_key = $1
+                `,
+                [
+                  renamedKey,
+                ],
+              );
+
+            assert.equal(
+              liveRegistry.rows[0]
+                ?.kpi_key,
+              renamedKey,
+            );
+
+            assert.deepEqual(
+              await readCatalogKeys(),
+              expectedKeys,
+            );
+
+            assert.deepEqual(
+              await readDashboardKeys(),
+              expectedKeys,
+            );
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET kpi_key = $2
+                WHERE kpi_key = $1
+              `,
+              [
+                renamedKey,
+                originalKey,
+              ],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "dashboard live response exposes only public fields",
 
         async () => {
