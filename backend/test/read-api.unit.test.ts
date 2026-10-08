@@ -408,6 +408,30 @@ test(
 
       assert.ok(
         sql.includes(
+          "ELSE definition.target_value",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ELSE definition.is_quarterly",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ELSE definition.target_months",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "ELSE definition.effective_quarter",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
           "is_active = TRUE",
         ),
       );
