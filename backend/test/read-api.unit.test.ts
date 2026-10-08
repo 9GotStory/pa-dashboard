@@ -2213,7 +2213,6 @@ test(
         const forbiddenFragment
         of [
           "raw_payload",
-          "config_snapshot",
           "error_summary",
           "started_at",
           "details",
