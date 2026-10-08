@@ -46,6 +46,8 @@ async function insertSyncRun(
     readonly errorSummary:
       | string
       | null;
+    readonly configSnapshot?:
+      Readonly<Record<string, unknown>>;
   },
 ): Promise<string> {
   const expected = 1;
@@ -84,10 +86,10 @@ async function insertSyncRun(
           $2,
           $3,
           $4,
-          '{}'::JSONB,
-          $5,
+          $5::JSONB,
           $6,
-          $7::JSONB
+          $7,
+          $8::JSONB
         )
         RETURNING id
       `,
@@ -96,6 +98,9 @@ async function insertSyncRun(
         expected,
         completed,
         failed,
+        JSON.stringify(
+          options.configSnapshot ?? {},
+        ),
         options.startedAt,
         options.finishedAt,
         options.errorSummary,
