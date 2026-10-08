@@ -1071,6 +1071,70 @@ test(
         },
       );
 
+      const activeSemanticRows =
+        await pool.query<{
+          readonly id: string;
+          readonly kpi_key: string;
+          readonly target_value:
+            string | null;
+          readonly is_quarterly:
+            boolean;
+          readonly target_months:
+            number | null;
+          readonly effective_quarter:
+            number | null;
+        }>(
+          `
+            SELECT
+              id::TEXT AS id,
+              kpi_key,
+              target_value::TEXT
+                AS target_value,
+              is_quarterly,
+              target_months,
+              effective_quarter
+            FROM kpi_definitions
+            WHERE kpi_key = ANY(
+              $1::TEXT[]
+            )
+            ORDER BY kpi_key
+          `,
+          [[
+            "s_anc5",
+            "s_kpi_anc12",
+            "s_kpi_food",
+          ]],
+        );
+
+      assert.equal(
+        activeSemanticRows
+          .rows.length,
+        3,
+      );
+
+      const activeRunConfigSnapshot = {
+        definitions:
+          activeSemanticRows.rows.map(
+            (row) => ({
+              id: row.id,
+              kpiKey:
+                row.kpi_key,
+              targetValue:
+                row.target_value === null
+                  ? null
+                  : Number(
+                      row.target_value,
+                    ),
+              isQuarterly:
+                row.is_quarterly,
+              targetMonths:
+                row.target_months,
+              effectiveQuarter:
+                row.effective_quarter,
+            }),
+          ),
+      };
+
       const activeRunId =
         await insertSyncRun(
           pool,
@@ -1085,6 +1149,8 @@ test(
                 "2026-09-20T00:05:00.000Z",
               ),
             errorSummary: null,
+            configSnapshot:
+              activeRunConfigSnapshot,
           },
         );
 
