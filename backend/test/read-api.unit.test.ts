@@ -52,7 +52,20 @@ function createFakeDatabase(
       const rows = text.includes(
           "AS category_code",
         )
-        ? behavior.kpiRows
+        ? (behavior.kpiRows ?? []).map(
+            (row) =>
+              typeof row === "object" &&
+              row !== null &&
+              !Array.isArray(row)
+                ? {
+                    active_sync_run_id:
+                      null,
+                    snapshot_definition_present:
+                      false,
+                    ...row,
+                  }
+                : row,
+          )
         : text.includes(
             "kpi_results",
           )
@@ -100,6 +113,8 @@ function createDashboardRow(
     ),
     source_last_updated:
       "202609261230",
+    snapshot_definition_present:
+      true,
     definition_sort_order: 1,
     kpi_key: "s_kpi_anc12",
     period_code: "q2",
@@ -379,6 +394,18 @@ test(
       assert.ok(
         sql.includes(
           "jsonb_array_elements",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition IS NOT NULL AS snapshot_definition_present",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "state.active_sync_run_id::TEXT AS active_sync_run_id",
         ),
       );
 
@@ -2126,6 +2153,12 @@ test(
       assert.ok(
         sql.includes(
           "jsonb_array_elements",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "snapshot.definition IS NOT NULL AS snapshot_definition_present",
         ),
       );
 
