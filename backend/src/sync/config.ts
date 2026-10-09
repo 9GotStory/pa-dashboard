@@ -192,9 +192,13 @@ function validateTargetValue(
 
   const parsed = Number(value);
 
-  if (!Number.isFinite(parsed)) {
+  if (
+    !Number.isFinite(parsed) ||
+    parsed < 0 ||
+    parsed > 100
+  ) {
     return configError(
-      `Invalid target_value for ${kpiKey}`,
+      `Invalid percentage target_value for ${kpiKey}: expected 0 through 100`,
     );
   }
 
