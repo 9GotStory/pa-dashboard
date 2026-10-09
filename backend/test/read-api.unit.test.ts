@@ -120,6 +120,7 @@ function createDashboardRow(
     snapshot_definition_match_count:
       1,
     definition_sort_order: 1,
+    kpi_definition_id: "101",
     kpi_key: "s_kpi_anc12",
     period_code: "q2",
     areacode: "54060101",
@@ -529,6 +530,56 @@ test(
         sql.includes(
           "definition.kpi_key",
         ),
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "KPI catalog rejects duplicate effective keys from distinct active definition IDs",
+
+  async () => {
+    const catalogRow = (
+      key: string,
+      title: string,
+    ) => ({
+      active_sync_run_id: "42",
+      snapshot_definition_present: true,
+      snapshot_definition_match_count: 1,
+      kpi_key: key,
+      title,
+      target_value: "75",
+      sort_order: 1,
+      link: null,
+      category_code: "kpi_master",
+      category_name: "ตัวชี้วัดพื้นฐาน",
+      category_order: 1,
+      subgroup: null,
+      is_quarterly: false,
+      target_months: null,
+      effective_quarter: null,
+    });
+
+    const db = createFakeDatabase({
+      kpiRows: [
+        catalogRow("s_anc5", "ANC first"),
+        catalogRow("s_anc5", "ANC second"),
+      ],
+    });
+    const app = buildApp({ db });
+
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/kpis",
+      });
+
+      assert.equal(response.statusCode, 503);
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
       );
     } finally {
       await app.close();
@@ -2564,6 +2615,79 @@ test(
       assert.equal(
         response.body,
         '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard rejects machine-key collisions across distinct active definition IDs",
+
+  async () => {
+    const db = createFakeDatabase({
+      dashboardRows: [
+        createDashboardRow({
+          kpi_definition_id: "101",
+          kpi_key: "s_anc5",
+        }),
+        createDashboardRow({
+          kpi_definition_id: "102",
+          kpi_key: "s_anc5",
+          hospcode: "10702",
+        }),
+      ],
+    });
+    const app = buildApp({ db });
+
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/dashboard",
+      });
+
+      assert.equal(response.statusCode, 503);
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard permits repeated result rows for one definition ID",
+
+  async () => {
+    const db = createFakeDatabase({
+      dashboardRows: [
+        createDashboardRow({
+          kpi_definition_id: "101",
+          hospcode: "06413",
+        }),
+        createDashboardRow({
+          kpi_definition_id: "101",
+          hospcode: "10702",
+        }),
+      ],
+    });
+    const app = buildApp({ db });
+
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/dashboard",
+      });
+
+      assert.equal(response.statusCode, 200);
+      assert.equal(
+        (response.json() as {
+          readonly results: readonly unknown[];
+        }).results.length,
+        2,
       );
     } finally {
       await app.close();
