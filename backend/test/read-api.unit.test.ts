@@ -601,6 +601,17 @@ test("catalog binds active run identity and rejects incoherent rows", async (t) 
     } finally { await app.close(); }
   });
 
+  await t.test("a selected KPI with a null key is not mistaken for an empty catalog", async () => {
+    const app = buildApp({ db: createFakeDatabase({
+      kpiRows: [{ ...member, kpi_key: null }],
+    }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.body, '{"error":"service_unavailable"}');
+    } finally { await app.close(); }
+  });
+
   await t.test("missing state row fails closed", async () => {
     const app = buildApp({ db: createFakeDatabase({ kpiRows: [] }) });
     try {
