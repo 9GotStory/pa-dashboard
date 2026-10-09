@@ -963,6 +963,95 @@ test(
       );
 
       await t.test(
+        "pre-activation catalog validates live external links and recovers after repair",
+
+        async () => {
+          const baseline = await pool.query<{
+            readonly link: string | null;
+          }>(`
+            SELECT link
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(baseline.rows.length, 1);
+
+          try {
+            for (const scenario of [
+              { link: null, valid: true },
+              { link: "", valid: true },
+              {
+                link: "https://example.test/kpi?foo=1#section",
+                valid: true,
+              },
+              { link: "http://example.test/detail", valid: true },
+              { link: "javascript:alert(1)", valid: false },
+              { link: "data:text/html,<h1>x</h1>", valid: false },
+              { link: "file:///tmp/detail", valid: false },
+              { link: "/detail", valid: false },
+              { link: "detail/1", valid: false },
+              { link: "https://", valid: false },
+              { link: "   ", valid: false },
+              { link: " https://example.test", valid: false },
+              { link: "https://example.test ", valid: false },
+              { link: "https://example.test/repaired", valid: true },
+            ]) {
+              const updated = await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET link = $1
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+                [scenario.link],
+              );
+              assert.equal(updated.rowCount, 1);
+
+              const response = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+
+              if (!scenario.valid) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+                assert.equal(
+                  response.body.includes("s_kpi_anc12"),
+                  false,
+                );
+              } else {
+                assert.equal(response.statusCode, 200);
+                const body = response.json() as {
+                  readonly kpis: readonly PublicKpiItem[];
+                };
+                assert.equal(body.kpis.length, 47);
+                const selected = body.kpis.find(
+                  (item) => item.key === "s_kpi_anc12",
+                );
+                assert.ok(selected);
+                assert.equal(selected.link, scenario.link);
+              }
+            }
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET link = $1
+                WHERE kpi_key = 's_kpi_anc12'
+              `,
+              [baseline.rows[0]?.link],
+            );
+          }
+          const recovered = await fastify.inject({
+            method: "GET",
+            url: "/api/v1/kpis",
+          });
+          assert.equal(recovered.statusCode, 200);
+        },
+      );
+
+      await t.test(
         "live registry catalog rejects invalid percentage targets before activation",
 
         async () => {
@@ -1751,6 +1840,123 @@ test(
               `,
             );
           }
+        },
+      );
+
+      await t.test(
+        "active KPI external link stays live, rejects unsafe drift and ignores non-members",
+
+        async () => {
+          const originals = await pool.query<{
+            readonly kpi_key: string;
+            readonly link: string | null;
+          }>(`
+            SELECT kpi_key, link
+            FROM kpi_definitions
+            WHERE kpi_key = ANY($1::TEXT[])
+            ORDER BY kpi_key
+          `, [["s_kpi_anc12", "s_epi1"]]);
+          assert.equal(originals.rows.length, 2);
+
+          const readCatalog = async () =>
+            fastify.inject({
+              method: "GET",
+              url: "/api/v1/kpis",
+            });
+
+          try {
+            const before = await readCatalog();
+            assert.equal(before.statusCode, 200);
+            const beforeCatalog = before.json() as {
+              readonly kpis: readonly PublicKpiItem[];
+            };
+            assert.equal(beforeCatalog.kpis.length, 3);
+
+            // s_epi1 has no active KPI results: malformed metadata of
+            // a non-member must never widen the effective active catalog.
+            await pool.query(`
+              UPDATE kpi_definitions
+              SET link = 'javascript:alert(1)'
+              WHERE kpi_key = 's_epi1'
+            `);
+            assert.equal((await readCatalog()).statusCode, 200);
+
+            for (const scenario of [
+              { link: "https://example.test/live?foo=1#section", valid: true },
+              { link: "http://example.test/live", valid: true },
+              { link: null, valid: true },
+              { link: "", valid: true },
+              { link: "javascript:alert(1)", valid: false },
+              { link: "data:text/html,<h1>x</h1>", valid: false },
+              { link: "file:///tmp/detail", valid: false },
+              { link: "/detail", valid: false },
+              { link: "https://", valid: false },
+              { link: " https://example.test/live", valid: false },
+              { link: "https://example.test/live ", valid: false },
+              { link: "https://example.test/recovered", valid: true },
+            ]) {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET link = $1
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+                [scenario.link],
+              );
+              const response = await readCatalog();
+
+              if (!scenario.valid) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+                assert.equal(
+                  response.body.includes("s_anc5"),
+                  false,
+                );
+              } else {
+                assert.equal(response.statusCode, 200);
+                const payload = response.json() as {
+                  readonly kpis: readonly PublicKpiItem[];
+                };
+                assert.equal(payload.kpis.length, 3);
+                const entry = payload.kpis.find(
+                  (item) => item.key === "s_kpi_anc12",
+                );
+                assert.ok(entry);
+                assert.equal(entry.link, scenario.link);
+                assert.equal(
+                  entry.target,
+                  beforeCatalog.kpis.find(
+                    (item) => item.key === "s_kpi_anc12",
+                  )?.target,
+                  "Live link drift must not change frozen target",
+                );
+              }
+            }
+
+            // Catalog link validity must not change active result data.
+            const dashboard = await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+            assert.equal(dashboard.statusCode, 200);
+          } finally {
+            for (const row of originals.rows) {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET link = $2
+                  WHERE kpi_key = $1
+                `,
+                [row.kpi_key, row.link],
+              );
+            }
+          }
+
+          const restored = await readCatalog();
+          assert.equal(restored.statusCode, 200);
         },
       );
 
