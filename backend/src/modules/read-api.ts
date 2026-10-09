@@ -215,6 +215,7 @@ const DASHBOARD_QUERY = `
     END AS kpi_key,
     kpi.kpi_definition_id::TEXT
       AS kpi_definition_id,
+    kpi.fiscal_year AS result_fiscal_year,
     kpi.period_code AS period_code,
     kpi.areacode AS areacode,
     kpi.hospcode AS hospcode,
