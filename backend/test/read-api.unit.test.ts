@@ -62,6 +62,8 @@ function createFakeDatabase(
                       null,
                     snapshot_definition_present:
                       false,
+                    snapshot_definition_match_count:
+                      0,
                     ...row,
                   }
                 : row,
@@ -115,6 +117,8 @@ function createDashboardRow(
       "202609261230",
     snapshot_definition_present:
       true,
+    snapshot_definition_match_count:
+      1,
     definition_sort_order: 1,
     kpi_key: "s_kpi_anc12",
     period_code: "q2",
@@ -642,6 +646,8 @@ test(
               "42",
             snapshot_definition_present:
               false,
+            snapshot_definition_match_count:
+              0,
             kpi_key:
               "s_kpi_anc12",
             title:
@@ -2396,6 +2402,8 @@ test(
           createDashboardRow({
             snapshot_definition_present:
               false,
+            snapshot_definition_match_count:
+              0,
           }),
         ],
       });
