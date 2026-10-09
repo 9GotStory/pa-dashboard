@@ -3941,6 +3941,115 @@ test(
 );
 
 test(
+  "dashboard fails closed on calendar-invalid source freshness markers",
+
+  async (t) => {
+    const cases: readonly {
+      readonly name: string;
+      readonly marker: unknown;
+      readonly valid: boolean;
+    }[] = [
+      { name: "null", marker: null, valid: true },
+      { name: "12-digit date", marker: "202609261230", valid: true },
+      { name: "14-digit date", marker: "20260926123045", valid: true },
+      { name: "2000 century leap day", marker: "20000229120000", valid: true },
+      { name: "2028 leap day", marker: "202802291230", valid: true },
+      { name: "2400 century leap day", marker: "24000229120000", valid: true },
+      { name: "midnight", marker: "20260101000000", valid: true },
+      { name: "last second", marker: "20261231235959", valid: true },
+      { name: "month zero", marker: "202600011200", valid: false },
+      { name: "month thirteen", marker: "202613011200", valid: false },
+      { name: "day zero", marker: "202610001200", valid: false },
+      { name: "April day 31", marker: "202604311200", valid: false },
+      { name: "February day 30", marker: "202602301200", valid: false },
+      { name: "nonleap February 29", marker: "202702291200", valid: false },
+      { name: "1900 nonleap century", marker: "19000229120000", valid: false },
+      { name: "2100 nonleap century", marker: "21000229120000", valid: false },
+      { name: "hour 24", marker: "202610072400", valid: false },
+      { name: "minute 60", marker: "202610071260", valid: false },
+      { name: "second 60", marker: "20261007120060", valid: false },
+      { name: "lexically dominant invalid month", marker: "202699011200", valid: false },
+    ];
+
+    for (const scenario of cases) {
+      await t.test(scenario.name, async () => {
+        const db = createFakeDatabase({
+          dashboardRows: [
+            createDashboardRow({ source_last_updated: scenario.marker }),
+          ],
+        });
+        const app = buildApp({ db });
+
+        try {
+          const response = await app.inject({
+            method: "GET",
+            url: "/api/v1/dashboard",
+          });
+          if (!scenario.valid) {
+            assert.equal(response.statusCode, 503);
+            assert.equal(
+              response.body,
+              '{"error":"service_unavailable"}',
+            );
+            assert.equal(response.body.includes("s_kpi_anc12"), false);
+          } else {
+            assert.equal(response.statusCode, 200);
+            const body = response.json() as {
+              readonly dataset: {
+                readonly sourceLastUpdated: string | null;
+              };
+            };
+            assert.equal(body.dataset.sourceLastUpdated, scenario.marker);
+          }
+        } finally {
+          await app.close();
+        }
+      });
+    }
+  },
+);
+
+test(
+  "dashboard SQL restricts active-run freshness to valid Gregorian calendar candidates",
+
+  async () => {
+    const db = createFakeDatabase({
+      dashboardRows: [createDashboardRow()],
+    });
+    const app = buildApp({ db });
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/dashboard",
+      });
+      assert.equal(response.statusCode, 200);
+      const queries = db.getQueries();
+      assert.equal(queries.length, 1);
+      const sql = queries[0];
+      assert.ok(sql);
+      assert.ok(sql.includes("MAX(source.date_com)"));
+      assert.ok(sql.includes("source.sync_run_id"));
+      assert.ok(sql.includes("state.active_sync_run_id"));
+      assert.ok(sql.includes("^[0-9]{12}([0-9]{2})?$"));
+      assert.ok(sql.includes("SUBSTRING(source.date_com FROM 5 FOR 2)"));
+      assert.ok(sql.includes("SUBSTRING(source.date_com FROM 7 FOR 2)"));
+      assert.ok(sql.includes("SUBSTRING(source.date_com FROM 9 FOR 2)"));
+      assert.ok(sql.includes("SUBSTRING(source.date_com FROM 11 FOR 2)"));
+      assert.ok(sql.includes("SUBSTRING(source.date_com FROM 13 FOR 2)"));
+      assert.ok(sql.includes("SUBSTRING(source.date_com FROM 1 FOR 4)"));
+      assert.ok(sql.includes("% 400"));
+      assert.ok(sql.includes("% 100"));
+      assert.ok(sql.includes("% 4"));
+      assert.ok(sql.includes("THEN 29"));
+      assert.ok(sql.includes("ELSE 28"));
+      assert.ok(sql.includes("ELSE FALSE"));
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
   "dashboard derives sourceLastUpdated only from valid source markers",
 
   async (t) => {
