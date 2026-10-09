@@ -2427,8 +2427,8 @@ test(
 
       function snapshotWithPeriodFields(
         patch: {
-          readonly targetMonths?: number | null;
-          readonly effectiveQuarter?: number | null;
+          readonly targetMonths?: number | null | undefined;
+          readonly effectiveQuarter?: number | null | undefined;
         },
       ): Readonly<Record<string, unknown>> {
         return {
