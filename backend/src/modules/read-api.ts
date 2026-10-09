@@ -31,6 +31,10 @@ const KPI_CATALOG_QUERY = `
       AS active_sync_run_id,
     snapshot.definition IS NOT NULL
       AS snapshot_definition_present,
+    COALESCE(
+      snapshot.definition_match_count,
+      0
+    ) AS snapshot_definition_match_count,
     CASE
       WHEN state.active_sync_run_id IS NOT NULL
         AND snapshot.definition ? 'kpiKey'
@@ -77,7 +81,10 @@ const KPI_CATALOG_QUERY = `
     ON category.id = definition.category_id
   CROSS JOIN active_state AS state
   LEFT JOIN LATERAL (
-    SELECT item AS definition
+    SELECT
+      item AS definition,
+      COUNT(*) OVER ()::INTEGER
+        AS definition_match_count
     FROM jsonb_array_elements(
       CASE
         WHEN jsonb_typeof(
@@ -86,9 +93,11 @@ const KPI_CATALOG_QUERY = `
           THEN state.config_snapshot -> 'definitions'
         ELSE '[]'::JSONB
       END
-    ) AS item
+    ) WITH ORDINALITY
+      AS snapshot_item(item, ordinal)
     WHERE item ->> 'id'
       = definition.id::TEXT
+    ORDER BY ordinal ASC
     LIMIT 1
   ) AS snapshot
     ON state.active_sync_run_id IS NOT NULL
@@ -239,7 +248,10 @@ const DASHBOARD_QUERY = `
   LEFT JOIN kpi_definitions AS definition
     ON definition.id = kpi.kpi_definition_id
   LEFT JOIN LATERAL (
-    SELECT item AS definition
+    SELECT
+      item AS definition,
+      COUNT(*) OVER ()::INTEGER
+        AS definition_match_count
     FROM jsonb_array_elements(
       CASE
         WHEN jsonb_typeof(
@@ -248,9 +260,11 @@ const DASHBOARD_QUERY = `
           THEN run.config_snapshot -> 'definitions'
         ELSE '[]'::JSONB
       END
-    ) AS item
+    ) WITH ORDINALITY
+      AS snapshot_item(item, ordinal)
     WHERE item ->> 'id'
       = definition.id::TEXT
+    ORDER BY ordinal ASC
     LIMIT 1
   ) AS snapshot
     ON state.active_sync_run_id IS NOT NULL
@@ -716,10 +730,10 @@ function normalizeKpi(
 
   if (
     activeSyncRunId !== null &&
-    source.snapshot_definition_present !== true
+    source.snapshot_definition_match_count !== 1
   ) {
     throw new Error(
-      "Active KPI catalog member has no matching snapshot definition",
+      "Active KPI catalog member must have exactly one matching snapshot definition",
     );
   }
 
@@ -905,10 +919,10 @@ function normalizeDashboardResult(
   const source = asRowObject(row);
 
   if (
-    source.snapshot_definition_present !== true
+    source.snapshot_definition_match_count !== 1
   ) {
     throw new Error(
-      "Active dashboard result has no matching snapshot definition",
+      "Active dashboard result must have exactly one matching snapshot definition",
     );
   }
 
