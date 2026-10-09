@@ -811,6 +811,42 @@ test(
       );
 
       await t.test(
+        "preactivation catalog identity is null including an empty registry",
+        async () => {
+          const initial = await fastify.inject({
+            method: "GET", url: "/api/v1/kpis",
+          });
+          assert.equal(initial.statusCode, 200);
+          const body = initial.json() as {
+            readonly activeSyncRunId: string | null;
+            readonly kpis: readonly PublicKpiItem[];
+          };
+          assert.equal(body.activeSyncRunId, null);
+          assert.equal(body.kpis.length, 47);
+
+          const changed = await pool.query<{ readonly id: string }>(`
+            UPDATE kpi_definitions SET is_active = FALSE
+            WHERE is_active = TRUE
+            RETURNING id::TEXT AS id
+          `);
+          try {
+            const response = await fastify.inject({
+              method: "GET", url: "/api/v1/kpis",
+            });
+            assert.equal(response.statusCode, 200);
+            assert.deepEqual(response.json(), {
+              activeSyncRunId: null, kpis: [],
+            });
+          } finally {
+            await pool.query(
+              "UPDATE kpi_definitions SET is_active = TRUE WHERE id = ANY($1::BIGINT[])",
+              [changed.rows.map((row) => row.id)],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "KPI catalog exposes exactly the public registry",
 
         async () => {
