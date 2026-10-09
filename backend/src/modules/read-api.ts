@@ -243,10 +243,35 @@ const DASHBOARD_QUERY = `
     FROM source_records AS source
     WHERE source.sync_run_id
         = state.active_sync_run_id
-      AND (
-        source.date_com ~ '^[0-9]{12}$'
-        OR source.date_com ~ '^[0-9]{14}$'
-      )
+      AND CASE
+        -- Guard casts behind the digit/length check (no date normalization).
+        WHEN source.date_com ~ '^[0-9]{12}([0-9]{2})?$'
+          THEN
+            SUBSTRING(source.date_com FROM 5 FOR 2)::INTEGER BETWEEN 1 AND 12
+            AND SUBSTRING(source.date_com FROM 7 FOR 2)::INTEGER BETWEEN 1 AND
+              CASE
+                WHEN SUBSTRING(source.date_com FROM 5 FOR 2)::INTEGER
+                  IN (1, 3, 5, 7, 8, 10, 12)
+                  THEN 31
+                WHEN SUBSTRING(source.date_com FROM 5 FOR 2)::INTEGER
+                  IN (4, 6, 9, 11)
+                  THEN 30
+                WHEN SUBSTRING(source.date_com FROM 1 FOR 4)::INTEGER % 400 = 0
+                  OR (
+                    SUBSTRING(source.date_com FROM 1 FOR 4)::INTEGER % 4 = 0
+                    AND SUBSTRING(source.date_com FROM 1 FOR 4)::INTEGER % 100 <> 0
+                  )
+                  THEN 29
+                ELSE 28
+              END
+            AND SUBSTRING(source.date_com FROM 9 FOR 2)::INTEGER BETWEEN 0 AND 23
+            AND SUBSTRING(source.date_com FROM 11 FOR 2)::INTEGER BETWEEN 0 AND 59
+            AND CASE
+              WHEN LENGTH(source.date_com) = 12 THEN TRUE
+              ELSE SUBSTRING(source.date_com FROM 13 FOR 2)::INTEGER BETWEEN 0 AND 59
+            END
+        ELSE FALSE
+      END
   ) AS fresh ON TRUE
   LEFT JOIN kpi_results AS kpi
     ON kpi.sync_run_id
@@ -639,6 +664,45 @@ function requireFiniteNumber(
   );
 }
 
+function isValidSourceMarker(value: string): boolean {
+  if (!/^[0-9]{12}([0-9]{2})?$/.test(value)) {
+    return false;
+  }
+
+  const year = Number(value.slice(0, 4));
+  const month = Number(value.slice(4, 6));
+  const day = Number(value.slice(6, 8));
+  const hour = Number(value.slice(8, 10));
+  const minute = Number(value.slice(10, 12));
+  const second = value.length === 14
+    ? Number(value.slice(12, 14))
+    : 0;
+
+  const leapYear =
+    year % 4 === 0 &&
+    (year % 100 !== 0 || year % 400 === 0);
+  const daysInMonth = [
+    31,
+    leapYear ? 29 : 28,
+    31, 30, 31, 30, 31, 31, 30, 31, 30, 31,
+  ];
+  const maximumDay = daysInMonth[month - 1];
+
+  return (
+    month >= 1 &&
+    month <= 12 &&
+    maximumDay !== undefined &&
+    day >= 1 &&
+    day <= maximumDay &&
+    hour >= 0 &&
+    hour <= 23 &&
+    minute >= 0 &&
+    minute <= 59 &&
+    second >= 0 &&
+    second <= 59
+  );
+}
+
 function requireSourceLastUpdated(
   row: Record<string, unknown>,
 ): string | null {
@@ -648,11 +712,7 @@ function requireSourceLastUpdated(
     return null;
   }
 
-  if (
-    typeof value === "string" &&
-    (/^[0-9]{12}$/.test(value) ||
-      /^[0-9]{14}$/.test(value))
-  ) {
+  if (typeof value === "string" && isValidSourceMarker(value)) {
     return value;
   }
 

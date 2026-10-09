@@ -1973,6 +1973,162 @@ test(
       );
 
       await t.test(
+        "dashboard SQL ignores impossible active calendar markers and preserves valid freshness",
+
+        async () => {
+          const original = await pool.query<{
+            readonly id: string;
+            readonly source_sequence: number;
+            readonly date_com: string | null;
+          }>(`
+            SELECT id::TEXT AS id, source_sequence, date_com
+            FROM source_records
+            WHERE sync_run_id = $1
+              AND source_name = 'ci_source'
+            ORDER BY source_sequence
+          `, [activeRunId]);
+          assert.equal(original.rows.length, 7);
+
+          const readFreshness = async (): Promise<string | null> => {
+            const response = await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+            assert.equal(response.statusCode, 200);
+            const payload = response.json() as {
+              readonly dataset: {
+                readonly sourceLastUpdated: string | null;
+              };
+              readonly results: readonly unknown[];
+            };
+            assert.equal(payload.results.length, expectedDashboardResults.length);
+            return payload.dataset.sourceLastUpdated;
+          };
+
+          try {
+            assert.equal(await readFreshness(), "20260926123045");
+
+            // Each marker has a legal wire length but an impossible
+            // Gregorian date or clock value. Several sort above the
+            // true latest valid marker, which must remain authoritative.
+            const invalid = [
+              "202699011200",
+              "202613011200",
+              "202600011200",
+              "202602301200",
+              "202702291200",
+              "202604311200",
+              "202610002300",
+              "202610072400",
+              "202610071260",
+              "20261007120060",
+              "19000229120000",
+              "21000229120000",
+              "99999999999999",
+            ];
+            for (let i = 0; i < invalid.length; i += 1) {
+              const value = invalid[i];
+              assert.ok(value);
+              await insertSourceRecord(pool, {
+                syncRunId: activeRunId,
+                sourceSequence: 8 + i,
+                dateCom: value,
+              });
+            }
+
+            assert.equal(
+              await readFreshness(),
+              "20260926123045",
+              "Lexically later invalid active markers must be ignored",
+            );
+
+            const leapSequence = 8 + invalid.length;
+            await insertSourceRecord(pool, {
+              syncRunId: activeRunId,
+              sourceSequence: leapSequence,
+              dateCom: "20280229123045",
+            });
+            assert.equal(await readFreshness(), "20280229123045");
+
+            // 2400 is a divisible-by-400 leap century; 1900/2100
+            // in the invalid fixture above are not leap centuries.
+            await pool.query(
+              `
+                UPDATE source_records
+                SET date_com = '24000229123045'
+                WHERE sync_run_id = $1
+                  AND source_name = 'ci_source'
+                  AND source_sequence = $2
+              `,
+              [activeRunId, leapSequence],
+            );
+            assert.equal(await readFreshness(), "24000229123045");
+
+            // All records have invalid calendar values: the selected
+            // freshness must be null, never a 503 or another run's date.
+            await pool.query(
+              "UPDATE source_records SET date_com = '202699011200' WHERE sync_run_id = $1",
+              [activeRunId],
+            );
+            assert.equal(await readFreshness(), null);
+
+            // Even when every other active record remains impossible,
+            // a true 2000 leap-century date must survive. The 1900
+            // non-leap example must not supersede it.
+            const first = original.rows[0];
+            const second = original.rows[1];
+            assert.ok(first);
+            assert.ok(second);
+            await pool.query(
+              "UPDATE source_records SET date_com = '20000229120000' WHERE id = $1",
+              [first.id],
+            );
+            await pool.query(
+              "UPDATE source_records SET date_com = '19000229120000' WHERE id = $1",
+              [second.id],
+            );
+            assert.equal(await readFreshness(), "20000229120000");
+
+            // A 12-digit-only winner must be accepted without
+            // accessing/casting a nonexistent seconds component.
+            await pool.query(
+              "UPDATE source_records SET date_com = '200002291200' WHERE id = $1",
+              [first.id],
+            );
+            assert.equal(await readFreshness(), "200002291200");
+
+            await pool.query(
+              "UPDATE source_records SET date_com = '20010229120000' WHERE id = $1",
+              [first.id],
+            );
+            assert.equal(
+              await readFreshness(),
+              null,
+              "A non-leap February 29 must never be selected",
+            );
+          } finally {
+            await pool.query(
+              `
+                DELETE FROM source_records
+                WHERE sync_run_id = $1
+                  AND source_name = 'ci_source'
+                  AND source_sequence >= 8
+              `,
+              [activeRunId],
+            );
+            for (const row of original.rows) {
+              await pool.query(
+                "UPDATE source_records SET date_com = $1 WHERE id = $2",
+                [row.date_com, row.id],
+              );
+            }
+          }
+
+          assert.equal(await readFreshness(), "20260926123045");
+        },
+      );
+
+      await t.test(
         "KPI catalog membership follows the active dataset despite registry visibility drift",
 
         async () => {
