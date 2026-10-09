@@ -3360,6 +3360,26 @@ test(
   },
 );
 
+test("dashboard fails closed for mismatched result fiscal years", async (t) => {
+  for (const candidate of [2570, 2568, "2569", null, 2569.5, undefined]) {
+    await t.test(String(candidate), async () => {
+      const app = buildApp({ db: createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow({ hospcode: "06413" }),
+          createDashboardRow({ hospcode: "10702", result_fiscal_year: candidate }),
+        ],
+      }) });
+      try {
+        const response = await app.inject({ method: "GET", url: "/api/v1/dashboard" });
+        assert.equal(response.statusCode, 503);
+        assert.equal(response.body, '{"error":"service_unavailable"}');
+      } finally {
+        await app.close();
+      }
+    });
+  }
+});
+
 test(
   "dashboard rejects machine-key collisions across distinct active definition IDs",
 
