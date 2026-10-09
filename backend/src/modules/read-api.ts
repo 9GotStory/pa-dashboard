@@ -1310,7 +1310,10 @@ export function registerReadApiRoutes(
         // The LEFT JOIN emits one sentinel row for an empty catalog.
         // This preserves the authoritative run identity even when
         // no public members were selected.
-        if (asRowObject(first).kpi_key === null) {
+        if (
+          asRowObject(first).kpi_key === null &&
+          asRowObject(first).snapshot_definition_present === null
+        ) {
           if (result.rows.length !== 1) {
             throw new Error("Unexpected catalog rows after empty marker");
           }
