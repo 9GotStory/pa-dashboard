@@ -215,6 +215,7 @@ const DASHBOARD_QUERY = `
     END AS kpi_key,
     kpi.kpi_definition_id::TEXT
       AS kpi_definition_id,
+    kpi.fiscal_year AS result_fiscal_year,
     kpi.period_code AS period_code,
     kpi.areacode AS areacode,
     kpi.hospcode AS hospcode,
@@ -1066,8 +1067,13 @@ function buildSyncStatus(
 
 function normalizeDashboardResult(
   row: unknown,
+  activeFiscalYear: number,
 ): PublicDashboardResult {
   const source = asRowObject(row);
+
+  if (requireInteger(source, "result_fiscal_year") !== activeFiscalYear) {
+    throw new Error("Active KPI result fiscal year disagrees with its sync run");
+  }
 
   if (
     source.snapshot_definition_match_count !== 1
@@ -1234,7 +1240,7 @@ function buildDashboard(
 
   const results = rows.map((row) => {
     const result =
-      normalizeDashboardResult(row);
+      normalizeDashboardResult(row, dataset.fiscalYear);
     const definitionId =
       requireDecimalIdentity(
         asRowObject(row),
