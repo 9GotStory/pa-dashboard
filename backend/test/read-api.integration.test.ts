@@ -1973,6 +1973,49 @@ test(
       );
 
       await t.test(
+        "active dashboard rejects result fiscal-year drift and recovers",
+        async () => {
+          const original = await pool.query<{
+            readonly id: string;
+            readonly fiscal_year: number;
+          }>(`
+            SELECT id::TEXT AS id, fiscal_year
+            FROM kpi_results
+            WHERE sync_run_id = $1 AND hospcode = '10702' AND result = 82
+          `, [activeRunId]);
+          assert.equal(original.rows.length, 1);
+          const row = original.rows[0];
+          assert.ok(row);
+          assert.equal(row.fiscal_year, 2569);
+          try {
+            await pool.query(
+              "UPDATE kpi_results SET fiscal_year = 2570 WHERE id = $1",
+              [row.id],
+            );
+            const failed = await fastify.inject({
+              method: "GET", url: "/api/v1/dashboard",
+            });
+            assert.equal(failed.statusCode, 503);
+            assert.equal(failed.body, '{"error":"service_unavailable"}');
+            assert.equal(failed.body.includes("10702"), false);
+          } finally {
+            await pool.query(
+              "UPDATE kpi_results SET fiscal_year = $1 WHERE id = $2",
+              [row.fiscal_year, row.id],
+            );
+          }
+          const recovered = await fastify.inject({
+            method: "GET", url: "/api/v1/dashboard",
+          });
+          assert.equal(recovered.statusCode, 200);
+          assert.deepEqual(recovered.json(), {
+            dataset: { ...expectedDashboardDataset, sourceLastUpdated: "20260926123045" },
+            results: expectedDashboardResults,
+          });
+        },
+      );
+
+      await t.test(
         "dashboard SQL ignores impossible active calendar markers and preserves valid freshness",
 
         async () => {
