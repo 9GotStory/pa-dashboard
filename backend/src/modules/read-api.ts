@@ -27,6 +27,10 @@ const KPI_CATALOG_QUERY = `
     WHERE state.singleton_id = 1
   )
   SELECT
+    state.active_sync_run_id::TEXT
+      AS active_sync_run_id,
+    snapshot.definition IS NOT NULL
+      AS snapshot_definition_present,
     CASE
       WHEN state.active_sync_run_id IS NOT NULL
         AND snapshot.definition ? 'kpiKey'
@@ -189,6 +193,8 @@ const DASHBOARD_QUERY = `
     run.activated_at AS activated_at,
     fresh.source_last_updated
       AS source_last_updated,
+    snapshot.definition IS NOT NULL
+      AS snapshot_definition_present,
     CASE
       WHEN snapshot.definition ? 'kpiKey'
         THEN snapshot.definition ->> 'kpiKey'
@@ -702,6 +708,21 @@ function normalizeKpi(
 ): PublicKpi {
   const source = asRowObject(row);
 
+  const activeSyncRunId =
+    normalizeId(
+      source,
+      "active_sync_run_id",
+    );
+
+  if (
+    activeSyncRunId !== null &&
+    source.snapshot_definition_present !== true
+  ) {
+    throw new Error(
+      "Active KPI catalog member has no matching snapshot definition",
+    );
+  }
+
   return {
     key: requireString(
       source,
@@ -882,6 +903,14 @@ function normalizeDashboardResult(
   row: unknown,
 ): PublicDashboardResult {
   const source = asRowObject(row);
+
+  if (
+    source.snapshot_definition_present !== true
+  ) {
+    throw new Error(
+      "Active dashboard result has no matching snapshot definition",
+    );
+  }
 
   return {
     kpiKey: requireNonblankString(
