@@ -25,10 +25,9 @@ const KPI_CATALOG_QUERY = `
     LEFT JOIN sync_runs AS run
       ON run.id = state.active_sync_run_id
     WHERE state.singleton_id = 1
-  )
+  ),
+  member_rows AS (
   SELECT
-    state.active_sync_run_id::TEXT
-      AS active_sync_run_id,
     snapshot.definition IS NOT NULL
       AS snapshot_definition_present,
     COALESCE(
@@ -124,6 +123,16 @@ const KPI_CATALOG_QUERY = `
     category.sort_order ASC,
     definition.sort_order ASC,
     definition.kpi_key ASC
+  )
+  SELECT
+    state.active_sync_run_id::TEXT AS active_sync_run_id,
+    member_rows.*
+  FROM active_state AS state
+  LEFT JOIN member_rows ON TRUE
+  ORDER BY
+    member_rows.category_order ASC,
+    member_rows.sort_order ASC,
+    member_rows.kpi_key ASC
 `;
 
 const SYNC_STATUS_QUERY = `
@@ -1290,39 +1299,45 @@ export function registerReadApiRoutes(
             KPI_CATALOG_QUERY,
           );
 
-        const seenActiveKeys =
-          new Set<string>();
-
-        const kpis = result.rows.map(
-          (row) => {
-            const normalized =
-              normalizeKpi(row);
-            const activeId = normalizeId(
-              asRowObject(row),
-              "active_sync_run_id",
-            );
-
-            if (activeId !== null) {
-              if (
-                seenActiveKeys.has(
-                  normalized.key,
-                )
-              ) {
-                throw new Error(
-                  "Active catalog has conflicting KPI machine identities",
-                );
-              }
-
-              seenActiveKeys.add(
-                normalized.key,
-              );
-            }
-
-            return normalized;
-          },
+        const first = result.rows[0];
+        if (first === undefined) {
+          throw new Error("app_state singleton row is missing");
+        }
+        const activeSyncRunId = normalizeId(
+          asRowObject(first), "active_sync_run_id",
         );
 
-        return { kpis };
+        // The LEFT JOIN emits one sentinel row for an empty catalog.
+        // This preserves the authoritative run identity even when
+        // no public members were selected.
+        if (
+          asRowObject(first).kpi_key === null &&
+          asRowObject(first).snapshot_definition_present === null
+        ) {
+          if (result.rows.length !== 1) {
+            throw new Error("Unexpected catalog rows after empty marker");
+          }
+          return { activeSyncRunId, kpis: [] };
+        }
+
+        const seenActiveKeys = new Set<string>();
+        const kpis = result.rows.map((row) => {
+          const source = asRowObject(row);
+          const rowRunId = normalizeId(source, "active_sync_run_id");
+          if (rowRunId !== activeSyncRunId || source.kpi_key === null) {
+            throw new Error("Inconsistent catalog active run identity");
+          }
+          const normalized = normalizeKpi(row);
+          if (activeSyncRunId !== null) {
+            if (seenActiveKeys.has(normalized.key)) {
+              throw new Error("Active catalog has conflicting KPI machine identities");
+            }
+            seenActiveKeys.add(normalized.key);
+          }
+          return normalized;
+        });
+
+        return { activeSyncRunId, kpis };
       } catch (error) {
         request.log.error(
           error,

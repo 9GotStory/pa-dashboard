@@ -137,7 +137,9 @@ test(
 
   async () => {
     const db =
-      createFakeDatabase({});
+      createFakeDatabase({
+        kpiRows: [{ active_sync_run_id: null, kpi_key: null, snapshot_definition_present: null }],
+      });
 
     const app = buildApp({
       db,
@@ -250,6 +252,7 @@ test(
       assert.deepEqual(
         response.json(),
         {
+          activeSyncRunId: null,
           kpis: [
             {
               key: "s_kpi_anc12",
@@ -537,6 +540,86 @@ test(
     }
   },
 );
+
+test("catalog binds active run identity and rejects incoherent rows", async (t) => {
+  const member = {
+    active_sync_run_id: "42",
+    snapshot_definition_present: true,
+    snapshot_definition_match_count: 1,
+    kpi_key: "s_anc5", title: "ANC 5", target_value: "85",
+    sort_order: 1, link: null, category_code: "basic",
+    category_name: "Basic", category_order: 1, subgroup: null,
+    is_quarterly: true, target_months: null, effective_quarter: null,
+  };
+
+  await t.test("selected member carries exactly one run marker", async () => {
+    const app = buildApp({ db: createFakeDatabase({ kpiRows: [member] }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 200);
+      const body = response.json() as {
+        readonly activeSyncRunId: string | null;
+        readonly kpis: readonly Record<string, unknown>[];
+      };
+      assert.equal(body.activeSyncRunId, "42");
+      assert.equal(body.kpis.length, 1);
+      assert.equal(body.kpis[0]?.target, 85);
+      assert.equal("activeSyncRunId" in (body.kpis[0] ?? {}), false);
+    } finally { await app.close(); }
+  });
+
+  await t.test("active run with no matching catalog members has a marker", async () => {
+    const app = buildApp({ db: createFakeDatabase({
+      kpiRows: [{ active_sync_run_id: "42", kpi_key: null, snapshot_definition_present: null }],
+    }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 200);
+      assert.deepEqual(response.json(), { activeSyncRunId: "42", kpis: [] });
+    } finally { await app.close(); }
+  });
+
+  await t.test("no active run with no registry entries has null marker", async () => {
+    const app = buildApp({ db: createFakeDatabase({
+      kpiRows: [{ active_sync_run_id: null, kpi_key: null, snapshot_definition_present: null }],
+    }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 200);
+      assert.deepEqual(response.json(), { activeSyncRunId: null, kpis: [] });
+    } finally { await app.close(); }
+  });
+
+  await t.test("incoherent per-row identities fail closed", async () => {
+    const app = buildApp({ db: createFakeDatabase({
+      kpiRows: [member, { ...member, kpi_key: "s_other", active_sync_run_id: "43" }],
+    }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.body, '{"error":"service_unavailable"}');
+    } finally { await app.close(); }
+  });
+
+  await t.test("a selected KPI with a null key is not mistaken for an empty catalog", async () => {
+    const app = buildApp({ db: createFakeDatabase({
+      kpiRows: [{ ...member, kpi_key: null }],
+    }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.body, '{"error":"service_unavailable"}');
+    } finally { await app.close(); }
+  });
+
+  await t.test("missing state row fails closed", async () => {
+    const app = buildApp({ db: createFakeDatabase({ kpiRows: [] }) });
+    try {
+      const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
+      assert.equal(response.statusCode, 503);
+    } finally { await app.close(); }
+  });
+});
 
 test(
   "KPI catalog rejects duplicate effective keys from distinct active definition IDs",
