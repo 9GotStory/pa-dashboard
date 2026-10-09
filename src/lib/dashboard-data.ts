@@ -414,6 +414,18 @@ export function parseKpiCatalogResponse(value: unknown): PublicKpi[] {
   });
 }
 
+export function parseKpiCatalogSnapshot(value: unknown): {
+  activeSyncRunId: string | null;
+  kpis: PublicKpi[];
+} {
+  const root = asRecord(value, 'KPI catalog response');
+  const id = root.activeSyncRunId;
+  if (id !== null && (typeof id !== 'string' || !/^[0-9]+$/.test(id))) {
+    throw new Error('Catalog run identity is invalid');
+  }
+  return { activeSyncRunId: id as string | null, kpis: parseKpiCatalogResponse(value) };
+}
+
 export function parseFacilitiesResponse(value: unknown): PublicFacility[] {
   const root = asRecord(value, 'Facilities response');
   if (!Array.isArray(root.facilities)) {
