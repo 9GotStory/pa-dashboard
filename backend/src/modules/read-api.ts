@@ -25,10 +25,9 @@ const KPI_CATALOG_QUERY = `
     LEFT JOIN sync_runs AS run
       ON run.id = state.active_sync_run_id
     WHERE state.singleton_id = 1
-  )
+  ),
+  member_rows AS (
   SELECT
-    state.active_sync_run_id::TEXT
-      AS active_sync_run_id,
     snapshot.definition IS NOT NULL
       AS snapshot_definition_present,
     COALESCE(
@@ -124,6 +123,16 @@ const KPI_CATALOG_QUERY = `
     category.sort_order ASC,
     definition.sort_order ASC,
     definition.kpi_key ASC
+  )
+  SELECT
+    state.active_sync_run_id::TEXT AS active_sync_run_id,
+    member_rows.*
+  FROM active_state AS state
+  LEFT JOIN member_rows ON TRUE
+  ORDER BY
+    member_rows.category_order ASC,
+    member_rows.sort_order ASC,
+    member_rows.kpi_key ASC
 `;
 
 const SYNC_STATUS_QUERY = `
