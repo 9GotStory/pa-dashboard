@@ -17,6 +17,14 @@ import {
 } from "../src/sync/config.js";
 
 import {
+  runMophSynchronization,
+} from "../src/sync/orchestrator.js";
+
+import type {
+  MophClient,
+} from "../src/sync/moph-client.js";
+
+import {
   SyncLockUnavailableError,
   withSyncSessionLock,
 } from "../src/sync/lock.js";
@@ -486,6 +494,58 @@ test(
             before,
             "Rejected configuration must not create a synchronization run",
           );
+        },
+      );
+
+      await t.test(
+        "sync orchestrator stops before run creation and source fetch on invalid target",
+
+        async () => {
+          const before = await countSyncRuns(pool);
+          let fetchCount = 0;
+          const fakeMoph: MophClient = {
+            fetchSource: async () => {
+              fetchCount += 1;
+              return [];
+            },
+            waitBetweenSources: async () => {},
+          };
+
+          const original = await pool.query<{
+            readonly target_value: string | null;
+          }>(`
+            SELECT target_value::TEXT AS target_value
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(original.rows.length, 1);
+
+          try {
+            await pool.query(`
+              UPDATE kpi_definitions
+              SET target_value = 150
+              WHERE kpi_key = 's_kpi_anc12'
+            `);
+
+            await assert.rejects(
+              () => runMophSynchronization(
+                pool,
+                { mophClient: fakeMoph },
+              ),
+              (error: unknown) => error instanceof SyncConfigError,
+            );
+            assert.equal(fetchCount, 0);
+            assert.equal(await countSyncRuns(pool), before);
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET target_value = $1::NUMERIC
+                WHERE kpi_key = 's_kpi_anc12'
+              `,
+              [original.rows[0]?.target_value],
+            );
+          }
         },
       );
 
