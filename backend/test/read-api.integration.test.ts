@@ -2089,6 +2089,14 @@ test(
             );
             assert.equal(await readFreshness(), "20000229120000");
 
+            // A 12-digit-only winner must be accepted without
+            // accessing/casting a nonexistent seconds component.
+            await pool.query(
+              "UPDATE source_records SET date_com = '200002291200' WHERE id = $1",
+              [first.id],
+            );
+            assert.equal(await readFreshness(), "200002291200");
+
             await pool.query(
               "UPDATE source_records SET date_com = '20010229120000' WHERE id = $1",
               [first.id],
