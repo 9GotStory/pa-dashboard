@@ -388,6 +388,57 @@ function optionalString(
   return value;
 }
 
+function optionalExternalHttpUrl(
+  row: Record<string, unknown>,
+  field: string,
+): string | null {
+  const value = optionalString(
+    row,
+    field,
+  );
+
+  if (
+    value === null ||
+    value === ""
+  ) {
+    return value;
+  }
+
+  if (
+    value.trim() !== value
+  ) {
+    throw new Error(
+      `Field ${field} is not an absolute HTTP(S) URL, empty string, or null`,
+    );
+  }
+
+  let parsed: URL;
+
+  try {
+    parsed = new URL(
+      value,
+    );
+  } catch {
+    throw new Error(
+      `Field ${field} is not an absolute HTTP(S) URL, empty string, or null`,
+    );
+  }
+
+  if (
+    (
+      parsed.protocol !== "http:" &&
+      parsed.protocol !== "https:"
+    ) ||
+    parsed.hostname.length === 0
+  ) {
+    throw new Error(
+      `Field ${field} is not an absolute HTTP(S) URL, empty string, or null`,
+    );
+  }
+
+  return value;
+}
+
 function requireInteger(
   row: Record<string, unknown>,
   field: string,
@@ -790,7 +841,7 @@ function normalizeKpi(
       source,
       "sort_order",
     ),
-    link: optionalString(
+    link: optionalExternalHttpUrl(
       source,
       "link",
     ),
