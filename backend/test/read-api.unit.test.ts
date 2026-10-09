@@ -588,6 +588,140 @@ test(
 );
 
 test(
+  "KPI catalog enforces nonblank live display fields in preactivation and active modes",
+
+  async (t) => {
+    const fields = [
+      { sql: "title", publicName: "title" },
+      { sql: "category_code", publicName: "categoryCode" },
+      { sql: "category_name", publicName: "category" },
+    ] as const;
+
+    const candidates: readonly {
+      readonly name: string;
+      readonly value: unknown;
+      readonly valid: boolean;
+    }[] = [
+      { name: "empty string", value: "", valid: false },
+      { name: "spaces only", value: "   ", valid: false },
+      { name: "tabs and newlines only", value: "\t\n", valid: false },
+      { name: "non-string", value: 42, valid: false },
+      { name: "null", value: null, valid: false },
+      { name: "ordinary text", value: "Thai health KPI", valid: true },
+      { name: "padded nonblank text", value: "  KPI Name  ", valid: true },
+    ];
+
+    for (const mode of ["live", "active"] as const) {
+      for (const field of fields) {
+        for (const candidate of candidates) {
+          await t.test(
+            `${mode} ${field.publicName}: ${candidate.name}`,
+            async () => {
+              const row: Record<string, unknown> = {
+                active_sync_run_id: mode === "active" ? "42" : null,
+                snapshot_definition_present: mode === "active",
+                snapshot_definition_match_count: mode === "active" ? 1 : 0,
+                kpi_key: "s_kpi_anc12",
+                title: "ANC",
+                target_value: "75",
+                sort_order: 1,
+                link: "",
+                category_code: "kpi_master",
+                category_name: "ตัวชี้วัดพื้นฐาน",
+                category_order: 1,
+                subgroup: "",
+                is_quarterly: false,
+                target_months: null,
+                effective_quarter: null,
+              };
+              row[field.sql] = candidate.value;
+
+              const app = buildApp({
+                db: createFakeDatabase({ kpiRows: [row] }),
+              });
+              try {
+                const response = await app.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+
+                if (!candidate.valid) {
+                  assert.equal(response.statusCode, 503);
+                  assert.equal(
+                    response.body,
+                    '{"error":"service_unavailable"}',
+                  );
+                  assert.equal(response.body.includes("s_kpi_anc12"), false);
+                } else {
+                  assert.equal(response.statusCode, 200);
+                  const payload = response.json() as {
+                    readonly kpis: readonly Record<string, unknown>[];
+                  };
+                  assert.equal(payload.kpis.length, 1);
+                  assert.equal(
+                    payload.kpis[0]?.[field.publicName],
+                    candidate.value,
+                  );
+                  assert.equal(payload.kpis[0]?.subgroup, "");
+                  assert.equal(payload.kpis[0]?.link, "");
+                }
+              } finally {
+                await app.close();
+              }
+            },
+          );
+        }
+      }
+    }
+  },
+);
+
+test(
+  "KPI catalog rejects one invalid selected display field without partial output",
+
+  async () => {
+    const makeRow = (key: string, title: string) => ({
+      active_sync_run_id: "42",
+      snapshot_definition_present: true,
+      snapshot_definition_match_count: 1,
+      kpi_key: key,
+      title,
+      target_value: "75",
+      sort_order: 1,
+      link: null,
+      category_code: "kpi_master",
+      category_name: "ตัวชี้วัดพื้นฐาน",
+      category_order: 1,
+      subgroup: null,
+      is_quarterly: false,
+      target_months: null,
+      effective_quarter: null,
+    });
+
+    const app = buildApp({
+      db: createFakeDatabase({
+        kpiRows: [
+          makeRow("s_kpi_anc12", "ANC"),
+          makeRow("s_kpi_food", "  "),
+        ],
+      }),
+    });
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/kpis",
+      });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.body, '{"error":"service_unavailable"}');
+      assert.equal(response.body.includes("s_kpi_anc12"), false);
+      assert.equal(response.body.includes("ANC"), false);
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
   "KPI catalog accepts only frontend-compatible external links in live and active modes",
 
   async (t) => {

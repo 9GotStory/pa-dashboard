@@ -962,6 +962,156 @@ test(
         },
       );
 
+      async function exerciseLiveKpiDisplayText(
+        expectedCatalogSize: number,
+      ): Promise<void> {
+        const before = await pool.query<{
+          readonly title: string;
+          readonly category_id: string;
+          readonly category_code: string;
+          readonly category_name: string;
+        }>(`
+          SELECT
+            definition.title,
+            category.id::TEXT AS category_id,
+            category.code AS category_code,
+            category.name AS category_name
+          FROM kpi_definitions AS definition
+          JOIN kpi_categories AS category
+            ON category.id = definition.category_id
+          WHERE definition.kpi_key = 's_kpi_anc12'
+        `);
+        assert.equal(before.rows.length, 1);
+        const original = before.rows[0];
+        assert.ok(original);
+
+        const initialResponse = await fastify.inject({
+          method: "GET",
+          url: "/api/v1/kpis",
+        });
+        assert.equal(initialResponse.statusCode, 200);
+        const initialBody = initialResponse.json() as {
+          readonly kpis: readonly PublicKpiItem[];
+        };
+        assert.equal(initialBody.kpis.length, expectedCatalogSize);
+        const initialKpi = initialBody.kpis.find(
+          (kpi) => kpi.key === "s_kpi_anc12",
+        );
+        assert.ok(initialKpi);
+
+        for (const field of [
+          {
+            name: "title",
+            publicName: "title",
+            originalValue: original.title,
+          },
+          {
+            name: "category_code",
+            publicName: "categoryCode",
+            originalValue: original.category_code,
+          },
+          {
+            name: "category_name",
+            publicName: "category",
+            originalValue: original.category_name,
+          },
+        ] as const) {
+          const setValue = async (value: string): Promise<void> => {
+            switch (field.name) {
+              case "title":
+                await pool.query(
+                  `UPDATE kpi_definitions SET title = $1
+                   WHERE kpi_key = 's_kpi_anc12'`,
+                  [value],
+                );
+                break;
+              case "category_code":
+                await pool.query(
+                  "UPDATE kpi_categories SET code = $1 WHERE id = $2",
+                  [value, original.category_id],
+                );
+                break;
+              case "category_name":
+                await pool.query(
+                  "UPDATE kpi_categories SET name = $1 WHERE id = $2",
+                  [value, original.category_id],
+                );
+                break;
+            }
+          };
+          try {
+            for (const scenario of [
+              { value: "", valid: false },
+              { value: "   ", valid: false },
+              { value: "\t\n", valid: false },
+              { value: "  Live KPI Text  ", valid: true },
+              { value: "Corrected KPI Text", valid: true },
+            ]) {
+              await setValue(scenario.value);
+              const response = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              if (!scenario.valid) {
+                assert.equal(
+                  response.statusCode,
+                  503,
+                  `Expected fail closed for ${field.name}=${JSON.stringify(scenario.value)}`,
+                );
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+                assert.equal(response.body.includes("s_kpi_anc12"), false);
+              } else {
+                assert.equal(response.statusCode, 200);
+                const payload = response.json() as {
+                  readonly kpis: readonly PublicKpiItem[];
+                };
+                assert.equal(payload.kpis.length, expectedCatalogSize);
+                const selected = payload.kpis.find(
+                  (kpi) => kpi.key === "s_kpi_anc12",
+                );
+                assert.ok(selected);
+                assert.equal(
+                  selected[field.publicName],
+                  scenario.value,
+                  "Valid live display text is preserved verbatim",
+                );
+                assert.equal(selected.target, initialKpi.target);
+                assert.equal(selected.key, initialKpi.key);
+              }
+            }
+          } finally {
+            await setValue(field.originalValue);
+          }
+        }
+
+        const recovered = await fastify.inject({
+          method: "GET",
+          url: "/api/v1/kpis",
+        });
+        assert.equal(recovered.statusCode, 200);
+        const restoredBody = recovered.json() as {
+          readonly kpis: readonly PublicKpiItem[];
+        };
+        const selected = restoredBody.kpis.find(
+          (kpi) => kpi.key === "s_kpi_anc12",
+        );
+        assert.ok(selected);
+        assert.equal(selected.title, initialKpi.title);
+        assert.equal(selected.categoryCode, initialKpi.categoryCode);
+        assert.equal(selected.category, initialKpi.category);
+      }
+
+      await t.test(
+        "pre-activation catalog rejects blank KPI display metadata and recovers after live repair",
+
+        async () => {
+          await exerciseLiveKpiDisplayText(47);
+        },
+      );
+
       await t.test(
         "pre-activation catalog validates live external links and recovers after repair",
 
@@ -1838,6 +1988,59 @@ test(
                   metadata - 'source_only'
                 WHERE kpi_key = 's_kpi_food'
               `,
+            );
+          }
+        },
+      );
+
+      await t.test(
+        "active catalog validates live display metadata and ignores unrelated inactive members",
+
+        async () => {
+          const outside = await pool.query<{
+            readonly title: string;
+          }>(`
+            SELECT title
+            FROM kpi_definitions
+            WHERE kpi_key = 's_epi1'
+          `);
+          assert.equal(outside.rows.length, 1);
+          const originalTitle = outside.rows[0]?.title;
+          assert.ok(originalTitle);
+
+          try {
+            // This source-only definition has no active result member.
+            await pool.query(`
+              UPDATE kpi_definitions
+              SET title = '   '
+              WHERE kpi_key = 's_epi1'
+            `);
+            const selectedCatalog = await fastify.inject({
+              method: "GET",
+              url: "/api/v1/kpis",
+            });
+            assert.equal(selectedCatalog.statusCode, 200);
+            const selectedBody = selectedCatalog.json() as {
+              readonly kpis: readonly PublicKpiItem[];
+            };
+            assert.equal(selectedBody.kpis.length, 3);
+
+            await exerciseLiveKpiDisplayText(3);
+
+            // This does not modify frozen snapshot or active raw results.
+            const dashboard = await fastify.inject({
+              method: "GET",
+              url: "/api/v1/dashboard",
+            });
+            assert.equal(dashboard.statusCode, 200);
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET title = $1
+                WHERE kpi_key = 's_epi1'
+              `,
+              [originalTitle],
             );
           }
         },
