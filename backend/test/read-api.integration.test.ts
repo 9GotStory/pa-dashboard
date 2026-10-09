@@ -1972,8 +1972,9 @@ test(
       // Snapshots are immutable after creation (migration 0002).
       // Exercise corrupted historical evidence via a distinct, newly
       // inserted succeeded run rather than mutating an active run.
-      async function assertActiveSnapshotUnavailable(
+      async function withActiveSnapshot(
         configSnapshot: Readonly<Record<string, unknown>>,
+        inspect: () => Promise<void>,
       ): Promise<void> {
         const fixtureRunId = await insertSyncRun(
           pool,
@@ -2020,6 +2021,30 @@ test(
 
           await activateRun(pool, fixtureRunId);
 
+          await inspect();
+        } finally {
+          // Restore the originally activated dataset before deleting
+          // the temporary run. This does not modify either snapshot.
+          await pool.query(
+            `
+              UPDATE app_state
+              SET active_sync_run_id = $1,
+                  updated_at = NOW()
+              WHERE singleton_id = 1
+            `,
+            [activeRunId],
+          );
+          await pool.query(
+            "DELETE FROM sync_runs WHERE id = $1",
+            [fixtureRunId],
+          );
+        }
+      }
+
+      async function assertActiveSnapshotUnavailable(
+        configSnapshot: Readonly<Record<string, unknown>>,
+      ): Promise<void> {
+        await withActiveSnapshot(configSnapshot, async () => {
           for (const url of [
             "/api/v1/kpis",
             "/api/v1/dashboard",
@@ -2039,23 +2064,7 @@ test(
               '{"error":"service_unavailable"}',
             );
           }
-        } finally {
-          // Restore the originally activated dataset before deleting
-          // the temporary run. This does not modify either snapshot.
-          await pool.query(
-            `
-              UPDATE app_state
-              SET active_sync_run_id = $1,
-                  updated_at = NOW()
-              WHERE singleton_id = 1
-            `,
-            [activeRunId],
-          );
-          await pool.query(
-            "DELETE FROM sync_runs WHERE id = $1",
-            [fixtureRunId],
-          );
-        }
+        });
       }
 
       await t.test(
@@ -2133,6 +2142,237 @@ test(
           },
         );
       }
+
+      await t.test(
+        "frozen valid target survives invalid live registry drift",
+
+        async () => {
+          const original = await pool.query<{
+            readonly target_value: string | null;
+          }>(`
+            SELECT target_value::TEXT AS target_value
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(original.rows.length, 1);
+
+          const validSnapshot = {
+            definitions: activeRunConfigSnapshot.definitions.map(
+              (definition) =>
+                definition.kpiKey === "s_kpi_anc12"
+                  ? { ...definition, targetValue: 0 }
+                  : definition,
+            ),
+          };
+
+          await withActiveSnapshot(validSnapshot, async () => {
+            try {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET target_value = 150
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+              );
+
+              const response = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              assert.equal(response.statusCode, 200);
+              const catalog = response.json() as {
+                readonly kpis: readonly PublicKpiItem[];
+              };
+              const entry = catalog.kpis.find(
+                (item) => item.key === "s_kpi_anc12",
+              );
+              assert.ok(entry);
+              assert.equal(entry.target, 0);
+
+              const dashboard = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+              assert.equal(dashboard.statusCode, 200);
+            } finally {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET target_value = $1::NUMERIC
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+                [original.rows[0]?.target_value],
+              );
+            }
+          });
+        },
+      );
+
+      for (const scenario of [
+        { label: "negative", targetValue: -5 },
+        { label: "above 100", targetValue: 150 },
+      ]) {
+        await t.test(
+          `invalid frozen snapshot target: ${scenario.label}`,
+          async () => {
+            await withActiveSnapshot({
+              definitions: activeRunConfigSnapshot.definitions.map(
+                (definition) =>
+                  definition.kpiKey === "s_kpi_anc12"
+                    ? { ...definition, targetValue: scenario.targetValue }
+                    : definition,
+              ),
+            }, async () => {
+              const catalog = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              assert.equal(catalog.statusCode, 503);
+              assert.equal(
+                catalog.body,
+                '{"error":"service_unavailable"}',
+              );
+
+              const dashboard = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+              assert.equal(
+                dashboard.statusCode,
+                200,
+                "Dashboard raw-count endpoint is independent of percentage threshold",
+              );
+            });
+          },
+        );
+      }
+
+      await t.test(
+        "legacy missing targetValue falls back to valid live target but rejects invalid live target",
+
+        async () => {
+          const original = await pool.query<{
+            readonly target_value: string | null;
+          }>(`
+            SELECT target_value::TEXT AS target_value
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(original.rows.length, 1);
+
+          const legacySnapshot = {
+            definitions: activeRunConfigSnapshot.definitions.map(
+              (definition) =>
+                definition.kpiKey === "s_kpi_anc12"
+                  ? { ...definition, targetValue: undefined }
+                  : definition,
+            ),
+          };
+
+          await withActiveSnapshot(legacySnapshot, async () => {
+            try {
+              for (const scenario of [
+                { target: "85", expected: 85 },
+                { target: "150", expected: undefined },
+              ]) {
+                await pool.query(
+                  `
+                    UPDATE kpi_definitions
+                    SET target_value = $1::NUMERIC
+                    WHERE kpi_key = 's_kpi_anc12'
+                  `,
+                  [scenario.target],
+                );
+                const response = await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+                if (scenario.expected === undefined) {
+                  assert.equal(response.statusCode, 503);
+                  assert.equal(
+                    response.body,
+                    '{"error":"service_unavailable"}',
+                  );
+                } else {
+                  assert.equal(response.statusCode, 200);
+                  const body = response.json() as {
+                    readonly kpis: readonly PublicKpiItem[];
+                  };
+                  const entry = body.kpis.find(
+                    (item) => item.key === "s_kpi_anc12",
+                  );
+                  assert.ok(entry);
+                  assert.equal(entry.target, scenario.expected);
+                }
+              }
+            } finally {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET target_value = $1::NUMERIC
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+                [original.rows[0]?.target_value],
+              );
+            }
+          });
+        },
+      );
+
+      await t.test(
+        "explicit null frozen target does not fall back to invalid live target",
+        async () => {
+          const original = await pool.query<{
+            readonly target_value: string | null;
+          }>(`
+            SELECT target_value::TEXT AS target_value
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(original.rows.length, 1);
+
+          await withActiveSnapshot({
+            definitions: activeRunConfigSnapshot.definitions.map(
+              (definition) =>
+                definition.kpiKey === "s_kpi_anc12"
+                  ? { ...definition, targetValue: null }
+                  : definition,
+            ),
+          }, async () => {
+            try {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET target_value = -5
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+              );
+              const response = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              assert.equal(response.statusCode, 200);
+              const body = response.json() as {
+                readonly kpis: readonly PublicKpiItem[];
+              };
+              const entry = body.kpis.find(
+                (item) => item.key === "s_kpi_anc12",
+              );
+              assert.ok(entry);
+              assert.equal(entry.target, null);
+            } finally {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET target_value = $1::NUMERIC
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+                [original.rows[0]?.target_value],
+              );
+            }
+          });
+        },
+      );
 
       await t.test(
         "dashboard live response exposes only public fields",
