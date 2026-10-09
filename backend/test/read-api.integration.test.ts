@@ -1644,6 +1644,16 @@ test(
         activeRunId,
       );
 
+      await t.test("active dataset identity survives an empty KPI catalog", async () => {
+        const response = await fastify.inject({
+          method: "GET", url: "/api/v1/kpis",
+        });
+        assert.equal(response.statusCode, 200);
+        assert.deepEqual(response.json(), {
+          activeSyncRunId: activeRunId, kpis: [],
+        });
+      });
+
       const activatedAtResult =
         await pool.query<{
           readonly activated_at: Date;
