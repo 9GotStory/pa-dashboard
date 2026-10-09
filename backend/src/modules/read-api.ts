@@ -460,9 +460,13 @@ function normalizeTarget(
         ? Number(value)
         : Number.NaN;
 
-  if (!Number.isFinite(target)) {
+  if (
+    !Number.isFinite(target) ||
+    target < 0 ||
+    target > 100
+  ) {
     throw new Error(
-      `Field ${field} is not a finite number`,
+      `Field ${field} is not a percentage target from 0 through 100`,
     );
   }
 
