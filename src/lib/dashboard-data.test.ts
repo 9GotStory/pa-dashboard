@@ -752,7 +752,7 @@ test('snapshot loader rejects A/B race then composes only B/B', async () => {
   };
   const result = await loadConsistentDashboard(load, new AbortController().signal);
   assert.notEqual(result.dataset, null);
-  if (result.dataset === null) return;
+  if (!('model' in result)) throw new Error('Expected an active dashboard model');
   assert.equal(result.dataset.syncRunId, '43');
   assert.equal(result.model.summaries[0]?.targetValue, 95);
   assert.equal(dashboards, 2);
@@ -793,7 +793,8 @@ test('snapshot loader accepts stable run and rejects same-run malformed catalog 
     };
     const result = await loadConsistentDashboard(fetcher, new AbortController().signal);
     assert.notEqual(result.dataset, null);
-    if (result.dataset !== null) assert.equal(result.model.summaries[0]?.targetValue, target);
+    if (!('model' in result)) throw new Error('Expected an active dashboard model');
+    assert.equal(result.model.summaries[0]?.targetValue, target);
     assert.equal(dashboardCalls, 1);
   }
   let count = 0;
@@ -859,10 +860,9 @@ test('changed catalog membership on activation triggers a full reload', async ()
   };
   const value = await loadConsistentDashboard(fetcher, new AbortController().signal);
   assert.notEqual(value.dataset, null);
-  if (value.dataset !== null) {
-    assert.equal(value.dataset.syncRunId, '43');
-    assert.equal(value.model.summaries[0]?.tableName, 's_new');
-  }
+  if (!('model' in value)) throw new Error('Expected an active dashboard model');
+  assert.equal(value.dataset.syncRunId, '43');
+  assert.equal(value.model.summaries[0]?.tableName, 's_new');
   assert.equal(dashboards, 2);
   assert.equal(catalogs, 2);
 });
