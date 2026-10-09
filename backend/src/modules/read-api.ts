@@ -204,6 +204,10 @@ const DASHBOARD_QUERY = `
       AS source_last_updated,
     snapshot.definition IS NOT NULL
       AS snapshot_definition_present,
+    COALESCE(
+      snapshot.definition_match_count,
+      0
+    ) AS snapshot_definition_match_count,
     CASE
       WHEN snapshot.definition ? 'kpiKey'
         THEN snapshot.definition ->> 'kpiKey'
