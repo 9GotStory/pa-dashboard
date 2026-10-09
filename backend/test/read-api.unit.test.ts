@@ -138,7 +138,7 @@ test(
   async () => {
     const db =
       createFakeDatabase({
-        kpiRows: [{ active_sync_run_id: null, kpi_key: null }],
+        kpiRows: [{ active_sync_run_id: null, kpi_key: null, snapshot_definition_present: null }],
       });
 
     const app = buildApp({
@@ -570,7 +570,7 @@ test("catalog binds active run identity and rejects incoherent rows", async (t) 
 
   await t.test("active run with no matching catalog members has a marker", async () => {
     const app = buildApp({ db: createFakeDatabase({
-      kpiRows: [{ active_sync_run_id: "42", kpi_key: null }],
+      kpiRows: [{ active_sync_run_id: "42", kpi_key: null, snapshot_definition_present: null }],
     }) });
     try {
       const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
@@ -581,7 +581,7 @@ test("catalog binds active run identity and rejects incoherent rows", async (t) 
 
   await t.test("no active run with no registry entries has null marker", async () => {
     const app = buildApp({ db: createFakeDatabase({
-      kpiRows: [{ active_sync_run_id: null, kpi_key: null }],
+      kpiRows: [{ active_sync_run_id: null, kpi_key: null, snapshot_definition_present: null }],
     }) });
     try {
       const response = await app.inject({ method: "GET", url: "/api/v1/kpis" });
