@@ -631,6 +631,65 @@ test(
 );
 
 test(
+  "KPI catalog fails closed when an active member lacks a snapshot definition",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        kpiRows: [
+          {
+            active_sync_run_id:
+              "42",
+            snapshot_definition_present:
+              false,
+            kpi_key:
+              "s_kpi_anc12",
+            title:
+              "ANC 12 weeks",
+            target_value:
+              "75",
+            sort_order: 1,
+            link: null,
+            category_code:
+              "kpi_master",
+            category_name:
+              "ตัวชี้วัดพื้นฐาน",
+            category_order: 1,
+            subgroup: null,
+            is_quarterly: false,
+            target_months: null,
+            effective_quarter: null,
+          },
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/kpis",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
   "sync status reports no history when the singleton has no runs",
 
   async () => {
@@ -2320,6 +2379,46 @@ test(
       assert.equal(
         response.body,
         '{"dataset":null,"results":[]}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed when an active result lacks a snapshot definition",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow({
+            snapshot_definition_present:
+              false,
+          }),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
       );
     } finally {
       await app.close();
