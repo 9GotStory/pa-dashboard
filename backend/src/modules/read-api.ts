@@ -428,6 +428,32 @@ function optionalInteger(
   return value;
 }
 
+function optionalBoundedInteger(
+  row: Record<string, unknown>,
+  field: string,
+  minimum: number,
+  maximum: number,
+): number | null {
+  const value = optionalInteger(
+    row,
+    field,
+  );
+
+  if (
+    value !== null &&
+    (
+      value < minimum ||
+      value > maximum
+    )
+  ) {
+    throw new Error(
+      `Field ${field} must be an integer from ${minimum} through ${maximum}`,
+    );
+  }
+
+  return value;
+}
+
 function requireBoolean(
   row: Record<string, unknown>,
   field: string,
@@ -788,13 +814,17 @@ function normalizeKpi(
       source,
       "is_quarterly",
     ),
-    targetMonths: optionalInteger(
+    targetMonths: optionalBoundedInteger(
       source,
       "target_months",
+      1,
+      12,
     ),
-    effectiveQuarter: optionalInteger(
+    effectiveQuarter: optionalBoundedInteger(
       source,
       "effective_quarter",
+      1,
+      4,
     ),
   };
 }

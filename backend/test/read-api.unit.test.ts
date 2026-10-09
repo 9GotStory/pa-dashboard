@@ -722,6 +722,214 @@ test(
 );
 
 test(
+  "KPI catalog validates period metadata bounds for live and active effective values",
+
+  async (t) => {
+    const scenarios = [
+      {
+        name: "null period metadata",
+        months: null,
+        quarter: null,
+        allowed: true,
+      },
+      {
+        name: "lower bounds",
+        months: 1,
+        quarter: 1,
+        allowed: true,
+      },
+      {
+        name: "non-quarter month count",
+        months: 8,
+        quarter: 2,
+        allowed: true,
+      },
+      {
+        name: "upper bounds",
+        months: 12,
+        quarter: 4,
+        allowed: true,
+      },
+      {
+        name: "months zero",
+        months: 0,
+        quarter: 2,
+        allowed: false,
+      },
+      {
+        name: "months negative",
+        months: -3,
+        quarter: 2,
+        allowed: false,
+      },
+      {
+        name: "months above twelve",
+        months: 13,
+        quarter: 2,
+        allowed: false,
+      },
+      {
+        name: "quarter zero",
+        months: 8,
+        quarter: 0,
+        allowed: false,
+      },
+      {
+        name: "quarter negative",
+        months: 8,
+        quarter: -1,
+        allowed: false,
+      },
+      {
+        name: "quarter above four",
+        months: 8,
+        quarter: 5,
+        allowed: false,
+      },
+      {
+        name: "months non-integer",
+        months: 1.5,
+        quarter: 2,
+        allowed: false,
+      },
+      {
+        name: "quarter non-integer",
+        months: 8,
+        quarter: 1.5,
+        allowed: false,
+      },
+      {
+        name: "months wrong type",
+        months: "8",
+        quarter: 2,
+        allowed: false,
+      },
+      {
+        name: "quarter wrong type",
+        months: 8,
+        quarter: "2",
+        allowed: false,
+      },
+    ] as const;
+
+    for (const mode of ["live", "active"] as const) {
+      for (const scenario of scenarios) {
+        await t.test(
+          `${mode}: ${scenario.name}`,
+          async () => {
+            const db = createFakeDatabase({
+              kpiRows: [{
+                active_sync_run_id:
+                  mode === "active" ? "42" : null,
+                snapshot_definition_present:
+                  mode === "active",
+                snapshot_definition_match_count:
+                  mode === "active" ? 1 : 0,
+                kpi_key: "s_kpi_anc12",
+                title: "ANC",
+                target_value: "75",
+                sort_order: 1,
+                link: null,
+                category_code: "kpi_master",
+                category_name: "ตัวชี้วัดพื้นฐาน",
+                category_order: 1,
+                subgroup: null,
+                is_quarterly: true,
+                target_months: scenario.months,
+                effective_quarter: scenario.quarter,
+              }],
+            });
+
+            const app = buildApp({ db });
+            try {
+              const response = await app.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              if (!scenario.allowed) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+              } else {
+                assert.equal(response.statusCode, 200);
+                const payload = response.json() as {
+                  readonly kpis: readonly {
+                    readonly targetMonths: number | null;
+                    readonly effectiveQuarter: number | null;
+                  }[];
+                };
+                assert.equal(payload.kpis.length, 1);
+                assert.equal(
+                  payload.kpis[0]?.targetMonths,
+                  scenario.months,
+                );
+                assert.equal(
+                  payload.kpis[0]?.effectiveQuarter,
+                  scenario.quarter,
+                );
+              }
+            } finally {
+              await app.close();
+            }
+          },
+        );
+      }
+    }
+  },
+);
+
+test(
+  "KPI catalog rejects one malformed active period member without partial response",
+
+  async () => {
+    const makeRow = (key: string, months: number) => ({
+      active_sync_run_id: "42",
+      snapshot_definition_present: true,
+      snapshot_definition_match_count: 1,
+      kpi_key: key,
+      title: "Valid title",
+      target_value: "75",
+      sort_order: 1,
+      link: null,
+      category_code: "kpi_master",
+      category_name: "ตัวชี้วัดพื้นฐาน",
+      category_order: 1,
+      subgroup: null,
+      is_quarterly: true,
+      target_months: months,
+      effective_quarter: 2,
+    });
+    const db = createFakeDatabase({
+      kpiRows: [
+        makeRow("s_kpi_anc12", 8),
+        makeRow("s_kpi_food", 13),
+      ],
+    });
+    const app = buildApp({ db });
+
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/kpis",
+      });
+      assert.equal(response.statusCode, 503);
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+      assert.equal(
+        response.body.includes("s_kpi_anc12"),
+        false,
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
   "KPI catalog fails closed when a target cannot become a finite number",
 
   async () => {

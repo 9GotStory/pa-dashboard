@@ -1029,6 +1029,57 @@ test(
       );
 
       await t.test(
+        "pre-activation KPI catalog preserves valid month and quarter metadata",
+
+        async () => {
+          const baseline = await pool.query<{
+            readonly target_months: number | null;
+            readonly effective_quarter: number | null;
+          }>(`
+            SELECT target_months, effective_quarter
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(baseline.rows.length, 1);
+          try {
+            await pool.query(`
+              UPDATE kpi_definitions
+              SET target_months = 8,
+                  effective_quarter = 4
+              WHERE kpi_key = 's_kpi_anc12'
+            `);
+            const response = await fastify.inject({
+              method: "GET",
+              url: "/api/v1/kpis",
+            });
+            assert.equal(response.statusCode, 200);
+            const body = response.json() as {
+              readonly kpis: readonly PublicKpiItem[];
+            };
+            const kpi = body.kpis.find(
+              (item) => item.key === "s_kpi_anc12",
+            );
+            assert.ok(kpi);
+            assert.equal(kpi.targetMonths, 8);
+            assert.equal(kpi.effectiveQuarter, 4);
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET target_months = $1,
+                    effective_quarter = $2
+                WHERE kpi_key = 's_kpi_anc12'
+              `,
+              [
+                baseline.rows[0]?.target_months,
+                baseline.rows[0]?.effective_quarter,
+              ],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "sync status keeps the active dataset distinct from a newer failed run",
 
         async () => {
@@ -2371,6 +2422,258 @@ test(
               );
             }
           });
+        },
+      );
+
+      function snapshotWithPeriodFields(
+        patch: {
+          readonly targetMonths?: number | null | undefined;
+          readonly effectiveQuarter?: number | null | undefined;
+        },
+      ): Readonly<Record<string, unknown>> {
+        return {
+          definitions: activeRunConfigSnapshot.definitions.map(
+            (definition) =>
+              definition.kpiKey === "s_kpi_anc12"
+                ? { ...definition, ...patch }
+                : definition,
+          ),
+        };
+      }
+
+      async function inspectActiveKpiPeriod(
+        expected: {
+          readonly targetMonths: number | null;
+          readonly effectiveQuarter: number | null;
+        },
+      ): Promise<void> {
+        const response = await fastify.inject({
+          method: "GET",
+          url: "/api/v1/kpis",
+        });
+        assert.equal(response.statusCode, 200);
+        const catalog = response.json() as {
+          readonly kpis: readonly PublicKpiItem[];
+        };
+        const entry = catalog.kpis.find(
+          (item) => item.key === "s_kpi_anc12",
+        );
+        assert.ok(entry);
+        assert.equal(entry.targetMonths, expected.targetMonths);
+        assert.equal(entry.effectiveQuarter, expected.effectiveQuarter);
+      }
+
+      for (const scenario of [
+        { name: "months zero", patch: { targetMonths: 0 } },
+        { name: "months negative", patch: { targetMonths: -3 } },
+        { name: "months thirteen", patch: { targetMonths: 13 } },
+        { name: "quarter zero", patch: { effectiveQuarter: 0 } },
+        { name: "quarter negative", patch: { effectiveQuarter: -1 } },
+        { name: "quarter five", patch: { effectiveQuarter: 5 } },
+      ]) {
+        await t.test(
+          `active frozen period metadata rejects ${scenario.name}`,
+          async () => {
+            await withActiveSnapshot(
+              snapshotWithPeriodFields(scenario.patch),
+              async () => {
+                const catalog = await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+                assert.equal(catalog.statusCode, 503);
+                assert.equal(
+                  catalog.body,
+                  '{"error":"service_unavailable"}',
+                );
+
+                const dashboard = await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/dashboard",
+                });
+                assert.equal(
+                  dashboard.statusCode,
+                  200,
+                  "Dashboard results and periodCode are unchanged",
+                );
+              },
+            );
+          },
+        );
+      }
+
+      for (const scenario of [
+        { name: "both null", months: null, quarter: null },
+        { name: "lower bounds", months: 1, quarter: 1 },
+        { name: "month eight", months: 8, quarter: 2 },
+        { name: "upper bounds", months: 12, quarter: 4 },
+      ]) {
+        await t.test(
+          `active frozen period metadata accepts ${scenario.name}`,
+          async () => {
+            await withActiveSnapshot(
+              snapshotWithPeriodFields({
+                targetMonths: scenario.months,
+                effectiveQuarter: scenario.quarter,
+              }),
+              async () => {
+                await inspectActiveKpiPeriod({
+                  targetMonths: scenario.months,
+                  effectiveQuarter: scenario.quarter,
+                });
+              },
+            );
+          },
+        );
+      }
+
+      await t.test(
+        "active frozen valid period metadata overrides valid live registry drift",
+
+        async () => {
+          const baseline = await pool.query<{
+            readonly target_months: number | null;
+            readonly effective_quarter: number | null;
+          }>(`
+            SELECT target_months, effective_quarter
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(baseline.rows.length, 1);
+
+          await withActiveSnapshot(
+            snapshotWithPeriodFields({
+              targetMonths: 8,
+              effectiveQuarter: 2,
+            }),
+            async () => {
+              try {
+                await pool.query(`
+                  UPDATE kpi_definitions
+                  SET target_months = 12,
+                      effective_quarter = 4
+                  WHERE kpi_key = 's_kpi_anc12'
+                `);
+                await inspectActiveKpiPeriod({
+                  targetMonths: 8,
+                  effectiveQuarter: 2,
+                });
+              } finally {
+                await pool.query(
+                  `
+                    UPDATE kpi_definitions
+                    SET target_months = $1,
+                        effective_quarter = $2
+                    WHERE kpi_key = 's_kpi_anc12'
+                  `,
+                  [
+                    baseline.rows[0]?.target_months,
+                    baseline.rows[0]?.effective_quarter,
+                  ],
+                );
+              }
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "legacy omitted period fields fall back to constrained live registry",
+
+        async () => {
+          const baseline = await pool.query<{
+            readonly target_months: number | null;
+            readonly effective_quarter: number | null;
+          }>(`
+            SELECT target_months, effective_quarter
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(baseline.rows.length, 1);
+
+          await withActiveSnapshot(
+            snapshotWithPeriodFields({
+              targetMonths: undefined,
+              effectiveQuarter: undefined,
+            }),
+            async () => {
+              try {
+                await pool.query(`
+                  UPDATE kpi_definitions
+                  SET target_months = 8,
+                      effective_quarter = 4
+                  WHERE kpi_key = 's_kpi_anc12'
+                `);
+                await inspectActiveKpiPeriod({
+                  targetMonths: 8,
+                  effectiveQuarter: 4,
+                });
+              } finally {
+                await pool.query(
+                  `
+                    UPDATE kpi_definitions
+                    SET target_months = $1,
+                        effective_quarter = $2
+                    WHERE kpi_key = 's_kpi_anc12'
+                  `,
+                  [
+                    baseline.rows[0]?.target_months,
+                    baseline.rows[0]?.effective_quarter,
+                  ],
+                );
+              }
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "explicit frozen null period metadata never falls back to live registry",
+
+        async () => {
+          const baseline = await pool.query<{
+            readonly target_months: number | null;
+            readonly effective_quarter: number | null;
+          }>(`
+            SELECT target_months, effective_quarter
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(baseline.rows.length, 1);
+
+          await withActiveSnapshot(
+            snapshotWithPeriodFields({
+              targetMonths: null,
+              effectiveQuarter: null,
+            }),
+            async () => {
+              try {
+                await pool.query(`
+                  UPDATE kpi_definitions
+                  SET target_months = 8,
+                      effective_quarter = 4
+                  WHERE kpi_key = 's_kpi_anc12'
+                `);
+                await inspectActiveKpiPeriod({
+                  targetMonths: null,
+                  effectiveQuarter: null,
+                });
+              } finally {
+                await pool.query(
+                  `
+                    UPDATE kpi_definitions
+                    SET target_months = $1,
+                        effective_quarter = $2
+                    WHERE kpi_key = 's_kpi_anc12'
+                  `,
+                  [
+                    baseline.rows[0]?.target_months,
+                    baseline.rows[0]?.effective_quarter,
+                  ],
+                );
+              }
+            },
+          );
         },
       );
 
