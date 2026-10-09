@@ -266,10 +266,10 @@ const DASHBOARD_QUERY = `
               END
             AND SUBSTRING(source.date_com FROM 9 FOR 2)::INTEGER BETWEEN 0 AND 23
             AND SUBSTRING(source.date_com FROM 11 FOR 2)::INTEGER BETWEEN 0 AND 59
-            AND (
-              LENGTH(source.date_com) = 12
-              OR SUBSTRING(source.date_com FROM 13 FOR 2)::INTEGER BETWEEN 0 AND 59
-            )
+            AND CASE
+              WHEN LENGTH(source.date_com) = 12 THEN TRUE
+              ELSE SUBSTRING(source.date_com FROM 13 FOR 2)::INTEGER BETWEEN 0 AND 59
+            END
         ELSE FALSE
       END
   ) AS fresh ON TRUE
