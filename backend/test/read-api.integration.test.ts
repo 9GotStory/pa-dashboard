@@ -2016,6 +2016,42 @@ test(
       );
 
       await t.test(
+        "inactive run result fiscal-year drift cannot poison active dataset",
+        async () => {
+          const before = await pool.query<{
+            readonly id: string;
+            readonly fiscal_year: number;
+          }>(`
+            SELECT id::TEXT AS id, fiscal_year
+            FROM kpi_results
+            WHERE sync_run_id = $1 AND result = 999
+          `, [newerSucceededRunId]);
+          assert.equal(before.rows.length, 1);
+          const row = before.rows[0];
+          assert.ok(row);
+          try {
+            await pool.query(
+              "UPDATE kpi_results SET fiscal_year = 2570 WHERE id = $1",
+              [row.id],
+            );
+            const response = await fastify.inject({
+              method: "GET", url: "/api/v1/dashboard",
+            });
+            assert.equal(response.statusCode, 200);
+            assert.deepEqual(response.json(), {
+              dataset: { ...expectedDashboardDataset, sourceLastUpdated: "20260926123045" },
+              results: expectedDashboardResults,
+            });
+          } finally {
+            await pool.query(
+              "UPDATE kpi_results SET fiscal_year = $1 WHERE id = $2",
+              [row.fiscal_year, row.id],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "dashboard SQL ignores impossible active calendar markers and preserves valid freshness",
 
         async () => {
