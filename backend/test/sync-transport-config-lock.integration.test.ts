@@ -431,6 +431,65 @@ test(
       );
 
       await t.test(
+        "sync preflight enforces percentage target 0..100 without creating runs",
+
+        async () => {
+          const before = await countSyncRuns(pool);
+
+          for (const target of [
+            { value: null, expected: null },
+            { value: "0", expected: 0 },
+            { value: "85", expected: 85 },
+            { value: "100", expected: 100 },
+            { value: "-5", expected: undefined },
+            { value: "150", expected: undefined },
+          ]) {
+            await withRollback(
+              pool,
+              async (client) => {
+                const update = await client.query(
+                  `
+                    UPDATE kpi_definitions
+                    SET target_value = $1::NUMERIC
+                    WHERE kpi_key = 's_kpi_anc12'
+                  `,
+                  [target.value],
+                );
+                assert.equal(update.rowCount, 1);
+
+                if (target.expected === undefined) {
+                  await assert.rejects(
+                    () => loadSyncConfigSnapshot(client),
+                    (error: unknown) =>
+                      error instanceof SyncConfigError,
+                  );
+                } else {
+                  const snapshot =
+                    await loadSyncConfigSnapshot(client);
+                  const targetDefinition =
+                    snapshot.definitions.find(
+                      (definition) =>
+                        definition.kpiKey === "s_kpi_anc12",
+                    );
+                  assert.ok(targetDefinition);
+                  assert.equal(
+                    targetDefinition.targetValue,
+                    target.expected,
+                  );
+                }
+              },
+            );
+          }
+
+          assert.equal(
+            await countSyncRuns(pool),
+            before,
+            "Rejected configuration must not create a synchronization run",
+          );
+        },
+      );
+
+      await t.test(
         "invalid required setting fails closed",
         async () => {
           await withRollback(
