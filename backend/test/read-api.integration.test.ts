@@ -2875,6 +2875,59 @@ test(
         }
       }
 
+      await t.test(
+        "KPI catalog carries same-run identity across an A-to-B activation",
+        async () => {
+          const readCatalog = async () => {
+            const response = await fastify.inject({
+              method: "GET", url: "/api/v1/kpis",
+            });
+            assert.equal(response.statusCode, 200);
+            return response.json() as {
+              readonly activeSyncRunId: string | null;
+              readonly kpis: readonly PublicKpiItem[];
+            };
+          };
+          const initial = await readCatalog();
+          assert.equal(initial.activeSyncRunId, activeRunId);
+          const kpiKey = "s_kpi_anc12";
+          const original = initial.kpis.find((item) => item.key === kpiKey);
+          assert.ok(original);
+          const differentTarget = original.target === 95 ? 85 : 95;
+          const replacement = {
+            definitions: activeRunConfigSnapshot.definitions.map((item) =>
+              item.kpiKey === kpiKey
+                ? { ...item, targetValue: differentTarget }
+                : item,
+            ),
+          };
+          await withActiveSnapshot(replacement, async () => {
+            const selected = await readCatalog();
+            assert.ok(selected.activeSyncRunId);
+            assert.notEqual(selected.activeSyncRunId, activeRunId);
+            assert.equal(selected.kpis.length, initial.kpis.length);
+            assert.equal(
+              selected.kpis.find((item) => item.key === kpiKey)?.target,
+              differentTarget,
+            );
+            const dashboard = await fastify.inject({
+              method: "GET", url: "/api/v1/dashboard",
+            });
+            assert.equal(dashboard.statusCode, 200);
+            const payload = dashboard.json() as {
+              readonly dataset: { readonly syncRunId: string };
+            };
+            assert.equal(payload.dataset.syncRunId, selected.activeSyncRunId);
+          });
+          const restored = await readCatalog();
+          assert.equal(restored.activeSyncRunId, activeRunId);
+          assert.equal(
+            restored.kpis.find((item) => item.key === kpiKey)?.target,
+            original.target,
+          );
+        },
+      );
+
       async function assertActiveSnapshotUnavailable(
         configSnapshot: Readonly<Record<string, unknown>>,
       ): Promise<void> {
