@@ -829,7 +829,7 @@ function normalizeKpi(
       source,
       "kpi_key",
     ),
-    title: requireString(
+    title: requireNonblankString(
       source,
       "title",
     ),
@@ -845,11 +845,11 @@ function normalizeKpi(
       source,
       "link",
     ),
-    categoryCode: requireString(
+    categoryCode: requireNonblankString(
       source,
       "category_code",
     ),
-    category: requireString(
+    category: requireNonblankString(
       source,
       "category_name",
     ),
