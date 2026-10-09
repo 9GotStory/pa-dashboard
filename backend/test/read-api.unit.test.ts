@@ -649,6 +649,79 @@ test(
 );
 
 test(
+  "KPI catalog enforces percentage target bounds in live and frozen modes",
+
+  async (t) => {
+    for (const mode of ["live", "active"] as const) {
+      for (const candidate of [
+        { target: null, expected: null },
+        { target: "0", expected: 0 },
+        { target: "85", expected: 85 },
+        { target: "100", expected: 100 },
+        { target: "-5", expected: undefined },
+        { target: "150", expected: undefined },
+      ]) {
+        await t.test(
+          `${mode} target ${String(candidate.target)}`,
+          async () => {
+            const db = createFakeDatabase({
+              kpiRows: [{
+                active_sync_run_id:
+                  mode === "active" ? "42" : null,
+                snapshot_definition_present:
+                  mode === "active",
+                snapshot_definition_match_count:
+                  mode === "active" ? 1 : 0,
+                kpi_key: "s_kpi_anc12",
+                title: "ANC",
+                target_value: candidate.target,
+                sort_order: 1,
+                link: null,
+                category_code: "kpi_master",
+                category_name: "ตัวชี้วัดพื้นฐาน",
+                category_order: 1,
+                subgroup: null,
+                is_quarterly: false,
+                target_months: null,
+                effective_quarter: null,
+              }],
+            });
+            const app = buildApp({ db });
+
+            try {
+              const response = await app.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+
+              if (candidate.expected === undefined) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+              } else {
+                assert.equal(response.statusCode, 200);
+                const body = response.json() as {
+                  readonly kpis:
+                    readonly { readonly target: number | null }[];
+                };
+                assert.equal(
+                  body.kpis[0]?.target,
+                  candidate.expected,
+                );
+              }
+            } finally {
+              await app.close();
+            }
+          },
+        );
+      }
+    }
+  },
+);
+
+test(
   "KPI catalog fails closed when a target cannot become a finite number",
 
   async () => {
