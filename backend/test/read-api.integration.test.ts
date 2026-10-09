@@ -963,6 +963,72 @@ test(
       );
 
       await t.test(
+        "live registry catalog rejects invalid percentage targets before activation",
+
+        async () => {
+          const original = await pool.query<{
+            readonly target_value: string | null;
+          }>(`
+            SELECT target_value::TEXT AS target_value
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(original.rows.length, 1);
+
+          try {
+            for (const scenario of [
+              { value: null, expected: null },
+              { value: "0", expected: 0 },
+              { value: "100", expected: 100 },
+              { value: "-5", expected: undefined },
+              { value: "150", expected: undefined },
+            ]) {
+              await pool.query(
+                `
+                  UPDATE kpi_definitions
+                  SET target_value = $1::NUMERIC
+                  WHERE kpi_key = 's_kpi_anc12'
+                `,
+                [scenario.value],
+              );
+
+              const response = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+
+              if (scenario.expected === undefined) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+              } else {
+                assert.equal(response.statusCode, 200);
+                const catalog = response.json() as {
+                  readonly kpis: readonly PublicKpiItem[];
+                };
+                const entry = catalog.kpis.find(
+                  (item) => item.key === "s_kpi_anc12",
+                );
+                assert.ok(entry);
+                assert.equal(entry.target, scenario.expected);
+              }
+            }
+          } finally {
+            await pool.query(
+              `
+                UPDATE kpi_definitions
+                SET target_value = $1::NUMERIC
+                WHERE kpi_key = 's_kpi_anc12'
+              `,
+              [original.rows[0]?.target_value],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "sync status keeps the active dataset distinct from a newer failed run",
 
         async () => {
