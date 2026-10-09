@@ -838,3 +838,31 @@ test('snapshot loader respects no-active and aborted reload', async () => {
   });
   assert.equal(count, 1);
 });
+
+test('changed catalog membership on activation triggers a full reload', async () => {
+  let dashboards = 0;
+  let catalogs = 0;
+  const fetcher = async (endpoint: string): Promise<unknown> => {
+    if (endpoint === 'dashboard') {
+      dashboards++;
+      return {
+        dataset: wireDataset({ syncRunId: dashboards === 1 ? '42' : '43' }),
+        results: [wireRow({ kpiKey: dashboards === 1 ? 's_anc5' : 's_new' })],
+      };
+    }
+    if (endpoint === 'kpis') {
+      catalogs++;
+      return { activeSyncRunId: '43', kpis: [wireKpi({ key: 's_new', target: 90 })] };
+    }
+    if (endpoint === 'facilities') return { facilities: [wireFacility()] };
+    return { tambons: [wireTambon()] };
+  };
+  const value = await loadConsistentDashboard(fetcher, new AbortController().signal);
+  assert.notEqual(value.dataset, null);
+  if (value.dataset !== null) {
+    assert.equal(value.dataset.syncRunId, '43');
+    assert.equal(value.model.summaries[0]?.tableName, 's_new');
+  }
+  assert.equal(dashboards, 2);
+  assert.equal(catalogs, 2);
+});
