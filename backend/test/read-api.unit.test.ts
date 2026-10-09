@@ -588,6 +588,196 @@ test(
 );
 
 test(
+  "KPI catalog accepts only frontend-compatible external links in live and active modes",
+
+  async (t) => {
+    const scenarios: readonly {
+      readonly name: string;
+      readonly value: unknown;
+      readonly valid: boolean;
+    }[] = [
+      { name: "null", value: null, valid: true },
+      { name: "empty string", value: "", valid: true },
+      {
+        name: "HTTPS path query and fragment",
+        value: "https://example.test/kpi?foo=1#section",
+        valid: true,
+      },
+      {
+        name: "HTTP absolute URL",
+        value: "http://example.test/detail",
+        valid: true,
+      },
+      {
+        name: "localhost URL stays accepted by current contract",
+        value: "http://127.0.0.1:8080/detail",
+        valid: true,
+      },
+      {
+        name: "javascript scheme",
+        value: "javascript:alert(1)",
+        valid: false,
+      },
+      {
+        name: "data scheme",
+        value: "data:text/html,<h1>x</h1>",
+        valid: false,
+      },
+      {
+        name: "file scheme",
+        value: "file:///tmp/detail",
+        valid: false,
+      },
+      {
+        name: "ftp scheme",
+        value: "ftp://example.test/file",
+        valid: false,
+      },
+      {
+        name: "absolute path",
+        value: "/detail",
+        valid: false,
+      },
+      {
+        name: "relative path",
+        value: "detail/1",
+        valid: false,
+      },
+      {
+        name: "malformed HTTPS",
+        value: "https://",
+        valid: false,
+      },
+      {
+        name: "whitespace only",
+        value: "   ",
+        valid: false,
+      },
+      {
+        name: "padded prefix",
+        value: " https://example.test/kpi",
+        valid: false,
+      },
+      {
+        name: "padded suffix",
+        value: "https://example.test/kpi ",
+        valid: false,
+      },
+      { name: "number", value: 123, valid: false },
+      { name: "boolean", value: true, valid: false },
+      { name: "object", value: {}, valid: false },
+    ];
+
+    for (const mode of ["live", "active"] as const) {
+      for (const scenario of scenarios) {
+        await t.test(
+          `${mode}: ${scenario.name}`,
+          async () => {
+            const db = createFakeDatabase({
+              kpiRows: [{
+                active_sync_run_id:
+                  mode === "active" ? "42" : null,
+                snapshot_definition_present:
+                  mode === "active",
+                snapshot_definition_match_count:
+                  mode === "active" ? 1 : 0,
+                kpi_key: "s_kpi_anc12",
+                title: "ANC",
+                target_value: "75",
+                sort_order: 1,
+                link: scenario.value,
+                category_code: "kpi_master",
+                category_name: "ตัวชี้วัดพื้นฐาน",
+                category_order: 1,
+                subgroup: "",
+                is_quarterly: false,
+                target_months: null,
+                effective_quarter: null,
+              }],
+            });
+            const app = buildApp({ db });
+            try {
+              const response = await app.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              if (!scenario.valid) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+              } else {
+                assert.equal(response.statusCode, 200);
+                const body = response.json() as {
+                  readonly kpis: readonly {
+                    readonly link: string | null;
+                    readonly subgroup: string | null;
+                  }[];
+                };
+                assert.equal(body.kpis.length, 1);
+                assert.equal(body.kpis[0]?.link, scenario.value);
+                assert.equal(body.kpis[0]?.subgroup, "");
+              }
+            } finally {
+              await app.close();
+            }
+          },
+        );
+      }
+    }
+  },
+);
+
+test(
+  "KPI catalog refuses partial responses when a selected link is invalid",
+
+  async () => {
+    const makeRow = (key: string, link: string) => ({
+      active_sync_run_id: "42",
+      snapshot_definition_present: true,
+      snapshot_definition_match_count: 1,
+      kpi_key: key,
+      title: "KPI",
+      target_value: "75",
+      sort_order: 1,
+      link,
+      category_code: "kpi_master",
+      category_name: "ตัวชี้วัดพื้นฐาน",
+      category_order: 1,
+      subgroup: null,
+      is_quarterly: false,
+      target_months: null,
+      effective_quarter: null,
+    });
+
+    const db = createFakeDatabase({
+      kpiRows: [
+        makeRow("s_kpi_anc12", "https://example.test/valid"),
+        makeRow("s_kpi_food", "javascript:alert(1)"),
+      ],
+    });
+
+    const app = buildApp({ db });
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/kpis",
+      });
+      assert.equal(response.statusCode, 503);
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+      assert.equal(response.body.includes("s_kpi_anc12"), false);
+      assert.equal(response.body.includes("javascript:"), false);
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
   "KPI catalog fails closed without leaking database errors",
 
   async () => {
