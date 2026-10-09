@@ -1985,6 +1985,101 @@ test(
       );
 
       await t.test(
+        "active dataset fails closed when a KPI snapshot definition is duplicated",
+
+        async () => {
+          const originalDefinition =
+            activeRunConfigSnapshot
+              .definitions
+              .find(
+                (definition) =>
+                  definition.kpiKey ===
+                  "s_kpi_anc12",
+              );
+
+          assert.ok(
+            originalDefinition,
+          );
+
+          const corruptedSnapshot = {
+            definitions: [
+              ...activeRunConfigSnapshot
+                .definitions,
+              {
+                ...originalDefinition,
+                kpiKey:
+                  "s_kpi_anc12__conflicting_duplicate",
+              },
+            ],
+          };
+
+          try {
+            await pool.query(
+              `
+                UPDATE sync_runs
+                SET config_snapshot =
+                  $2::JSONB
+                WHERE id = $1
+              `,
+              [
+                activeRunId,
+                JSON.stringify(
+                  corruptedSnapshot,
+                ),
+              ],
+            );
+
+            const catalogResponse =
+              await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+
+            assert.equal(
+              catalogResponse.statusCode,
+              503,
+            );
+
+            assert.equal(
+              catalogResponse.body,
+              '{"error":"service_unavailable"}',
+            );
+
+            const dashboardResponse =
+              await fastify.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+
+            assert.equal(
+              dashboardResponse.statusCode,
+              503,
+            );
+
+            assert.equal(
+              dashboardResponse.body,
+              '{"error":"service_unavailable"}',
+            );
+          } finally {
+            await pool.query(
+              `
+                UPDATE sync_runs
+                SET config_snapshot =
+                  $2::JSONB
+                WHERE id = $1
+              `,
+              [
+                activeRunId,
+                JSON.stringify(
+                  activeRunConfigSnapshot,
+                ),
+              ],
+            );
+          }
+        },
+      );
+
+      await t.test(
         "dashboard live response exposes only public fields",
 
         async () => {

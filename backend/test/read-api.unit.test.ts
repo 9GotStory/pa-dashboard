@@ -62,6 +62,8 @@ function createFakeDatabase(
                       null,
                     snapshot_definition_present:
                       false,
+                    snapshot_definition_match_count:
+                      0,
                     ...row,
                   }
                 : row,
@@ -115,6 +117,8 @@ function createDashboardRow(
       "202609261230",
     snapshot_definition_present:
       true,
+    snapshot_definition_match_count:
+      1,
     definition_sort_order: 1,
     kpi_key: "s_kpi_anc12",
     period_code: "q2",
@@ -405,6 +409,24 @@ test(
 
       assert.ok(
         sql.includes(
+          "COUNT(*) OVER ()::INTEGER AS definition_match_count",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "WITH ORDINALITY",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "COALESCE( snapshot.definition_match_count, 0 ) AS snapshot_definition_match_count",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
           "state.active_sync_run_id::TEXT AS active_sync_run_id",
         ),
       );
@@ -642,6 +664,69 @@ test(
               "42",
             snapshot_definition_present:
               false,
+            snapshot_definition_match_count:
+              0,
+            kpi_key:
+              "s_kpi_anc12",
+            title:
+              "ANC 12 weeks",
+            target_value:
+              "75",
+            sort_order: 1,
+            link: null,
+            category_code:
+              "kpi_master",
+            category_name:
+              "ตัวชี้วัดพื้นฐาน",
+            category_order: 1,
+            subgroup: null,
+            is_quarterly: false,
+            target_months: null,
+            effective_quarter: null,
+          },
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/kpis",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "KPI catalog fails closed when an active member has duplicate snapshot definitions",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        kpiRows: [
+          {
+            active_sync_run_id:
+              "42",
+            snapshot_definition_present:
+              true,
+            snapshot_definition_match_count:
+              2,
             kpi_key:
               "s_kpi_anc12",
             title:
@@ -2223,6 +2308,24 @@ test(
 
       assert.ok(
         sql.includes(
+          "COUNT(*) OVER ()::INTEGER AS definition_match_count",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "WITH ORDINALITY",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "COALESCE( snapshot.definition_match_count, 0 ) AS snapshot_definition_match_count",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
           "snapshot.definition ? 'kpiKey'",
         ),
       );
@@ -2396,6 +2499,48 @@ test(
           createDashboardRow({
             snapshot_definition_present:
               false,
+            snapshot_definition_match_count:
+              0,
+          }),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed when an active result has duplicate snapshot definitions",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow({
+            snapshot_definition_match_count:
+              2,
           }),
         ],
       });
