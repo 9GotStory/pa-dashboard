@@ -4,6 +4,8 @@ import assert from 'node:assert/strict';
 import {
   buildDashboardModel,
   formatSourceLastUpdated,
+  loadConsistentDashboard,
+  parseKpiCatalogSnapshot,
   parseDashboardResponse,
   parseFacilitiesResponse,
   parseKpiCatalogResponse,
