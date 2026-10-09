@@ -103,6 +103,7 @@ function createDashboardRow(
     run_id: "42",
     run_status: "succeeded",
     fiscal_year: 2569,
+    result_fiscal_year: 2569,
     current_quarter: 4,
     expected_source_count: 1,
     completed_source_count: 1,
