@@ -52,7 +52,20 @@ function createFakeDatabase(
       const rows = text.includes(
           "AS category_code",
         )
-        ? behavior.kpiRows
+        ? (behavior.kpiRows ?? []).map(
+            (row) =>
+              typeof row === "object" &&
+              row !== null &&
+              !Array.isArray(row)
+                ? {
+                    active_sync_run_id:
+                      null,
+                    snapshot_definition_present:
+                      false,
+                    ...row,
+                  }
+                : row,
+          )
         : text.includes(
             "kpi_results",
           )
@@ -100,6 +113,8 @@ function createDashboardRow(
     ),
     source_last_updated:
       "202609261230",
+    snapshot_definition_present:
+      true,
     definition_sort_order: 1,
     kpi_key: "s_kpi_anc12",
     period_code: "q2",
@@ -384,6 +399,18 @@ test(
 
       assert.ok(
         sql.includes(
+          "snapshot.definition IS NOT NULL AS snapshot_definition_present",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
+          "state.active_sync_run_id::TEXT AS active_sync_run_id",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
           "snapshot.definition ? 'kpiKey'",
         ),
       );
@@ -562,6 +589,65 @@ test(
               "Broken target",
             target_value:
               "not-a-number",
+            sort_order: 1,
+            link: null,
+            category_code:
+              "kpi_master",
+            category_name:
+              "ตัวชี้วัดพื้นฐาน",
+            category_order: 1,
+            subgroup: null,
+            is_quarterly: false,
+            target_months: null,
+            effective_quarter: null,
+          },
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/kpis",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "KPI catalog fails closed when an active member lacks a snapshot definition",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        kpiRows: [
+          {
+            active_sync_run_id:
+              "42",
+            snapshot_definition_present:
+              false,
+            kpi_key:
+              "s_kpi_anc12",
+            title:
+              "ANC 12 weeks",
+            target_value:
+              "75",
             sort_order: 1,
             link: null,
             category_code:
@@ -2131,6 +2217,12 @@ test(
 
       assert.ok(
         sql.includes(
+          "snapshot.definition IS NOT NULL AS snapshot_definition_present",
+        ),
+      );
+
+      assert.ok(
+        sql.includes(
           "snapshot.definition ? 'kpiKey'",
         ),
       );
@@ -2287,6 +2379,46 @@ test(
       assert.equal(
         response.body,
         '{"dataset":null,"results":[]}',
+      );
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
+  "dashboard fails closed when an active result lacks a snapshot definition",
+
+  async () => {
+    const db =
+      createFakeDatabase({
+        dashboardRows: [
+          createDashboardRow({
+            snapshot_definition_present:
+              false,
+          }),
+        ],
+      });
+
+    const app = buildApp({
+      db,
+    });
+
+    try {
+      const response =
+        await app.inject({
+          method: "GET",
+          url: "/api/v1/dashboard",
+        });
+
+      assert.equal(
+        response.statusCode,
+        503,
+      );
+
+      assert.equal(
+        response.body,
+        '{"error":"service_unavailable"}',
       );
     } finally {
       await app.close();
