@@ -709,3 +709,132 @@ test('R2-02 F: per-bucket result overflow is rejected while the global result st
     }),
   );
 });
+
+test('catalog snapshot requires an exact nullable decimal run identity', () => {
+  const valid = parseKpiCatalogSnapshot({
+    activeSyncRunId: '42', kpis: [wireKpi({ target: 0 })],
+  });
+  assert.equal(valid.activeSyncRunId, '42');
+  assert.equal(valid.kpis[0]?.target, 0);
+  assert.deepEqual(parseKpiCatalogSnapshot({ activeSyncRunId: null, kpis: [] }), {
+    activeSyncRunId: null, kpis: [],
+  });
+  for (const bad of [undefined, '', ' ', 'run-42', 42, false, {}, '42.0']) {
+    assert.throws(() => parseKpiCatalogSnapshot({
+      activeSyncRunId: bad, kpis: [wireKpi()],
+    }));
+  }
+});
+
+test('snapshot loader rejects A/B race then composes only B/B', async () => {
+  const ids = ['42', '43'];
+  let dashboards = 0;
+  let catalogs = 0;
+  const signals: string[] = [];
+  const load = async (endpoint: string): Promise<unknown> => {
+    signals.push(endpoint);
+    if (endpoint === 'dashboard') {
+      return {
+        dataset: wireDataset({ syncRunId: ids[ Math.min(dashboards++, 1) ] }),
+        results: [wireRow()],
+      };
+    }
+    if (endpoint === 'kpis') {
+      catalogs += 1;
+      return {
+        activeSyncRunId: '43',
+        kpis: [wireKpi({ target: 95 })],
+      };
+    }
+    if (endpoint === 'facilities') return { facilities: [wireFacility()] };
+    if (endpoint === 'tambons') return { tambons: [wireTambon()] };
+    throw new Error('Unexpected endpoint');
+  };
+  const result = await loadConsistentDashboard(load, new AbortController().signal);
+  assert.notEqual(result.dataset, null);
+  if (result.dataset === null) return;
+  assert.equal(result.dataset.syncRunId, '43');
+  assert.equal(result.model.summaries[0]?.targetValue, 95);
+  assert.equal(dashboards, 2);
+  assert.equal(catalogs, 2);
+  assert.deepEqual(signals.slice(0, 2), ['dashboard', 'kpis']);
+});
+
+test('snapshot loader bounds repeated A/B identity mismatches', async () => {
+  let dashboardCalls = 0;
+  const fetcher = async (endpoint: string): Promise<unknown> => {
+    if (endpoint === 'dashboard') {
+      dashboardCalls += 1;
+      return { dataset: wireDataset({ syncRunId: '42' }), results: [wireRow()] };
+    }
+    if (endpoint === 'kpis') {
+      return { activeSyncRunId: '43', kpis: [wireKpi({ target: 95 })] };
+    }
+    if (endpoint === 'facilities') return { facilities: [wireFacility()] };
+    return { tambons: [wireTambon()] };
+  };
+  await assert.rejects(loadConsistentDashboard(fetcher, new AbortController().signal));
+  assert.equal(dashboardCalls, 2);
+});
+
+test('snapshot loader accepts stable run and rejects same-run malformed catalog without retry', async () => {
+  for (const target of [0, null, 85]) {
+    let dashboardCalls = 0;
+    const fetcher = async (endpoint: string): Promise<unknown> => {
+      if (endpoint === 'dashboard') {
+        dashboardCalls++;
+        return { dataset: wireDataset(), results: [wireRow()] };
+      }
+      if (endpoint === 'kpis') return {
+        activeSyncRunId: '42', kpis: [wireKpi({ target })],
+      };
+      if (endpoint === 'facilities') return { facilities: [wireFacility()] };
+      return { tambons: [wireTambon()] };
+    };
+    const result = await loadConsistentDashboard(fetcher, new AbortController().signal);
+    assert.notEqual(result.dataset, null);
+    if (result.dataset !== null) assert.equal(result.model.summaries[0]?.targetValue, target);
+    assert.equal(dashboardCalls, 1);
+  }
+  let count = 0;
+  const bad = async (endpoint: string): Promise<unknown> => {
+    if (endpoint === 'dashboard') {
+      count++;
+      return { dataset: wireDataset(), results: [wireRow()] };
+    }
+    if (endpoint === 'kpis') return { activeSyncRunId: '42', kpis: [wireKpi({ key: 'alien' })] };
+    if (endpoint === 'facilities') return { facilities: [wireFacility()] };
+    return { tambons: [wireTambon()] };
+  };
+  await assert.rejects(loadConsistentDashboard(bad, new AbortController().signal));
+  assert.equal(count, 1);
+});
+
+test('snapshot loader respects no-active and aborted reload', async () => {
+  let nonDashboard = 0;
+  const inactive = await loadConsistentDashboard(async (endpoint) => {
+    if (endpoint !== 'dashboard') nonDashboard += 1;
+    return { dataset: null, results: [] };
+  }, new AbortController().signal);
+  assert.equal(inactive.dataset, null);
+  assert.equal(nonDashboard, 0);
+
+  const controller = new AbortController();
+  let count = 0;
+  const interleaved = async (endpoint: string): Promise<unknown> => {
+    if (endpoint === 'dashboard') {
+      count++;
+      return { dataset: wireDataset(), results: [wireRow()] };
+    }
+    if (endpoint === 'kpis') {
+      controller.abort();
+      return { activeSyncRunId: '43', kpis: [wireKpi()] };
+    }
+    if (endpoint === 'facilities') return { facilities: [wireFacility()] };
+    return { tambons: [wireTambon()] };
+  };
+  await assert.rejects(loadConsistentDashboard(interleaved, controller.signal), {
+    name: 'AbortError',
+  });
+  assert.equal(count, 1);
+});
