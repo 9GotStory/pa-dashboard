@@ -1067,8 +1067,13 @@ function buildSyncStatus(
 
 function normalizeDashboardResult(
   row: unknown,
+  activeFiscalYear: number,
 ): PublicDashboardResult {
   const source = asRowObject(row);
+
+  if (requireInteger(source, "result_fiscal_year") !== activeFiscalYear) {
+    throw new Error("Active KPI result fiscal year disagrees with its sync run");
+  }
 
   if (
     source.snapshot_definition_match_count !== 1
