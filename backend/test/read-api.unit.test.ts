@@ -3136,6 +3136,8 @@ test(
         ),
       );
 
+      assert.ok(sql.includes("kpi.fiscal_year AS result_fiscal_year"));
+
       assert.ok(
         sql.includes(
           "kpi.kpi_definition_id::TEXT AS kpi_definition_id",
