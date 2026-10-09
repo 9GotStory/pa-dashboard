@@ -213,6 +213,8 @@ const DASHBOARD_QUERY = `
         THEN snapshot.definition ->> 'kpiKey'
       ELSE definition.kpi_key
     END AS kpi_key,
+    kpi.kpi_definition_id::TEXT
+      AS kpi_definition_id,
     kpi.period_code AS period_code,
     kpi.areacode AS areacode,
     kpi.hospcode AS hospcode,
@@ -1082,15 +1084,44 @@ function buildDashboard(
     );
   }
 
+  const definitionByKey =
+    new Map<string, string>();
+
+  const results = rows.map((row) => {
+    const result =
+      normalizeDashboardResult(row);
+    const definitionId =
+      requireDecimalIdentity(
+        asRowObject(row),
+        "kpi_definition_id",
+      );
+    const priorDefinitionId =
+      definitionByKey.get(result.kpiKey);
+
+    if (
+      priorDefinitionId !== undefined &&
+      priorDefinitionId !== definitionId
+    ) {
+      throw new Error(
+        "Active dashboard has conflicting KPI machine identities",
+      );
+    }
+
+    definitionByKey.set(
+      result.kpiKey,
+      definitionId,
+    );
+
+    return result;
+  });
+
   return {
     dataset: {
       ...dataset,
       sourceLastUpdated:
         requireSourceLastUpdated(source),
     },
-    results: rows.map((row) =>
-      normalizeDashboardResult(row),
-    ),
+    results,
   };
 }
 
@@ -1108,8 +1139,36 @@ export function registerReadApiRoutes(
             KPI_CATALOG_QUERY,
           );
 
+        const seenActiveKeys =
+          new Set<string>();
+
         const kpis = result.rows.map(
-          (row) => normalizeKpi(row),
+          (row) => {
+            const normalized =
+              normalizeKpi(row);
+            const activeId = normalizeId(
+              asRowObject(row),
+              "active_sync_run_id",
+            );
+
+            if (activeId !== null) {
+              if (
+                seenActiveKeys.has(
+                  normalized.key,
+                )
+              ) {
+                throw new Error(
+                  "Active catalog has conflicting KPI machine identities",
+                );
+              }
+
+              seenActiveKeys.add(
+                normalized.key,
+              );
+            }
+
+            return normalized;
+          },
         );
 
         return { kpis };

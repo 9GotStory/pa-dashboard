@@ -1903,181 +1903,170 @@ test(
         },
       );
 
-      await t.test(
-        "active dataset fails closed when a KPI snapshot definition is missing",
+      // Snapshots are immutable after creation (migration 0002).
+      // Exercise corrupted historical evidence via a distinct, newly
+      // inserted succeeded run rather than mutating an active run.
+      async function assertActiveSnapshotUnavailable(
+        configSnapshot: Readonly<Record<string, unknown>>,
+      ): Promise<void> {
+        const fixtureRunId = await insertSyncRun(
+          pool,
+          {
+            status: "succeeded",
+            startedAt: new Date("2026-09-20T00:10:00.000Z"),
+            finishedAt: new Date("2026-09-20T00:15:00.000Z"),
+            errorSummary: null,
+            configSnapshot,
+          },
+        );
 
-        async () => {
-          const corruptedSnapshot = {
-            definitions:
-              activeRunConfigSnapshot
-                .definitions
-                .filter(
-                  (definition) =>
-                    definition.kpiKey !==
-                    "s_kpi_anc12",
-                ),
-          };
+        try {
+          await pool.query(
+            `
+              INSERT INTO kpi_results (
+                sync_run_id,
+                kpi_definition_id,
+                fiscal_year,
+                period_code,
+                areacode,
+                hospcode,
+                target,
+                result,
+                details,
+                calculated_at
+              )
+              SELECT
+                $2::BIGINT,
+                kpi_definition_id,
+                fiscal_year,
+                period_code,
+                areacode,
+                hospcode,
+                target,
+                result,
+                details,
+                calculated_at
+              FROM kpi_results
+              WHERE sync_run_id = $1::BIGINT
+            `,
+            [activeRunId, fixtureRunId],
+          );
 
-          try {
-            await pool.query(
-              `
-                UPDATE sync_runs
-                SET config_snapshot =
-                  $2::JSONB
-                WHERE id = $1
-              `,
-              [
-                activeRunId,
-                JSON.stringify(
-                  corruptedSnapshot,
-                ),
-              ],
-            );
+          await activateRun(pool, fixtureRunId);
 
-            const catalogResponse =
-              await fastify.inject({
-                method: "GET",
-                url: "/api/v1/kpis",
-              });
+          for (const url of [
+            "/api/v1/kpis",
+            "/api/v1/dashboard",
+          ]) {
+            const response = await fastify.inject({
+              method: "GET",
+              url,
+            });
 
             assert.equal(
-              catalogResponse.statusCode,
+              response.statusCode,
               503,
+              `Expected fail-closed response from ${url}`,
             );
-
             assert.equal(
-              catalogResponse.body,
+              response.body,
               '{"error":"service_unavailable"}',
-            );
-
-            const dashboardResponse =
-              await fastify.inject({
-                method: "GET",
-                url: "/api/v1/dashboard",
-              });
-
-            assert.equal(
-              dashboardResponse.statusCode,
-              503,
-            );
-
-            assert.equal(
-              dashboardResponse.body,
-              '{"error":"service_unavailable"}',
-            );
-          } finally {
-            await pool.query(
-              `
-                UPDATE sync_runs
-                SET config_snapshot =
-                  $2::JSONB
-                WHERE id = $1
-              `,
-              [
-                activeRunId,
-                JSON.stringify(
-                  activeRunConfigSnapshot,
-                ),
-              ],
             );
           }
+        } finally {
+          // Restore the originally activated dataset before deleting
+          // the temporary run. This does not modify either snapshot.
+          await pool.query(
+            `
+              UPDATE app_state
+              SET active_sync_run_id = $1,
+                  updated_at = NOW()
+              WHERE singleton_id = 1
+            `,
+            [activeRunId],
+          );
+          await pool.query(
+            "DELETE FROM sync_runs WHERE id = $1",
+            [fixtureRunId],
+          );
+        }
+      }
+
+      await t.test(
+        "active dataset fails closed when a KPI snapshot definition is missing",
+        async () => {
+          await assertActiveSnapshotUnavailable({
+            definitions: activeRunConfigSnapshot.definitions.filter(
+              (definition) =>
+                definition.kpiKey !== "s_kpi_anc12",
+            ),
+          });
         },
       );
 
       await t.test(
         "active dataset fails closed when a KPI snapshot definition is duplicated",
-
         async () => {
           const originalDefinition =
-            activeRunConfigSnapshot
-              .definitions
-              .find(
-                (definition) =>
-                  definition.kpiKey ===
-                  "s_kpi_anc12",
-              );
+            activeRunConfigSnapshot.definitions.find(
+              (definition) =>
+                definition.kpiKey === "s_kpi_anc12",
+            );
 
-          assert.ok(
-            originalDefinition,
-          );
+          assert.ok(originalDefinition);
 
-          const corruptedSnapshot = {
+          await assertActiveSnapshotUnavailable({
             definitions: [
-              ...activeRunConfigSnapshot
-                .definitions,
+              ...activeRunConfigSnapshot.definitions,
               {
                 ...originalDefinition,
-                kpiKey:
-                  "s_kpi_anc12__conflicting_duplicate",
+                kpiKey: "s_kpi_anc12__conflicting_duplicate",
               },
             ],
-          };
-
-          try {
-            await pool.query(
-              `
-                UPDATE sync_runs
-                SET config_snapshot =
-                  $2::JSONB
-                WHERE id = $1
-              `,
-              [
-                activeRunId,
-                JSON.stringify(
-                  corruptedSnapshot,
-                ),
-              ],
-            );
-
-            const catalogResponse =
-              await fastify.inject({
-                method: "GET",
-                url: "/api/v1/kpis",
-              });
-
-            assert.equal(
-              catalogResponse.statusCode,
-              503,
-            );
-
-            assert.equal(
-              catalogResponse.body,
-              '{"error":"service_unavailable"}',
-            );
-
-            const dashboardResponse =
-              await fastify.inject({
-                method: "GET",
-                url: "/api/v1/dashboard",
-              });
-
-            assert.equal(
-              dashboardResponse.statusCode,
-              503,
-            );
-
-            assert.equal(
-              dashboardResponse.body,
-              '{"error":"service_unavailable"}',
-            );
-          } finally {
-            await pool.query(
-              `
-                UPDATE sync_runs
-                SET config_snapshot =
-                  $2::JSONB
-                WHERE id = $1
-              `,
-              [
-                activeRunId,
-                JSON.stringify(
-                  activeRunConfigSnapshot,
-                ),
-              ],
-            );
-          }
+          });
         },
       );
+
+      for (const scenario of [
+        {
+          name: "two different snapshotted IDs share one machine key",
+          definitions: activeRunConfigSnapshot.definitions.map(
+            (definition) =>
+              definition.kpiKey === "s_anc5"
+                ? {
+                    ...definition,
+                    kpiKey: "s_kpi_anc12",
+                  }
+                : definition,
+          ),
+        },
+        {
+          name: "snapshotted key collides with legacy live-key fallback",
+          definitions: activeRunConfigSnapshot.definitions.map(
+            (definition) =>
+              definition.kpiKey === "s_anc5"
+                ? {
+                    ...definition,
+                    kpiKey: undefined,
+                  }
+                : definition.kpiKey === "s_kpi_anc12"
+                  ? {
+                      ...definition,
+                      kpiKey: "s_anc5",
+                    }
+                  : definition,
+          ),
+        },
+      ]) {
+        await t.test(
+          `active dataset rejects machine-key collision: ${scenario.name}`,
+          async () => {
+            await assertActiveSnapshotUnavailable({
+              definitions: scenario.definitions,
+            });
+          },
+        );
+      }
 
       await t.test(
         "dashboard live response exposes only public fields",
