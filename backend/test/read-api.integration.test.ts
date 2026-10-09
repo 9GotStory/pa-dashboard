@@ -2079,6 +2079,92 @@ test(
         },
       );
 
+      for (const scenario of [
+        {
+          name: "two different snapshotted IDs share one machine key",
+          definitions: activeRunConfigSnapshot.definitions.map(
+            (definition) =>
+              definition.kpiKey === "s_anc5"
+                ? {
+                    ...definition,
+                    kpiKey: "s_kpi_anc12",
+                  }
+                : definition,
+          ),
+        },
+        {
+          name: "snapshotted key collides with legacy live-key fallback",
+          definitions: activeRunConfigSnapshot.definitions.map(
+            (definition) =>
+              definition.kpiKey === "s_anc5"
+                ? {
+                    ...definition,
+                    kpiKey: undefined,
+                  }
+                : definition.kpiKey === "s_kpi_anc12"
+                  ? {
+                      ...definition,
+                      kpiKey: "s_anc5",
+                    }
+                  : definition,
+          ),
+        },
+      ]) {
+        await t.test(
+          `active dataset rejects machine-key collision: ${scenario.name}`,
+
+          async () => {
+            try {
+              await pool.query(
+                `
+                  UPDATE sync_runs
+                  SET config_snapshot = $2::JSONB
+                  WHERE id = $1
+                `,
+                [
+                  activeRunId,
+                  JSON.stringify({
+                    definitions: scenario.definitions,
+                  }),
+                ],
+              );
+
+              for (const url of [
+                "/api/v1/kpis",
+                "/api/v1/dashboard",
+              ]) {
+                const response = await fastify.inject({
+                  method: "GET",
+                  url,
+                });
+
+                assert.equal(
+                  response.statusCode,
+                  503,
+                  `${scenario.name}: ${url}`,
+                );
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+              }
+            } finally {
+              await pool.query(
+                `
+                  UPDATE sync_runs
+                  SET config_snapshot = $2::JSONB
+                  WHERE id = $1
+                `,
+                [
+                  activeRunId,
+                  JSON.stringify(activeRunConfigSnapshot),
+                ],
+              );
+            }
+          },
+        );
+      }
+
       await t.test(
         "dashboard live response exposes only public fields",
 
