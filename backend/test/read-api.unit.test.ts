@@ -588,6 +588,131 @@ test(
 );
 
 test(
+  "KPI catalog rejects blank effective machine identities in live and active modes",
+
+  async (t) => {
+    const candidates: readonly {
+      readonly name: string;
+      readonly key: unknown;
+      readonly allowed: boolean;
+    }[] = [
+      { name: "empty", key: "", allowed: false },
+      { name: "spaces", key: "   ", allowed: false },
+      { name: "tabs and newline", key: "\t\n", allowed: false },
+      { name: "null", key: null, allowed: false },
+      { name: "number", key: 101, allowed: false },
+      { name: "normal key", key: "s_kpi_anc12", allowed: true },
+      { name: "padded nonblank", key: "  s_kpi_anc12  ", allowed: true },
+    ];
+
+    for (const mode of ["live", "active"] as const) {
+      for (const scenario of candidates) {
+        await t.test(
+          `${mode}: ${scenario.name}`,
+          async () => {
+            const row = {
+              active_sync_run_id: mode === "active" ? "42" : null,
+              snapshot_definition_present: mode === "active",
+              snapshot_definition_match_count: mode === "active" ? 1 : 0,
+              kpi_key: scenario.key,
+              title: "ANC",
+              target_value: "75",
+              sort_order: 1,
+              link: null,
+              category_code: "kpi_master",
+              category_name: "ตัวชี้วัดพื้นฐาน",
+              category_order: 1,
+              subgroup: "",
+              is_quarterly: false,
+              target_months: null,
+              effective_quarter: null,
+            };
+
+            const app = buildApp({
+              db: createFakeDatabase({ kpiRows: [row] }),
+            });
+
+            try {
+              const response = await app.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+
+              if (!scenario.allowed) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+                assert.equal(response.body.includes("ANC"), false);
+              } else {
+                assert.equal(response.statusCode, 200);
+                const body = response.json() as {
+                  readonly kpis: readonly {
+                    readonly key: string;
+                    readonly subgroup: string | null;
+                  }[];
+                };
+                assert.equal(body.kpis.length, 1);
+                assert.equal(body.kpis[0]?.key, scenario.key);
+                assert.equal(body.kpis[0]?.subgroup, "");
+              }
+            } finally {
+              await app.close();
+            }
+          },
+        );
+      }
+    }
+  },
+);
+
+test(
+  "KPI catalog does not leak earlier members when a later key is blank",
+
+  async () => {
+    const row = (key: string) => ({
+      active_sync_run_id: "42",
+      snapshot_definition_present: true,
+      snapshot_definition_match_count: 1,
+      kpi_key: key,
+      title: "Valid title",
+      target_value: "75",
+      sort_order: 1,
+      link: null,
+      category_code: "kpi_master",
+      category_name: "ตัวชี้วัดพื้นฐาน",
+      category_order: 1,
+      subgroup: null,
+      is_quarterly: false,
+      target_months: null,
+      effective_quarter: null,
+    });
+
+    const app = buildApp({
+      db: createFakeDatabase({
+        kpiRows: [
+          row("s_kpi_anc12"),
+          row("   "),
+        ],
+      }),
+    });
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/kpis",
+      });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.body, '{"error":"service_unavailable"}');
+      assert.equal(response.body.includes("s_kpi_anc12"), false);
+      assert.equal(response.body.includes("Valid title"), false);
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+test(
   "KPI catalog enforces nonblank live display fields in preactivation and active modes",
 
   async (t) => {

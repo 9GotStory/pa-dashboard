@@ -825,7 +825,7 @@ function normalizeKpi(
   }
 
   return {
-    key: requireString(
+    key: requireNonblankString(
       source,
       "kpi_key",
     ),

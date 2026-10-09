@@ -962,6 +962,99 @@ test(
         },
       );
 
+      await t.test(
+        "preactivation catalog rejects blank live registry KPI keys and recovers",
+
+        async () => {
+          const originals = await pool.query<{
+            readonly id: string;
+            readonly kpi_key: string;
+          }>(`
+            SELECT id::TEXT AS id, kpi_key
+            FROM kpi_definitions
+            WHERE kpi_key = ANY($1::TEXT[])
+            ORDER BY kpi_key
+          `, [["s_epi1", "s_kpi_anc12"]]);
+          assert.equal(originals.rows.length, 2);
+
+          const outside = originals.rows.find(
+            (row) => row.kpi_key === "s_epi1",
+          );
+          const selected = originals.rows.find(
+            (row) => row.kpi_key === "s_kpi_anc12",
+          );
+          assert.ok(outside);
+          assert.ok(selected);
+
+          const editKey = async (id: string, key: string) => {
+            const updated = await pool.query(
+              "UPDATE kpi_definitions SET kpi_key = $1 WHERE id = $2",
+              [key, id],
+            );
+            assert.equal(updated.rowCount, 1);
+          };
+
+          try {
+            // A source-only nonmember must not invalidate the public catalog.
+            await editKey(outside.id, "   ");
+            const ignored = await fastify.inject({
+              method: "GET",
+              url: "/api/v1/kpis",
+            });
+            assert.equal(ignored.statusCode, 200);
+            assert.equal(
+              (ignored.json() as { readonly kpis: readonly PublicKpiItem[] }).kpis.length,
+              47,
+            );
+            await editKey(outside.id, outside.kpi_key);
+
+            for (const scenario of [
+              { key: "", valid: false },
+              { key: "   ", valid: false },
+              { key: "\t\n", valid: false },
+              { key: "  s_kpi_anc12  ", valid: true },
+              { key: "s_kpi_anc12_repaired", valid: true },
+            ]) {
+              await editKey(selected.id, scenario.key);
+              const response = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              if (!scenario.valid) {
+                assert.equal(response.statusCode, 503);
+                assert.equal(
+                  response.body,
+                  '{"error":"service_unavailable"}',
+                );
+                assert.equal(response.body.includes("s_anc5"), false);
+              } else {
+                assert.equal(response.statusCode, 200);
+                const catalog = response.json() as {
+                  readonly kpis: readonly PublicKpiItem[];
+                };
+                assert.equal(catalog.kpis.length, 47);
+                assert.ok(catalog.kpis.some(
+                  (kpi) => kpi.key === scenario.key,
+                ));
+              }
+            }
+          } finally {
+            await editKey(selected.id, selected.kpi_key);
+            await editKey(outside.id, outside.kpi_key);
+          }
+
+          const restored = await fastify.inject({
+            method: "GET",
+            url: "/api/v1/kpis",
+          });
+          assert.equal(restored.statusCode, 200);
+          const body = restored.json() as {
+            readonly kpis: readonly PublicKpiItem[];
+          };
+          assert.equal(body.kpis[0]?.key, selected.kpi_key);
+        },
+      );
+
       async function exerciseLiveKpiDisplayText(
         expectedCatalogSize: number,
       ): Promise<void> {
@@ -2526,6 +2619,209 @@ test(
           }
         });
       }
+
+      // The active snapshot is immutable. All malformed variants below
+      // use a newly inserted run through withActiveSnapshot().
+      function snapshotWithAncKey(
+        key: string | null | undefined,
+      ): Readonly<Record<string, unknown>> {
+        return {
+          definitions: activeRunConfigSnapshot.definitions.map(
+            (definition) => definition.kpiKey === "s_kpi_anc12"
+              ? { ...definition, kpiKey: key }
+              : definition,
+          ),
+        };
+      }
+
+      for (const scenario of [
+        { name: "empty frozen string", key: "" },
+        { name: "whitespace-only frozen string", key: "   " },
+        { name: "tab and newline frozen string", key: "\t\n" },
+        { name: "explicit frozen null", key: null },
+      ] as const) {
+        await t.test(
+          `active effective KPI identity rejects ${scenario.name}`,
+          async () => {
+            await assertActiveSnapshotUnavailable(
+              snapshotWithAncKey(scenario.key),
+            );
+          },
+        );
+      }
+
+      await t.test(
+        "active legacy missing key field falls back to live and rejects invalid live fallback",
+
+        async () => {
+          // JSON.stringify omits undefined object fields; this is
+          // a missing kpiKey, not an explicit null/blank key.
+          await withActiveSnapshot(
+            snapshotWithAncKey(undefined),
+            async () => {
+              const original = await pool.query<{
+                readonly id: string;
+                readonly kpi_key: string;
+              }>(`
+                SELECT id::TEXT AS id, kpi_key
+                FROM kpi_definitions
+                WHERE kpi_key = 's_kpi_anc12'
+              `);
+              assert.equal(original.rows.length, 1);
+              const registry = original.rows[0];
+              assert.ok(registry);
+
+              const edit = async (key: string): Promise<void> => {
+                await pool.query(
+                  "UPDATE kpi_definitions SET kpi_key = $1 WHERE id = $2",
+                  [key, registry.id],
+                );
+              };
+
+              try {
+                const validCatalog = await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+                assert.equal(validCatalog.statusCode, 200);
+                assert.ok(
+                  (validCatalog.json() as {
+                    readonly kpis: readonly PublicKpiItem[];
+                  }).kpis.some((kpi) => kpi.key === registry.kpi_key),
+                );
+                assert.equal(
+                  (await fastify.inject({
+                    method: "GET",
+                    url: "/api/v1/dashboard",
+                  })).statusCode,
+                  200,
+                );
+
+                for (const key of ["", "   ", "\t\n"]) {
+                  await edit(key);
+                  for (const url of ["/api/v1/kpis", "/api/v1/dashboard"]) {
+                    const response = await fastify.inject({
+                      method: "GET",
+                      url,
+                    });
+                    assert.equal(response.statusCode, 503);
+                    assert.equal(
+                      response.body,
+                      '{"error":"service_unavailable"}',
+                    );
+                  }
+                }
+
+                await edit(registry.kpi_key);
+                assert.equal(
+                  (await fastify.inject({
+                    method: "GET",
+                    url: "/api/v1/kpis",
+                  })).statusCode,
+                  200,
+                );
+                assert.equal(
+                  (await fastify.inject({
+                    method: "GET",
+                    url: "/api/v1/dashboard",
+                  })).statusCode,
+                  200,
+                );
+              } finally {
+                await edit(registry.kpi_key);
+              }
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "active frozen valid key survives invalid live registry key drift",
+
+        async () => {
+          const registry = await pool.query<{
+            readonly id: string;
+            readonly kpi_key: string;
+          }>(`
+            SELECT id::TEXT AS id, kpi_key
+            FROM kpi_definitions
+            WHERE kpi_key = 's_kpi_anc12'
+          `);
+          assert.equal(registry.rows.length, 1);
+          const row = registry.rows[0];
+          assert.ok(row);
+
+          await withActiveSnapshot(
+            snapshotWithAncKey("s_kpi_anc12"),
+            async () => {
+              try {
+                await pool.query(
+                  "UPDATE kpi_definitions SET kpi_key = '   ' WHERE id = $1",
+                  [row.id],
+                );
+                const response = await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/kpis",
+                });
+                assert.equal(response.statusCode, 200);
+                const data = response.json() as {
+                  readonly kpis: readonly PublicKpiItem[];
+                };
+                assert.equal(data.kpis.length, 3);
+                assert.ok(data.kpis.some((kpi) => kpi.key === row.kpi_key));
+
+                const dashboard = await fastify.inject({
+                  method: "GET",
+                  url: "/api/v1/dashboard",
+                });
+                assert.equal(dashboard.statusCode, 200);
+                const rows = (dashboard.json() as {
+                  readonly results: readonly { readonly kpiKey: string }[];
+                }).results;
+                assert.ok(rows.some((item) => item.kpiKey === row.kpi_key));
+                assert.equal(rows.some((item) => item.kpiKey === "   "), false);
+              } finally {
+                await pool.query(
+                  "UPDATE kpi_definitions SET kpi_key = $1 WHERE id = $2",
+                  [row.kpi_key, row.id],
+                );
+              }
+            },
+          );
+        },
+      );
+
+      await t.test(
+        "active nonblank padded frozen identity is preserved verbatim by both read APIs",
+
+        async () => {
+          const paddedKey = "  s_kpi_anc12  ";
+          await withActiveSnapshot(
+            snapshotWithAncKey(paddedKey),
+            async () => {
+              const catalog = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/kpis",
+              });
+              assert.equal(catalog.statusCode, 200);
+              const kpis = (catalog.json() as {
+                readonly kpis: readonly PublicKpiItem[];
+              }).kpis;
+              assert.equal(kpis.length, 3);
+              assert.ok(kpis.some((kpi) => kpi.key === paddedKey));
+
+              const dashboard = await fastify.inject({
+                method: "GET",
+                url: "/api/v1/dashboard",
+              });
+              assert.equal(dashboard.statusCode, 200);
+              assert.ok((dashboard.json() as {
+                readonly results: readonly { readonly kpiKey: string }[];
+              }).results.some((result) => result.kpiKey === paddedKey));
+            },
+          );
+        },
+      );
 
       await t.test(
         "active dataset fails closed when a KPI snapshot definition is missing",
