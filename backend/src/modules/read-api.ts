@@ -1240,7 +1240,7 @@ function buildDashboard(
 
   const results = rows.map((row) => {
     const result =
-      normalizeDashboardResult(row);
+      normalizeDashboardResult(row, dataset.fiscalYear);
     const definitionId =
       requireDecimalIdentity(
         asRowObject(row),
