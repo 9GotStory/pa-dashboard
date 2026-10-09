@@ -2407,6 +2407,13 @@ test(
 
       assert.ok(
         sql.includes(
+          "kpi.kpi_definition_id::TEXT AS kpi_definition_id",
+        ),
+        "Dashboard must retain private definition identity for key-collision checks",
+      );
+
+      assert.ok(
+        sql.includes(
           "kpi.sync_run_id = state.active_sync_run_id",
         ),
         "Results must be restricted to the active run",
