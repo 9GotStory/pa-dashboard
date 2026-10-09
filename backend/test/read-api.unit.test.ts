@@ -137,7 +137,9 @@ test(
 
   async () => {
     const db =
-      createFakeDatabase({});
+      createFakeDatabase({
+        kpiRows: [{ active_sync_run_id: null, kpi_key: null }],
+      });
 
     const app = buildApp({
       db,
@@ -250,6 +252,7 @@ test(
       assert.deepEqual(
         response.json(),
         {
+          activeSyncRunId: null,
           kpis: [
             {
               key: "s_kpi_anc12",
