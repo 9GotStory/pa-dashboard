@@ -1,6 +1,7 @@
 # SPEC — Song Health Data Center
 
-> สถานะ: ร่าง v0.1 · 29 ต.ค. 2569 · ขอบเขต: เฟส 1
+> สถานะ: ร่าง v0.2 · 29 ต.ค. 2569 · ขอบเขต: เฟส 1
+> v0.2: ย้าย hosting ไป Cloudflare Pages, ตัด `basePath`, GitHub Pages เป็นหน้า stub, ยืนยันตัวตน 2 ชั้น (D1–D5 สรุปแล้วใน §15)
 > เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, กติกาคำนวณ, seed)
 > ต้นแบบหน้าจอ: `song-health-data-center-review-03-epi-real-response-r6.html` (R6) ใช้เป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขทุกตัวในไฟล์เป็นข้อมูลจำลอง
 
@@ -12,12 +13,15 @@
 2. PA Dashboard ย้ายไปที่ `/pa` และทำงานเหมือนเดิมทุกอย่าง
 3. จัดรายงานตามแค็ตตาล็อกของ HDC Open Data เป็น **หมวด → หัวข้อ → กลุ่ม → รายงาน** และเลือกเฉพาะหัวข้อและรายงานที่ต้องการ (opt-in)
 4. เก็บข้อมูลย้อนหลัง 5 ปีงบประมาณ เฉพาะพื้นที่อำเภอสอง (`5406`)
+5. ย้าย hosting จาก GitHub Pages ไป Cloudflare Pages โดยคง stack เดิม: Next.js static export + GAS + Google Sheets
 
 ## 2. ขอบเขต
 
 ### 2.1 เฟส 1
 
 - ย้าย route: PA ไป `/pa` และ Data Center อยู่ที่ `/`
+- Hosting: Cloudflare Pages + Cloudflare Access บน `/sync` และหน้า stub ส่งต่อลิงก์เก่าบน GitHub Pages (§12.5–12.6)
+- ยืนยันตัวตนของ endpoint ที่เขียนข้อมูล: token ใน Script Properties (§12.4, SCHEMA §3.0)
 - ชีตแค็ตตาล็อก `hdc_topics`, `hdc_reports` กับสคริปต์ค้นหาและรีเฟรชแค็ตตาล็อก
 - เก็บข้อมูลหลายปี: บันทึกแบบแทนที่ทีละปี และชีต `sync_status`
 - หน้าแรก คลังรายงาน และหน้ารายงานชนิด `coverage`
@@ -32,6 +36,7 @@
 | ชื่อคอลัมน์ผลแยกย่อย เช่น 9 ด้านของ `s_aged9`, `result1–4` ของการคัดกรอง NCD | ต้องยืนยันจาก data dictionary ของ HDC ก่อน ไม่ตั้งชื่อเอง (SCHEMA §4.5) |
 | ปุ่มรีเฟรชแค็ตตาล็อกบนหน้า `/sync` | เฟส 1 ใช้สคริปต์ node |
 | เทียบกับอำเภออื่นหรือภาพรวมจังหวัด | เก็บเฉพาะ `5406` ตามที่ตกลง |
+| ดึงข้อมูล MOPH ด้วย Cloudflare Pages Function แทนเบราว์เซอร์ | MOPH อาจบล็อก IP ของ datacenter (น่าจะเป็นเหตุเดียวกับที่ GAS ดึงเองไม่เสถียร) ต้องทดลองก่อน |
 
 **ตัดออกจาก R6 ถาวร:** ส่วนนำเข้า JSON ของรายงานวัคซีน EPI-01 ได้แก่ textarea, ปุ่มอัปโหลดไฟล์, `epiImport`, แผงจับคู่รหัสกลุ่มอายุ และแถบสถานะ coverage ของไฟล์ที่นำเข้า ทุกรายงานรับข้อมูลจาก GAS เท่านั้น
 
@@ -47,20 +52,23 @@ HDC Open Data (opendata.moph.go.th)
 GAS Web App (src/scripts/รหัส.js) ──► Google Sheets "PA-Data"
    ▲  GET ?action=… / ?sheet=…
    │
-Next.js static export บน GitHub Pages (basePath /pa-dashboard)
+Next.js static export บน Cloudflare Pages (https://<โดเมน>, ไม่มี basePath)
    /                     Data Center หน้าแรก
    /reports              คลังรายงาน
    /reports/view?id=…    หน้ารายงาน
    /pa                   PA Dashboard (ย้ายมา)
-   /sync                 Sync (เดิม + เลือกปี)
+   /sync                 Sync (เดิม + เลือกปี) — หลัง Cloudflare Access
+
+GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub ส่งต่อไปโดเมนใหม่
 ```
 
 หลักการ:
 
 - ช่องทางหลักของการดึงข้อมูลยังเป็นฝั่ง client แล้วส่งเข้า GAS เหมือนเดิม เพราะ daily trigger ของ GAS ดึงจาก MOPH ได้ไม่เสถียร
-- GAS เป็นจุดเดียวที่ whitelist ตาราง กรองพื้นที่ และจัดการข้อมูลหลายปี
+- GAS เป็นจุดเดียวที่ whitelist ตาราง กรองพื้นที่ จัดการข้อมูลหลายปี และตรวจ token ของการเขียน
 - ข้อจำกัด GAS เดิมยังใช้: GET ส่งค่าทาง query string เท่านั้น ไม่มี custom header, POST ใช้ `Content-Type: text/plain`
 - Frontend ใช้ `NEXT_PUBLIC_GAS_SCRIPT_URL` (ถ้าไม่มี ใช้ URL เดียวกับ `src/lib/useKPIData.ts`) ส่วน PA ไม่แก้
+- ไม่มีความลับใด ๆ ใน repo หรือใน bundle: token อยู่ใน Script Properties, ใน env ของเครื่องที่รันสคริปต์ และในหัวของผู้ดูแลเท่านั้น
 
 ## 4. Routes
 
@@ -70,13 +78,13 @@ Next.js static export บน GitHub Pages (basePath /pa-dashboard)
 | `/reports` | คลังรายงาน | `src/app/reports/page.tsx` | query: `main`, `cat`, `q`, `page` |
 | `/reports/view` | หน้ารายงาน | `src/app/reports/view/page.tsx` | query: `id` (= `opendata_id`) และตัวกรองใน §9.4 |
 | `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` |
-| `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปี (§12.1) |
+| `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและเปลี่ยน PIN เป็น token (§12.1) |
 
 - หน้ารายงานใช้ query (`?id=`) แทน dynamic route `[id]` เพราะ `output: 'export'` สร้างได้เฉพาะ path ที่รู้ตอน build แต่รายงานต้องเปิดจากชีตได้โดยไม่ deploy ใหม่
 - หน้าที่อ่าน query ด้วย `useSearchParams` ต้องห่อด้วย `<Suspense>` ตามข้อกำหนดของ static export
 - `/pa?cat=…` ใช้ได้เหมือนเดิม เพราะโค้ด PA อ่าน `window.location.pathname` อยู่แล้ว
-- ลิงก์เดิมรูปแบบ `/?cat=…` redirect ไป `/pa?cat=…` (D3)
-- `basePath` คงเป็น `/pa-dashboard` (D1)
+- ไม่มี `basePath` อีก: ลบ `basePath` และ `isProd` ออกจาก `next.config.ts` ส่วน `output: 'export'` และ `images.unoptimized` คงไว้
+- ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป
 - metadata ของ root layout เปลี่ยนเป็นของ Data Center
 
 ## 5. แค็ตตาล็อกรายงาน
@@ -166,6 +174,9 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | GET | `?action=diag&pin=…` | ผู้ดูแล | เพิ่ม `setup=datacenter` และ `setup=dc_seed` |
 | POST | `save_kpi_data` | `/sync`, node | แก้: รับ `year` และบันทึกแบบหลายปี |
 | POST | `save_catalog` | `hdc-catalog.js` | ใหม่ |
+| POST | `verify_token` | `/sync` | ใหม่: ใช้ตรวจ token ตอนเข้าหน้า |
+
+- ทุก POST ต้องมี `token` ตรงกับ Script Property `WRITE_TOKEN` และ diag ต้องมี `pin` ตรงกับ Script Property `DIAG_PIN` (SCHEMA §3.0)
 
 - `?action=catalog` แคชใน `CacheService` 5 นาที และล้างเมื่อบันทึกข้อมูล บันทึกแค็ตตาล็อก หรือเรียก `clearConfigCache()` ดังนั้นการแก้ชีตเอง (เช่น ติ๊ก `enabled` หรือเพิ่มหัวข้อ) จะเห็นผลภายใน 5 นาที หรือทันทีหลังกดเมนู "Clear Config Cache"
 - `?action=report` ตอบเฉพาะรายงานที่ `enabled = TRUE`
@@ -266,14 +277,17 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 
 ### 12.1 หน้า `/sync`
 
+- หน้า login เปลี่ยนจาก PIN เป็นช่องกรอก token ของ GAS ตรวจด้วย `verify_token` แล้วเก็บใน `sessionStorage` ลบ `NEXT_PUBLIC_SYNC_PIN_CODE` ทิ้ง
 - เพิ่มตัวเลือกปี: ปีใน window ค่าเริ่มต้นเป็น `current_year` และส่ง `year` ไปกับ `save_kpi_data`
 - รายการตารางมาจาก `meta.kpi_config` เหมือนเดิม ซึ่งตอนนี้รวมตาราง DC แล้ว
 - ใช้กติกาการดึงใน §6.1
+- โค้ดของหน้านี้ยังเป็นสาธารณะ (อยู่ใน bundle) ความปลอดภัยอยู่ที่ Cloudflare Access กันคนเปิดหน้า และ token กันการเขียนเข้า GAS ไม่ใช่ที่โค้ด
 
 ### 12.2 `src/scripts/sync-moph-to-gas.js`
 
 - `--year 2567` (ใส่ซ้ำได้) · `--backfill` ดึงทุกปีใน window · `--only <table>` เดิม
 - ถ้าไม่ระบุปี ใช้ `current_year` เหมือนเดิม
+- อ่าน token จาก env `GAS_WRITE_TOKEN` ถ้าไม่มีให้หยุดทันทีพร้อมข้อความบอกวิธีตั้ง
 - ใช้กติกาการดึงใน §6.1
 
 ### 12.3 `src/scripts/hdc-catalog.js` (ใหม่)
@@ -285,20 +299,49 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | `refresh --cat <cat_id>` | ทำเฉพาะหัวข้อเดียว |
 
 - `refresh` อ่านรายการหัวข้อจาก `?action=catalog` ถ้าเพิ่งเพิ่มหัวข้อในชีต ให้กด "Clear Config Cache" ก่อน (§8)
+- `refresh` ต้องมี `GAS_WRITE_TOKEN` ใน env เช่นเดียวกับ §12.2 ส่วน `find` ไม่ต้อง เพราะเรียกแต่ MOPH
 - เว้นช่วง 1–2 วินาทีต่อคำขอ และ retry เมื่อได้ 429
 
 ### 12.4 GAS
 
-- `syncAllData` (trigger รายวัน): ดึง `current_year` ตามกติกา §6.1
+- ความลับ 2 ค่าอยู่ใน Script Properties: `WRITE_TOKEN` (ทุก POST) และ `DIAG_PIN` (diag) ตั้งผ่าน Apps Script editor → Project Settings → Script Properties ลบ `CONFIG.DIAG_PIN` ออกจากโค้ด ถ้า property ไม่ได้ตั้ง endpoint นั้นปฏิเสธทุกคำขอ (fail closed)
+- `syncAllData` (trigger รายวัน): ดึง `current_year` ตามกติกา §6.1 ไม่ต้องใช้ token เพราะรันในสคริปต์เอง
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"
 - `clearConfigCache()` (เมนู "Clear Config Cache") ล้างแคช catalog ด้วย
+
+### 12.5 Cloudflare Pages
+
+| เรื่อง | ค่า |
+|---|---|
+| โปรเจกต์ | ต่อกับ repo GitHub โดยตรง production branch = `main` |
+| Build | preset "Next.js (Static HTML Export)" · build command `npm run build` · output `out` · env `NODE_VERSION=20` |
+| ตัวแปร build | `NEXT_PUBLIC_GAS_SCRIPT_URL` เท่านั้น (ไม่มี PIN อีก) |
+| Preview deployments | ปิด (Preview branch control = None) เพราะ `develop` เป็นโค้ดคนละสถาปัตยกรรมที่ build แบบ static ไม่ผ่าน |
+| โดเมน | รอยืนยัน (§15 D6) ถ้ามีโดเมนของ สสอ.สอง บน Cloudflare ให้เพิ่มเป็น custom domain เช่น `data.<โดเมน>` DNS สร้างให้อัตโนมัติ |
+| Cloudflare Access | Zero Trust → Access → Applications → Self-hosted · application domain `<โดเมน>/sync` · policy Allow เฉพาะอีเมลที่ระบุ · login ด้วย One-time PIN ทางอีเมล · session 24 ชม. |
+
+- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) ส่วน `deploy.yml` เปลี่ยนไปทำ stub (§12.6)
+- Access ระดับ path ต้องใช้โดเมนของเราเอง ถ้าใช้ `*.pages.dev` จะล็อกได้ทั้งเว็บเท่านั้น จึงต้องมีโดเมนก่อนเปิด `/sync` บน Cloudflare
+- Cloudflare Pages เสิร์ฟ `/sync` จาก `sync.html` และ redirect `/sync.html` → `/sync` เอง การตรวจรับต้องลองทั้งสองแบบ
+
+### 12.6 หน้า stub บน GitHub Pages
+
+- โฟลเดอร์ `legacy-redirect/` มี `index.html` และ `404.html` (เนื้อหาเดียวกัน) ไม่มี build
+- JavaScript ในหน้าแปลง URL เก่าเป็นใหม่แล้ว `location.replace`:
+  - `/pa-dashboard/` หรือ `/pa-dashboard/index.html` (มีหรือไม่มี `?cat=`) → `https://<โดเมน>/pa` + query เดิม เพราะ root เดิมคือ PA
+  - `/pa-dashboard/sync` → `https://<โดเมน>/sync`
+  - อื่น ๆ → `https://<โดเมน>/`
+- มี `<meta http-equiv="refresh">` ไปที่ `https://<โดเมน>/` และลิงก์ให้กดเอง สำหรับกรณีไม่มี JavaScript
+- `deploy.yml` ตัดขั้น Node/npm/build ออก เหลือ checkout → upload `./legacy-redirect` → deploy และคง trigger `push` ที่ `main` กับ `workflow_dispatch`
+- GitHub Pages คงไว้แบบนี้ถาวร ไม่มีค่าใช้จ่าย
 
 ## 13. ขั้นตอนเปิดใช้และการตรวจรับ
 
 | # | ขั้นตอน | ตรวจรับ |
 |---|---|---|
-| 1 | Deploy GAS ใหม่ | `BATCH_ALL` ตอบเหมือนเดิม และ `save_kpi_data` ที่ไม่มี `year` บันทึกเป็น `current_year` |
+| 0 | ตั้ง `WRITE_TOKEN` และ `DIAG_PIN` ใน Script Properties | ก่อน deploy GAS ใหม่ ไม่อย่างนั้น POST และ diag จะถูกปฏิเสธทั้งหมด |
+| 1 | Deploy GAS ใหม่ | `BATCH_ALL` ตอบเหมือนเดิม · `save_kpi_data` ที่ไม่มี `year` บันทึกเป็น `current_year` · POST ที่ไม่มี token ได้ `Unauthorized` |
 | 2 | `setup=datacenter` | มีชีตใหม่ 3 ชีต และ `district_code` ใน `settings` |
 | 3 | `hdc-catalog.js find` กับ 18 ตาราง แล้วใส่ `cat_id` ที่ได้ใน `hdc_topics` | ทุกตารางพบหัวข้อ |
 | 4 | `hdc-catalog.js refresh` | `hdc_reports` มีครบ 21 `opendata_id` ใน SCHEMA §6 |
@@ -307,26 +350,30 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | 7 | `sync-moph-to-gas.js --backfill` | `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูล |
 | 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน | ตัวเลขตรงกับ `/pa` |
 | 9 | ตรวจ Data Center | ค่าทั้งปีระดับอำเภอของ KPI ที่ PA คิดแบบรายปีตรงกับ PA ถ้าไม่ตรง ให้ตรวจแถวที่ `result` ว่าง (PA มี fallback ไปใช้ผลรวมรายไตรมาส) และเทียบรายงานอื่น 1–2 รายงานกับหน้า HDC ระดับอำเภอ |
-| 10 | Deploy frontend | `/` เป็น Data Center, `/pa` เป็น PA และ `/?cat=` redirect ไป `/pa` |
+| 10 | สร้างโปรเจกต์ Cloudflare Pages + custom domain | `https://<โดเมน>/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/view?id=…` เปิดได้โดยตรง (ไม่ใช่ 404) |
+| 11 | ตั้ง Cloudflare Access บน `/sync` | เปิด `/sync` และ `/sync.html` แบบไม่ login ต้องเจอหน้า login ของ Cloudflare ส่วน `/` และ `/pa` เปิดได้ปกติ |
+| 12 | Deploy stub บน GitHub Pages | `…/pa-dashboard/?cat=X` ไปที่ `https://<โดเมน>/pa?cat=X` และ `…/pa-dashboard/sync` ไปที่ `/sync` |
 
-**ลำดับสำคัญ:** ตัวกรอง `b_year` ของ `BATCH_ALL` ในขั้น 1 ต้องใช้งานได้ก่อนบันทึกปีที่สองในขั้น 7 ไม่อย่างนั้น PA จะรวมยอดหลายปี
+**ลำดับสำคัญ:** ตัวกรอง `b_year` ของ `BATCH_ALL` ในขั้น 1 ต้องใช้งานได้ก่อนบันทึกปีที่สองในขั้น 7 ไม่อย่างนั้น PA จะรวมยอดหลายปี และขั้น 12 ต้องทำหลังขั้น 10 ผ่านแล้วเท่านั้น
 
 ## 14. ความเสี่ยงและข้อสังเกต
 
 | เรื่อง | ผลกระทบ | แนวทาง |
 |---|---|---|
-| `doPost` ไม่มีการยืนยันตัวตนฝั่ง server, PIN ของ `/sync` เป็น `NEXT_PUBLIC_*` ซึ่งอยู่ใน bundle และ `DIAG_PIN` อยู่ใน repo สาธารณะ | ใครมี URL ของ GAS ก็เขียนทับข้อมูลได้ ซึ่งกระทบความน่าเชื่อถือของพอร์ทัลข้อมูลสาธารณะ | D5 |
+| เดิม `doPost` ไม่มีการยืนยันตัวตนฝั่ง server, PIN ของ `/sync` อยู่ใน bundle และ `DIAG_PIN` อยู่ใน repo สาธารณะ | ใครมี URL ของ GAS ก็เขียนทับข้อมูลได้ | แก้ด้วย D5 (token ใน Script Properties + Cloudflare Access) ส่วน PIN เก่าที่เคยอยู่ใน repo ถือว่ารั่วแล้ว ต้องตั้งค่าใหม่ทั้งหมด |
+| URL ของ GAS Web App เป็นสาธารณะ (อยู่ใน bundle) และ GET ไม่มี token | อ่านข้อมูลได้ทุกคน | ยอมรับ เพราะเป็นข้อมูลสาธารณะระดับหน่วยบริการอยู่แล้ว GET ไม่เปิดชีตภายใน (whitelist เดิม) |
 | MOPH จำกัดความถี่และมี WAF | backfill ใช้เวลานาน และอาจโดน 429 | เว้นช่วงตาม §6.1 และทำ backfill ทีละปีได้ |
 | นิยามรายงานของ HDC เปลี่ยนข้ามปี | แนวโน้ม 5 ปีอาจเทียบคนละนิยาม | แจ้งไว้ใน "เกี่ยวกับรายงานนี้" |
 | แค็ตตาล็อกมีรายการซ้ำและรายการขยะ (เช่น "dasf") | ปนในคลังรายงาน | กรองซ้ำ และใช้ opt-in |
 | ช่องว่างกับเลข 0 แยกกันไม่ได้ (การบันทึกเดิมเก็บ 0 เป็นค่าว่าง) | "ไม่มีข้อมูล" กับ "ศูนย์" ในระดับแถวดูเหมือนกัน | ยอมรับในเฟส 1 การไม่มีข้อมูลตัดสินที่ระดับ (ตาราง, ปี) จาก `sync_status` |
 
-## 15. ข้อที่ต้องยืนยัน
+## 15. ข้อตัดสินใจ
 
-| # | เรื่อง | ค่าที่เสนอ |
+| # | เรื่อง | ข้อสรุป (29 ต.ค. 2569) |
 |---|---|---|
-| D1 | URL และชื่อ repo | คง `basePath` `/pa-dashboard` ไว้ Data Center อยู่ที่ `…/pa-dashboard/` และ PA อยู่ที่ `…/pa-dashboard/pa` |
+| D1 | Hosting และ URL | Cloudflare Pages ไม่มี `basePath` Data Center ที่ `/` (§12.5) |
 | D2 | path ของ PA | `/pa` |
-| D3 | ลิงก์ PA เดิมที่แชร์ไว้ (`/?cat=…`) | redirect ไป `/pa?cat=…` เมื่อพบ `cat` ใน query |
+| D3 | ลิงก์ PA เดิมที่แชร์ไว้ | หน้า stub บน GitHub Pages ส่งต่อไปโดเมนใหม่ (§12.6) ไม่มี redirect ในแอป |
 | D4 | ขอบเขตตำบลบนแผนที่ | ดาวน์โหลดจาก MOPH GIS ครั้งเดียว เก็บเป็น `public/geo/song-tambon.geojson` (SCHEMA §7) ไม่ดึงสดแบบ R6 |
-| D5 | ความปลอดภัยของ endpoint ที่เขียนข้อมูล | เก็บ `WRITE_TOKEN` และ `DIAG_PIN` ใน Script Properties ให้ `doPost` ตรวจ `token` ใน body สคริปต์ node อ่าน token จาก env และหน้า `/sync` ให้ผู้ใช้พิมพ์ token แทน PIN ที่ฝังใน bundle |
+| D5 | ความปลอดภัยของ endpoint ที่เขียนข้อมูล | 2 ชั้น: token ใน Script Properties ตรวจที่ GAS (SCHEMA §3.0) + Cloudflare Access บน `/sync` (§12.5) |
+| D6 | โดเมน | **รอยืนยัน** ทุกที่ที่เขียน `<โดเมน>` ในเอกสารนี้ต้องแทนด้วยโดเมนจริงก่อนทำขั้น 10–12 ใน §13 |
