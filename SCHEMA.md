@@ -1,7 +1,6 @@
 # SCHEMA — Song Health Data Center
 
 > สถานะ: ร่าง v0.3 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md)
-> v0.3: ไม่มีการยืนยันตัวตนฝั่ง server (SPEC D5)
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
 
 ---
@@ -32,7 +31,7 @@
 | `current_quarter` | int 1–4 | `CONFIG.CURRENT_QUARTER` | เดิม |
 | `current_year` | string `^\d{4}$` | `CONFIG.YEAR` | เดิม และเป็นปีสุดท้ายของ window |
 | `province_code` | string `^\d{2}$` | `CONFIG.PROVINCE` | เดิม |
-| `district_code` | string `^\d{4}$` | `5406` | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและบันทึก WARNING |
+| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและบันทึก WARNING |
 
 - เพิ่มใน `SETTINGS_SCHEMA` และเปลี่ยน `SETTINGS_CACHE_KEY` จาก `settings_v2` เป็น `settings_v3` เพราะรูปแบบที่แคชเปลี่ยน
 - จำนวนปีย้อนหลังเป็นค่าคงที่ `CONFIG.HISTORY_YEARS = 5` ไม่ใช่ค่าในชีต
@@ -142,7 +141,7 @@
 3. กรองแถว:
    1. `areacode` ขึ้นต้นด้วย `district_code` (กันแถวเก่าแบบทั้งจังหวัดที่อาจค้างอยู่)
    2. `b_year` อยู่ใน window
-   3. ถ้ามี `opendata_id` ไม่ซ้ำตั้งแต่ 2 ตัวขึ้นไปใน `hdc_reports` (ทุกสถานะ) ที่ใช้ `source_table` เดียวกัน ให้เก็บเฉพาะแถวที่ `id` (ตัวพิมพ์เล็ก) = `opendata_id` ถ้าชีตไม่มีคอลัมน์ `id` ตอบ error `Shared table without id column`
+   3. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` (ตัวพิมพ์เล็ก) = `opendata_id` เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
 4. ตอบ `DcReportData` (§8) โดย `headers` คือ header ของชีต และ `rows` คือค่าตามที่อ่านได้จากชีต
 5. ไม่แคช
 
@@ -251,7 +250,8 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 | `q1`–`q4` | กลุ่มไตรมาสที่ตรวจพบ: `target`/`result` ของไตรมาสนั้น |
 | `m10`–`m09` | `M_A`: `target{MM}`/`result{MM}` หรือ `M_B`: `target{MM}`/`{measure}_{MM}` |
 
-หน้ารายงานแสดงตัวเลือกช่วงเวลาเฉพาะระดับที่หาได้
+- หน้ารายงานแสดงตัวเลือกช่วงเวลาเฉพาะระดับที่หาได้
+- "ทั้งปี" ของตารางที่มีแต่รายไตรมาส (`s_kpi_childdev4`, `s_kpi_childdev2`) คือผลรวม 4 ไตรมาส ซึ่งต่างจาก PA ที่ตั้ง `target_months = 9` / `effective_quarter = 3` ให้ KPI สองตัวนี้ (รวมแค่ 3 ไตรมาส) เป็นความต่างโดยตั้งใจ: Data Center แสดงตามข้อมูล HDC ส่วน PA แสดงตามรอบประเมิน และต้องระบุไว้ใน "เกี่ยวกับรายงานนี้"
 
 ### 4.4 การรวมและการแสดง
 
@@ -324,7 +324,7 @@ Request (`Content-Type: application/json`):
 { "tableName": "s_epi_complete", "year": "2569", "province": "54", "type": "json", "limit": 5000, "offset": 0 }
 ```
 
-- Response เป็น envelope เช่น `{ "data": [...], "total": "2444", "limit": 1000, "offset": 0 }` (ตัวอย่างจาก R6) หรือ array เปล่าแบบเก่า ต้องรับได้ทั้งสองแบบ
+- Response เป็น envelope เช่น `{ "data": [...], "total": "2444", "limit": 1000, "offset": 0 }` (ตัวอย่างจาก R6) หรือ array ของแถวตรง ๆ แบบเก่า ต้องรับได้ทั้งสองแบบ
 - `total` อาจเป็น string ต้องแปลงเป็นตัวเลขก่อนเทียบ
 - การแบ่งหน้า: ถ้า `data.length < total` ให้ขอซ้ำด้วย `offset += data.length` จนครบ แล้วส่งทุกแถวพร้อม `total` ไปที่ `save_kpi_data`
 
@@ -391,16 +391,6 @@ Request (`Content-Type: application/json`):
 - แผนที่ใช้ `leaflet@1.9.4` จาก npm โหลดฝั่ง client เท่านั้น และใช้ tiles ของ OpenStreetMap พร้อมข้อความ attribution
 - ที่ footer ระบุแหล่งขอบเขตและวันที่ดาวน์โหลดไฟล์
 
-## 7.1 ตัวแปรแวดล้อม
-
-| ที่ | ชื่อ | ค่า |
-|---|---|---|
-| Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App |
-| Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
-| Cloudflare Pages (build) | `NODE_VERSION` | `20` |
-| เครื่องที่รันสคริปต์ node | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (ไม่บังคับ มี fallback ในสคริปต์) |
-| GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
-
 ## 8. Type ฝั่ง frontend (`src/lib/dc-types.ts`)
 
 ```ts
@@ -462,3 +452,13 @@ export interface Totals {
   pct: number | null;
 }
 ```
+
+## 9. ตัวแปรแวดล้อม
+
+| ที่ | ชื่อ | ค่า |
+|---|---|---|
+| Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App |
+| Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
+| Cloudflare Pages (build) | `NODE_VERSION` | `20` |
+| เครื่องที่รันสคริปต์ node | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (ไม่บังคับ มี fallback ในสคริปต์) |
+| GAS (`CONFIG`) | `DIAG_PIN` | เดิม |

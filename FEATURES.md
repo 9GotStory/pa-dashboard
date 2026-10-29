@@ -1,12 +1,12 @@
 # FEATURES — Song Health Data Center เฟส 1
 
-> สถานะ: ร่าง v0.1 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) และ [SCHEMA.md](SCHEMA.md)
+> สถานะ: ร่าง v0.2 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) และ [SCHEMA.md](SCHEMA.md)
 > รายการงานเรียงตามลำดับที่ต้องทำ แต่ละข้อมีเกณฑ์ตรวจรับที่ทดสอบได้ งานจะถือว่าเสร็จเมื่อผ่านเกณฑ์ ไม่ใช่เมื่อเขียนโค้ดเสร็จ
 
 ## กติกา
 
 - แตก branch จาก `main` ทีละ feature (`feat/F01-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ
-- GAS deploy ด้วย `npm run gas:sync` ทุกครั้งที่ feature ฝั่ง GAS ผ่านเกณฑ์ deploy เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
+- GAS deploy ด้วย `npm run gas:sync` เมื่อ feature ฝั่ง GAS ผ่านเกณฑ์ (รวม deploy หลายข้อพร้อมกันได้) เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
 - ห้ามแก้ไฟล์ของ PA (`src/components/*`, `src/lib/useKPIData.ts`, `kpi-*.ts`, `excel-export.ts`, `types.ts`) ยกเว้นย้ายไฟล์ใน F12
 - ทุก PR ต้อง `npm run build` ผ่าน (ci.yml)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D ทำคู่ขนานได้ตั้งแต่ F05–F06 ผ่าน และ Track E ทำท้ายสุด
@@ -14,7 +14,7 @@
 | Track | งาน | ขึ้นกับ |
 |---|---|---|
 | A — GAS | F01–F07 | — |
-| B — เครื่องมือ sync | F08–F10 | F02, F04 |
+| B — เครื่องมือ sync | F08–F10 | F02, F03, F04 |
 | C — ข้อมูล | F11 | A, B |
 | D — Frontend | F12–F18 | F05, F06 (เริ่ม F12–F14 ได้ก่อน) |
 | E — Hosting | F19, F20 | D |
@@ -78,7 +78,7 @@
 - **ทำ:** ตาม SCHEMA §3.2
 - **ตรวจรับ:**
   1. `id` ของ fully immunized 1 ปี → ทุกแถว `id = 28dd2c79…` และ `areacode` ขึ้นต้น `5406`
-  2. `id` ของ `s_epi2` (ตารางมีรายงานเดียว) → ไม่กรอง `id` ได้ทุกแถวของอำเภอ
+  2. `id` ของ `s_epi2` → ทุกแถว `id = 71e49e4b…` · `id` ของ `s_dental_0_5_cavity_free` (ชีตไม่มีคอลัมน์ `id`) → ได้ทุกแถวของอำเภอ
   3. `id` ที่ไม่เปิด หรือไม่มี → error `Unknown report`
   4. `id` ผ่านรูปแบบแต่ชีตยังไม่มี → `headers: [], rows: []`
 
@@ -213,7 +213,7 @@
 ### F20 หน้า stub บน GitHub Pages
 
 - **ทำ:** `legacy-redirect/index.html` + `404.html` และแก้ `deploy.yml` ตาม SPEC §12.6
-- **ตรวจรับ:** ขั้น 12 ใน SPEC §13 · ปิด JavaScript แล้วหน้า stub ยังมีลิงก์ไปโดเมนใหม่ · `deploy.yml` ไม่มีขั้น `npm`
+- **ตรวจรับ:** ขั้น 11 ใน SPEC §13 · ปิด JavaScript แล้วหน้า stub ยังมีลิงก์ไปโดเมนใหม่ · `deploy.yml` ไม่มีขั้น `npm`
 
 ---
 
