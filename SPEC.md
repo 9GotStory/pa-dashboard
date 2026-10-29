@@ -52,7 +52,7 @@ HDC Open Data (opendata.moph.go.th)
 GAS Web App (src/scripts/รหัส.js) ──► Google Sheets "PA-Data"
    ▲  GET ?action=… / ?sheet=…
    │
-Next.js static export บน Cloudflare Pages (https://<โดเมน>, ไม่มี basePath)
+Next.js static export บน Cloudflare Pages (https://<project>.pages.dev, ไม่มี basePath)
    /                     Data Center หน้าแรก
    /reports              คลังรายงาน
    /reports/view?id=…    หน้ารายงาน
@@ -318,21 +318,22 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | Build | preset "Next.js (Static HTML Export)" · build command `npm run build` · output `out` · env `NODE_VERSION=20` |
 | ตัวแปร build | `NEXT_PUBLIC_GAS_SCRIPT_URL` เท่านั้น (ไม่มี PIN อีก) |
 | Preview deployments | ปิด (Preview branch control = None) เพราะ `develop` เป็นโค้ดคนละสถาปัตยกรรมที่ build แบบ static ไม่ผ่าน |
-| โดเมน | รอยืนยัน (§15 D6) ถ้ามีโดเมนของ สสอ.สอง บน Cloudflare ให้เพิ่มเป็น custom domain เช่น `data.<โดเมน>` DNS สร้างให้อัตโนมัติ |
-| Cloudflare Access | Zero Trust → Access → Applications → Self-hosted · application domain `<โดเมน>/sync` · policy Allow เฉพาะอีเมลที่ระบุ · login ด้วย One-time PIN ทางอีเมล · session 24 ชม. |
+| โดเมน | เฟส 1 ใช้ `<project>.pages.dev` (D6) ชื่อโปรเจกต์กำหนดตอนสร้าง เมื่อมีโดเมนของ สสอ.สอง บน Cloudflare ค่อยเพิ่ม custom domain เช่น `data.<โดเมน>` DNS สร้างให้อัตโนมัติ |
+| Cloudflare Access | **รอโดเมนเอง** Access ระดับ path ใช้กับ `*.pages.dev` ไม่ได้ (ล็อกได้ทั้งเว็บเท่านั้น) เมื่อมีโดเมน: Zero Trust → Access → Applications → Self-hosted · application domain `<โดเมน>/sync` · policy Allow เฉพาะอีเมลที่ระบุ · login ด้วย One-time PIN ทางอีเมล · session 24 ชม. |
 
 - `.github/workflows/ci.yml` คงไว้ (build check ของ PR) ส่วน `deploy.yml` เปลี่ยนไปทำ stub (§12.6)
-- Access ระดับ path ต้องใช้โดเมนของเราเอง ถ้าใช้ `*.pages.dev` จะล็อกได้ทั้งเว็บเท่านั้น จึงต้องมีโดเมนก่อนเปิด `/sync` บน Cloudflare
+- ระหว่างยังไม่มี Access หน้า `/sync` เปิดได้ทุกคน แต่ทำอะไรไม่ได้ถ้าไม่มี token ของ GAS (§12.1) ความปลอดภัยของการเขียนข้อมูลจึงอยู่ที่ชั้น token ชั้นเดียวในช่วงนี้
 - Cloudflare Pages เสิร์ฟ `/sync` จาก `sync.html` และ redirect `/sync.html` → `/sync` เอง การตรวจรับต้องลองทั้งสองแบบ
 
 ### 12.6 หน้า stub บน GitHub Pages
 
 - โฟลเดอร์ `legacy-redirect/` มี `index.html` และ `404.html` (เนื้อหาเดียวกัน) ไม่มี build
 - JavaScript ในหน้าแปลง URL เก่าเป็นใหม่แล้ว `location.replace`:
-  - `/pa-dashboard/` หรือ `/pa-dashboard/index.html` (มีหรือไม่มี `?cat=`) → `https://<โดเมน>/pa` + query เดิม เพราะ root เดิมคือ PA
-  - `/pa-dashboard/sync` → `https://<โดเมน>/sync`
-  - อื่น ๆ → `https://<โดเมน>/`
-- มี `<meta http-equiv="refresh">` ไปที่ `https://<โดเมน>/` และลิงก์ให้กดเอง สำหรับกรณีไม่มี JavaScript
+  - `/pa-dashboard/` หรือ `/pa-dashboard/index.html` (มีหรือไม่มี `?cat=`) → `<ORIGIN>/pa` + query เดิม เพราะ root เดิมคือ PA
+  - `/pa-dashboard/sync` → `<ORIGIN>/sync`
+  - อื่น ๆ → `<ORIGIN>/`
+  - `<ORIGIN>` เป็นค่าคงที่ตัวเดียวในไฟล์ (`https://<project>.pages.dev` ในเฟส 1) แก้ที่เดียวเมื่อย้ายโดเมน
+- มี `<meta http-equiv="refresh">` ไปที่ `<ORIGIN>/` และลิงก์ให้กดเอง สำหรับกรณีไม่มี JavaScript
 - `deploy.yml` ตัดขั้น Node/npm/build ออก เหลือ checkout → upload `./legacy-redirect` → deploy และคง trigger `push` ที่ `main` กับ `workflow_dispatch`
 - GitHub Pages คงไว้แบบนี้ถาวร ไม่มีค่าใช้จ่าย
 
@@ -350,11 +351,11 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | 7 | `sync-moph-to-gas.js --backfill` | `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูล |
 | 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน | ตัวเลขตรงกับ `/pa` |
 | 9 | ตรวจ Data Center | ค่าทั้งปีระดับอำเภอของ KPI ที่ PA คิดแบบรายปีตรงกับ PA ถ้าไม่ตรง ให้ตรวจแถวที่ `result` ว่าง (PA มี fallback ไปใช้ผลรวมรายไตรมาส) และเทียบรายงานอื่น 1–2 รายงานกับหน้า HDC ระดับอำเภอ |
-| 10 | สร้างโปรเจกต์ Cloudflare Pages + custom domain | `https://<โดเมน>/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/view?id=…` เปิดได้โดยตรง (ไม่ใช่ 404) |
-| 11 | ตั้ง Cloudflare Access บน `/sync` | เปิด `/sync` และ `/sync.html` แบบไม่ login ต้องเจอหน้า login ของ Cloudflare ส่วน `/` และ `/pa` เปิดได้ปกติ |
-| 12 | Deploy stub บน GitHub Pages | `…/pa-dashboard/?cat=X` ไปที่ `https://<โดเมน>/pa?cat=X` และ `…/pa-dashboard/sync` ไปที่ `/sync` |
+| 10 | สร้างโปรเจกต์ Cloudflare Pages | `https://<project>.pages.dev/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/view?id=…` เปิดได้โดยตรง (ไม่ใช่ 404) |
+| 11 | ตั้ง Cloudflare Access บน `/sync` — **เลื่อนจนกว่าจะมีโดเมนเอง** | เปิด `/sync` และ `/sync.html` แบบไม่ login ต้องเจอหน้า login ของ Cloudflare ส่วน `/` และ `/pa` เปิดได้ปกติ |
+| 12 | Deploy stub บน GitHub Pages | `…/pa-dashboard/?cat=X` ไปที่ `https://<project>.pages.dev/pa?cat=X` และ `…/pa-dashboard/sync` ไปที่ `/sync` |
 
-**ลำดับสำคัญ:** ตัวกรอง `b_year` ของ `BATCH_ALL` ในขั้น 1 ต้องใช้งานได้ก่อนบันทึกปีที่สองในขั้น 7 ไม่อย่างนั้น PA จะรวมยอดหลายปี และขั้น 12 ต้องทำหลังขั้น 10 ผ่านแล้วเท่านั้น
+**ลำดับสำคัญ:** ตัวกรอง `b_year` ของ `BATCH_ALL` ในขั้น 1 ต้องใช้งานได้ก่อนบันทึกปีที่สองในขั้น 7 ไม่อย่างนั้น PA จะรวมยอดหลายปี และขั้น 12 ต้องทำหลังขั้น 10 ผ่านแล้วเท่านั้น เมื่อย้ายไปโดเมนเองในอนาคต ต้องแก้ปลายทางของ stub (ขั้น 12) ด้วย
 
 ## 14. ความเสี่ยงและข้อสังเกต
 
@@ -376,4 +377,4 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | D3 | ลิงก์ PA เดิมที่แชร์ไว้ | หน้า stub บน GitHub Pages ส่งต่อไปโดเมนใหม่ (§12.6) ไม่มี redirect ในแอป |
 | D4 | ขอบเขตตำบลบนแผนที่ | ดาวน์โหลดจาก MOPH GIS ครั้งเดียว เก็บเป็น `public/geo/song-tambon.geojson` (SCHEMA §7) ไม่ดึงสดแบบ R6 |
 | D5 | ความปลอดภัยของ endpoint ที่เขียนข้อมูล | 2 ชั้น: token ใน Script Properties ตรวจที่ GAS (SCHEMA §3.0) + Cloudflare Access บน `/sync` (§12.5) |
-| D6 | โดเมน | **รอยืนยัน** ทุกที่ที่เขียน `<โดเมน>` ในเอกสารนี้ต้องแทนด้วยโดเมนจริงก่อนทำขั้น 10–12 ใน §13 |
+| D6 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` (ตกลง 29 ต.ค. 2569) จึงยังไม่มี Cloudflare Access ทุกที่ที่เขียน `<โดเมน>` หมายถึงตอนที่มีโดเมนเองแล้ว |

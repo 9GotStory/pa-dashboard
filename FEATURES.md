@@ -17,7 +17,7 @@
 | B — เครื่องมือ sync | F09–F11 | F01, F03, F05 |
 | C — ข้อมูล | F12 | A, B |
 | D — Frontend | F13–F19 | F06, F07 (เริ่ม F13–F15 ได้ก่อน) |
-| E — Hosting | F20–F22 | D |
+| E — Hosting | F20, F22 (F21 เลื่อนจนกว่าจะมีโดเมนเอง) | D |
 
 ---
 
@@ -25,13 +25,14 @@
 
 ### F01 ยืนยันตัวตนด้วย token
 
-- **ทำ:** อ่าน `WRITE_TOKEN`/`DIAG_PIN` จาก Script Properties · `doPost` ตรวจ `token` ก่อนดู `action` · `handleDiag` เทียบ `pin` กับ property · เพิ่ม `verify_token` · ลบ `CONFIG.DIAG_PIN` (SCHEMA §3.0)
-- **ไม่ทำ:** เปลี่ยนชื่อ query `pin` ของ diag, แตะ GET
+- **ทำ:** อ่าน `WRITE_TOKEN`/`DIAG_PIN` จาก Script Properties · `doPost` ตรวจ `token` ก่อนดู `action` · `handleDiag` เทียบ `pin` กับ property · เพิ่ม `verify_token` · ลบ `CONFIG.DIAG_PIN` (SCHEMA §3.0) · `sync-moph-to-gas.js` ส่ง `token` จาก env `GAS_WRITE_TOKEN` และหยุดถ้าไม่มี (เฉพาะส่วน token ส่วนที่เหลือของสคริปต์อยู่ใน F09) เพื่อให้สคริปต์ยังใช้ได้ทันทีหลัง deploy F01
+- **ไม่ทำ:** เปลี่ยนชื่อ query `pin` ของ diag, แตะ GET, แก้หน้า `/sync` (รอ F11 — หลัง deploy F01 หน้า `/sync` เดิมจะ sync ไม่ได้จนกว่า F11 จะขึ้น)
 - **ตรวจรับ:**
   1. POST ไม่มี `token` หรือผิด → `{status:"error", message:"Unauthorized"}` และมีแถว WARNING ใน `system_logs` ที่ไม่มีค่า token
   2. POST `verify_token` ถูก → `{status:"success"}`
   3. ลบ property `WRITE_TOKEN` ชั่วคราว → ทุก POST ถูกปฏิเสธ (fail closed) ใส่กลับแล้วใช้ได้
   4. `grep DIAG_PIN src/scripts/รหัส.js` ไม่พบค่าคงที่ พบแต่ชื่อ property
+  5. `node src/scripts/sync-moph-to-gas.js --only s_kpi_dental33` โดยไม่ตั้ง env → หยุดพร้อมข้อความบอกวิธีตั้ง · ตั้ง env แล้ว → บันทึกสำเร็จ
 
 ### F02 ตั้งค่า `district_code` และ window ปี
 
@@ -107,12 +108,11 @@
 
 ### F09 `src/scripts/sync-moph-to-gas.js`
 
-- **ทำ:** `GAS_WRITE_TOKEN` จาก env · `--year` (ซ้ำได้) · `--backfill` · `limit = 5000` + วนหน้า `offset` จนครบ `total` · ส่ง `year`, `total`, `token` (SPEC §6.1, §12.2)
+- **ทำ:** `--year` (ซ้ำได้) · `--backfill` · `limit = 5000` + วนหน้า `offset` จนครบ `total` · ส่ง `year`, `total` (SPEC §6.1, §12.2) ส่วน token ทำแล้วใน F01
 - **ตรวจรับ:**
-  1. ไม่ตั้ง env → หยุดทันทีพร้อมข้อความบอกวิธีตั้ง ไม่เรียก MOPH
-  2. `--only s_aged9` → log แสดง `received`/`count` และจำนวนแถวที่ดึงได้ = `total` ของ MOPH
-  3. ทดสอบวนหน้า: ดึง `s_epi_complete` ด้วย `limit = 1000` (ชั่วคราว) → ได้จำนวนเท่ากับ `limit = 5000` ครั้งเดียว
-  4. `--year 2568 --only s_kpi_dental33` → `sync_status` มีแถว (`s_kpi_dental33`, 2568)
+  1. `--only s_aged9` → log แสดง `received`/`count` และจำนวนแถวที่ดึงได้ = `total` ของ MOPH
+  2. ทดสอบวนหน้า: ดึง `s_epi_complete` ด้วย `limit = 1000` (ชั่วคราว) → ได้จำนวนเท่ากับ `limit = 5000` ครั้งเดียว
+  3. `--year 2568 --only s_kpi_dental33` → `sync_status` มีแถว (`s_kpi_dental33`, 2568)
 
 ### F10 `src/scripts/hdc-catalog.js` (ใหม่)
 
@@ -219,12 +219,13 @@
 
 ### F20 Cloudflare Pages
 
-- **ทำ:** สร้างโปรเจกต์ต่อ repo ตาม SPEC §12.5 · ตั้ง env · ปิด preview · เพิ่ม custom domain (D6)
+- **ทำ:** สร้างโปรเจกต์ต่อ repo ตาม SPEC §12.5 · ตั้ง env · ปิด preview · ใช้ `<project>.pages.dev` (D6)
 - **ตรวจรับ:** ขั้น 10 ใน SPEC §13 และ push ไป branch อื่นที่ไม่ใช่ `main` ไม่ทำให้เกิด deployment
 
-### F21 Cloudflare Access บน `/sync`
+### F21 Cloudflare Access บน `/sync` — เลื่อน
 
-- **ทำ:** Access application + policy ตาม SPEC §12.5
+- **เงื่อนไข:** ทำได้เมื่อมีโดเมนของ สสอ.สอง บน Cloudflare แล้วเท่านั้น (SPEC §12.5) ระหว่างนี้ `/sync` ป้องกันด้วย token ของ GAS ชั้นเดียว
+- **ทำ:** เพิ่ม custom domain → Access application + policy ตาม SPEC §12.5 → แก้ `<ORIGIN>` ใน stub (F22)
 - **ตรวจรับ:** ขั้น 11 ใน SPEC §13 และ login ด้วยอีเมลที่ไม่อยู่ใน policy ถูกปฏิเสธ
 
 ### F22 หน้า stub บน GitHub Pages
@@ -241,3 +242,4 @@
 - ชื่อคอลัมน์ผลแยกย่อย (SCHEMA §4.5) หลังตรวจ `report_schema`
 - ปุ่มรีเฟรชแค็ตตาล็อกบนหน้า `/sync`
 - ทดลองดึง MOPH ด้วย Cloudflare Pages Function
+- F21 Cloudflare Access (รอโดเมนเอง)
