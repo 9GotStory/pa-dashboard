@@ -1,6 +1,6 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.3 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md)
+> สถานะ: ร่าง v0.4 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md)
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
 
 ---
@@ -9,12 +9,13 @@
 
 | ชีต | สถานะ | ผู้เขียน | ผู้อ่าน |
 |---|---|---|---|
-| `settings` | แก้: เพิ่ม `district_code` | ผู้ดูแล | GAS |
+| `settings` | แก้: เพิ่ม `district_code`, `deploy_hook_url` | ผู้ดูแล | GAS |
 | `kpi_registry`, `kpi_master` | เดิม | ผู้ดูแล | GAS → PA |
-| `kpi_epi` | เดิม (Data Center อ่านเกณฑ์รายวัคซีน) | ผู้ดูแล | GAS → PA, DC |
-| `hospitals`, `tambon_master` | เดิม (Data Center อ่านด้วย) | ผู้ดูแล | GAS → PA, DC |
+| `kpi_epi` | เดิม (catalog อ่านเกณฑ์รายวัคซีน) | ผู้ดูแล | GAS → PA, catalog |
+| `hospitals`, `tambon_master` | เดิม (catalog อ่านด้วย) | ผู้ดูแล | GAS → PA, catalog |
 | `system_logs` | เดิม | GAS | ผู้ดูแล |
-| ชีตข้อมูล `s_*` | แก้: หลายปี เฉพาะอำเภอ | GAS | GAS |
+| ชีตข้อมูลปีปัจจุบัน `s_*` | เดิม ชื่อเดิม โครงเดิม แต่เหลือเฉพาะแถวของอำเภอ | GAS | GAS (`BATCH_ALL`, report) |
+| ชีตข้อมูลปีย้อนหลัง `s_*_y{YYYY}` | ใหม่ | GAS | GAS (report) |
 | `hdc_topics` | ใหม่ | ผู้ดูแล + GAS | GAS |
 | `hdc_reports` | ใหม่ | GAS (คอลัมน์จาก API) + ผู้ดูแล | GAS |
 | `sync_status` | ใหม่ | GAS | GAS, ผู้ดูแล |
@@ -33,10 +34,11 @@
 | `current_year` | string `^\d{4}$` | `CONFIG.YEAR` | เดิม และเป็นปีสุดท้ายของ window |
 | `province_code` | string `^\d{2}$` | `CONFIG.PROVINCE` | เดิม |
 | `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและ `Logger.log` แบบเดียวกับค่าอื่นที่ไม่ผ่าน (ไม่เขียน `system_logs` เพราะ `readSettings` ถูกเรียกทุกนาที จะทำให้ log หมุนทิ้ง) |
+| `deploy_hook_url` | string `^https://api\.cloudflare\.com/client/v4/pages/webhooks/deploy_hooks/[A-Za-z0-9-]+$` หรือว่าง | `""` | **ใหม่** ว่าง = ปิดการ rebuild อัตโนมัติ ค่าที่ไม่ตรงรูปแบบถือเป็นว่างและ `Logger.log` |
 
-- เพิ่มใน `SETTINGS_SCHEMA` และเปลี่ยน `SETTINGS_CACHE_KEY` จาก `settings_v2` เป็น `settings_v3` เพราะรูปแบบที่แคชเปลี่ยน
+- เพิ่มใน `SETTINGS_SCHEMA` (ชนิด `string`) และเปลี่ยน `SETTINGS_CACHE_KEY` จาก `settings_v2` เป็น `settings_v3` เพราะรูปแบบที่แคชเปลี่ยน
 - จำนวนปีย้อนหลังเป็นค่าคงที่ `CONFIG.HISTORY_YEARS = 5` ไม่ใช่ค่าในชีต
-- window = ปี `current_year − 4` … `current_year` เรียงจากน้อยไปมาก
+- window = ปี `current_year − 4` … `current_year` เรียงจากน้อยไปมาก (`getYearWindow(settings)`)
 
 ### 2.2 `hdc_topics` — หัวข้อที่เลือก (allowlist)
 
@@ -52,7 +54,7 @@
 
 - ตรวจ `cat_id` แค่ `a-z0-9` ไม่ใช่ hex เพราะมีรหัสจริงที่ไม่ใช่ hex เช่น `77e69d3ad62b4737b87sds811129462` (31 ตัว)
 - แถวเริ่มต้น: `4df360514655f79f13901ef1181ca1c7` (การสร้างเสริมภูมิคุ้มกันโรค) และหัวข้อที่ได้จาก `hdc-catalog.js find`
-- ลบแถวหัวข้อ = ซ่อนรายงานทั้งหัวข้อจาก Data Center และตารางของหัวข้อนั้นไม่ถูก sync ในฐานะ DC unit อีก (§2.3) ส่วนตารางที่ PA ใช้ยัง sync ตามเดิม
+- ลบแถวหัวข้อ = ซ่อนรายงานทั้งหัวข้อจาก snapshot และตารางของหัวข้อนั้นไม่ถูก sync ในฐานะ DC unit อีก (§2.3) ส่วนตารางที่ PA ใช้ยัง sync ตามเดิม
 
 ### 2.3 `hdc_reports` — รายงานในหัวข้อที่เลือก
 
@@ -60,7 +62,7 @@
 |---|---|---|---|
 | `opendata_id` | GAS | `^[a-z0-9]{8,64}$` | **key** = ค่า `id` ในข้อมูลดิบ (32 hex หรือรหัสสั้น 21 ตัว) |
 | `report_name` | GAS | text | ชื่อรายงานจาก HDC |
-| `source_table` | GAS | `^s_[a-z0-9_]+$` | ชื่อตาราง HDC และชื่อชีตข้อมูล |
+| `source_table` | GAS | `^s_[a-z0-9_]+$` | ชื่อตาราง HDC และชื่อชีตข้อมูลปีปัจจุบัน |
 | `enabled` | ผู้ดูแล | checkbox | ค่าเริ่มต้น FALSE |
 | `subgroup` | ผู้ดูแล | text หรือว่าง | ชื่อกลุ่มภายในหัวข้อ |
 | `order` | ผู้ดูแล | int ≥ 1 หรือว่าง | ลำดับในหัวข้อ ใช้หาลำดับกลุ่มด้วย |
@@ -75,38 +77,44 @@
 | `catalog_status` | GAS | `active` \| `removed` | `removed` = ไม่พบใน API ครั้งล่าสุด |
 | `last_seen_at` | GAS | datetime | ครั้งล่าสุดที่พบใน API |
 
-**รายงานที่ใช้งานใน Data Center** คือแถวที่ (1) `enabled = TRUE` (2) `cat_id` อยู่ใน `hdc_topics` และ (3) `opendata_id` กับ `source_table` ผ่านรูปแบบ แถวที่ไม่ผ่านข้อ 3 จะถูกข้ามและบันทึก WARNING
+**รายงานที่ใช้งาน** คือแถวที่ (1) `enabled = TRUE` (2) `cat_id` อยู่ใน `hdc_topics` และ (3) `opendata_id` กับ `source_table` ผ่านรูปแบบ แถวที่ไม่ผ่านข้อ 3 จะถูกข้ามและบันทึก WARNING
 
 - `source_table` บังคับขึ้นต้นด้วย `s_` ทุกตาราง summary ของ HDC ที่พบใช้รูปแบบนี้ และช่วยกันไม่ให้ชนชีตระบบ (`settings`, `hdc_reports` ฯลฯ) ซึ่งสำคัญเพราะชื่อนี้กลายเป็นชีตที่ `doPost` เขียนได้
-- `source_table` ของรายงานที่ใช้งาน คือ DC units (SPEC §7)
+- `source_table` ของรายงานที่ใช้งาน คือ DC units (SPEC §8)
 - GAS เขียนคอลัมน์ผู้ดูแลแค่ 2 กรณี: ตอนเพิ่มแถวใหม่ (ตั้ง `enabled = FALSE` และปล่อยคอลัมน์อื่นว่าง) และตอนรัน `setup=dc_seed`
 
 ### 2.4 `sync_status` — ปีที่มีข้อมูลในแต่ละตาราง
 
 | คอลัมน์ | ชนิด | ความหมาย |
 |---|---|---|
-| `table` | text | ชื่อตาราง/ชีตข้อมูล |
+| `table` | text | ชื่อตาราง (ไม่ใช่ชื่อชีต `_y`) |
 | `b_year` | string 4 หลัก | ปีงบประมาณ |
+| `sheet` | text | ชีตที่เก็บจริง: `{table}` ถ้าเป็นปีปัจจุบัน หรือ `{table}_y{YYYY}` |
 | `row_count` | int | จำนวนแถวที่บันทึกหลังกรองอำเภอ |
-| `max_date_com` | string 12–14 หลัก | `date_com` มากที่สุดของปีนั้น |
+| `max_date_com` | string 12–14 หลัก | `date_com` มากที่สุดของปีนั้น (ใช้ตรวจ `Stale data`) |
 | `synced_at` | datetime | เวลาที่บันทึก |
 
 - key = (`table`, `b_year`) และ GAS เป็นผู้เขียนคนเดียว
-- เมื่อบันทึกตารางใด GAS ลบแถวของตารางนั้นที่ `b_year` อยู่นอก window
+- เมื่อบันทึกตารางใด GAS ลบแถวของตารางนั้นที่ `b_year` อยู่นอก window และเมื่อย้ายปี (§2.5) อัปเดต `sheet` ของแถวปีที่ถูกย้าย
 
-### 2.5 ชีตข้อมูล `s_*`
+### 2.5 ชีตข้อมูล `s_*` และ `s_*_y{YYYY}`
 
 | เรื่อง | กติกา |
 |---|---|
-| ชื่อชีต | = ชื่อตาราง (`source_table` หรือ `CONFIG.KPIS[].sheet`) |
-| header | รวมคอลัมน์ของทุกปี คงลำดับเดิมแล้วต่อท้ายคอลัมน์ใหม่ตามลำดับที่พบ |
-| แถวที่เก็บ | `areacode` ขึ้นต้นด้วย `district_code` และ `b_year` อยู่ใน window |
-| ความซ้ำ | แต่ละ (ตาราง, ปี) มาจากการบันทึกครั้งล่าสุดครั้งเดียว เพราะบันทึกแบบแทนที่ |
-| การเรียงแถว | `b_year`, `areacode`, `hospcode` จากน้อยไปมาก |
+| ชีตปีปัจจุบัน | ชื่อ = ชื่อตาราง (`source_table` หรือ `CONFIG.KPIS[].sheet`) เก็บเฉพาะ `current_year` |
+| ชีตปีย้อนหลัง | ชื่อ `{table}_y{YYYY}` หนึ่งชีตต่อปีใน window ที่ไม่ใช่ปีปัจจุบัน |
+| header | ของแต่ละชีต = key ของแถวที่ MOPH ส่งมาในครั้งที่บันทึก ไม่รวม header ข้ามปี |
+| แถวที่เก็บ | `areacode` ขึ้นต้นด้วย `district_code` เท่านั้น |
+| ความซ้ำ | แต่ละชีตมาจากการบันทึกครั้งล่าสุดครั้งเดียว (แทนที่ทั้งชีต) |
+| การเรียงแถว | ตามที่ MOPH ส่งมา (เดิม) ไม่เรียงใหม่ |
 | คอลัมน์ข้อความ | `id`, `hospcode`, `areacode`, `vhid` (เดิม) |
 | ค่าว่าง | ค่า falsy เขียนเป็น `""` (เดิม) ตอนอ่านถือเป็น 0 |
-| `b_year` | เทียบแบบ string เสมอ ถ้าตารางไม่มีคอลัมน์นี้ GAS เติมเป็นปีที่ส่งมา |
+| `b_year` | เทียบแบบ string เสมอ ถ้าแถวไม่มีคอลัมน์นี้ GAS เติมเป็นปีที่ส่งมา |
 | ไม่มี `areacode` | ปฏิเสธการบันทึก (ERROR) ในเฟส 1 |
+| ขนาดชีต | หลังเขียน ตัดแถวว่างท้ายชีตออก (`deleteRows`) ให้ชีตมีแถวเท่าข้อมูล + header เพื่อไม่เปลือง cell |
+| ปีนอก window | ไม่อ่าน ไม่เขียน และไม่ลบชีตอัตโนมัติ |
+
+**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้จัดกลุ่มแถวเหล่านั้นตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): เขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`) แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
 
 คอลัมน์ทั่วไปของแถว HDC: `id` (บางตารางไม่มี เช่น `s_dental_0_5_cavity_free`), `hospcode` 5 หลัก, `areacode` 8 หลัก (จังหวัด 2 + อำเภอ 2 + ตำบล 2 + หมู่ 2), `flag_sent`, `date_com` (`YYYYMMDDHHmm` และ `s_epi1` มีวินาทีต่อท้าย), `b_year` (ปีงบประมาณ พ.ศ.), `ip`
 
@@ -114,12 +122,13 @@
 
 - GET ส่งค่าทาง query เท่านั้น และ POST ใช้ `Content-Type: text/plain` โดย body เป็น JSON
 - ทุก response เป็น HTTP 200 กรณีผิดพลาดตอบ `{ "status": "error", "message": "…" }` (`createJsonError` เดิม)
-- `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` ก่อนดู `sheet`
+- `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + ตัวพิมพ์เล็ก + `^[a-z0-9]{8,64}$` ใช้กับ `cat_id` และ `opendata_id` ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
+- ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings)` = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
 
 ### 3.1 `GET ?action=catalog`
 
-ตอบ `DcCatalog` (§8)
+ตอบ `GasCatalog` (§9) ยังไม่เรียง (prebuild script เป็นคนเรียงและสร้าง `catalog.json`)
 
 | ฟิลด์ | ที่มา |
 |---|---|
@@ -133,23 +142,22 @@
 | `reports[].measure_goals` | แถวของ `kpi_epi` ที่ `source_sheet = source_table` และมี `value_prefix` → `{ [value_prefix]: target }` |
 | `reports[].years` | แถวของ `sync_status` ที่ `table = source_table` และอยู่ใน window เรียงตามปี |
 
-แคชใน `CacheService` คีย์ `dc_catalog_v1` นาน 300 วินาที ถ้า JSON ใหญ่เกิน 100 KB (ขีดจำกัดของ CacheService) ไม่แคชและบันทึก WARNING ล้างแคชเมื่อ `save_kpi_data` หรือ `save_catalog` สำเร็จ และใน `clearConfigCache()`
+ไม่แคช เพราะถูกเรียกเฉพาะตอน build และจากสคริปต์ผู้ดูแล
 
 ### 3.2 `GET ?action=report&id={opendata_id}`
 
 1. `id` ผ่าน `sanitizeHdcId` และต้องเป็นรายงานที่ใช้งาน ไม่อย่างนั้นตอบ error `Unknown report`
-2. อ่านชีต `source_table` ถ้าไม่มีชีต ตอบ `headers: []` และ `rows: []`
-3. กรองแถว:
+2. สำหรับแต่ละปีใน `reports[].years` (จาก `sync_status`): อ่านชีตตาม `sync_status.sheet` ถ้าชีตหายไป ข้ามปีนั้นและบันทึก WARNING
+3. กรองแถวของแต่ละปี:
    1. `areacode` ขึ้นต้นด้วย `district_code` (กันแถวเก่าแบบทั้งจังหวัดที่อาจค้างอยู่)
-   2. `b_year` อยู่ใน window
-   3. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` (ตัวพิมพ์เล็ก) = `opendata_id` เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
-4. ตอบ `DcReportData` (§8) โดย `headers` คือ header ของชีต และ `rows` คือค่าตามที่อ่านได้จากชีต
+   2. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` (ตัวพิมพ์เล็ก) = `opendata_id` เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
+4. ตอบ `GasReport` (§9): `years` เป็น array ของ `{ b_year, headers, rows, max_date_com }` เรียงปีน้อยไปมาก `rows` เป็น array ของ array ตามลำดับ `headers` (ไม่ใช่ object เพื่อลดขนาด)
 5. ไม่แคช
 
 ### 3.3 `POST save_kpi_data` (แก้)
 
 ```ts
-{ action: "save_kpi_data"; tableName: string; year?: string; total?: number; data: Row[] | { data: Row[] } }
+{ action: "save_kpi_data"; tableName: string; year?: string; total?: number; force?: boolean; data: Row[] | { data: Row[] } }
 ```
 
 | ฟิลด์ | บังคับ | ความหมาย |
@@ -157,6 +165,7 @@
 | `tableName` | ใช่ | ต้องอยู่ใน sync units (เดิม) |
 | `year` | ไม่ | ค่าเริ่มต้น = `current_year` ต้องตรง `^\d{4}$` และอยู่ใน window ไม่อย่างนั้นตอบ error `Year outside window` |
 | `total` | ไม่ | `total` จาก MOPH ถ้ามีและ `data.length < total` ตอบ error `Incomplete data` โดยไม่บันทึก |
+| `force` | ไม่ | `true` = ข้ามการตรวจ `Stale data` |
 | `data` | ใช่ | แถวจาก MOPH (array หรือ envelope `{data:[…]}` แบบเดิม) |
 
 ขั้นตอน (ถือ script lock เหมือนเดิม):
@@ -166,16 +175,16 @@
 3. ถ้าแถวแรกไม่มี `areacode` ตอบ error `No areacode column`
 4. เก็บเฉพาะแถวที่ `String(areacode)` ขึ้นต้นด้วย `district_code` ถ้าเหลือ 0 แถว คงข้อมูลเดิมและบันทึก WARNING
 5. แถวที่ไม่มี `b_year` เติมเป็น `year` ส่วนแถวที่ `b_year ≠ year` ตัดทิ้งและบันทึก WARNING พร้อมจำนวน
-6. อ่านชีตเดิม เก็บแถวที่ `b_year ≠ year`, อยู่ใน window และ `areacode` ขึ้นต้นด้วย `district_code`
-7. header = header เดิม ต่อท้ายด้วย key ใหม่ของแถวที่ส่งมาตามลำดับที่พบ
-8. รวมแถวเดิมกับแถวใหม่ เรียงตาม §2.5 แล้วเขียนทั้งชีตใหม่ (clear → header → ตั้งรูปแบบคอลัมน์ข้อความ → ค่า)
-9. upsert `sync_status` (`tableName`, `year`) และลบแถวของตารางนี้ที่อยู่นอก window
-10. ล้างแคช catalog และบันทึก SUCCESS `Synced {table} {year}` พร้อมจำนวนแถว
+6. ตรวจ `Stale data`: ถ้า `force` ไม่ใช่ `true` และ `sync_status` มีแถว (`tableName`, `year`) ที่ `max_date_com` มากกว่า `date_com` สูงสุดของแถวใหม่ ตอบ error `Stale data: existing {old} > incoming {new}` ไม่บันทึก
+7. ถ้า `year = current_year`: ทำการย้ายปีอัตโนมัติตาม §2.5 ก่อน
+8. เขียนแทนที่ชีต `sheetNameFor(tableName, year)` ทั้งชีต: clear → header (key ของแถวใหม่ตามลำดับที่พบ) → ตั้งรูปแบบคอลัมน์ข้อความ → ค่า → ตัดแถวว่างท้ายชีต
+9. upsert `sync_status` (`tableName`, `year`, `sheet`, `row_count`, `max_date_com`, `synced_at`) และลบแถวของตารางนี้ที่อยู่นอก window
+10. บันทึก SUCCESS `Synced {table} {year}` พร้อมจำนวนแถว
 
-Response: `{ status: "success"; year: string; received: number; count: number }`
+Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
 
-- `received` = จำนวนแถวที่ส่งมา
-- `count` = จำนวนแถวที่บันทึกหลังกรองอำเภอ ความหมายเปลี่ยนจากเดิม ซึ่ง `count` เคยเป็นจำนวนแถวที่ส่งมา
+- `received` = จำนวนแถวที่ส่งมา · `count` = จำนวนแถวที่บันทึกหลังกรองอำเภอ (ความหมายเปลี่ยนจากเดิม ซึ่ง `count` เคยเป็นจำนวนแถวที่ส่งมา) · `archived` = ปีที่ถูกย้ายไปชีต `_y` ในครั้งนี้ (ปกติว่าง)
+- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH
 
 ### 3.4 `POST save_catalog` (ใหม่)
 
@@ -198,15 +207,14 @@ Response: `{ status: "success"; year: string; received: number; count: number }`
 6. แถวเดิมของหัวข้อนี้ที่ไม่อยู่ในรายการ และยังเป็น `active` ตั้งเป็น `removed` นับเป็น `removed`
 7. อัปเดตแถวใน `hdc_topics`: `category_name` (จาก body หรือรายงานแรก), `main_report_id`, `main_report_name`, `report_count`, `last_refreshed_at`
 8. เขียน `hdc_reports` ทั้งชีตกลับ คงลำดับคอลัมน์เดิม และต่อท้ายคอลัมน์ที่ยังไม่มี
-9. ล้างแคช catalog และบันทึก SUCCESS
+9. บันทึก SUCCESS
 
 Response: `{ status: "success"; added: number; updated: number; removed: number; skipped: number }`
 
-### 3.5 `GET ?sheet=BATCH_ALL` (แก้)
+### 3.5 `GET ?sheet=BATCH_ALL` (แก้เล็กน้อย)
 
-- ข้อมูล (`data`) คำนวณเฉพาะ PA units (= `getSyncUnits` เดิม เปลี่ยนชื่อเป็น `getPaUnits`)
-- ก่อน `processSheetRows` เก็บเฉพาะแถวที่ `String(b_year) = current_year` ถ้าชีตไม่มีคอลัมน์ `b_year` ใช้ทุกแถว (ข้อมูลรูปแบบเก่า) ใช้กติกาเดียวกันใน single-sheet mode
-- `meta.kpi_config` สร้างจาก `getSyncUnits()` ใหม่ = PA units ∪ DC units ให้ client ฝั่ง sync เห็นตาราง DC รายการ DC ไม่มี `target_months`/`effective_quarter` (เป็น `null`)
+- การอ่านและคำนวณ **ไม่แก้** ยังอ่านชีตปีปัจจุบัน (ชื่อเดิม) ซึ่งตอนนี้มีเฉพาะแถวของอำเภอและปีเดียว
+- `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` (ใช้คำนวณ `data`) · `getSyncUnits` ใหม่ = PA units ∪ DC units ใช้กับ whitelist ของ `doPost`, `syncAllData` และ `meta.kpi_config` รายการ DC ไม่มี `target_months`/`effective_quarter` (เป็น `null`)
 - เพิ่ม `meta.years` = window (array ของ string เรียงน้อยไปมาก) ให้หน้า `/sync` ใช้ทำตัวเลือกปี
 - นอกจากนี้ response เหมือนเดิมทุกอย่าง PA ไม่อ่านฟิลด์ใหม่
 
@@ -214,10 +222,23 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 
 | เรียก | ผล |
 |---|---|
-| `?action=diag&pin=…&setup=datacenter` | สร้าง `hdc_topics`, `hdc_reports`, `sync_status` ที่ยังไม่มีพร้อม header และเพิ่ม header `district_code` ใน `settings` ถ้ายังไม่มี รันซ้ำได้ ตอบ `{ created: […], settings_column_added: bool }` |
+| `?action=diag&pin=…&setup=datacenter` | สร้าง `hdc_topics`, `hdc_reports`, `sync_status` ที่ยังไม่มีพร้อม header และเพิ่ม header `district_code`, `deploy_hook_url` ใน `settings` ถ้ายังไม่มี รันซ้ำได้ ตอบ `{ created: […], settings_columns_added: […] }` |
 | `?action=diag&pin=…&setup=dc_seed` | เขียนคอลัมน์ผู้ดูแลตาม §6 ลงแถวที่ `opendata_id` ตรงกัน ตอบ `{ applied: n, not_found: […] }` |
 
+### 3.7 `POST rebuild` (ใหม่)
+
+```ts
+{ action: "rebuild"; reason?: string }
+```
+
+1. อ่าน `deploy_hook_url` จาก `settings` ถ้าว่าง ตอบ `{ status: "error", message: "Deploy hook not configured" }`
+2. นับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง
+3. `UrlFetchApp.fetch(hook, { method: "post", muteHttpExceptions: true })` ถ้าได้ 2xx เพิ่มตัวนับ บันทึก INFO `Rebuild requested ({reason})` และตอบ `{ status: "success", remaining_today: n }` ไม่อย่างนั้นตอบ error พร้อม status code
+4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` โดยไม่ผ่าน HTTP
+
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
+
+ทำทีละ block ปี (`years[i]`) ด้วย `headers` ของ block นั้น ผลของแต่ละปีไม่ขึ้นต่อกัน
 
 ### 4.1 กลุ่มคอลัมน์
 
@@ -239,7 +260,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 - ไตรมาสใช้กลุ่มแรกที่พบตามลำดับ `Q_A` → `Q_B` → `Q_C` (ลำดับเดียวกับ `getQuarterSum`)
 - รายการ (measure) ของ `M_B`: หา header ที่ตรง `^(.+)_(0[1-9]|1[0-2])$` แล้วนับ prefix ที่มีครบ 12 เดือน ไม่นับ prefix `target`/`result` และต้องมี `target{MM}` ครบ 12 เดือนด้วย
 - ชื่อรายการที่แสดง = prefix ตัวพิมพ์ใหญ่ และเปลี่ยน `_` เป็น `-` เช่น `dtp_hb3` เป็น `DTP-HB3`
-- ตารางที่มีรายการต้องเลือกรายการเสมอ ค่าเริ่มต้นคือรายการแรกตามลำดับคอลัมน์
+- ตารางที่มีรายการต้องเลือกรายการเสมอ ค่าเริ่มต้นคือรายการแรกตามลำดับคอลัมน์ของปีที่เลือก · รายการที่เลือกไว้แต่ไม่มีในปีอื่น แสดงปีนั้นในแนวโน้มเป็น "—"
 
 ### 4.3 เป้าหมายและผลงานต่อแถว
 
@@ -260,10 +281,10 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 - `T` = Σ เป้าหมาย, `R` = Σ ผลงาน และ `pct` = `R / T × 100` เมื่อ `T > 0` ไม่อย่างนั้น `null`
 - จัดกลุ่มรายตำบลด้วย `areacode.slice(0, 6)` แล้วหาชื่อจาก `areas` ถ้าไม่พบแสดง "รหัสพื้นที่ {6 หลัก}"
 - จัดกลุ่มรายหน่วยบริการด้วย `hospcode` แล้วหาชื่อจาก `hospitals` ถ้าไม่พบแสดง "หน่วยบริการ {hospcode}"
-- แนวโน้ม: คำนวณซ้ำทีละ `b_year` ใน `report.years`
+- แนวโน้ม: คำนวณซ้ำทีละ block ปี
 - ผ่านเกณฑ์เมื่อ `pct ≥ goal` โดยเทียบค่าก่อนปัดเหมือน PA และแสดงร้อยละด้วย `formatPct` (ทศนิยม 2 ตำแหน่ง)
 - เกณฑ์ของรายการวัคซีน = `measure_goals[measure]` ถ้ามี ไม่อย่างนั้นใช้ `goal`
-- วันที่ข้อมูล = `date_com` สูงสุด แปลงเลข 12–14 หลักเป็นวันที่ไทยแบบเดียวกับ PA
+- วันที่ข้อมูล = `max_date_com` ของ block ปีที่เลือก แปลงเลข 12–14 หลักเป็นวันที่ไทยแบบเดียวกับ PA
 
 ### 4.5 คอลัมน์ที่ยังไม่แสดงในเฟส 1
 
@@ -327,7 +348,7 @@ Request (`Content-Type: application/json`):
 
 - Response เป็น envelope เช่น `{ "data": [...], "total": "2444", "limit": 1000, "offset": 0 }` (ตัวอย่างจาก R6) หรือ array ของแถวตรง ๆ แบบเก่า ต้องรับได้ทั้งสองแบบ
 - `total` อาจเป็น string ต้องแปลงเป็นตัวเลขก่อนเทียบ
-- ส่ง `total` ไปกับ `save_kpi_data` เสมอ ถ้า `data.length < total` GAS ปฏิเสธ (SPEC §6.1) การแบ่งหน้าด้วย `offset` ยังไม่ทำในเฟส 1
+- ส่ง `total` ไปกับ `save_kpi_data` เสมอ ถ้า `data.length < total` GAS ปฏิเสธ (SPEC §7.1) การแบ่งหน้าด้วย `offset` ยังไม่ทำในเฟส 1
 
 ### 5.4 ยังไม่ใช้ในเฟส 1
 
@@ -377,7 +398,23 @@ Request (`Content-Type: application/json`):
 - เกณฑ์รายวัคซีนมาจาก `kpi_epi` ผ่าน `measure_goals` (ชีตจริงมี 30 แถว): `s_epi1.mmr` = 95, `s_epi2.mmr1` = 95, `s_epi2.mmr2` = 95 ที่เหลือ = 90 (รวม `s_epi3.mmr2` = 90) ส่วนรายการที่ไม่มีใน `kpi_epi` (`pcv1`–`pcv3` ของ `s_epi1`, `pcv4` ของ `s_epi2`) ใช้ `goal` ของรายงาน
 - รายงานอื่นในหัวข้อนี้ (work load, วัยเรียน, หญิงตั้งครรภ์, ผู้ใหญ่, 7 ปี ฯลฯ) ยังปิดไว้ เพราะยังไม่มีข้อมูลดิบ หรือเป็นชนิด `workload` ซึ่งรอเฟส 2
 
-## 7. ขอบเขตตำบล (GeoJSON)
+## 7. ไฟล์ snapshot (`public/data/`)
+
+สร้างโดย `src/scripts/build-snapshot.mjs` จาก `?action=catalog` และ `?action=report` เท่านั้น ไม่มีการคำนวณค่า KPI ในขั้นนี้
+
+| ไฟล์ | รูปแบบ (type ใน §9) |
+|---|---|
+| `meta.json` | `SnapshotMeta` |
+| `catalog.json` | `DcCatalog` |
+| `reports/{opendata_id}.json` | `DcReportData` |
+
+สิ่งที่ prebuild script ทำเพิ่มจาก response ของ GAS:
+- เรียงหมวด/หัวข้อ/กลุ่ม/รายงานตาม SPEC §5.4 แล้วเก็บเป็นโครงซ้อน (`DcCatalog.mains[].topics[].groups[].reports[]`) เพื่อให้หน้าเว็บวนลูปได้เลย
+- `DcReport.cat_id`/`main_report_id` ยังอยู่ในรายงานแต่ละตัว (ใช้ทำ breadcrumb และ "รายงานที่เกี่ยวข้อง")
+- `meta.latest_date_com` = `max_date_com` ที่มากที่สุดในทุกรายงาน
+- ตรวจขนาดไฟล์ตาม SPEC §6.1
+
+## 8. ขอบเขตตำบล (GeoJSON)
 
 | เรื่อง | ค่า |
 |---|---|
@@ -392,7 +429,7 @@ Request (`Content-Type: application/json`):
 - แผนที่ใช้ `leaflet@1.9.4` จาก npm โหลดฝั่ง client เท่านั้น และใช้ tiles ของ OpenStreetMap พร้อมข้อความ attribution
 - ที่ footer ระบุแหล่งขอบเขตและวันที่ดาวน์โหลดไฟล์
 
-## 8. Type ฝั่ง frontend (`src/lib/dc-types.ts`)
+## 9. Type ฝั่ง frontend (`src/lib/dc/types.ts`)
 
 ```ts
 export type ReportType = "coverage" | "workload";
@@ -400,6 +437,7 @@ export type ReportType = "coverage" | "workload";
 export type Month = "10" | "11" | "12" | "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09";
 export type Period = "year" | "q1" | "q2" | "q3" | "q4" | `m${Month}`;
 
+/** หนึ่งแถวใน sync_status */
 export interface DcYearStatus {
   b_year: string;
   row_count: number;
@@ -407,19 +445,12 @@ export interface DcYearStatus {
   synced_at: string; // ISO
 }
 
-export interface DcTopic {
-  cat_id: string;
-  category_name: string;
-  main_report_id: string;
-  main_report_name: string;
-  order: number | null;
-}
-
 export interface DcReport {
   opendata_id: string;
   report_name: string;
   source_table: string;
   cat_id: string;
+  main_report_id: string;
   subgroup: string;              // "" = ไม่มีกลุ่ม
   order: number | null;
   report_type: ReportType | null;
@@ -431,7 +462,16 @@ export interface DcReport {
   years: DcYearStatus[];         // ว่าง = ยังไม่มีข้อมูล
 }
 
-export interface DcCatalog {
+export interface DcTopic {
+  cat_id: string;
+  category_name: string;
+  main_report_id: string;
+  main_report_name: string;
+  order: number | null;
+}
+
+/** response ดิบของ GAS ?action=catalog (ยังไม่เรียง) */
+export interface GasCatalog {
   meta: { current_year: string; years: string[]; district_code: string; generated_at: string };
   areas: { id: string; name_th: string }[];
   hospitals: { hospcode: string; hospname: string; tambon_id: string }[];
@@ -439,22 +479,52 @@ export interface DcCatalog {
   reports: DcReport[];
 }
 
-/** query ของ /reports/view — ค่าที่ยอมรับและค่าเริ่มต้น */
+/** catalog.json — เรียงแล้วและซ้อนตามลำดับชั้น */
+export interface DcCatalog {
+  meta: GasCatalog["meta"];
+  areas: GasCatalog["areas"];
+  hospitals: GasCatalog["hospitals"];
+  mains: {
+    main_report_id: string;
+    main_report_name: string;
+    topics: (DcTopic & {
+      groups: { subgroup: string; reports: DcReport[] }[];   // subgroup "" อยู่ท้ายสุด
+    })[];
+  }[];
+}
+
+/** meta.json */
+export interface SnapshotMeta {
+  built_at: string;              // ISO
+  current_year: string;
+  years: string[];
+  report_count: number;
+  latest_date_com: string;       // "" ถ้ายังไม่มีข้อมูล
+}
+
+export type Cell = string | number;
+
+/** response ของ GAS ?action=report และเนื้อหา reports/{id}.json (รูปแบบเดียวกัน) */
+export interface DcYearBlock {
+  b_year: string;
+  headers: string[];
+  rows: Cell[][];                // เรียงตาม headers
+  max_date_com: string;
+}
+
+export interface DcReportData {
+  report: DcReport;
+  years: DcYearBlock[];          // เรียงปีน้อยไปมาก
+}
+export type GasReport = DcReportData;
+
+/** query ของ /reports/{id} — ค่าที่ยอมรับและค่าเริ่มต้น */
 export interface ReportQuery {
-  id: string;                    // opendata_id (บังคับ)
   year: string;                  // 4 หลัก · default = ปีล่าสุดใน report.years
   area: "all" | string;          // "all" หรือรหัสตำบล 6 หลัก · default "all"
   period: Period;                // default "year"
   measure: string | null;        // prefix ของรายการวัคซีน (เฉพาะตาราง M_B) · default รายการแรก
   by: "area" | "hosp";           // default "area" · ถ้า area ≠ "all" บังคับเป็น "hosp"
-}
-
-export type Cell = string | number;
-
-export interface DcReportData {
-  report: DcReport;
-  headers: string[];
-  rows: Cell[][];
 }
 
 export interface Totals {
@@ -464,12 +534,15 @@ export interface Totals {
 }
 ```
 
-## 9. ตัวแปรแวดล้อม
+## 10. ตัวแปรแวดล้อมและค่าตั้งนอกโค้ด
 
 | ที่ | ชื่อ | ค่า |
 |---|---|---|
-| Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App |
+| Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App (prebuild script และหน้า `/sync` ใช้) |
 | Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
 | Cloudflare Pages (build) | `NODE_VERSION` | `20` |
+| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (prebuild ใน CI ต้องใช้) |
 | เครื่องที่รันสคริปต์ node | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (ไม่บังคับ มี fallback ในสคริปต์) |
+| ชีต `settings` | `deploy_hook_url` | URL ของ Cloudflare Deploy Hook (§2.1) |
 | GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
+| `.gitignore` | `public/data/` | ไฟล์ snapshot ไม่ commit |
