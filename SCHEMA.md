@@ -19,8 +19,9 @@
 | `hdc_reports` | ใหม่ | GAS (คอลัมน์จาก API) + ผู้ดูแล | GAS |
 | `sync_status` | ใหม่ | GAS | GAS, ผู้ดูแล |
 
-- แถว 1 เป็น header และ GAS อ่านคอลัมน์ตามชื่อ header (trim + ตัวพิมพ์เล็ก) เหมือนโค้ดเดิม ลำดับคอลัมน์ไม่มีผล
+- แถว 1 เป็น header · ตัวอ่านใหม่ทั้งหมด (`hdc_topics`, `hdc_reports`, `sync_status`, และการอ่าน `hospitals`/`tambon_master` ใน `?action=catalog`) อ่านคอลัมน์ตามชื่อ header (trim + ตัวพิมพ์เล็ก) แบบเดียวกับตัวอ่านแท็บ registry ของเดิม ลำดับคอลัมน์ไม่มีผล · ตัวอ่านเดิม (`settings` = trim อย่างเดียว, ชีตข้อมูล = header ตรง ๆ) ไม่แก้
 - ค่าติ๊กอ่านด้วย `parseBool` เดิม
+- header จริงที่ตรวจจากชีต 29 ต.ค. 2569: `hospitals` = `hospcode, hospname, tambon_id` (17 แถว) · `tambon_master` = `id, name_th, district_id, zip_code` (8 แถวของ `5406`) · PA อ่านสองชีตนี้ตามตำแหน่งคอลัมน์ ส่วนตัวอ่านใหม่อ่านตามชื่อ
 
 ## 2. รายละเอียดชีต
 
@@ -31,7 +32,7 @@
 | `current_quarter` | int 1–4 | `CONFIG.CURRENT_QUARTER` | เดิม |
 | `current_year` | string `^\d{4}$` | `CONFIG.YEAR` | เดิม และเป็นปีสุดท้ายของ window |
 | `province_code` | string `^\d{2}$` | `CONFIG.PROVINCE` | เดิม |
-| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและบันทึก WARNING |
+| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและ `Logger.log` แบบเดียวกับค่าอื่นที่ไม่ผ่าน (ไม่เขียน `system_logs` เพราะ `readSettings` ถูกเรียกทุกนาที จะทำให้ log หมุนทิ้ง) |
 
 - เพิ่มใน `SETTINGS_SCHEMA` และเปลี่ยน `SETTINGS_CACHE_KEY` จาก `settings_v2` เป็น `settings_v3` เพราะรูปแบบที่แคชเปลี่ยน
 - จำนวนปีย้อนหลังเป็นค่าคงที่ `CONFIG.HISTORY_YEARS = 5` ไม่ใช่ค่าในชีต
@@ -189,7 +190,7 @@ Response: `{ status: "success"; year: string; received: number; count: number }`
 1. `cat_id` ผ่าน `sanitizeHdcId` และต้องมีอยู่ใน `hdc_topics` ไม่อย่างนั้นตอบ error `Topic not in hdc_topics`
 2. ถ้า `reports` ว่าง ตอบ error `Empty report list` และไม่แก้อะไร เพื่อกันการตั้ง `removed` ทั้งหัวข้อเมื่อดึงจาก API ไม่สำเร็จ
 3. เก็บเฉพาะแถวที่ `opendata_id` ผ่าน `sanitizeHdcId`, `source_table` ตรง `^s_[a-z0-9_]+$` และ `cat_id` เท่ากับใน body ที่เหลือนับเป็น `skipped`
-4. กรองซ้ำด้วย `opendata_id` โดยเก็บตัวแรก
+4. กรองซ้ำด้วย `opendata_id` โดยเก็บตัวแรก (แถวซ้ำไม่นับใน `skipped`)
 5. ทำทีละรายงาน:
    - มีอยู่แล้ว และ `cat_id` เดิมเท่ากับหัวข้อนี้หรือว่าง: อัปเดต `report_name`, `source_table`, `cat_id`, `category_name`, `main_report_id`, `main_report_name` ตั้ง `catalog_status = active` และ `last_seen_at = now` นับเป็น `updated`
    - มีอยู่แล้ว แต่ `cat_id` เดิมเป็นหัวข้ออื่น: ไม่แก้ (หัวข้อแรกได้สิทธิ์) นับเป็น `skipped` และบันทึก INFO
@@ -286,7 +287,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 |---|---|
 | `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริง 29 ต.ค. 2569 |
 | `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีน 29 ต.ค. 2569 |
-| `POST /api/report_data` | ใช้งานอยู่แล้ว ส่วน `total`/`offset` พบในตัวอย่าง response ของ R6 และต้องยืนยันการแบ่งหน้าในขั้นตรวจรับ (SPEC §13) |
+| `POST /api/report_data` | ใช้งานอยู่แล้ว ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
 | `GET /api/report_year/{tableName}`, `GET /api/report_schema/{tableName}` | มาจาก repo อ้างอิง ยังไม่ได้ตรวจ และยังไม่ใช้ในเฟส 1 |
 
 Base URL: `https://opendata.moph.go.th`
@@ -321,12 +322,12 @@ Base URL: `https://opendata.moph.go.th`
 Request (`Content-Type: application/json`):
 
 ```json
-{ "tableName": "s_epi_complete", "year": "2569", "province": "54", "type": "json", "limit": 5000, "offset": 0 }
+{ "tableName": "s_epi_complete", "year": "2569", "province": "54", "type": "json", "limit": 5000 }
 ```
 
 - Response เป็น envelope เช่น `{ "data": [...], "total": "2444", "limit": 1000, "offset": 0 }` (ตัวอย่างจาก R6) หรือ array ของแถวตรง ๆ แบบเก่า ต้องรับได้ทั้งสองแบบ
 - `total` อาจเป็น string ต้องแปลงเป็นตัวเลขก่อนเทียบ
-- การแบ่งหน้า: ถ้า `data.length < total` ให้ขอซ้ำด้วย `offset += data.length` จนครบ แล้วส่งทุกแถวพร้อม `total` ไปที่ `save_kpi_data`
+- ส่ง `total` ไปกับ `save_kpi_data` เสมอ ถ้า `data.length < total` GAS ปฏิเสธ (SPEC §6.1) การแบ่งหน้าด้วย `offset` ยังไม่ทำในเฟส 1
 
 ### 5.4 ยังไม่ใช้ในเฟส 1
 
@@ -338,7 +339,7 @@ Request (`Content-Type: application/json`):
 
 - `opendata_id` ของ EPI มาจาก response แค็ตตาล็อกจริง
 - `opendata_id` ของ 13 KPI เดิมมาจากลิงก์ใน `kpi_master` (ขั้นตรวจรับข้อ 4 ใน SPEC §13 จะยืนยัน)
-- `goal` มาจาก `target` ใน `kpi_master`/`kpi_epi`
+- `goal` มาจาก `target` ใน `kpi_master`/`kpi_epi` ตามค่าที่อ่านจากชีตจริง 29 ต.ค. 2569 (ไม่ใช่ค่าใน `setupEpiSplit` ของ `รหัส.js` ซึ่งเป็นโค้ด bootstrap เก่าที่ตั้ง 95 ทุกแถวและมีแถว pcv ซึ่งชีตจริงไม่มีแล้ว)
 
 **หัวข้อ: รอผลจาก `find`**
 
@@ -373,7 +374,7 @@ Request (`Content-Type: application/json`):
 | `c47283d3c2c1e6528ddcf88c254f21b3` | `s_epi5` | ความครอบคลุมเด็กครบ 5 ปี DTP5, OPV5 | กลุ่มอายุ 5 ปี | 50 | 90 |
 | `f033ab37c30201f73f142449d037028d` | `s_epi_complete` | fully immunized 5 ปี | กลุ่มอายุ 5 ปี | 51 | 90 |
 
-- เกณฑ์รายวัคซีนมาจาก `kpi_epi` ผ่าน `measure_goals`: `s_epi1.mmr` = 95, `s_epi2.mmr1` = 95, `s_epi2.mmr2` = 95 ที่เหลือใน `kpi_epi` = 90 ส่วนรายการที่ไม่มีใน `kpi_epi` (เช่น `pcv1`–`pcv4`) ใช้ `goal` ของรายงาน
+- เกณฑ์รายวัคซีนมาจาก `kpi_epi` ผ่าน `measure_goals` (ชีตจริงมี 30 แถว): `s_epi1.mmr` = 95, `s_epi2.mmr1` = 95, `s_epi2.mmr2` = 95 ที่เหลือ = 90 (รวม `s_epi3.mmr2` = 90) ส่วนรายการที่ไม่มีใน `kpi_epi` (`pcv1`–`pcv3` ของ `s_epi1`, `pcv4` ของ `s_epi2`) ใช้ `goal` ของรายงาน
 - รายงานอื่นในหัวข้อนี้ (work load, วัยเรียน, หญิงตั้งครรภ์, ผู้ใหญ่, 7 ปี ฯลฯ) ยังปิดไว้ เพราะยังไม่มีข้อมูลดิบ หรือเป็นชนิด `workload` ซึ่งรอเฟส 2
 
 ## 7. ขอบเขตตำบล (GeoJSON)
@@ -436,6 +437,16 @@ export interface DcCatalog {
   hospitals: { hospcode: string; hospname: string; tambon_id: string }[];
   topics: DcTopic[];
   reports: DcReport[];
+}
+
+/** query ของ /reports/view — ค่าที่ยอมรับและค่าเริ่มต้น */
+export interface ReportQuery {
+  id: string;                    // opendata_id (บังคับ)
+  year: string;                  // 4 หลัก · default = ปีล่าสุดใน report.years
+  area: "all" | string;          // "all" หรือรหัสตำบล 6 หลัก · default "all"
+  period: Period;                // default "year"
+  measure: string | null;        // prefix ของรายการวัคซีน (เฉพาะตาราง M_B) · default รายการแรก
+  by: "area" | "hosp";           // default "area" · ถ้า area ≠ "all" บังคับเป็น "hosp"
 }
 
 export type Cell = string | number;

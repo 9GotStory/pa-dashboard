@@ -2,12 +2,13 @@
 
 > สถานะ: ร่าง v0.2 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) และ [SCHEMA.md](SCHEMA.md)
 > รายการงานเรียงตามลำดับที่ต้องทำ แต่ละข้อมีเกณฑ์ตรวจรับที่ทดสอบได้ งานจะถือว่าเสร็จเมื่อผ่านเกณฑ์ ไม่ใช่เมื่อเขียนโค้ดเสร็จ
+> ต้นแบบหน้าจอ R6 อยู่ที่ `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html`
 
 ## กติกา
 
 - แตก branch จาก `main` ทีละ feature (`feat/F01-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ
 - GAS deploy ด้วย `npm run gas:sync` เมื่อ feature ฝั่ง GAS ผ่านเกณฑ์ (รวม deploy หลายข้อพร้อมกันได้) เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
-- ห้ามแก้ไฟล์ของ PA (`src/components/*`, `src/lib/useKPIData.ts`, `kpi-*.ts`, `excel-export.ts`, `types.ts`) ยกเว้นย้ายไฟล์ใน F12
+- ห้ามแก้ไฟล์ PA เดิม (ไฟล์ที่มีอยู่ใต้ `src/components/` ไม่รวม `src/components/dc/` ใหม่, `src/lib/useKPIData.ts`, `kpi-*.ts`, `excel-export.ts`, `types.ts`) ยกเว้นย้ายไฟล์ใน F12
 - ทุก PR ต้อง `npm run build` ผ่าน (ci.yml)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D ทำคู่ขนานได้ตั้งแต่ F05–F06 ผ่าน และ Track E ทำท้ายสุด
 
@@ -16,7 +17,7 @@
 | A — GAS | F01–F07 | — |
 | B — เครื่องมือ sync | F08–F10 | F02, F03, F04 |
 | C — ข้อมูล | F11 | A, B |
-| D — Frontend | F12–F18 | F05, F06 (เริ่ม F12–F14 ได้ก่อน) |
+| D — Frontend | F12–F18 | F05, F06 (เริ่ม F12–F15 ได้ก่อน) |
 | E — Hosting | F19, F20 | D |
 
 ---
@@ -28,7 +29,7 @@
 - **ทำ:** เพิ่ม `district_code` ใน `SETTINGS_SCHEMA` (ต้องขึ้นต้นด้วย `province_code`) · `CONFIG.HISTORY_YEARS = 5` · ฟังก์ชัน `getYearWindow(settings)` คืน array 5 ปีเรียงน้อยไปมาก · bump `SETTINGS_CACHE_KEY` เป็น `settings_v3`
 - **ตรวจรับ:**
   1. `settings` ไม่มีคอลัมน์ → ใช้ `5406` โดยไม่ error
-  2. ใส่ `district_code = 5501` (ไม่ตรงจังหวัด) → ใช้ค่าเริ่มต้น และมี WARNING ใน `system_logs`
+  2. ใส่ `district_code = 5501` (ไม่ตรงจังหวัด) → ใช้ค่าเริ่มต้น และมีบรรทัด `readSettings: district_code has invalid value` ใน execution log ของ Apps Script
   3. `current_year = 2569` → window = `["2565","2566","2567","2568","2569"]`
 
 ### F02 บันทึกข้อมูลหลายปีเฉพาะอำเภอ
@@ -47,7 +48,7 @@
 
 - **ทำ:** `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` · `getSyncUnits` ใหม่ = PA ∪ DC · `BATCH_ALL` และ single-sheet mode เก็บเฉพาะแถว `b_year = current_year` (ถ้าไม่มีคอลัมน์ `b_year` ใช้ทุกแถว) · `meta.kpi_config` มาจาก `getSyncUnits` ใหม่ · เพิ่ม `meta.years` = window (SCHEMA §3.5)
 - **ตรวจรับ:**
-  1. ก่อนแก้ บันทึก response `BATCH_ALL` ไว้ หลังแก้ (ข้อมูลยังปีเดียว) response เหมือนเดิมทุกฟิลด์ ยกเว้น `kpi_config` ที่อาจมีรายการ DC เพิ่ม
+  1. ก่อนแก้ บันทึก response `BATCH_ALL` ไว้ หลังแก้ (ข้อมูลยังปีเดียว) response เหมือนเดิมทุกฟิลด์ ยกเว้น `meta.kpi_config` ที่อาจมีรายการ DC เพิ่ม และ `meta.years` ที่เพิ่มใหม่
   2. หลัง F02 ข้อ 1 (มี 2 ปีในชีต) ตัวเลข `target/result` ของตารางนั้นใน `BATCH_ALL` เท่ากับตอนมีปีเดียว
   3. `/pa` (หรือ `/` ก่อน F12) แสดงตัวเลขเท่าเดิม
 
@@ -84,9 +85,8 @@
 
 ### F07 `setup=dc_seed`
 
-- **ทำ:** เขียนคอลัมน์ผู้ดูแลของ 21 รายงานตาม SCHEMA §6 โดยจับคู่ `opendata_id`
-- **ขึ้นกับ:** F09 (`refresh` ต้องรันก่อนถึงจะมีแถวให้เขียน) และผล `find` สำหรับหัวข้อของ 13 ตารางเดิม
-- **ตรวจรับ:**
+- **ทำ:** เขียนโค้ดของ `setup=dc_seed` ที่ใส่คอลัมน์ผู้ดูแลของ 21 รายงานตาม SCHEMA §6 โดยจับคู่ `opendata_id` (ข้อนี้เขียนโค้ดอย่างเดียว การรันจริงอยู่ใน F11 เพราะต้องรอ `refresh` จาก F09 ก่อน)
+- **ตรวจรับ (รันใน F11):**
   1. ตอบ `applied: 21, not_found: []`
   2. `?action=catalog` มี 21 รายงาน `s_dental_0_5_cavity_free` มี `col_target = "b"`, `col_result = "a"`
   3. รัน 2 ครั้งผลเหมือนเดิม
@@ -97,11 +97,10 @@
 
 ### F08 `src/scripts/sync-moph-to-gas.js`
 
-- **ทำ:** `--year` (ซ้ำได้) · `--backfill` · `limit = 5000` + วนหน้า `offset` จนครบ `total` · ส่ง `year`, `total` (SPEC §6.1, §12.2)
+- **ทำ:** `--year` (ซ้ำได้) · `--backfill` · `limit = 5000` ทุกตาราง · ส่ง `year`, `total` และหยุดตารางนั้นพร้อมข้อความเมื่อได้แถวน้อยกว่า `total` (SPEC §6.1, §12.2)
 - **ตรวจรับ:**
-  1. `--only s_aged9` → log แสดง `received`/`count` และจำนวนแถวที่ดึงได้ = `total` ของ MOPH
-  2. ทดสอบวนหน้า: ดึง `s_epi_complete` ด้วย `limit = 1000` (ชั่วคราว) → ได้จำนวนเท่ากับ `limit = 5000` ครั้งเดียว
-  3. `--year 2568 --only s_kpi_dental33` → `sync_status` มีแถว (`s_kpi_dental33`, 2568)
+  1. `--only s_aged9` และ `--only s_epi_complete` → log แสดง `received`/`count` และจำนวนแถวที่ดึงได้ = `total` ของ MOPH
+  2. `--year 2568 --only s_kpi_dental33` → `sync_status` มีแถว (`s_kpi_dental33`, 2568)
 
 ### F09 `src/scripts/hdc-catalog.js` (ใหม่)
 
@@ -113,7 +112,7 @@
 
 ### F10 หน้า `/sync`
 
-- **ทำ:** ตัวเลือกปีจาก `meta.years` ของ `BATCH_ALL` (เพิ่มใน F03) · ส่ง `year`, `total` · วนหน้าตาม F08 · login ด้วย PIN คงเดิม
+- **ทำ:** ตัวเลือกปีจาก `meta.years` ของ `BATCH_ALL` (เพิ่มใน F03) · ส่ง `year`, `total` และ `limit = 5000` · retry เมื่อ MOPH ตอบ 429/5xx (ของเดิม retry เฉพาะ network error) · login ด้วย PIN คงเดิม
 - **ตรวจรับ:**
   1. เลือกปี 2568 แล้ว sync 1 ตาราง → `sync_status` มีแถวปีนั้น
   2. ไม่เลือกปี → ค่าเริ่มต้นเป็น `current_year` และผลเหมือน sync แบบเดิม
@@ -127,7 +126,7 @@
 - **ทำ:** ตามขั้น 3–9 ใน SPEC §13: `find` → ใส่ `hdc_topics` → `refresh` → `dc_seed` → `--backfill` → `verify-all.js`
 - **ตรวจรับ:**
   1. `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูลใน window (บางตารางอาจไม่มีปีเก่า ให้บันทึกไว้ว่าตารางไหนเริ่มปีไหน)
-  2. `verify-all.js` ในวันเดียวกับ sync ตรงกับ `/pa`
+  2. `verify-all.js` ในวันเดียวกับ sync ตรงกับ `/pa` (สคริปต์ใช้ปี 2569 คงที่ ถ้า `current_year` เปลี่ยนแล้ว แก้ค่าในสคริปต์ก่อน)
   3. ค่ารายปีระดับอำเภอจาก `?action=report` ของ KPI แบบรายปี (เช่น `s_dm_screen`) คำนวณด้วยมือหรือสคริปต์แล้วตรงกับ PA
 
 ---
@@ -136,7 +135,7 @@
 
 ### F12 ย้าย PA ไป `/pa` และตัด `basePath`
 
-- **ทำ:** ย้าย `src/app/page.tsx` → `src/app/pa/page.tsx`, `loading.tsx` → `pa/loading.tsx`, เพิ่ม `pa/layout.tsx` (metadata เดิม) · `src/app/page.tsx` ใหม่เป็นหน้าชั่วคราว (ชื่อระบบ + ลิงก์ไป `/pa`) จนกว่า F15 · ลบ `basePath`/`isProd` ใน `next.config.ts` · metadata root เป็นของ Data Center
+- **ทำ:** ย้าย `src/app/page.tsx` → `src/app/pa/page.tsx`, `loading.tsx` → `pa/loading.tsx`, เพิ่ม `pa/layout.tsx` (metadata เดิม) · `src/app/page.tsx` ใหม่เป็นหน้าชั่วคราว (ชื่อระบบ + ลิงก์ไป `/pa`) จนกว่า F16 · ลบ `basePath`/`isProd` ใน `next.config.ts` · metadata root เป็นของ Data Center
 - **ตรวจรับ:**
   1. `npm run build` ผ่าน และ `out/pa.html` มีอยู่
   2. `grep -r "/pa-dashboard" out/` ไม่พบ
@@ -145,9 +144,9 @@
 
 ### F13 ชั้นข้อมูล Data Center
 
-- **ทำ:** `src/lib/dc-types.ts` (SCHEMA §8) · `src/lib/dc-api.ts` (catalog: localStorage `SHDC_CATALOG_V1` แบบ stale-while-revalidate, report: cache ในหน่วยความจำ) · `src/lib/dc-values.ts` (SCHEMA §4 ทั้งหมด: ตรวจกลุ่มคอลัมน์, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · เทสต์ `src/lib/dc-values.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test` (เพิ่ม `tsx` เป็น devDependency ตัวเดียว)
+- **ทำ:** `src/lib/dc-types.ts` (SCHEMA §8) · `src/lib/dc-api.ts` (cache ในหน่วยความจำของหน้าเท่านั้น) · `src/lib/dc-values.ts` (SCHEMA §4 ทั้งหมด: ตรวจกลุ่มคอลัมน์, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · เทสต์ `src/lib/dc-values.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test` (เพิ่ม `tsx` เป็น devDependency ตัวเดียว)
 - **ตรวจรับ (เทสต์):**
-  1. header จริงของ 11 ตาราง (จาก SCHEMA §4.1) → ตรวจพบกลุ่มคอลัมน์ตามตารางนั้นทุกตัว และ `s_dm_screen`/`s_aged9` ไม่ถูกมองเป็นรายไตรมาส
+  1. header จริงของทั้ง 18 ตาราง (ตาม SCHEMA §4.1) → ตรวจพบกลุ่มคอลัมน์ตรงตารางนั้นทุกตัว และ `s_dm_screen`/`s_aged9` ไม่ถูกมองเป็นรายไตรมาส
   2. `s_epi1` → measure 20 รายการ `s_epi2` → 6 รายการ และ `dtp_hb3` แสดงเป็น `DTP-HB3`
   3. แถว 3 แถว target 10/20/0 result 5/10/0 → `T=30, R=15, pct=50` และแถว target 0 ทั้งหมด → `pct = null`
   4. `OVERRIDE` (`b`/`a`) ชนะ `ANNUAL` และ `M_B` ของ measure ที่เลือกชนะ `ANNUAL`
@@ -155,23 +154,33 @@
 
 ### F14 โครงหน้าและธีม Data Center
 
-- **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · `src/app/layout.tsx` ไม่ห่อ `/pa` ด้วย masthead (ใช้ route group หรือเช็ก pathname ใน client component — เลือกแบบที่ง่ายที่สุดที่ไม่แตะ PA)
+- **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · route group `src/app/(dc)/layout.tsx` ห่อเฉพาะ `/`, `/reports`, `/reports/view` ส่วน `/pa` และ `/sync` อยู่นอก group
 - **ตรวจรับ:**
-  1. `/pa` ไม่มี masthead ของ Data Center และ class ของ PA ไม่เปลี่ยน
-  2. หน้าอื่นมี masthead และ footer แสดงผลได้ที่ความกว้าง 360px โดยไม่มี scroll แนวนอน
+  1. `/pa` และ `/sync` ไม่มี masthead ของ Data Center และ class ของ PA ไม่เปลี่ยน
+  2. `/`, `/reports`, `/reports/view` มี masthead และ footer แสดงผลได้ที่ความกว้าง 360px โดยไม่มี scroll แนวนอน
 
-### F15 หน้าแรก `/`
+### F15 ไฟล์ขอบเขตตำบล
+
+- **ทำ:** ดาวน์โหลดตาม SCHEMA §7 เก็บ `public/geo/song-tambon.geojson` + บันทึกวันที่และ URL ที่ใช้ใน `public/geo/README.md`
+- **ตรวจรับ:**
+  1. 8 features และ `ADMIN_ID3` = `540601`–`540608` ครบ ไม่ซ้ำ
+  2. ไฟล์ < 500 KB
+  3. วาดบน Leaflet แล้วรูปร่างอยู่ในกรอบอำเภอสอง (ไม่มี polygon หลุดไปจังหวัดอื่น)
+
+
+### F16 หน้าแรก `/`
 
 - **ทำ:** ตาม SPEC §9.2 · `src/components/dc/DistrictMap.tsx` (Leaflet, โหลดฝั่ง client ด้วย `next/dynamic` `ssr: false`, อ่าน `public/geo/song-tambon.geojson`) · เลือกตำบล (คลิกแผนที่หรือปุ่ม) แสดงรายชื่อหน่วยบริการจาก `hospitals` · การ์ดหัวข้อ · วันที่ข้อมูลล่าสุด · ที่มาของข้อมูล
-- **ขึ้นกับ:** F18
+- **ขึ้นกับ:** F15
 - **ตรวจรับ:**
   1. แผนที่แสดง 8 ตำบลเป็นสีและชื่อตรง `tambon_master` คลิกตำบลแล้วแผงด้านข้างเปลี่ยนตาม
-  2. ตำบลบ้านหนุน (`540601`) แสดงหน่วยบริการ "บ้านหนุน" และ "สอง" (จากชีต `hospitals`)
+  2. ตำบลบ้านหนุน (`540601`) แสดงหน่วยบริการตามค่า `tambon_id` ในชีต `hospitals` ณ วันทดสอบ (ข้อมูล 29 ต.ค. 2569 คือ "บ้านหนุน" และ "สอง" — ถ้า รพ.สอง ควรอยู่ตำบลอื่น ให้แก้ที่ชีต ไม่ใช่ที่โค้ด)
   3. การ์ดหัวข้อมีจำนวนรายงานเท่ากับที่ `enabled` และลิงก์ไป `/reports?cat=…`
   4. ไม่มีคำว่า "จำลอง" หรือ "ตัวอย่าง" ในหน้า
   5. ปิด JavaScript ของ tile server (บล็อก `tile.openstreetmap.org`) → หน้ายังใช้งานได้ เลือกตำบลด้วยปุ่มได้
 
-### F16 คลังรายงาน `/reports`
+
+### F17 คลังรายงาน `/reports`
 
 - **ทำ:** ตาม SPEC §9.3 · แถบหมวด → หัวข้อ · ค้นหา · รายการจัดหัวแถวตามหัวข้อ → กลุ่ม เรียงตาม SPEC §5.4 · แบ่งหน้า · สถานะใน URL (`main`, `cat`, `q`, `page`) · ห่อ `useSearchParams` ด้วย `<Suspense>`
 - **ตรวจรับ:**
@@ -180,7 +189,8 @@
   3. รายงานที่ยังไม่มี `years` แสดง "ยังไม่มีข้อมูล"
   4. กด back จากหน้ารายงานแล้วตัวกรองและหน้าเดิมยังอยู่ (มาจาก URL)
 
-### F17 หน้ารายงาน `/reports/view?id=`
+
+### F18 หน้ารายงาน `/reports/view?id=`
 
 - **ทำ:** ตาม SPEC §9.4 ทั้งหมดสำหรับ `coverage` · กราฟ SVG 3 แบบใน `src/components/dc/charts/` · CSV · พิมพ์ (CSS `@media print`) · "เกี่ยวกับรายงานนี้" · รายงานที่เกี่ยวข้อง · fallback สำหรับ `report_type` อื่น
 - **ตรวจรับ:**
@@ -190,16 +200,8 @@
   4. `s_kpi_anc12` มีตัวเลือกไตรมาส และ `s_epi_complete` มีตัวเลือกเดือน ต.ค.–ก.ย.
   5. เปลี่ยนตัวกรองแล้ว URL เปลี่ยน และเปิด URL นั้นในแท็บใหม่ได้ผลเดียวกัน
   6. CSV เปิดใน Excel แล้วภาษาไทยถูก (BOM) ค่าที่ขึ้นต้นด้วย `=` ถูกกันสูตร ชื่อไฟล์ตาม SPEC §9.4
-  7. เลือกปีที่ไม่มีข้อมูล → แสดง "ไม่มีข้อมูลปี … ในระบบ" ไม่ใช่ 0%
+  7. เปิดด้วย URL `?year=2560` (ปีที่ไม่มีข้อมูล) → แสดง "ไม่มีข้อมูลปี … ในระบบ" ไม่ใช่ 0%
   8. `report_type` ว่าง → แสดงข้อความยังไม่รองรับ พร้อมลิงก์ HDC ไม่ crash
-
-### F18 ไฟล์ขอบเขตตำบล
-
-- **ทำ:** ดาวน์โหลดตาม SCHEMA §7 เก็บ `public/geo/song-tambon.geojson` + บันทึกวันที่และ URL ที่ใช้ใน `public/geo/README.md`
-- **ตรวจรับ:**
-  1. 8 features และ `ADMIN_ID3` = `540601`–`540608` ครบ ไม่ซ้ำ
-  2. ไฟล์ < 500 KB
-  3. วาดบน Leaflet แล้วรูปร่างอยู่ในกรอบอำเภอสอง (ไม่มี polygon หลุดไปจังหวัดอื่น)
 
 ---
 

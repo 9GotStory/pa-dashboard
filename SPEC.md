@@ -2,7 +2,7 @@
 
 > สถานะ: ร่าง v0.3 · 29 ต.ค. 2569 · ขอบเขต: เฟส 1 · ข้อตัดสินใจทั้งหมดอยู่ใน §15
 > เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, กติกาคำนวณ, seed)
-> ต้นแบบหน้าจอ: `song-health-data-center-review-03-epi-real-response-r6.html` (R6) ใช้เป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขทุกตัวในไฟล์เป็นข้อมูลจำลอง
+> ต้นแบบหน้าจอ: `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html` (R6) ใช้เป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขทุกตัวในไฟล์เป็นข้อมูลจำลอง
 
 ---
 
@@ -71,9 +71,9 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 | Path | หน้า | ไฟล์ | หมายเหตุ |
 |---|---|---|---|
-| `/` | Data Center หน้าแรก | `src/app/page.tsx` (เขียนใหม่) | |
-| `/reports` | คลังรายงาน | `src/app/reports/page.tsx` | query: `main`, `cat`, `q`, `page` |
-| `/reports/view` | หน้ารายงาน | `src/app/reports/view/page.tsx` | query: `id` (= `opendata_id`) และตัวกรองใน §9.4 |
+| `/` | Data Center หน้าแรก | `src/app/(dc)/page.tsx` | |
+| `/reports` | คลังรายงาน | `src/app/(dc)/reports/page.tsx` | query: `main`, `cat`, `q`, `page` |
+| `/reports/view` | หน้ารายงาน | `src/app/(dc)/reports/view/page.tsx` | query: `id` (= `opendata_id`) และตัวกรองใน §9.4 (ค่าที่ยอมรับ: SCHEMA §8 `ReportQuery`) |
 | `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` |
 | `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปี (§12.1) |
 
@@ -83,6 +83,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ไม่มี `basePath` อีก: ลบ `basePath` และ `isProd` ออกจาก `next.config.ts` ส่วน `output: 'export'` และ `images.unoptimized` คงไว้
 - ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป
 - metadata ของ root layout เปลี่ยนเป็นของ Data Center
+- หน้า Data Center ทั้งสามอยู่ใน route group `src/app/(dc)/` ซึ่งมี `layout.tsx` ของตัวเอง (masthead + footer) ส่วน `/pa` และ `/sync` อยู่นอก group จึงไม่มี masthead และไม่ถูกแตะ
 
 ## 5. แค็ตตาล็อกรายงาน
 
@@ -111,14 +112,14 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - จับคู่ด้วย `opendata_id` และกรองรายการซ้ำ (API ส่งซ้ำได้ เช่น หัวข้อวัคซีนมี 46 แถว แต่เป็น 34 รายงาน)
 - อัปเดตเฉพาะคอลัมน์ที่มาจาก API **ไม่แตะคอลัมน์ที่ผู้ดูแลกรอก** (`enabled`, `subgroup`, `order`, `report_type`, `goal`, `col_target`, `col_result`)
 - รายงานที่หายไปจาก API ตั้ง `catalog_status = removed` และไม่ลบแถว เพื่อให้ข้อมูลปีเก่ายังดูได้
-- หนึ่ง `opendata_id` อยู่ได้หัวข้อเดียว คือหัวข้อแรกที่บันทึก
+- หนึ่ง `opendata_id` อยู่ได้หัวข้อเดียว คือหัวข้อแรกที่บันทึก (`refresh` ไล่หัวข้อตามลำดับแถวใน `hdc_topics` บนลงล่าง)
 - อัลกอริทึมเต็ม: SCHEMA §3.4
 
 ### 5.4 การเรียงลำดับ
 
 - หัวข้อ: `hdc_topics.order` แล้วตามชื่อหัวข้อ
 - หมวด: `order` ที่น้อยที่สุดของหัวข้อในหมวด แล้วตามชื่อหมวด
-- กลุ่ม: `order` ที่น้อยที่สุดของรายงานในกลุ่ม (กฎเดียวกับ `sortKpisByGroup` ของ PA) รายงานที่ไม่มีกลุ่มอยู่ท้ายหัวข้อ
+- กลุ่ม: `order` ที่น้อยที่สุดของรายงานในกลุ่ม (กฎเดียวกับ `sortKpisByGroup` ของ PA) แต่เพิ่มว่ารายงานที่ไม่มีกลุ่มอยู่ท้ายหัวข้อเสมอ (PA จัดกลุ่มว่างเหมือนกลุ่มทั่วไป)
 - รายงาน: `order` แล้วตาม `report_name`
 - `order` ว่างถือเป็นลำดับท้ายสุด เทียบชื่อด้วย `localeCompare(…, "th")`
 
@@ -143,10 +144,10 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 ### 6.1 การดึงจาก `report_data`
 
-- ส่ง `limit = 5000` ทุกคำขอ (ถ้า unit กำหนด `limit` มากกว่านี้ ใช้ค่าของ unit)
-- ตรวจ `total` ใน response ถ้าได้แถวน้อยกว่า `total` ดึงหน้าถัดไปด้วย `offset` จนครบ แล้วส่ง `total` ไปกับ `save_kpi_data` ให้ GAS ปฏิเสธข้อมูลที่ไม่ครบ
+- ส่ง `limit = 5000` ทุกคำขอ (ถ้า unit กำหนด `limit` มากกว่านี้ ใช้ค่าของ unit) ตารางที่ใหญ่ที่สุดตอนนี้ (`s_epi_complete`) มีราว 2,450 แถวทั้งจังหวัด จึงพอในหน้าเดียว
+- ส่ง `total` จาก response ไปกับ `save_kpi_data` ให้ GAS ปฏิเสธเมื่อได้แถวน้อยกว่า `total` (ข้อมูลถูกตัด) ยังไม่ทำการแบ่งหน้าด้วย `offset` ในเฟส 1 ถ้าวันหนึ่งมีตารางเกิน 5,000 แถว การปฏิเสธนี้จะบอกเอง
 - ส่งทั้งจังหวัด (`province`) ตามเดิม GAS กรอง `5406` เอง
-- เว้นช่วง 4–7 วินาทีระหว่างคำขอ และ retry เมื่อได้ 429/5xx เหมือนเดิม
+- เว้นช่วง 4–7 วินาทีระหว่างคำขอ และ retry เมื่อได้ 429/5xx (สคริปต์ node และ GAS ทำอยู่แล้ว ส่วนหน้า `/sync` ตอนนี้ retry เฉพาะ network error ต้องเพิ่มใน F10)
 
 ## 7. Sync units
 
@@ -202,7 +203,7 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 ### 9.3 คลังรายงาน `/reports`
 
 - แถบซ้าย: หมวด → หัวข้อ (ซ้อนกัน) พร้อมจำนวนรายงาน แสดงเฉพาะหัวข้อที่มีรายงานเปิดอยู่
-- ค้นหาจาก `report_name`, `source_table`, `opendata_id`, ชื่อหัวข้อ และชื่อกลุ่ม
+- ค้นหาจาก `report_name`, `source_table`, `opendata_id`, ชื่อหัวข้อ และชื่อกลุ่ม โดยค้นภายในหมวด/หัวข้อที่เลือกอยู่ (`q` AND `main`/`cat`)
 - รายการจัดหัวแถวตาม หัวข้อ → กลุ่ม คอลัมน์: ชื่อรายงาน (+ `source_table`) · หัวข้อ/กลุ่ม · ข้อมูลล่าสุด (ปีล่าสุดที่มีข้อมูล หรือ "ยังไม่มีข้อมูล") · เปิดรายงาน
 - แบ่งหน้า 10/20 รายการตาม R6 และเก็บสถานะตัวกรองใน URL
 - รายงานที่ `catalog_status = removed` ยังแสดง พร้อมป้าย "HDC ไม่แสดงรายงานนี้แล้ว"
@@ -220,7 +221,7 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 
 | องค์ประกอบ | รายละเอียด |
 |---|---|
-| ตัวกรอง | ปีงบประมาณ (เฉพาะปีที่มีข้อมูล ค่าเริ่มต้นเป็นปีล่าสุด) · พื้นที่ (ทั้งอำเภอ / 8 ตำบล) · ช่วงเวลา (ทั้งปี / ไตรมาส 1–4 / เดือน ต.ค.–ก.ย. แสดงเฉพาะระดับที่ตารางมี) · รายการวัคซีน (เฉพาะตารางที่มีหลายรายการ เช่น `s_epi1`) · เปรียบเทียบตาม (ตำบล / หน่วยบริการ — เมื่อเลือกตำบลเดียว เปรียบเทียบได้เฉพาะรายหน่วยบริการในตำบลนั้น) |
+| ตัวกรอง | ปีงบประมาณ (เฉพาะปีที่มีข้อมูล ค่าเริ่มต้นเป็นปีล่าสุด) · พื้นที่ (ทั้งอำเภอ / 8 ตำบล) · ช่วงเวลา (ทั้งปี / ไตรมาส 1–4 / เดือน ต.ค.–ก.ย. แสดงเฉพาะระดับที่ตารางมี) · รายการวัคซีน (เฉพาะตารางที่มีหลายรายการ เช่น `s_epi1`) · เปรียบเทียบตาม (ตำบล / หน่วยบริการ — เมื่อเลือกตำบลเดียว เปรียบเทียบได้เฉพาะรายหน่วยบริการ โดยกรองแถวด้วย `areacode` ของตำบลก่อนแล้วจัดกลุ่มตาม `hospcode` ส่วน `hospitals.tambon_id` ใช้แสดงชื่อเท่านั้น) |
 | URL | `?id=&year=&area=&period=&measure=&by=` เพื่อให้แชร์ลิงก์ได้ |
 | ตัวเลขสรุป | เป้าหมาย · ผลงาน · ร้อยละ · ผ่าน/ไม่ผ่านเกณฑ์ เมื่อมีเกณฑ์ (ผ่านเมื่อร้อยละ ≥ เกณฑ์ เหมือน PA) |
 | กราฟ A | ร้อยละรายตำบลหรือรายหน่วยบริการ เป็นแท่งแนวนอนพร้อมเส้นเกณฑ์ (แบบ `screening`/`epi` ของ R6) |
@@ -228,7 +229,7 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | กราฟ C | เป้าหมายเทียบผลงานรายไตรมาสหรือรายเดือนของปีที่เลือก เมื่อตารางมีข้อมูลระดับนั้น |
 | ตาราง | หน่วยที่เปรียบเทียบ × เป้าหมาย/ผลงาน/ร้อยละ พร้อมแถวรวม |
 | ร้อยละ | ทศนิยม 2 ตำแหน่งด้วย `formatPct` เดิม ถ้าเป้าหมายเป็น 0 แสดง "—" |
-| ไม่มีข้อมูล | แสดง "ไม่มีข้อมูลปี … ในระบบ" ไม่แสดงเป็นศูนย์ |
+| ไม่มีข้อมูล | แสดง "ไม่มีข้อมูลปี … ในระบบ" ไม่แสดงเป็นศูนย์ (เกิดได้เมื่อเปิดด้วย URL `?year=` ที่ไม่มีข้อมูล เพราะตัวเลือกปีในฟอร์มมีแต่ปีที่มีข้อมูล) |
 
 **เกณฑ์:** ใช้ `hdc_reports.goal` ส่วนตารางที่มีหลายรายการวัคซีน ใช้เกณฑ์รายวัคซีนจาก `kpi_epi` (จับคู่ `source_sheet` + `value_prefix` แล้วเอาค่า `target`) ถ้ามี ถ้าไม่มีใช้ `goal` ของรายงาน
 
@@ -246,7 +247,7 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | ไฟล์ | หน้าที่ |
 |---|---|
 | `src/lib/dc-types.ts` | type ตาม SCHEMA §8 |
-| `src/lib/dc-api.ts` | เรียก `?action=catalog` (cache แบบ stale-while-revalidate ใน localStorage คีย์ `SHDC_CATALOG_V1`) และ `?action=report` (cache ในหน่วยความจำ) |
+| `src/lib/dc-api.ts` | เรียก `?action=catalog` และ `?action=report` โดย cache ในหน่วยความจำของหน้า (module-level) เท่านั้น ไม่ใช้ localStorage ในเฟส 1 |
 | `src/lib/dc-values.ts` | ฟังก์ชันคำนวณล้วนตาม SCHEMA §4 |
 | `src/components/dc/*` | masthead, แผนที่, ตัวกรอง, กราฟ SVG, ตาราง |
 
@@ -296,7 +297,7 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 
 ### 12.4 GAS
 
-- `syncAllData` (trigger รายวัน): ดึง `current_year` ตามกติกา §6.1
+- `syncAllData` (trigger รายวัน): ดึง `current_year` ส่ง `limit = 5000` ทุกตาราง และปฏิเสธเมื่อได้แถวน้อยกว่า `total` เหมือน §6.1 แต่คงช่วงเว้น 1.5–2.5 วินาทีของเดิม (เป็นคนละ egress กับเบราว์เซอร์) และบันทึกผ่านทางเดียวกับ `save_kpi_data` (`year = current_year`)
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"
 - `clearConfigCache()` (เมนู "Clear Config Cache") ล้างแคช catalog ด้วย
@@ -319,7 +320,7 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 - โฟลเดอร์ `legacy-redirect/` มี `index.html` และ `404.html` (เนื้อหาเดียวกัน) ไม่มี build
 - JavaScript ในหน้าแปลง URL เก่าเป็นใหม่แล้ว `location.replace`:
   - `/pa-dashboard/` หรือ `/pa-dashboard/index.html` (มีหรือไม่มี `?cat=`) → `<ORIGIN>/pa` + query เดิม เพราะ root เดิมคือ PA
-  - `/pa-dashboard/sync` → `<ORIGIN>/sync`
+  - `/pa-dashboard/sync`, `/pa-dashboard/sync/`, `/pa-dashboard/sync.html` → `<ORIGIN>/sync`
   - อื่น ๆ → `<ORIGIN>/`
   - `<ORIGIN>` เป็นค่าคงที่ตัวเดียวในไฟล์ (`https://<project>.pages.dev` ในเฟส 1) แก้ที่เดียวเมื่อย้ายโดเมน
 - มี `<meta http-equiv="refresh">` ไปที่ `<ORIGIN>/` และลิงก์ให้กดเอง สำหรับกรณีไม่มี JavaScript
@@ -335,9 +336,9 @@ Data Center ไม่ใช้ `BATCH_ALL` และ PA ไม่โหลดต
 | 3 | `hdc-catalog.js find` กับ 18 ตาราง แล้วใส่ `cat_id` ที่ได้ใน `hdc_topics` | ทุกตารางพบหัวข้อ |
 | 4 | `hdc-catalog.js refresh` | `hdc_reports` มีครบ 21 `opendata_id` ใน SCHEMA §6 |
 | 5 | `setup=dc_seed` | 21 รายงานเป็น `enabled = TRUE` และไม่มีรายการ "ไม่พบ" |
-| 6 | ทดสอบการดึง: `s_aged9` ด้วย `limit = 5000` และ `s_epi_complete` ด้วย `limit = 1000` | `s_aged9`: จำนวนแถวเท่ากับ `total` และเท่ากับตอนไม่ส่ง `limit` · `s_epi_complete`: แบ่งหน้าด้วย `offset` แล้วได้ครบ `total` และตรงกับการขอครั้งเดียวด้วย `limit = 5000` |
+| 6 | ทดสอบการดึง `s_aged9` และ `s_epi_complete` ด้วย `limit = 5000` | จำนวนแถวที่ได้เท่ากับ `total` ของทั้งสองตาราง และ `s_aged9` เท่ากับตอนไม่ส่ง `limit` |
 | 7 | `sync-moph-to-gas.js --backfill` | `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูล |
-| 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน | ตัวเลขตรงกับ `/pa` |
+| 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน (สคริปต์นี้ใช้ปี `2569` คงที่ ถ้า `current_year` ไม่ใช่ 2569 ต้องแก้ค่าในสคริปต์ก่อน) | ตัวเลขตรงกับ `/pa` |
 | 9 | ตรวจ Data Center | ค่าทั้งปีระดับอำเภอของ KPI ที่ PA คิดแบบรายปีตรงกับ PA ถ้าไม่ตรง ให้ตรวจแถวที่ `result` ว่าง (PA มี fallback ไปใช้ผลรวมรายไตรมาส) และเทียบรายงานอื่น 1–2 รายงานกับหน้า HDC ระดับอำเภอ |
 | 10 | สร้างโปรเจกต์ Cloudflare Pages | `https://<project>.pages.dev/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/view?id=…` เปิดได้โดยตรง (ไม่ใช่ 404) |
 | 11 | Deploy stub บน GitHub Pages | `…/pa-dashboard/?cat=X` ไปที่ `https://<project>.pages.dev/pa?cat=X` และ `…/pa-dashboard/sync` ไปที่ `/sync` |
