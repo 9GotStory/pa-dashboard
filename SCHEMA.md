@@ -1,6 +1,6 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.4 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md)
+> สถานะ: ร่าง v0.5 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
 
 ---

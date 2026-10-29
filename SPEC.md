@@ -1,7 +1,7 @@
 # SPEC — Song Health Data Center
 
-> สถานะ: ร่าง v0.4 · 29 ต.ค. 2569 · ขอบเขต: เฟส 1 · ข้อตัดสินใจทั้งหมดอยู่ใน §15
-> เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, ไฟล์ snapshot, กติกาคำนวณ, seed) และ [FEATURES.md](FEATURES.md) (รายการงาน)
+> สถานะ: ร่าง v0.5 · 29 ต.ค. 2569 · ขอบเขต: เฟส 1 · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
+> เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, ไฟล์ snapshot, กติกาคำนวณ, seed), [FEATURES.md](FEATURES.md) (รายการงาน), [GLOSSARY.md](GLOSSARY.md) (คำศัพท์ที่ใช้ในเอกสารและโค้ด), [CODING_STANDARDS.md](CODING_STANDARDS.md) (มาตรฐานโค้ดที่ใช้ตรวจ PR)
 > ต้นแบบหน้าจอ: `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html` (R6) ใช้เป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขทุกตัวในไฟล์เป็นข้อมูลจำลอง
 
 ---
@@ -423,13 +423,17 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 ## 15. ข้อตัดสินใจ
 
-| # | เรื่อง | ข้อสรุป (29 ต.ค. 2569) |
-|---|---|---|
-| D1 | Hosting และ URL | Cloudflare Pages ไม่มี `basePath` Data Center ที่ `/` (§12.5) |
-| D2 | path ของ PA | `/pa` |
-| D3 | ลิงก์ PA เดิมที่แชร์ไว้ | หน้า stub บน GitHub Pages ส่งต่อไปโดเมนใหม่ (§12.6) ไม่มี redirect ในแอป |
-| D4 | ขอบเขตตำบลบนแผนที่ | ดาวน์โหลดจาก MOPH GIS ครั้งเดียว เก็บเป็น `public/geo/song-tambon.geojson` (SCHEMA §8) ไม่ดึงสดแบบ R6 |
-| D5 | ความปลอดภัยของ endpoint ที่เขียนข้อมูล | ไม่ทำในเฟส 1 ยอมรับความเสี่ยงตาม §14 |
-| D6 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` ย้ายไปโดเมนเองได้ภายหลังโดยแก้ `<ORIGIN>` ใน stub ที่เดียว |
-| D7 | เว็บสาธารณะอ่านข้อมูลจากไหน | ไฟล์ JSON ที่สร้างตอน build (§6) ไม่เรียก GAS สด เพราะประสิทธิภาพ ความทนทาน และข้อจำกัดการทำงานพร้อมกันของ GAS |
-| D8 | โครงชีตหลายปี | ชีตปีปัจจุบันชื่อเดิม + ชีต `_y{YYYY}` ต่อปี (§7) เพื่อไม่แตะ PA/`BATCH_ALL` และให้ย้ายปีอัตโนมัติ |
+ตารางนี้คือข้อสรุป เหตุผลและทางเลือกที่ไม่เลือกอยู่ใน ADR ที่อ้าง ข้อตัดสินใจใหม่ให้เพิ่ม ADR ไฟล์ถัดไปใน `docs/adr/` แล้วเติมแถวที่นี่
+
+| # | เรื่อง | ข้อสรุป (29 ต.ค. 2569) | ADR |
+|---|---|---|---|
+| D1 | Hosting และ URL | Cloudflare Pages ไม่มี `basePath` Data Center ที่ `/` (§12.5) | [0002](docs/adr/0002-cloudflare-pages-hosting.md) |
+| D2 | path ของ PA | `/pa` | [0003](docs/adr/0003-pa-at-slash-pa-and-github-pages-stub.md) |
+| D3 | ลิงก์ PA เดิมที่แชร์ไว้ | หน้า stub บน GitHub Pages ส่งต่อไปโดเมนใหม่ (§12.6) ไม่มี redirect ในแอป | [0003](docs/adr/0003-pa-at-slash-pa-and-github-pages-stub.md) |
+| D4 | ขอบเขตตำบลบนแผนที่ | ดาวน์โหลดจาก MOPH GIS ครั้งเดียว เก็บเป็น `public/geo/song-tambon.geojson` (SCHEMA §8) ไม่ดึงสดแบบ R6 | [0004](docs/adr/0004-static-geojson-boundaries.md) |
+| D5 | ความปลอดภัยของ endpoint ที่เขียนข้อมูล | ไม่ทำในเฟส 1 ยอมรับความเสี่ยงตาม §14 | [0005](docs/adr/0005-no-server-side-auth-phase1.md) |
+| D6 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` ย้ายไปโดเมนเองได้ภายหลังโดยแก้ `<ORIGIN>` ใน stub ที่เดียว | [0002](docs/adr/0002-cloudflare-pages-hosting.md) |
+| D7 | เว็บสาธารณะอ่านข้อมูลจากไหน | ไฟล์ JSON ที่สร้างตอน build (§6) ไม่เรียก GAS สด เพราะประสิทธิภาพ ความทนทาน และข้อจำกัดการทำงานพร้อมกันของ GAS | [0006](docs/adr/0006-build-time-snapshot.md) |
+| D8 | โครงชีตหลายปี | ชีตปีปัจจุบันชื่อเดิม + ชีต `_y{YYYY}` ต่อปี (§7) เพื่อไม่แตะ PA/`BATCH_ALL` และให้ย้ายปีอัตโนมัติ | [0007](docs/adr/0007-per-year-sheets.md) |
+
+ข้อตัดสินใจที่ตกลงกันตั้งแต่ต้นและไม่มีเลข D: คง stack เดิม ไม่ใช้ branch `develop` ([0001](docs/adr/0001-keep-gas-sheets-static-stack.md)), แค็ตตาล็อกตาม HDC แบบ opt-in + กลุ่มกำหนดเอง ([0008](docs/adr/0008-hdc-catalog-opt-in.md)), คำนวณรายงานในเบราว์เซอร์จากข้อมูลดิบ ([0009](docs/adr/0009-client-side-coverage-calculation.md))

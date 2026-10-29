@@ -1,14 +1,25 @@
 # FEATURES — Song Health Data Center เฟส 1
 
-> สถานะ: ร่าง v0.4 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) v0.4 และ [SCHEMA.md](SCHEMA.md) v0.4
+> สถานะ: ร่าง v0.5 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) v0.5 และ [SCHEMA.md](SCHEMA.md) v0.5 · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md)
 > รายการงานเรียงตามลำดับที่ต้องทำ แต่ละข้อมีเกณฑ์ตรวจรับที่ทดสอบได้ งานจะถือว่าเสร็จเมื่อผ่านเกณฑ์ ไม่ใช่เมื่อเขียนโค้ดเสร็จ
 > ต้นแบบหน้าจอ R6 อยู่ที่ `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html`
 
 ## กติกา
 
-- แตก branch จาก `main` ทีละ feature (`feat/F01-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ
-- GAS deploy ด้วย `npm run gas:sync` เมื่อ feature ฝั่ง GAS ผ่านเกณฑ์ (รวม deploy หลายข้อพร้อมกันได้) เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
-- โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (SPEC §12.4) และทุก feature ฝั่ง GAS ต้องมีเทสต์ใน `src/scripts/test/` ที่โหลดไฟล์ GAS ด้วย `node:vm` พร้อม stub (รันด้วย `node --test src/scripts/test/`) · ไฟล์ที่ไม่ใช่ GAS ใต้ `src/scripts/` ต้องอยู่ใน `.claspignore` (SCHEMA §10)
+### ขั้นตอนทำงาน (workflow ของ [mattpocock/skills](https://github.com/mattpocock/skills))
+
+- ติดตั้งครั้งเดียว: เปิด plugin "Skills For Real Engineers" (`claude plugin install mattpocock-skills@claude-plugins-official`) แล้วรัน `/setup-matt-pocock-skills` เลือก GitHub Issues เป็น tracker และ label ค่าเริ่มต้น สคริปต์จะเขียน `docs/agents/issue-tracker.md`, `docs/agents/domain.md` และส่วน `## Agent skills` ใน `CLAUDE.md`
+- เอกสารชุดนี้ (SPEC/SCHEMA/FEATURES) คือผลของขั้น `/grill` แล้ว ขั้นต่อไปคือ `/to-spec` → spec issue 1 ใบที่สรุปเป้าหมายและข้อตัดสินใจ (อ้าง ADR ไม่ใส่ path ไฟล์) → `/to-tickets` → issue ต่อ F## ตามหัวข้อด้านล่าง โดยใส่ "ขึ้นกับ" เป็น blocking relationship ของ GitHub และติด `ready-for-agent` เฉพาะ ticket ที่ไม่ถูก block
+- ยังไม่สร้าง issue จนกว่าจะสั่ง · เมื่อสร้างแล้ว issue คือแหล่งความจริงของสถานะงาน ไฟล์นี้คือแหล่งความจริงของเกณฑ์ตรวจรับ ถ้าสองที่ขัดกันให้แก้ไฟล์นี้ก่อนแล้วอัปเดต issue
+- ต่อ ticket: `/implement` → `/tdd` เฉพาะ seam ที่ตกลงใน CODING_STANDARDS §5 (ไม่ต้องเขียนเทสต์ใหม่ที่อื่น) → `/code-review` เทียบ `CODING_STANDARDS.md` → `/pr` (body มี Summary, Evidence, Merge Danger และ `Closes #<issue>`) · ขั้นที่ต้องมีคนทำเอง (F12 รันกับชีตจริง, F21 ตั้ง Cloudflare, F22 เปิด Pages ใหม่) ใช้ `/wizard` นำทีละขั้นและบันทึกผลใน issue
+- หลังปิด Track แต่ละชุดรัน `/retro` และนำสิ่งที่เรียนรู้มาแก้ไฟล์นี้หรือ ADR ไม่ใช่จำไว้เฉย ๆ
+- งานทั้งหมดเป็นรูป expand–contract: Track A–C ขยาย (GAS รับทั้งแบบเก่าและใหม่, ชีตเพิ่ม, snapshot เพิ่ม) · Track D ย้ายผู้ใช้ (เว็บอ่าน snapshot, PA ไป `/pa`) · Track E หด (GitHub Pages เหลือ stub) จึงอย่ารวม ticket ข้าม Track เป็นใบเดียว
+
+### กติกาโค้ด
+
+- แตก branch จาก `main` ทีละ ticket (`feat/F01-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ (ADR-0001)
+- GAS deploy ด้วย `npm run gas:sync` เมื่อ ticket ฝั่ง GAS ผ่านเกณฑ์ (รวม deploy หลายข้อพร้อมกันได้) เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
+- โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (SPEC §12.4) และทุก ticket ฝั่ง GAS ต้องมีเทสต์ใน `src/scripts/test/` ที่โหลดไฟล์ GAS ด้วย `node:vm` พร้อม stub (รันด้วย `node --test src/scripts/test/`) · ไฟล์ที่ไม่ใช่ GAS ใต้ `src/scripts/` ต้องอยู่ใน `.claspignore` (SCHEMA §10)
 - ห้ามแก้ไฟล์ PA เดิม (ไฟล์ที่มีอยู่ใต้ `src/components/` ไม่รวม `src/components/dc/` ใหม่, `src/lib/useKPIData.ts`, `kpi-*.ts`, `excel-export.ts`, `types.ts`) ยกเว้นย้ายไฟล์ใน F13 · ใน `รหัส.js` แก้เฉพาะจุดที่ SPEC §12.4 ระบุ
 - ทุก PR ต้อง `npm run build` ผ่าน (ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D ทำคู่ขนานได้ตั้งแต่ F05–F06 ผ่าน และ Track E ทำท้ายสุด
@@ -20,6 +31,33 @@
 | C — ข้อมูล | F12 | A, B |
 | D — Frontend | F13–F20 | F05, F06 (เริ่ม F13, F15–F17 ได้ก่อน) |
 | E — Hosting | F21, F22 | D |
+
+### ดัชนี ticket (เติมเลข issue เมื่อ `/to-tickets` สร้างแล้ว)
+
+| F | ชื่อ | ขึ้นกับ | issue |
+|---|---|---|---|
+| F01 | ตั้งค่า `district_code`, `deploy_hook_url` และ window ปี | — | |
+| F02 | บันทึกข้อมูลตามปี เฉพาะอำเภอ | F01 | |
+| F03 | ชีตแค็ตตาล็อกและ `save_catalog` | F01 | |
+| F04 | `BATCH_ALL`: `meta.years` และ PA/DC units | F02, F03 | |
+| F05 | `GET ?action=catalog` | F03 | |
+| F06 | `GET ?action=report&id=` | F02, F03 | |
+| F07 | `POST rebuild` | F01 | |
+| F08 | `setup=dc_seed` (โค้ด) | F03 | |
+| F09 | `sync-moph-to-gas.js` | F02, F04, F07 | |
+| F10 | `hdc-catalog.js` | F03, F05 | |
+| F11 | หน้า `/sync` | F02, F04, F07 | |
+| F12 | Backfill 5 ปีและตรวจตัวเลข (คนทำ, `/wizard`) | F08, F09, F10 | |
+| F13 | ย้าย PA ไป `/pa` และตัด `basePath` | — | |
+| F14 | prebuild snapshot | F05, F06 | |
+| F15 | ชั้นคำนวณ `src/lib/dc/` | — | |
+| F16 | โครงหน้าและธีม | F13 | |
+| F17 | ไฟล์ขอบเขตตำบล | — | |
+| F18 | หน้าแรก `/` | F14, F16, F17 | |
+| F19 | คลังรายงาน `/reports` | F14, F16 | |
+| F20 | หน้ารายงาน `/reports/[id]` | F14, F15, F16 | |
+| F21 | Cloudflare Pages + Deploy Hook (คนทำ, `/wizard`) | F12, F18, F19, F20 | |
+| F22 | หน้า stub บน GitHub Pages (คนทำ, `/wizard`) | F21 | |
 
 ---
 
@@ -38,7 +76,7 @@
 
 ### F02 บันทึกข้อมูลตามปี เฉพาะอำเภอ (`dc-storage.js`)
 
-- **ทำ:** `saveTableYear(tableName, year, rows, { total, force })` ตาม SCHEMA §3.3 ขั้น 1–10 รวมการย้ายปีอัตโนมัติพร้อมเงื่อนไขไม่ทับข้อมูลใหม่กว่า (§2.5) และ `sync_status` (สร้างชีตเองถ้ายังไม่มี) · `save_kpi_data` ใน `doPost` เรียกฟังก์ชันนี้ · `syncAllData` เรียกฟังก์ชันนี้แทน `saveDataToSheet` เดิม (`saveDataToSheet` เดิมคงไว้แต่ไม่มีใครเรียก ระบุใน comment) · `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total`
+- **ทำ:** `saveTableYear(tableName, year, rows, { total, force })` ตาม SCHEMA §3.3 ขั้น 1–10 รวมการย้ายปีอัตโนมัติพร้อมเงื่อนไขไม่ทับข้อมูลใหม่กว่า (SCHEMA §2.5) และ `sync_status` (สร้างชีตเองถ้ายังไม่มี) · `save_kpi_data` ใน `doPost` เรียกฟังก์ชันนี้ · `syncAllData` เรียกฟังก์ชันนี้แทน `saveDataToSheet` เดิม (`saveDataToSheet` เดิมคงไว้แต่ไม่มีใครเรียก ระบุใน comment) · `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total`
 - **ตรวจรับ (เทสต์ด้วย stub ของ SpreadsheetApp ที่จำลองชีตในหน่วยความจำ):**
   1. บันทึกปี 2569 (= current_year) 700 แถวทั้งจังหวัด → ชีต `s_x` มีเฉพาะแถว `5406` · response `received = 700`, `count` = จำนวนแถวอำเภอ, `sheet = "s_x"`, `archived = []` · `sync_status` มีแถว (`s_x`, 2569, sheet `s_x`)
   2. บันทึกปี 2568 → ชีต `s_x_y2568` ถูกสร้าง ชีต `s_x` ไม่เปลี่ยน · `sync_status` มี 2 แถว
@@ -68,7 +106,7 @@
 
 ### F04 `BATCH_ALL`: `meta.years` และ PA/DC units
 
-- **ทำ (ใน `รหัส.js`):** `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` · `getSyncUnits` ใหม่ = PA ∪ DC (DC units มาจาก `readHdcReports()` ใน F03 แคช 60 วินาทีคีย์ `dc_units_v1` ถ้ายังไม่มีชีต = ว่าง) · `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` · `clearConfigCache` ล้าง `dc_units_v1` ด้วย · `meta.kpi_config` จาก `getSyncUnits` ใหม่ · เพิ่ม `meta.years` · การอ่านและคำนวณ `data` ไม่แตะ
+- **ทำ (ใน `รหัส.js`):** `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` · `getSyncUnits` ใหม่ = PA ∪ DC (DC units มาจาก `readHdcReports()` ใน F03 แคช 60 วินาทีคีย์ `dc_units_v1` ถ้ายังไม่มีชีต = ว่าง) · `clearConfigCache` ล้าง `dc_units_v1` ด้วย · `meta.kpi_config` จาก `getSyncUnits` ใหม่ · เพิ่ม `meta.years` · การอ่านและคำนวณ `data` ไม่แตะ
 - **ตรวจรับ:**
   1. ก่อนแก้ บันทึก response `BATCH_ALL` ไว้ หลังแก้ response เหมือนเดิมทุกฟิลด์ ยกเว้น `meta.kpi_config` ที่อาจมีรายการ DC เพิ่ม และ `meta.years` ที่เพิ่มใหม่
   2. หลัง F02 ข้อ 1 (ชีตปีปัจจุบันเหลือแถวอำเภอ) ตัวเลข `target/result` ใน `BATCH_ALL` เท่าเดิม
