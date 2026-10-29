@@ -9,7 +9,7 @@
 ### ขั้นตอนทำงาน (workflow ของ [mattpocock/skills](https://github.com/mattpocock/skills))
 
 - ติดตั้งครั้งเดียว: เปิด plugin "Skills For Real Engineers" (`claude plugin install mattpocock-skills@claude-plugins-official`) แล้วรัน `/setup-matt-pocock-skills` เลือก GitHub Issues เป็น tracker และ label ค่าเริ่มต้น สคริปต์จะเขียน `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`, `docs/agents/domain.md` และส่วน `## Agent skills` ใน `CLAUDE.md`
-- เอกสารชุดนี้ (SPEC/SCHEMA/FEATURES + GLOSSARY + ADR) คือผลของขั้น `/grill-with-docs` แล้ว ขั้นต่อไปคือ `/to-spec` → spec issue 1 ใบที่สรุปเป้าหมายและข้อตัดสินใจ (อ้าง ADR ไม่ใส่ path ไฟล์) → `/to-tickets` → issue ต่อ F## ตามหัวข้อด้านล่าง โดยใส่ "ขึ้นกับ" เป็น blocking relationship ของ GitHub และติด `ready-for-agent` เฉพาะ ticket ที่ไม่ถูก block
+- เอกสารชุดนี้ (SPEC/SCHEMA/FEATURES + GLOSSARY + ADR) คือผลของขั้น `/grill-with-docs` แล้ว ขั้นต่อไปคือ `/to-spec` → spec issue 1 ใบที่สรุปเป้าหมายและข้อตัดสินใจ (อ้าง ADR ไม่ใส่ path ไฟล์) → `/to-tickets` → issue ต่อ F## ตามหัวข้อด้านล่าง เป็น sub-issue ของ spec issue โดยใส่ "ขึ้นกับ" เป็น blocking relationship ของ GitHub · label ตามค่าเริ่มต้นของ skill คือ `ready-for-agent` ทุกใบ ยกเว้นงานคนทำ (F12, F21, F22) ใช้ `ready-for-human` · ใบที่หยิบได้คือใบที่ blocker ปิดหมดแล้ว (frontier)
 - ยังไม่สร้าง issue จนกว่าจะสั่ง · เมื่อสร้างแล้ว issue คือแหล่งความจริงของสถานะงาน ไฟล์นี้คือแหล่งความจริงของเกณฑ์ตรวจรับ ถ้าสองที่ขัดกันให้แก้ไฟล์นี้ก่อนแล้วอัปเดต issue
 - ต่อ ticket: `/implement` ซึ่งเรียก `tdd` และ `code-review` เองตอนจบ (ไม่ต้องสั่งซ้ำ) โดย `tdd` เขียนเทสต์เฉพาะ seam ที่ตกลงใน CODING_STANDARDS §5 และ `code-review` เทียบ `CODING_STANDARDS.md` → `pr` (body มี Summary, Evidence, Merge Danger และ `Closes #<issue>`) · ขั้นที่ต้องมีคนทำเอง (F12 รันกับชีตจริง, F21 ตั้ง Cloudflare, F22 เปิด Pages ใหม่) ใช้ `/wizard` นำทีละขั้นและบันทึกผลใน issue
 - หลังปิด Track แต่ละชุดรัน `/retro` และนำสิ่งที่เรียนรู้มาแก้ไฟล์นี้หรือ ADR ไม่ใช่จำไว้เฉย ๆ
@@ -19,9 +19,9 @@
 
 - แตก branch จาก `main` ทีละ ticket (`feat/F01-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ (ADR-0001)
 - GAS deploy ด้วย `npm run gas:sync` เมื่อ ticket ฝั่ง GAS ผ่านเกณฑ์ (รวม deploy หลายข้อพร้อมกันได้) เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
-- โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (SPEC §12.4) และทุก ticket ฝั่ง GAS ต้องมีเทสต์ใน `src/scripts/test/` ที่โหลดไฟล์ GAS ด้วย `node:vm` พร้อม stub (รันด้วย `node --test src/scripts/test/`) · ไฟล์ที่ไม่ใช่ GAS ใต้ `src/scripts/` ต้องอยู่ใน `.claspignore` (SCHEMA §10)
+- โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (SPEC §12.4) และทุก ticket ฝั่ง GAS ต้องมีเทสต์ใน `src/scripts/test/` ที่โหลดไฟล์ GAS ด้วย `node:vm` พร้อม stub (รันด้วย `npm test` ซึ่ง F01 ตั้งไว้) · ไฟล์ที่ไม่ใช่ GAS ใต้ `src/scripts/` ต้องอยู่ใน `.claspignore` (SCHEMA §10)
 - ห้ามแก้ไฟล์ PA เดิม (รายการทางการใน CODING_STANDARDS §1: ไฟล์ที่มีอยู่ก่อนใต้ `src/components/` และ `src/lib/`) ยกเว้นย้ายไฟล์ใน F13 · ใน `รหัส.js` แก้เฉพาะจุดที่ SPEC §12.4 ระบุ
-- ทุก PR ต้อง `npm run build` ผ่าน (ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step และ prebuild จะล้มถ้ายังไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน F14 จึงต้องรอ F12)
+- ทุก PR ต้อง `npm test` และ `npm run build` ผ่าน (CI รันทั้งสองตั้งแต่ F01 บน Node 24 · ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step และ prebuild จะล้มถ้ายังไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน F14 จึงต้องรอ F12)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D: F13, F15, F17 ทำคู่ขนานได้ตั้งแต่ต้น F14 ขึ้นไปรอ F12 และ Track E ทำท้ายสุด
 
 | Track | งาน | ขึ้นกับ |
@@ -65,7 +65,7 @@
 
 ### F01 ตั้งค่า `district_code`, `deploy_hook_url` และ window ปี
 
-- **ทำ:** ใน `รหัส.js` (ตามรายการ SPEC §12.4): เพิ่ม `district_code` (ต้องขึ้นต้นด้วย `province_code`) และ `deploy_hook_url` ใน `SETTINGS_SCHEMA` · `CONFIG.DISTRICT = "5406"`, `CONFIG.HISTORY_YEARS = 5` · bump `SETTINGS_CACHE_KEY` เป็น `settings_v3` · สร้าง `dc-storage.js` ใส่ `getYearWindow(settings)` และ `sheetNameFor(table, year, settings?)` (F02 เติม `saveTableYear` ในไฟล์เดียวกัน) · เพิ่ม `**/test/**`, `**/hdc-catalog.js`, `**/*.mjs` ใน `.claspignore` (SCHEMA §10) และวาง harness เทสต์ตัวแรกไว้ใน `src/scripts/test/`
+- **ทำ:** ใน `รหัส.js` (ตามรายการ SPEC §12.4): เพิ่ม `district_code` (ต้องขึ้นต้นด้วย `province_code`) และ `deploy_hook_url` ใน `SETTINGS_SCHEMA` · `CONFIG.DISTRICT = "5406"`, `CONFIG.HISTORY_YEARS = 5` · bump `SETTINGS_CACHE_KEY` เป็น `settings_v3` · สร้าง `dc-storage.js` ใส่ `getYearWindow(settings)` และ `sheetNameFor(table, year, settings?)` (F02 เติม `saveTableYear` ในไฟล์เดียวกัน) · เพิ่ม `**/test/**`, `**/hdc-catalog.js`, `**/*.mjs` ใน `.claspignore` (SCHEMA §10) และวาง harness เทสต์ตัวแรกไว้ใน `src/scripts/test/` · `package.json` เพิ่ม `"test": "node --test \"src/scripts/test/**/*.test.js\""` (รูป glob ใช้ได้ตั้งแต่ Node 22 ส่วนรูปโฟลเดอร์ `node --test src/scripts/test/` ใช้ได้แค่ Node 20 ซึ่งหมดอายุ 30 เม.ย. 2569) · `ci.yml` เปลี่ยน `node-version` เป็น `"24"` และเพิ่มขั้น `npm test` ก่อน `npm run build`
 - **ตรวจรับ (เทสต์ใน `src/scripts/test/settings.test.js`):**
   1. `settings` ไม่มีคอลัมน์ใหม่ → `district_code = "5406"`, `deploy_hook_url = ""` โดยไม่ error
   2. `district_code = 5501` (ไม่ตรงจังหวัด) → ใช้ค่าเริ่มต้น และมี `Logger.log` ว่า `district_code has invalid value`
@@ -73,6 +73,7 @@
   4. `current_year = 2569` → window = `["2565","2566","2567","2568","2569"]`
   5. `sheetNameFor("s_epi1", "2569", settings)` = `s_epi1` · `sheetNameFor("s_epi1", "2567", settings)` = `s_epi1_y2567`
   6. `npx clasp push --dry-run` (หรือ `clasp status`) แสดงเฉพาะ `รหัส.js`, `dc-*.js`, `appsscript.json` ไม่มีไฟล์เทสต์หรือสคริปต์ node
+  7. `npm test` บน Node 24 รันเฉพาะไฟล์ `*.test.js` (ไฟล์ stub ใน `src/scripts/test/` ไม่ถูกนับเป็นเทสต์) และ CI ของ PR นี้แสดงขั้น `npm test` ผ่าน
 
 ### F02 บันทึกข้อมูลตามปี เฉพาะอำเภอ (`dc-storage.js`)
 
@@ -220,7 +221,7 @@
 
 ### F15 ชั้นคำนวณ (`src/lib/dc/types.ts`, `values.ts`, `client.ts`)
 
-- **ทำ:** type ตาม SCHEMA §9 · `values.ts` ตาม SCHEMA §4 ทั้งหมด ทำงานบน `DcYearBlock` (ตรวจกลุ่มคอลัมน์ต่อ block, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · `client.ts` โหลด `/data/reports/{id}.json` พร้อม cache ในหน่วยความจำ · เทสต์ `values.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test src/lib/dc/values.test.ts` (devDependencies ใหม่มี 2 ตัวทั้งโปรเจกต์: `tsx` ที่นี่ และ `@types/leaflet` ใน F18)
+- **ทำ:** type ตาม SCHEMA §9 · `values.ts` ตาม SCHEMA §4 ทั้งหมด ทำงานบน `DcYearBlock` (ตรวจกลุ่มคอลัมน์ต่อ block, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · `client.ts` โหลด `/data/reports/{id}.json` พร้อม cache ในหน่วยความจำ · เทสต์ `values.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test src/lib/dc/values.test.ts` และต่อท้ายสคริปต์ `npm test` ด้วย `&& tsx --test src/lib/dc/values.test.ts` ให้ CI รันด้วย (devDependencies ใหม่มี 2 ตัวทั้งโปรเจกต์: `tsx` ที่นี่ และ `@types/leaflet` ใน F18)
 - **ตรวจรับ (เทสต์):**
   1. header จริงของทั้ง 18 ตาราง (ตาม SCHEMA §4.1) → ตรวจพบกลุ่มคอลัมน์ตรงตารางนั้นทุกตัว และ `s_dm_screen`/`s_aged9` ไม่ถูกมองเป็นรายไตรมาส
   2. `s_epi1` → measure 20 รายการ `s_epi2` → 6 รายการ และ `dtp_hb3` แสดงเป็น `DTP-HB3`

@@ -24,7 +24,7 @@
 
 ## 3. สคริปต์ node (`src/scripts/*.js`, `*.mjs` ที่ไม่ push)
 
-- ไม่มี dependency นอก Node 20 built-in (`fetch`, `fs`, `node:test`)
+- ไม่มี dependency นอก Node 24 built-in (`fetch`, `fs`, `node:test`)
 - ค่าตั้งผ่าน env หรือ argument ไม่ hardcode URL · `sync-moph-to-gas.js` คง fallback ของ GAS URL ที่มีอยู่เดิม ส่วนสคริปต์ใหม่ (`hdc-catalog.js`, `build-snapshot.mjs`) บังคับ `NEXT_PUBLIC_GAS_SCRIPT_URL` ไม่มี fallback
 - ล้มด้วย exit code ไม่ใช่ 0 พร้อมข้อความบอกวิธีแก้ ไม่ล้มเงียบ ไม่เขียนไฟล์ครึ่งเดียว (เขียนไฟล์ชั่วคราวแล้วค่อยย้าย หรือเขียนทั้งหมดหลังตรวจครบ)
 - เรียก MOPH ตามกติกา SPEC §7.1 (เว้นช่วง, retry 429/5xx, `limit = 5000`, ส่ง `total`)
@@ -48,12 +48,12 @@
 
 | seam | วิธีทดสอบ | จับอะไรได้ / ไม่ได้ |
 |---|---|---|
-| ฟังก์ชัน GAS ระดับ handler (`doGet`/`doPost` ต่อ action, `handleDiag` ต่อ setup) และ `saveTableYear`, `getYearWindow`, `sheetNameFor`, `requestRebuild` | โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` (ชีตในหน่วยความจำ), `PropertiesService`, `UrlFetchApp`, `LockService`, `CacheService` ใน `src/scripts/test/` รันด้วย `node --test src/scripts/test/` | จับ logic ทั้งหมดของ GAS ได้ · ไม่จับพฤติกรรมจริงของ Sheets API และโควตา |
-| `src/lib/dc/values.ts` (ทุกฟังก์ชัน export) | `node:test` ผ่าน `npx tsx --test src/lib/dc/values.test.ts` ด้วย header จริงของ 18 ตารางและแถวตัวอย่าง | จับการตรวจกลุ่มคอลัมน์และการรวมค่า · ไม่จับการแสดงผล |
+| ฟังก์ชัน GAS ระดับ handler (`doGet`/`doPost` ต่อ action, `handleDiag` ต่อ setup) และ `saveTableYear`, `getYearWindow`, `sheetNameFor`, `requestRebuild` | โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` (ชีตในหน่วยความจำ), `PropertiesService`, `UrlFetchApp`, `LockService`, `CacheService` ใน `src/scripts/test/` ไฟล์เทสต์ชื่อ `*.test.js` รันด้วย `npm test` | จับ logic ทั้งหมดของ GAS ได้ · ไม่จับพฤติกรรมจริงของ Sheets API และโควตา |
+| `src/lib/dc/values.ts` (ทุกฟังก์ชัน export) | `node:test` ผ่าน `tsx --test src/lib/dc/values.test.ts` (อยู่ใน `npm test` ตั้งแต่ F15) ด้วย header จริงของ 18 ตารางและแถวตัวอย่าง | จับการตรวจกลุ่มคอลัมน์และการรวมค่า · ไม่จับการแสดงผล |
 | `src/scripts/build-snapshot.mjs` | รันกับ stub HTTP server ที่ตอบ `catalog`/`report` ปลอม (สำเร็จ, error, แถวไม่ครบ, ไฟล์ใหญ่) | จับการล้มดัง ๆ และโครงไฟล์ · ไม่จับ GAS จริง |
 | หน้าเว็บ | ตรวจด้วยมือตามเกณฑ์ใน FEATURES (`npx serve out`, DevTools, Lighthouse) | ไม่มี e2e อัตโนมัติในเฟส 1 |
 
-- ทุก PR ต้อง `npm run build` ผ่านใน CI และเทสต์ที่เกี่ยวข้องผ่าน
+- CI รัน `npm test` แล้ว `npm run build` บน Node 24 ทุก PR ต้องผ่านทั้งสอง
 - ไม่ mock ภายในโมดูลของตัวเอง (anti-pattern ของ `/tdd`) mock เฉพาะขอบเขตภายนอก (GAS services, HTTP)
 
 ## 6. Git และ PR

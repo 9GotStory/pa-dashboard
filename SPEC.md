@@ -360,14 +360,14 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - `syncAllData` (trigger รายวัน): ดึง `current_year` ส่ง `limit = 5000` ทุกตาราง ปฏิเสธเมื่อได้แถวน้อยกว่า `total` คงช่วงเว้น 1.5–2.5 วินาทีของเดิม บันทึกผ่านทางเดียวกับ `save_kpi_data` (`year = current_year`) และ POST `rebuild` ตอนจบถ้ามีตารางใดสำเร็จ
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"
-- ทดสอบ logic ของ GAS ก่อน deploy ด้วย harness ใน `src/scripts/test/` (โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` ฯลฯ) รันด้วย `node --test src/scripts/test/`
+- ทดสอบ logic ของ GAS ก่อน deploy ด้วย harness ใน `src/scripts/test/` (โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` ฯลฯ) รันด้วย `npm test`
 
 ### 12.5 Cloudflare Pages
 
 | เรื่อง | ค่า |
 |---|---|
 | โปรเจกต์ | ต่อกับ repo GitHub โดยตรง production branch = `main` |
-| Build | preset "Next.js (Static HTML Export)" · build command `npm run build` (npm รัน `prebuild` ให้เอง) · output `out` · env `NODE_VERSION=20` |
+| Build | preset "Next.js (Static HTML Export)" · build command `npm run build` (npm รัน `prebuild` ให้เอง) · output `out` · env `NODE_VERSION=24` |
 | ตัวแปร build | `NEXT_PUBLIC_GAS_SCRIPT_URL`, `NEXT_PUBLIC_SYNC_PIN_CODE` (ค่าเดียวกับใน GitHub secrets ซึ่ง ci.yml ยังใช้) |
 | Deploy Hook | สร้างหนึ่งตัว แล้ววาง URL ใน `settings.deploy_hook_url` (§6.3) |
 | Preview deployments | ปิด (Preview branch control = None) เพราะ `develop` เป็นโค้ดคนละสถาปัตยกรรมที่ build แบบ static ไม่ผ่าน และกันไม่ให้ branch งานกิน build quota |
