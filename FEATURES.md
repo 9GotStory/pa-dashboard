@@ -200,11 +200,11 @@
 
 ### F13 ย้าย PA ไป `/pa` และตัด `basePath`
 
-- **ทำ:** ย้าย `src/app/page.tsx` → `src/app/pa/page.tsx`, `loading.tsx` → `pa/loading.tsx`, เพิ่ม `pa/layout.tsx` (metadata เดิม) · `src/app/(dc)/page.tsx` ใหม่เป็นหน้าชั่วคราว (ชื่อระบบ + ลิงก์ไป `/pa`) จนกว่า F18 · ลบ `basePath`/`isProd` ใน `next.config.ts` · metadata root เป็นของ Data Center · `deploy.yml` เหลือ trigger `workflow_dispatch` เท่านั้น (หยุด deploy อัตโนมัติขึ้น GitHub Pages จนกว่า F22 เพราะ build ไม่มี `basePath` แล้ว)
+- **ทำ:** ย้าย `src/app/page.tsx` → `src/app/pa/page.tsx`, `loading.tsx` → `pa/loading.tsx`, เพิ่ม `pa/layout.tsx` (metadata เดิม) · `src/app/(dc)/page.tsx` ใหม่เป็นหน้าชั่วคราว (ชื่อระบบ + ลิงก์ไป `/pa`) จนกว่า F18 · ลบ `basePath`/`isProd` ใน `next.config.ts` · metadata root เป็นของ Data Center · `deploy.yml` เหลือ trigger `workflow_dispatch` เท่านั้น (หยุด deploy อัตโนมัติขึ้น GitHub Pages จนกว่า F22 เพราะ build ไม่มี `basePath` แล้ว) · `package.json` เปลี่ยน `start` จาก `next start` เป็น `npx serve@latest out` (Next.js 16 ไม่ให้ใช้ `next start` กับ `output: 'export'`)
 - **ตรวจรับ:**
   1. `npm run build` ผ่าน และ `out/pa.html` มีอยู่
   2. `grep -r "/pa-dashboard" out/` ไม่พบ
-  3. `npx serve out` แล้วเปิด `/pa` และ `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` → หน้าตาและตัวเลขเหมือน production ปัจจุบัน แท็บเปิดถูก
+  3. `npm start` แล้วเปิด `/pa` และ `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` → หน้าตาและตัวเลขเหมือน production ปัจจุบัน แท็บเปิดถูก
   4. `git diff --stat` ไม่มีไฟล์ใน `src/components` หรือ `src/lib` เปลี่ยน (นอกจาก rename)
   5. หลัง merge ไม่มี workflow run ของ `deploy.yml` เกิดขึ้นเอง และ `https://9gotstory.github.io/pa-dashboard/` ยังเป็น PA เวอร์ชันก่อนหน้า
 
