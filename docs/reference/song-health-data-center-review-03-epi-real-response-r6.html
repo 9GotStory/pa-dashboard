@@ -1,0 +1,1655 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#143553">
+  <meta name="description" content="ต้นแบบ Song Health Data Center ข้อมูลประชากรจำลอง พร้อมแผนที่ Leaflet แสดงขอบเขตอำเภอสอง จังหวัดแพร่ รหัส 5406">
+  <title>Song Health Data Center | Report EPI — Schema-aware R6 (ต้นแบบ)</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
+  <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <style>
+    :root{--green:#17695f;--green-dark:#10544d;--green-light:#edf7f4;--ink:#1c3135;--muted:#667b7c;--border:#dce7e5;--canvas:#f7f9f8;--white:#fff;--gold:#b68d42;--radius:9px}
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{margin:0;background:var(--canvas);color:var(--ink);font-family:system-ui,-apple-system,"Noto Sans Thai",Tahoma,"Segoe UI",sans-serif;font-size:14px;line-height:1.65}
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    button:disabled{opacity:.45;cursor:not-allowed}
+    a{color:inherit;text-decoration:none}
+    :focus-visible{outline:3px solid #d79d3a;outline-offset:2px}
+    .container{max-width:1280px;margin:auto;padding:0 27px}
+    .utility{background:#eff5f3;border-bottom:1px solid var(--border);color:#486361;font-size:12px}
+    .utility .container{min-height:32px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    .utility strong{font-weight:600}
+    .utility .tag{color:#806421}
+    .masthead{background:white}
+    .masthead-inner{display:flex;align-items:center;justify-content:space-between;gap:18px;padding-top:21px;padding-bottom:21px}
+    .brand{display:flex;align-items:center;gap:15px;min-width:0}
+    .symbol{height:49px;width:49px;border-radius:11px;background:var(--green);display:grid;place-items:center;color:#fff;font-size:22px;font-weight:800;letter-spacing:-1px;flex-shrink:0}
+    .brand strong{font-size:21px;letter-spacing:-.6px;color:#173d3a;display:block;line-height:1.35}
+    .brand small{display:block;font-size:12.5px;color:var(--muted);font-weight:400;margin-top:3px}
+    .identity-right{text-align:right;color:var(--muted);font-size:12px}
+    .identity-right strong{color:#245852;font-size:13px}
+    .menu{background:var(--green)}
+    .menu-inner{display:flex;align-items:stretch;justify-content:space-between;gap:15px;min-height:45px}
+    .nav-group{display:flex;align-items:stretch;gap:0;flex-wrap:wrap}
+    .nav-link{border:0;border-radius:0;background:transparent;color:#eaf5f2;min-height:45px;padding:0 21px;display:flex;align-items:center;gap:8px;font-size:13.5px}
+    .nav-link:hover,.nav-link[aria-current="page"]{background:var(--green-dark);color:white}
+    .nav-link[aria-current="page"]{box-shadow:inset 0 -3px 0 #d8c078;font-weight:650}
+    .menu .small{font-size:12px;color:#dcefeb;display:flex;align-items:center}
+    .main{padding-top:27px;padding-bottom:50px}
+    .breadcrumbs{color:#6d8281;font-size:12px;margin:0 0 14px;display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .breadcrumbs button{padding:0;border:0;background:none;color:#437a70}
+    .breadcrumbs .slash{color:#a9b9b5}
+    .heading-row{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px}
+    h1{font-size:26px;letter-spacing:-.6px;line-height:1.4;margin:0 0 4px;font-weight:760}
+    .subline{color:var(--muted);margin:0;font-size:13px}
+    .heading-note{background:white;border:1px solid var(--border);padding:6px 10px;border-radius:5px;color:#657976;font-size:12px;white-space:nowrap}
+    .layout{display:grid;grid-template-columns:251px minmax(0,1fr);gap:21px;align-items:start}
+    .panel{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+    .side-title{padding:14px 17px;font-weight:720;border-bottom:1px solid var(--border);background:#fbfcfb;display:flex;align-items:center;justify-content:space-between}
+    .category-list{padding:7px}
+    .category{display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;text-align:left;padding:10px 11px;border:0;background:white;border-radius:6px;color:#465f5d;font-size:13.3px}
+    .category:hover{background:#f3f8f6}
+    .category.active{background:var(--green-light);color:var(--green-dark);font-weight:700}
+    .category-count{font-size:11px;color:#687e7a;background:#f2f5f4;padding:1px 6px;border-radius:4px;min-width:24px;text-align:center}
+    .category.active .category-count{background:#d8eae5;color:#195f55}
+    .aside-note{border-top:1px solid var(--border);font-size:11.5px;color:#708481;padding:14px 16px;background:#fbfcfb}
+    .section-top{padding:19px 22px 15px;border-bottom:1px solid var(--border)}
+    .section-title{display:flex;gap:10px;align-items:baseline;justify-content:space-between;margin-bottom:12px}
+    h2{font-size:17.5px;margin:0;letter-spacing:-.2px}
+    h3{font-size:15px;margin:0}
+    .countline{color:var(--muted);font-size:12px;white-space:nowrap}
+    .search-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .search-box{flex:1;position:relative;min-width:180px}
+    .search-box input{height:40px;border:1px solid #cfdeda;border-radius:6px;width:100%;padding:0 13px 0 36px;background:white;color:var(--ink)}
+    .search-box svg{position:absolute;left:11px;top:12px;width:16px;height:16px;stroke:#76908b;fill:none;stroke-width:2}
+    select{height:40px;border:1px solid #cfdeda;border-radius:6px;padding:0 10px;background:white;color:var(--ink);min-width:105px}
+    .hint{font-size:12px;color:var(--muted);margin-top:10px}
+    .table-scroll{overflow-x:auto}
+    table{width:100%;border-collapse:collapse;text-align:left}
+    .list-table{min-width:720px}
+    th{background:#f6f9f8;font-size:12px;color:#526c68;font-weight:700;padding:11px 16px;border-bottom:1px solid var(--border)}
+    td{border-bottom:1px solid #eaf0ee;padding:13px 16px;vertical-align:middle}
+    tr:last-child td{border-bottom:0}
+    tbody tr:hover{background:#fbfdfc}
+    .idx{font-variant-numeric:tabular-nums;color:#81928f;width:48px;text-align:center}
+    .rtitle{font-weight:650;color:#1d5650;line-height:1.45}
+    .rtitle:hover{text-decoration:underline}
+    .rdesc{font-size:12px;color:#81918e;line-height:1.45;margin-top:3px}
+    .smalltext{color:#6d817d;font-size:12px}
+    .link-btn{padding:6px 10px;border:1px solid #bddbd4;border-radius:5px;background:white;color:var(--green-dark);font-size:12px;white-space:nowrap}
+    .link-btn:hover{background:#eaf5f1}
+    .empty{padding:70px 20px;text-align:center;color:var(--muted)}
+    .pagination{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:14px 20px;border-top:1px solid var(--border);font-size:12px;color:var(--muted)}
+    .pagination-controls{display:flex;gap:6px}
+    .page-btn{padding:5px 11px;border:1px solid var(--border);border-radius:5px;background:#fff;color:#536966}
+    .page-btn.current{background:var(--green);color:#fff;border-color:var(--green)}
+    .footnote{font-size:11.5px;color:#7d8b87;padding:16px 5px}
+    .view-hidden{display:none!important}
+    .back{border:0;background:none;padding:0;color:var(--green);font-weight:650;font-size:12.5px;margin-bottom:13px;display:flex;gap:7px;align-items:center}
+    .detail-header{background:white;border:1px solid var(--border);border-radius:var(--radius);padding:24px 26px;margin-bottom:17px}
+    .detail-header .kicker{color:#3a786f;font-size:12px;font-weight:700;margin-bottom:7px}
+    .detail-header h1{font-size:23px;margin-bottom:12px}
+    .meta-row{display:flex;gap:9px 20px;flex-wrap:wrap;color:#68807a;font-size:12px}
+    .meta-row span:before{content:'•';margin-right:7px;color:#aabbb6}
+    .meta-row span:first-child:before{content:none}
+    .filter-panel{padding:18px 20px;border-bottom:1px solid var(--border);background:#fff}
+    .filter-heading{font-size:14.5px;font-weight:700;margin-bottom:12px}
+    .filters{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr)) auto;gap:12px;align-items:end}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field label{color:#58716c;font-weight:600;font-size:12px}
+    .field select{width:100%;min-width:0}
+    .primary{height:40px;border:1px solid var(--green);border-radius:6px;background:var(--green);color:white;font-weight:700;padding:0 17px;white-space:nowrap}
+    .primary:hover{background:#0e564c}
+    .report-body{padding:22px 22px 0}
+    .report-title-row{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:17px}
+    .report-title-row p{color:var(--muted);font-size:12px;margin:4px 0 0}
+    .tool-btn{background:#fff;border:1px solid #d4e1de;border-radius:5px;padding:7px 11px;color:#3c675f;font-size:12px;font-weight:600}
+    .tool-btn:hover{background:#f3f9f6}
+    .result-table{min-width:650px}
+    .result-table th{text-align:right}
+    .result-table th:first-child,.result-table th:nth-child(2){text-align:left}
+    .result-table td{padding:12px 16px;text-align:right;font-variant-numeric:tabular-nums}
+    .result-table td:first-child,.result-table td:nth-child(2){text-align:left}
+    .result-table .total td{background:#edf7f4;font-weight:740;color:#235c54;border-top:1px solid #c8ded8}
+    .status-text{font-size:12px;color:#256d52;font-weight:650}
+    .status-text.low{color:#a16b29}
+    .data-note{font-size:11.5px;color:#718782;margin:11px 0 21px}
+    .extra-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 0;border-top:1px solid var(--border)}
+    .extra-head h3{color:#375b55}
+    .chart{border-top:1px solid var(--border);padding:20px 0 10px}
+    .chart-line{display:grid;grid-template-columns:160px minmax(0,1fr) 53px;gap:13px;align-items:center;margin:0 0 13px;font-size:12px;color:#57716b}
+    .chart-bar{height:15px;background:#edf3f1;border-radius:3px;overflow:hidden}
+    .chart-fill{height:100%;background:#4e9387;border-radius:3px}
+    .definition{background:#fbfcfb;padding:19px 22px;border-top:1px solid var(--border);display:grid;grid-template-columns:1fr 1fr;gap:20px}
+    .definition h3{font-size:13.5px;color:#4b6862;margin-bottom:8px}
+    .definition p{font-size:12px;color:#6d817d;margin:0 0 7px}
+    .demo-stamp{display:inline-flex;align-items:center;gap:7px;background:#fff8e9;color:#86692c;border:1px solid #e9dbb4;border-radius:4px;padding:5px 9px;font-size:11.5px;font-weight:650}
+    .footer{border-top:1px solid var(--border);background:#fff;color:#7b8c87;font-size:12px}
+    .footer .container{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:18px;padding-bottom:18px;flex-wrap:wrap}
+    .sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+    @media(max-width:980px){.layout{grid-template-columns:211px minmax(0,1fr);gap:14px}.filters{grid-template-columns:repeat(2,minmax(0,1fr))}.filters .primary{grid-column:1/-1}.section-top{padding:15px}.result-table td{padding:12px}}
+    @media(max-width:700px){.container{padding:0 16px}.masthead-inner{padding-top:17px;padding-bottom:17px}.brand strong{font-size:18px}.brand small{font-size:11px}.symbol{width:43px;height:43px}.identity-right{display:none}.menu .small{display:none}.nav-link{padding:0 12px;min-height:43px;font-size:12px}.nav-group{width:100%;justify-content:space-between}.main{padding-top:20px}.heading-row{flex-direction:column;gap:10px}h1{font-size:22px}.layout{grid-template-columns:1fr}.category-list{display:flex;overflow:auto;gap:5px}.category{white-space:nowrap;width:auto;flex:0 0 auto;gap:8px;border:1px solid #e8efed}.side-title,.aside-note{display:none}.section-title{align-items:center}.section-top{padding:17px}.detail-header{padding:20px 16px}.detail-header h1{font-size:20px}.filter-panel{padding:15px}.filters{gap:9px}.report-body{padding:16px 12px 0}.report-title-row{align-items:flex-start;flex-direction:column}.definition{grid-template-columns:1fr;padding:18px 15px}.chart-line{grid-template-columns:100px 1fr 45px}.pagination{padding:11px}.section-title h2{font-size:16px}.utility .tag{display:none}.list-table{min-width:0;table-layout:fixed}.list-table th:nth-child(2){width:auto!important}.list-table th:nth-child(n+3),.list-table td:nth-child(n+3){display:none}.list-table th:nth-child(2),.list-table td:nth-child(2){width:auto}.list-table .rtitle{overflow-wrap:anywhere}.list-table td{padding:14px 10px}.list-table td:first-child,.list-table th:first-child{width:45px}}
+    @media print{.utility,.menu,.sidebar,.filter-panel,.back,.tool-btn,.pagination,.footer{display:none!important}.container{max-width:none}.layout{display:block}.panel,.detail-header{border:0}.report-body{padding:0}body{background:white}.demo-stamp{display:inline-flex!important}}
+
+    /* District overview — report-first, restrained civic design */
+    .overview-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin:2px 0 22px}
+    .overview-heading h1{font-size:30px;letter-spacing:-.9px;font-weight:780;margin:5px 0 5px;color:#173b39}
+    .eyebrow{font-size:11px;letter-spacing:1.6px;font-weight:750;color:#398077;display:flex;align-items:center;gap:9px}
+    .eyebrow span{display:inline-block;width:5px;height:5px;background:#d5a954;border-radius:50%}
+    .data-status{display:inline-flex;align-items:center;gap:7px;flex-wrap:wrap;background:#f4faf7;border:1px solid #daeae5;padding:8px 11px;border-radius:6px;color:#315d53;font-weight:700;font-size:11.5px;margin-top:12px;white-space:nowrap}
+    .data-status span:last-child{font-weight:500;color:#66827a}
+    .status-pulse{width:8px;height:8px;border-radius:50%;background:#b99b53;display:inline-block}
+    .overview-summary{display:grid;grid-template-columns:1.3fr 1fr 1fr 1fr;min-height:135px;background:white;border:1px solid var(--border);border-radius:10px;margin-bottom:22px;overflow:hidden}
+    .summary-block{padding:23px 24px;position:relative;min-width:0}
+    .summary-block:not(:last-child):after{content:"";position:absolute;right:0;top:23px;bottom:23px;width:1px;background:#e4edeb}
+    .summary-major{background:linear-gradient(105deg,#f4faf7,white 75%)}
+    .summary-label{font-size:12px;color:#637975;font-weight:650;display:flex;align-items:center;gap:6px}
+    .help-dot{display:inline-grid;place-items:center;width:13px;height:13px;font-size:9px;background:#edf2f0;border-radius:50%;color:#7d9891}
+    .summary-num{font-size:29px;line-height:1.3;font-weight:780;color:#1b4540;font-variant-numeric:tabular-nums;letter-spacing:-.9px;margin-top:8px}
+    .summary-num small{font-size:14px;font-weight:600}
+    .summary-unit{color:#7b8d88;font-size:11.5px;margin-top:2px}
+    .summary-unit span{margin-left:6px;color:#a18b56}
+    .overview-main{display:grid;grid-template-columns:minmax(0,1.48fr) minmax(300px,.83fr);align-items:stretch;gap:20px;margin-bottom:23px}
+    .panel-heading{padding:19px 22px 15px;display:flex;align-items:flex-start;gap:16px;justify-content:space-between;border-bottom:1px solid var(--border)}
+    .panel-heading h2{font-size:18px;font-weight:760;color:#1c4440;margin:2px 0 3px}
+    .panel-heading p{margin:3px 0 0;font-size:12px;color:#78908a}
+    .section-eyebrow{color:#559389;font-size:10px;font-weight:800;letter-spacing:1.5px}
+    .soft-button,.outline-action{border:1px solid #d3e2dd;background:#fff;color:#28665d;border-radius:6px;padding:7px 10px;font-size:11.5px;font-weight:700;white-space:nowrap}
+    .soft-button:hover,.outline-action:hover{background:#e9f5f0}
+    .tambon-section{display:flex;flex-direction:column;min-width:0}
+    .tambon-intro{padding:20px 20px 13px;border-bottom:1px solid var(--border)}
+    .tambon-intro h2{font-size:18px;color:#1c4440;margin:2px 0}
+    .tambon-intro p{margin:2px 0 0;color:#779089;font-size:12px}
+    .area-selector{padding:10px;display:grid;grid-template-columns:1fr 1fr;gap:5px 7px}
+    .area-option{border:1px solid transparent;border-radius:5px;padding:10px 9px;background:#fff;display:flex;justify-content:space-between;align-items:center;text-align:left;color:#45645d;gap:6px;min-width:0;font-size:12px}
+    .area-option .area-index{color:#9aacaa;font-size:10.5px;font-weight:700;margin-right:7px}
+    .area-option:hover{background:#f2f8f5}
+    .area-option.active{background:#ecf6f2;border-color:#d7e8e1;color:#1a6557;font-weight:760}
+    .area-option .option-arrow{color:#8ca8a1}
+    .selected-details{margin:auto 14px 14px;border:1px solid #d7e8e1;background:#f5faf7;border-radius:7px;padding:17px 18px}
+    .selected-kicker{font-size:10px;letter-spacing:1px;color:#62998b;font-weight:800;margin-bottom:4px}
+    .selected-details h3{font-size:19px;font-weight:790;color:#23584c}
+    .selected-details p{font-size:11px;color:#80958d;margin:2px 0 16px}
+    .selected-detail-row{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-size:12px;color:#56736a;padding:7px 0;border-top:1px solid #e0ede8}
+    .selected-detail-row strong{color:#254c45;font-size:15px;white-space:nowrap;font-variant-numeric:tabular-nums}
+    .selected-details .selected-small-note{border-top:1px solid #e0ede8;padding-top:10px;margin:8px 0 0;font-size:10px;color:#94a39b}
+    .population-panel{margin:0 0 30px}
+    .dataset-source{align-self:center;border:1px solid #e6ede9;background:#f8faf9;font-size:10.5px;font-weight:700;color:#7b9188;border-radius:4px;padding:6px 9px;white-space:nowrap}
+    .population-table{min-width:720px}
+    .population-table th{font-weight:730}
+    .population-table td{padding:10px 16px;font-variant-numeric:tabular-nums}
+    .population-table .align-right{text-align:right}
+    .population-table .align-center{text-align:center}
+    .population-table tbody tr.selected{background:#eef7f3}
+    .population-table .pop-tambon{color:#27574e;font-weight:700}
+    .population-table .text-pop{font-weight:780;color:#214f45}
+    .table-action{color:#39776a;border:0;background:transparent;padding:4px;font-size:11px;text-decoration:underline}
+    .table-action:hover{color:#164d43}
+    .population-table tfoot td{background:#f1f7f4;border-top:1px solid #d7e8df;color:#24574d;font-weight:750}
+    .table-bottom{font-size:11px;background:#fcfdfc;color:#83958e;padding:11px 20px;border-top:1px solid var(--border)}
+    .home-reports{margin:0 0 28px}
+    .home-report-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:15px}
+    .home-report-heading h2{font-size:19px;font-weight:780;color:#1c4440;margin:3px 0}
+    .home-report-heading p{font-size:12px;color:#80918b;margin:1px 0}
+    .home-report-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:11px}
+    .quick-category{display:flex;align-items:center;justify-content:space-between;text-align:left;padding:16px 16px;background:#fff;border:1px solid var(--border);border-radius:7px;min-height:84px;gap:10px;color:#2e554d}
+    .quick-category:hover{border-color:#a9ccc1;background:#fbfefd}
+    .qc-top{display:flex;align-items:center;gap:9px}
+    .qc-index{display:grid;place-items:center;width:31px;height:31px;border-radius:6px;color:#4b897c;background:#eaf4f0;font-weight:800;font-size:11px;flex-shrink:0}
+    .qc-name{font-size:12.5px;font-weight:730;line-height:1.4}
+    .qc-count{font-size:11px;color:#98aba3;margin-top:3px}
+    .qc-chevron{color:#a2bcb1;flex:0 0 auto;font-size:18px}
+    .data-disclaimer{display:flex;gap:17px;align-items:flex-start;padding:13px 15px;margin-bottom:5px;border:1px solid #e4eae6;background:#f8faf8;border-radius:5px;color:#7f9289;font-size:11.5px}
+    .data-disclaimer strong{color:#467165;white-space:nowrap}
+    @media(max-width:1050px){.overview-main{grid-template-columns:minmax(0,1fr) 320px;gap:14px}.area-selector{grid-template-columns:1fr}.area-option{padding:7px 9px}.selected-details{margin-top:auto}.overview-summary{grid-template-columns:repeat(4,1fr)}.summary-block{padding:17px 15px}.summary-num{font-size:25px}}
+    @media(max-width:790px){.overview-main{grid-template-columns:1fr}.area-selector{grid-template-columns:repeat(4,minmax(0,1fr))}.map-stage{height:410px}.home-report-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.overview-heading{flex-direction:column;gap:4px}.data-status{margin:0}.overview-summary{grid-template-columns:1fr 1fr}.summary-block:nth-child(2):after{display:none}.summary-block:nth-child(1),.summary-block:nth-child(2){border-bottom:1px solid var(--border)}}
+    @media(max-width:540px){.overview-heading h1{font-size:24px}.overview-summary{margin-bottom:15px}.overview-main{gap:15px}.summary-block{padding:14px}.summary-num{font-size:24px;margin-top:5px}.summary-unit span{display:block;margin:0}.area-selector{grid-template-columns:repeat(2,minmax(0,1fr))}.map-stage{height:350px;padding:17px 1px 19px}.map-topline{top:8px;left:11px;right:11px}.map-count{display:none}.map-label{font-size:13px}.panel-heading{padding:16px 14px;flex-direction:column;gap:8px}.panel-heading h2,.tambon-intro h2{font-size:16px}.home-report-grid{grid-template-columns:1fr}.home-report-heading{flex-direction:column;align-items:flex-start}.data-disclaimer{flex-direction:column;gap:3px}.dataset-source{align-self:flex-start}.quick-category{min-height:66px}.table-bottom{padding:11px 14px}}
+    @media(max-width:540px){.population-table{min-width:0;width:100%;table-layout:fixed}.population-table th:nth-child(3),.population-table td:nth-child(3),.population-table th:nth-child(4),.population-table td:nth-child(4),.population-table th:nth-child(6),.population-table td:nth-child(6){display:none}.population-table th,.population-table td{padding:9px 7px;font-size:11px}.population-table th:first-child,.population-table td:first-child{width:40px}.population-table th:nth-child(2){width:34%}.population-table th:last-child{width:70px}.population-table .table-action{font-size:10.5px}}
+    @media print{#homeView .map-stage{height:430px}#homeView .area-selector,#homeView .soft-button,#homeView .outline-action{display:none!important}.overview-main{display:block}.tambon-section{display:none}.home-reports{display:none}}
+    @media(prefers-reduced-motion:reduce){.map-region path{transition:none}}
+
+/* Flexible report views — shared design language, report-specific composition. */
+.report-showcase{border:1px solid var(--border);background:#fff;border-radius:var(--radius);padding:16px 18px;margin:0 0 18px}
+.showcase-heading{display:flex;align-items:baseline;flex-wrap:wrap;gap:7px 13px;margin-bottom:11px}
+.showcase-heading .section-eyebrow{flex-basis:100%}.showcase-heading strong{font-size:15px;color:#234b44}.showcase-heading>span:last-child{font-size:12px;color:var(--muted)}
+.detail-showcase{margin:20px 0 0;background:#fbfcfb;padding:17px 21px}
+.showcase-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}
+.showcase-grid button{background:#f9fbfa;border:1px solid #e2ece7;border-radius:7px;min-height:66px;display:flex;align-items:center;gap:9px;padding:12px;text-align:left;color:#294f47}
+.showcase-grid button:hover{background:#eef7f3;border-color:#b4d5ca}.showcase-grid button>span:nth-child(2){min-width:0;flex:1}
+.showcase-symbol{display:grid;place-items:center;background:#e5f1ec;border-radius:7px;width:34px;height:34px;flex-shrink:0;font-size:17px;color:#267066;font-weight:800}
+.showcase-grid b,.showcase-grid small{display:block}.showcase-grid b{font-size:12px}.showcase-grid small{font-size:10.5px;color:#84978f}
+.report-lead{max-width:850px;color:#6f8680;margin:0 0 13px;font-size:13px}.flexible-heading{padding-bottom:21px}
+.filter-top{display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px}
+.filter-top h2{margin:2px 0 0;font-size:15px}.filter-top p{margin:3px 0 0;font-size:11.5px;color:#84958f}
+.adaptive-form{display:flex;align-items:end;gap:12px;flex-wrap:wrap}
+.adaptive-fields{display:flex;align-items:end;gap:12px;flex-wrap:wrap;flex:1}
+.adaptive-fields .field{min-width:145px;flex:1 1 145px;max-width:240px}.adaptive-form .primary{flex:0 0 auto}
+.report-content-top{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 24px 17px}
+.report-content-top h2{margin:0;font-size:18px}.report-content-top p{margin:4px 0 0;font-size:12px;color:#81928d}.report-actions{display:flex;gap:8px;flex-wrap:wrap}
+.adaptive-content{padding:0 24px 24px;min-height:330px}
+.report-provenance{border-top:1px solid var(--border);background:#fbfcfb;display:grid;grid-template-columns:1fr 1fr;gap:25px;padding:21px 24px}
+.report-provenance strong{font-size:13px;color:#3d675e}.report-provenance p{font-size:11.5px;line-height:1.8;color:#768b85;margin:7px 0}
+.surface{border:1px solid var(--border);border-radius:8px;background:#fff;padding:19px 20px;min-width:0}
+.surface-soft{background:#fafcfb}.surface-title{font-size:15px;font-weight:770;color:#2c544b;margin:0 0 4px}.surface-desc{font-size:11.7px;color:#81938c;margin:0 0 16px}
+.section-mini-title{color:#355c54;font-size:13px;font-weight:750;margin:0 0 10px}
+.visual-grid{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(240px,.88fr);gap:16px}
+.visual-grid-balanced{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+.breather{height:16px}.small-caption{font-size:11.5px;color:#82968e;margin:11px 0 0;line-height:1.75}
+.insight-panel{background:#f4f9f6;border:1px solid #e2eee8;border-radius:8px;padding:17px}
+.insight-eyebrow{font-size:10px;letter-spacing:1.1px;color:#63988b;font-weight:750}.insight-value{font-size:29px;color:#1d6457;font-weight:800;margin:2px 0;line-height:1.5}
+.insight-label{font-size:12px;color:#58736a}.insight-info{font-size:11.5px;color:#738a80;margin-top:11px;line-height:1.8}
+.insight-divider{border-top:1px solid #dcece5;margin:15px 0}
+.legend-inline{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:11px;color:#647d74}
+.legend-inline i{display:inline-block;width:12px;height:9px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.pyramid-chart{display:grid;grid-template-columns:1fr 58px 1fr;gap:9px 10px;align-items:center;margin:12px 0 6px}
+.pyramid-axis{font-size:11px;color:#60786e;font-weight:720;text-align:center}
+.pyramid-bar{height:20px;background:#f0f4f2;border-radius:3px;display:flex;position:relative;overflow:hidden}
+.pyramid-bar.left{justify-content:flex-end}.pyramid-fill{height:100%;background:#639d90;min-width:1px}.pyramid-fill.female{background:#d0a87b}
+.pyramid-footer{display:flex;justify-content:space-between;color:#83988e;font-size:10px;padding-top:9px;border-top:1px solid #e6ede9}
+.metric-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:15px}
+.metric-item{background:#fbfcfb;border:1px solid #e1eae5;border-radius:7px;padding:14px 16px;min-width:0}
+.metric-label{font-size:11.5px;color:#6b8279}.metric-value{font-size:24px;font-weight:790;line-height:1.5;color:#235d51;font-variant-numeric:tabular-nums}.metric-unit{font-size:11px;color:#9aaca3}
+.visual-table{width:100%;border-collapse:collapse;min-width:440px}.visual-table th{font-size:11.5px;padding:10px 11px}.visual-table td{font-size:12px;padding:11px;font-variant-numeric:tabular-nums}
+.visual-table th:not(:first-child),.visual-table td:not(:first-child){text-align:right}
+.visual-table tr:last-child td{border-bottom:0}.visual-table .row-emphasis{background:#f4f9f6;font-weight:750}
+.bar-comparison{display:grid;gap:13px;margin-top:13px}.comparison-row{display:grid;grid-template-columns:94px 1fr 60px;gap:12px;align-items:center;font-size:12px;color:#46685d}
+.bar-track{height:14px;background:#eff4f1;border-radius:4px;overflow:hidden;position:relative}.target-line{position:absolute;left:90%;top:0;bottom:0;border-left:2px dashed #c7a36f;pointer-events:none}.bar-fill{height:100%;border-radius:4px;background:#568f83}
+.comparison-row strong{text-align:right;font-variant-numeric:tabular-nums;font-size:12px;color:#375d54}
+.chart-key{display:flex;gap:15px;flex-wrap:wrap;color:#667e75;font-size:11px;margin:6px 0 10px}
+.chart-key i{display:inline-block;vertical-align:middle;width:18px;height:3px;margin-right:6px;background:#387d6f;border-radius:2px}
+.chart-key .target-key{background:#c7a36f;border-top:2px dashed #c7a36f;height:0}
+.trend-svg,.epicurve-svg{width:100%;height:auto;display:block;max-height:360px}
+.trend-svg text,.epicurve-svg text{font:12px system-ui, sans-serif;fill:#7a8d86}
+.context-list{padding:0;margin:14px 0 0;list-style:none}.context-list li{display:flex;justify-content:space-between;gap:10px;border-top:1px solid #e5eee9;padding:10px 0;font-size:12px;color:#71857d}
+.context-list strong{color:#35574f;font-variant-numeric:tabular-nums}
+.report-disclosure{margin-top:17px;border:1px solid #e0eae5;border-radius:7px;background:#fff;overflow:hidden}
+.report-disclosure summary{cursor:pointer;padding:13px 16px;font-weight:730;font-size:12.5px;color:#3c655a;display:list-item;list-style-position:inside}
+.report-disclosure>div{padding:0 12px 12px}
+.callout-note{background:#fff9eb;border:1px solid #f0e3c6;border-radius:7px;color:#806b43;padding:11px 14px;font-size:11.5px;line-height:1.8;margin-top:15px}
+.services-lead{display:flex;justify-content:space-between;gap:16px;margin-bottom:14px;align-items:center}
+.services-lead p{font-size:11.5px;color:#82968f;margin:3px 0 0}
+.report-label{display:inline-flex;border:1px solid #d4e7df;background:#f2f8f4;color:#3f7868;padding:4px 8px;font-size:11px;font-weight:700;border-radius:5px}
+@media(max-width:1100px){.showcase-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:800px){.visual-grid,.visual-grid-balanced{grid-template-columns:1fr}.report-provenance{grid-template-columns:1fr}.metric-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(max-width:560px){.report-content-top{flex-direction:column;align-items:flex-start;padding:17px 15px}.adaptive-content{padding:0 13px 19px}.report-provenance{padding:17px 15px}.showcase-grid{grid-template-columns:1fr 1fr;gap:7px}.report-showcase{padding:12px}.showcase-grid button{padding:9px 8px;min-height:62px;gap:7px}.showcase-symbol{height:29px;width:29px;font-size:14px}.showcase-grid b{font-size:11px}.showcase-grid small{font-size:10px}.surface{padding:14px 13px}.metric-grid{grid-template-columns:1fr 1fr}.metric-item{padding:11px}.metric-value{font-size:20px}.adaptive-fields .field{max-width:none;flex:1 1 125px;min-width:125px}.adaptive-form .primary{flex:1}.comparison-row{grid-template-columns:75px 1fr 49px;gap:7px;font-size:11px}.pyramid-chart{grid-template-columns:1fr 51px 1fr;gap:6px}.pyramid-axis{font-size:10px}.pyramid-bar{height:17px}}
+@media print{.report-showcase,.adaptive-form,.report-actions,.back,.breadcrumbs,.nav-group,#homeView,.footer{display:none!important}.adaptive-content{min-height:0}.report-provenance{background:white}.report-disclosure>div{display:block}.report-disclosure summary{display:none}#detailView{display:block!important}}
+
+
+@media(max-width:560px){
+  .adaptive-form{display:block}
+  .adaptive-fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .adaptive-fields .field{min-width:0;max-width:none;width:100%;flex:initial}
+  .adaptive-fields .field select{width:100%}
+  .adaptive-form .primary{width:100%;margin-top:12px}
+}
+
+/* Review 01 — Home: component-ready visual/accessibility refinements only */
+.area-option{min-height:44px}
+.soft-button{min-height:40px}
+.nav-link{min-height:44px}
+.population-table tbody th.pop-tambon{background:#fff;border-bottom:1px solid #eaf0ee;padding:10px 16px;text-align:left;font-size:13px}
+.population-table tbody tr:hover th.pop-tambon{background:#fbfdfc}
+.population-table tbody tr.selected th.pop-tambon{background:#eef7f3}
+.mobile-pop-summary{display:flex;justify-content:space-between;gap:8px;color:#25584c;padding:12px 9px;font-size:12.5px;font-variant-numeric:tabular-nums;background:#f2f8f4;border-radius:5px}
+
+.skip-link{position:absolute;top:-100px;left:18px;z-index:50;background:#fff;color:#123e37;padding:10px 14px;border:2px solid #1b685c;border-radius:5px;font-weight:700}
+.skip-link:focus{top:8px}
+#app:focus{outline:none}
+.inline-demo-label{display:inline-block;vertical-align:middle;margin-left:7px;padding:2px 7px;border:1px solid #e5d7b0;background:#fff9e9;border-radius:4px;color:#82601f;font-size:10.5px;font-weight:700;letter-spacing:0;white-space:nowrap}
+.selected-details .selected-small-note{font-size:11.5px;color:#57726a;line-height:1.6}
+.qc-count{color:#56746b;font-size:11.5px}
+.map-helper{color:#526f65;font-size:11.5px}
+.table-bottom{color:#536d64;font-size:11.5px}
+.data-disclaimer h2{font-size:12px;flex:0 0 auto;color:#34695d;font-weight:760;white-space:nowrap}
+.data-disclaimer span{min-width:0}
+.mobile-population{display:none}
+@media(max-width:540px){
+  .desktop-population{display:none}
+  .mobile-population{display:block;padding:12px 13px;background:white}
+  .mobile-population .mobile-pop-instruction{margin:0 0 9px;font-size:12px;color:#49685f}
+  .mobile-population details{border:1px solid #dfeae5;border-radius:7px;margin:0 0 8px;overflow:hidden}
+  .mobile-population details[open]{border-color:#a5cbbd}
+  .mobile-population details.is-selected{background:#f1f8f4;border-color:#8cbdac}
+  .mobile-population summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:12px 13px;gap:10px;min-height:47px}
+  .mobile-population summary::-webkit-details-marker{display:none}
+  .mobile-population .mobile-name{font-weight:730;color:#24594e;font-size:13px}
+  .mobile-population .mobile-name:before{content:'+';display:inline-block;margin-right:9px;color:#48786f;font-weight:900}
+  .mobile-population details[open] .mobile-name:before{content:'−'}
+  .mobile-population .mobile-total{font-variant-numeric:tabular-nums;font-size:13px;color:#254f46;white-space:nowrap}
+  .mobile-pop-details{border-top:1px solid #dfeae5;background:#fcfdfc;padding:9px 13px 12px}
+  .mobile-pop-details dl{margin:0;display:grid;grid-template-columns:1fr auto;gap:5px 12px;font-size:12px}
+  .mobile-pop-details dt{color:#526f66}
+  .mobile-pop-details dd{margin:0;text-align:right;font-weight:650;font-variant-numeric:tabular-nums;color:#274d45}
+  .mobile-pop-details button{margin-top:10px;padding:8px 11px;border-radius:5px;border:1px solid #9cc4b5;color:#1d5b50;font-weight:700;background:#f4faf7;width:100%}
+  .data-disclaimer h2{white-space:normal}
+}
+@media print{.mobile-population{display:none!important}.desktop-population{display:block!important}}
+
+
+/* Review 01 R2 — targeted Home contrast and responsive refinements */
+#homeView .section-eyebrow{color:#39776c}
+#homeView .eyebrow{color:#39776c}
+#homeView .summary-unit,#homeView .panel-heading p,#homeView .tambon-intro p,
+#homeView .home-report-heading p,#homeView .selected-details p,#homeView .selected-details .selected-small-note,
+#homeView .table-bottom,#homeView .data-disclaimer,#homeView .data-status span:last-child,
+#homeView .dataset-source,#homeView .selected-kicker,#homeView .qc-count,
+#homeView .area-index,#homeView .map-helper,#homeView .map-topline,
+#homeView .map-warning,#homeView .summary-unit span{color:#526d64}
+#homeView .data-disclaimer h2{color:#326b60}
+#homeView .qc-chevron,#homeView .area-option .option-arrow{color:#466f64}
+#homeView .summary-num,#homeView .selected-detail-row strong{overflow-wrap:anywhere}
+#homeView .population-table tfoot th.pop-tambon{background:#f1f7f4;border-top:1px solid #d7e8df;color:#24574d}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto!important}}
+#homeView .overview-heading .subline{color:#526d64}
+.footer{color:#526d64}
+/* Print whichever view is active, never force a hidden Report Detail over Home. */
+@media print{
+  #homeView:not(.view-hidden){display:block!important}
+  #homeView.view-hidden,#detailView.view-hidden,#catalogView.view-hidden{display:none!important}
+}
+
+
+    /* HOME R3 — clearer civic identity: navy / teal / white with restrained amber. */
+    :root{--green:#155b86;--green-dark:#103b5a;--green-light:#e7f1f8;--ink:#182d43;--muted:#546b7b;--border:#d6e1ea;--canvas:#f1f5f9;--gold:#c89240;--radius:10px}
+    .utility{background:#e6eef4;color:#284964;border-bottom-color:#d1deea}
+    .masthead{border-top:4px solid #168a87}
+    .symbol{background:#124a71;box-shadow:inset 0 -3px 0 #1ca7a3}
+    .brand strong{color:#143653}
+    .brand small,.identity-right{color:#567186}
+    .menu{background:#143653}
+    .nav-link{color:#e7f2fb}
+    .nav-link:hover,.nav-link[aria-current="page"]{background:#0d2a46;color:#fff}
+    .nav-link[aria-current="page"]{box-shadow:inset 0 -4px 0 #2dc1b6}
+    :focus-visible{outline:3px solid #c57f16;outline-offset:3px}
+    .breadcrumbs,.breadcrumbs button{color:#55738a}
+    #homeView .eyebrow,#homeView .section-eyebrow{color:#177d8b}
+    #homeView .overview-heading h1{color:#143653}
+    #homeView .subline{color:#5d7388}
+    #homeView .data-status{background:#fff7e7;border-color:#ebd19b;color:#745017}
+    #homeView .status-pulse{background:#b97d1c}
+    #homeView .overview-summary{box-shadow:0 3px 12px rgba(20,53,83,.035)}
+    #homeView .summary-major{background:#e3eff8;border-left:4px solid #1d739a}
+    #homeView .summary-label{color:#5b7387}
+    #homeView .summary-num{color:#143653}
+    #homeView .summary-unit{color:#547084}
+    #homeView .panel-heading h2,#homeView .tambon-intro h2,#homeView .home-report-heading h2{color:#143653}
+    #homeView .panel-heading{background:#fafcfe}
+    #homeView .soft-button{border-color:#a9c3d8;color:#164d71;background:#f8fbff}
+    #homeView .soft-button:hover{background:#e5f1fa}
+    #homeView .area-option{border-color:#e2eaf0;background:#fff;color:#2b5069}
+    #homeView .area-option:hover{background:#eef7fb;border-color:#bad6e5}
+    #homeView .area-option.active{background:#daf2f0;border-color:#47aaa4;color:#075c59;box-shadow:inset 3px 0 0 #138b84}
+    #homeView .selected-details{background:#eaf5f8;border-color:#b9d9e4;border-top:3px solid #1a8f9b}
+    #homeView .selected-details h3{color:#103b5a}
+    #homeView .selected-detail-row strong{color:#103b5a}
+    #homeView .population-table .pop-tambon,#homeView .population-table .text-pop{color:#124e74}
+    #homeView .population-table tbody tr.selected{background:#e5f5f5}
+    #homeView .quick-category:hover{border-color:#8cbad0;background:#f1f8fc}
+    #homeView .qc-index{background:#e8f1f7;color:#155b86}
+    #homeView .qc-name{color:#164668}
+    #homeView .data-disclaimer{background:#eaf0f5;border:1px solid #d2dfe9;color:#415c72;align-items:center;padding:11px 14px}
+    #homeView .data-disclaimer h2{font-size:12px;color:#164668;white-space:nowrap}
+    #homeView .data-disclaimer a{color:#095f85;text-decoration:underline}
+    #homeView .section-eyebrow{letter-spacing:1.2px}
+    #homeView .map-stage.leaflet-stage{height:500px;position:relative;display:block;padding:0;overflow:hidden;background:#dfeaf2}
+    #homeView .song-leaflet-map{width:100%;height:100%;min-height:100%;background:#e6edf1}
+    #homeView .leaflet-container{font-family:inherit;z-index:0}
+    #homeView .leaflet-control-attribution{font-size:10px;background:rgba(255,255,255,.91)}
+    #homeView .leaflet-control-attribution a{color:#145a83}
+    #homeView .leaflet-control-zoom a{color:#184968}
+    #homeView .leaflet-tooltip.tambon-tooltip{color:#173c52;font-weight:700;border:1px solid #b8d6db;box-shadow:0 2px 8px rgba(22,62,91,.16);padding:5px 10px}
+    #homeView .map-load-overlay{position:absolute;inset:0;z-index:430;display:flex;gap:10px;align-items:center;justify-content:center;background:#e4edf3;color:#31536a;font-size:13px;text-align:center;padding:20px}
+    #homeView .map-load-overlay.is-error{background:#f1f5f8;color:#5c7281}
+    #homeView .map-load-overlay.is-hidden{display:none}
+    #homeView .map-loader{height:17px;width:17px;border-radius:50%;border:2px solid #bbcfda;border-top-color:#168a87;animation:mapspin .9s linear infinite}
+    #homeView .map-load-overlay.is-error .map-loader{display:none}
+    @keyframes mapspin{to{transform:rotate(360deg)}}
+    #homeView .map-meta-bar{display:flex;align-items:center;gap:11px;justify-content:space-between;flex-wrap:wrap;padding:10px 15px;color:#4c6678;font-size:11px;background:#f7fafc;border-top:1px solid #d7e4ed}
+    #homeView .map-meta-bar #gisMapStatus{margin-right:auto}
+    #homeView .map-meta-bar a{color:#135d86;text-decoration:underline;white-space:nowrap}
+    #homeView .map-retry{border:1px solid #8db7ce;background:#fff;color:#14577d;border-radius:5px;padding:4px 9px;font-weight:700}
+    @media(max-width:790px){#homeView .map-stage.leaflet-stage{height:400px}}
+    @media(max-width:540px){#homeView .map-stage.leaflet-stage{height:345px}#homeView .map-meta-bar{gap:7px;font-size:10px}#homeView .data-disclaimer{align-items:flex-start;gap:5px;flex-direction:column}}
+    @media(prefers-reduced-motion:reduce){#homeView .map-loader{animation:none}}
+    #homeView .gis-diagnostics{margin:5px 16px 14px;font-size:12px;color:#39516a;overflow-wrap:anywhere}
+    #homeView .gis-diagnostics summary{color:#155b86;cursor:pointer;font-weight:650}
+    #homeView .gis-diagnostics p{margin:6px 0;line-height:1.55}
+    @media print{#homeView .map-stage.leaflet-stage{height:340px!important}#homeView .map-retry{display:none!important}}
+
+    /* Final contrast adjustments and removal of legacy SVG-map CSS.
+       Leaflet owns its overlay SVG sizing; no .map-stage svg max-width rule. */
+    #homeView .eyebrow,#homeView .section-eyebrow{color:#195f69}
+    #homeView .area-option .area-index{color:#3d6376}
+    #homeView .summary-unit,#homeView .panel-heading p,#homeView .tambon-intro p,
+    #homeView .home-report-heading p,#homeView .qc-count{color:#3d6376}
+    #homeView .selected-kicker{color:#30585a}
+    #homeView .selected-details p,#homeView .selected-details .selected-small-note{color:#40616b}
+    #homeView .map-load-overlay.is-error{color:#3d6376}
+    #homeView .mobile-population .mobile-name{color:#124e74}
+    #homeView .mobile-pop-summary{background:#e8f4f6;color:#124e74}
+    #homeView .mobile-population details.is-selected{background:#eaf5f8;border-color:#79b8c6}
+
+    /* Final Home refinements: readable controls on mobile, reduced visual noise */
+    #homeView .area-option:focus-visible,#homeView .table-action:focus-visible,#homeView .map-retry:focus-visible{outline:3px solid #b67316;outline-offset:2px}
+    #homeView .map-meta-bar{font-size:12px}
+    #homeView .population-table .table-action{font-size:12px;min-height:36px;padding:6px 8px}
+    @media(max-width:540px){
+      #homeView .section-eyebrow{font-size:11px;letter-spacing:1px}
+      #homeView .summary-label,#homeView .summary-unit{font-size:12px}
+      #homeView .area-option{font-size:12.5px;min-height:42px}
+      #homeView .map-meta-bar{font-size:11.5px;gap:8px}
+      #homeView .map-meta-bar a{white-space:normal}
+      #homeView .mobile-pop-item summary{min-height:43px}
+      #homeView .data-disclaimer{font-size:12px}
+    }
+  
+
+/* Review 02 — Report Catalog: one-purpose page, independent of the Home/Detail layouts */
+.catalog-review{--catalog-navy:#143653;--catalog-ink:#1c374d;--catalog-teal:#087e7b;--catalog-border:#d5e0e8;--catalog-surface:#f6f9fc;}
+.catalog-review .catalog-heading{margin-bottom:20px;align-items:center}
+.catalog-review .catalog-heading h1{font-size:27px;color:#143653;font-weight:780;letter-spacing:-.55px}
+.catalog-review .subline{color:#52697b;font-size:13.4px}
+.catalog-demo-chip{display:inline-flex;border:1px solid #c9dbe8;background:#e9f2f8;color:#24516d;border-radius:6px;padding:5px 11px;font-size:11.5px;white-space:nowrap;font-weight:650}
+.catalog-layout{grid-template-columns:256px minmax(0,1fr);gap:20px}
+.catalog-sidebar,.catalog-content{border-color:var(--catalog-border);border-radius:10px}
+.catalog-sidebar .side-title{background:#e8f0f7;color:#143653;font-size:14px;padding:16px 16px}
+.catalog-sidebar .sidebar-mini{font-size:11.5px;color:#49667b;font-weight:500}
+.catalog-sidebar .category-list{padding:9px}
+.catalog-review .category{font-size:13.1px;line-height:1.45;min-height:44px;color:#36546a;border-left:3px solid transparent;padding:10px 9px}
+.catalog-review .category:hover{background:#edf5f9}
+.catalog-review .category.active{border-left-color:var(--catalog-teal);background:#e5f4f3;color:#075c5a;font-weight:760}
+.catalog-review .category-count{color:#3e6477;background:#edf2f6;font-weight:650;padding:2px 7px}
+.catalog-review .category.active .category-count{background:#c8e9e5;color:#07514e}
+.catalog-top{padding:20px 23px;border-color:var(--catalog-border)}
+.catalog-review .section-title{margin-bottom:15px;align-items:center}
+.catalog-review .section-title h2{color:#143653;font-size:18px;font-weight:760}
+.catalog-review .countline{border-radius:5px;background:#f0f5f8;color:#39566d;padding:3px 9px;font-weight:650}
+.catalog-toolbar{display:grid;grid-template-columns:minmax(0,1fr) 146px;gap:14px;align-items:end}
+.catalog-search-field,.catalog-page-size{display:flex;flex-direction:column;gap:6px;min-width:0}
+.catalog-toolbar label{color:#38556a;font-size:12px;font-weight:650}
+.catalog-review .search-box{min-width:0}
+.catalog-review .search-box input{height:43px;padding:0 42px 0 40px;border-color:#b9cddd;border-radius:7px;color:#1e3445}
+.catalog-review .search-box input:focus{border-color:#147f8d}
+.catalog-review .search-box svg{left:13px;top:13px;stroke:#50718a}
+.catalog-review #pageSize{width:100%;min-width:0;height:43px;border-color:#b9cddd;border-radius:7px;color:#284559}
+.catalog-clear{position:absolute;right:6px;top:5px;border:0;background:transparent;color:#4b677a;border-radius:4px;width:32px;height:32px;display:grid;place-items:center;font-size:15px}
+.catalog-clear:hover{background:#eaf1f5}
+.catalog-clear[hidden]{display:none!important}
+.catalog-filter-status{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;background:#f1f7fa;border:1px solid #d9e7ed;border-radius:6px;margin-top:12px;padding:7px 11px;color:#36576d;font-size:12px}
+.catalog-filter-status[hidden]{display:none!important}
+.catalog-filter-status button{border:0;background:none;color:#0b6768;font-weight:750;padding:4px 0;text-decoration:underline;text-underline-offset:3px}
+.catalog-review .catalog-table{min-width:0;table-layout:auto}
+.catalog-review .catalog-table th{background:#f0f5f9;border-color:var(--catalog-border);color:#425c6f;font-size:12px}
+.catalog-review .catalog-table th:first-child{width:58%}
+.catalog-review .catalog-table th:nth-child(2){width:27%}
+.catalog-review .catalog-table th:last-child{width:15%;text-align:center}
+.catalog-review .catalog-table td{padding:16px 17px;border-bottom:1px solid #e3ebef;vertical-align:middle}
+.catalog-review .catalog-table tr:hover td{background:#f8fbfc}
+.catalog-review .catalog-table .rtitle{font:inherit;font-size:13.9px;line-height:1.55;font-weight:750;color:#075c68;display:block;background:none;border:0;padding:0;text-align:left}
+.catalog-review .catalog-table .rtitle:hover{text-decoration:underline}
+.catalog-review .catalog-table .rdesc{color:#526a79;font-size:12px;margin-top:4px;line-height:1.5}
+.catalog-review .catalog-table .rc-num{color:#52697b;font-size:11px;font-weight:700;letter-spacing:.3px;display:block;margin-bottom:2px}
+.catalog-review .catalog-table .cat-name{font-size:12px;line-height:1.45;color:#3e5b6e}
+.catalog-review .catalog-table .link-btn{background:#fff;border-color:#98cbd0;color:#075d63;font-weight:720;padding:8px 10px;min-height:38px;font-size:12px}
+.catalog-review .catalog-table .link-btn:hover{background:#e7f5f4}
+.catalog-no-results{padding:55px 20px 65px;text-align:center;color:#526a7b}
+.catalog-no-results[hidden],.catalog-pagination[hidden],.catalog-results[hidden]{display:none!important}
+.catalog-empty-icon{margin:auto auto 9px;width:49px;height:49px;border-radius:12px;background:#eaf3f7;color:#185b78;display:grid;place-items:center;font-size:26px}
+.catalog-no-results h3{font-size:17px;color:#183b55}
+.catalog-no-results p{font-size:13px;margin:5px 0 16px}
+.catalog-reset{border:1px solid #0e777c;background:#0e777c;color:white;border-radius:6px;font-weight:680;padding:9px 16px;min-height:42px}
+.catalog-reset:hover{background:#075b62}
+.catalog-review .catalog-pagination{color:#536e82;border-color:var(--catalog-border);font-size:12px}
+.catalog-review .page-btn{padding:8px 13px;min-height:38px;color:#25526b;border-color:#cbdbe5}
+.catalog-review .page-btn:not(:disabled):hover{background:#eaf3f7;border-color:#93becb}
+.catalog-review #pageLabel{display:inline-flex;align-items:center;justify-content:center;padding:0 8px;color:#36536a;font-weight:650}
+.catalog-source-note{margin:16px 3px 0;color:#587181;font-size:12px}
+@media(max-width:980px){.catalog-layout{grid-template-columns:215px minmax(0,1fr);gap:13px}.catalog-top{padding:16px}.catalog-review .catalog-table td{padding:14px 12px}.catalog-review .catalog-table th{padding:11px 12px}}
+@media(max-width:700px){
+ .catalog-review .catalog-heading{align-items:flex-start;gap:9px;margin-bottom:16px}
+ .catalog-review .catalog-heading h1{font-size:23px}
+ .catalog-demo-chip{font-size:11px;padding:4px 8px}
+ .catalog-layout{grid-template-columns:minmax(0,1fr);gap:12px}
+ .catalog-sidebar .side-title{display:flex;font-size:12px;padding:10px 12px}
+ .catalog-sidebar .category-list{display:flex;flex-wrap:nowrap;gap:6px;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;padding:7px;}
+ .catalog-review .category{min-height:42px;flex:0 0 auto;width:auto;white-space:nowrap;font-size:12px;padding:8px 11px;border:1px solid #cbdbe5;border-radius:6px}
+ .catalog-review .category.active{border:1px solid #50ada9;box-shadow:inset 0 0 0 1px #50ada9}
+ .catalog-top{padding:16px 14px}
+ .catalog-toolbar{grid-template-columns:minmax(0,1fr);gap:12px}
+ .catalog-review .section-title{margin-bottom:13px}
+ .catalog-review .catalog-table{table-layout:auto}
+ .catalog-review .catalog-table thead{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+ .catalog-review .catalog-table tbody{display:grid;grid-template-columns:1fr;gap:0}
+ .catalog-review .catalog-table tr{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:10px 12px;padding:15px 14px;border-bottom:1px solid #dce7ed}
+ .catalog-review .catalog-table tr:last-child{border-bottom:0}
+ .catalog-review .catalog-table td,.catalog-review .catalog-table td:nth-child(n+3){display:block!important;width:auto!important;border:0;padding:0;background:transparent!important}
+ .catalog-review .catalog-table td:first-child{grid-column:1/-1}
+ .catalog-review .catalog-table td:nth-child(2){grid-column:1;display:flex!important;align-items:center}
+ .catalog-review .catalog-table td:last-child{grid-column:2;text-align:right}
+ .catalog-review .catalog-table .link-btn{min-height:38px;padding:7px 11px}
+ .catalog-review .catalog-table .rtitle{font-size:14px}
+ .catalog-review .catalog-table .rdesc{margin-top:4px}
+ .catalog-review .catalog-table .cat-name{display:inline-block;background:#f1f5f8;border-radius:4px;padding:4px 8px;font-size:11px}
+ .catalog-review .catalog-pagination{flex-wrap:wrap;padding:12px 13px;gap:8px}
+ .catalog-review .pagination-controls{margin-left:auto}
+ .catalog-source-note{padding:0 3px}
+}
+@media(max-width:375px){.catalog-review .catalog-pagination{flex-direction:column;align-items:stretch}.catalog-review .pagination-controls{margin-left:0;justify-content:space-between}.catalog-review .catalog-heading h1{font-size:22px}}
+@media print{.catalog-review .catalog-sidebar,.catalog-review .catalog-toolbar,.catalog-review .catalog-pagination,.catalog-review .catalog-filter-status{display:none!important}.catalog-review .catalog-table{display:table}.catalog-review .catalog-table tr{display:table-row}.catalog-review .catalog-table td{display:table-cell!important}}
+
+
+/* Review 02 R3: accessible touch targets and clearer visible focus, scoped to Catalog. */
+.catalog-review .catalog-clear{width:38px;height:38px;top:2px;right:3px}
+.catalog-review .page-btn{min-height:44px}
+.catalog-review .category:focus-visible,
+.catalog-review .page-btn:focus-visible,
+.catalog-review .catalog-clear:focus-visible,
+.catalog-review .catalog-reset:focus-visible,
+.catalog-review .link-btn:focus-visible,
+.catalog-review .catalog-breadcrumb-home:focus-visible{outline:3px solid #b36a16;outline-offset:2px}
+@media(max-width:700px){.catalog-review .category{min-height:44px}}
+
+/* Review 02 R2: preserve native table semantics on desktop, use actual list markup on mobile. */
+.catalog-breadcrumb-home{border:0;background:transparent;padding:2px 3px;margin:-2px -3px;color:#46647b;font:inherit;cursor:pointer;text-decoration:underline;text-decoration-color:transparent;text-underline-offset:3px}
+.catalog-breadcrumb-home:hover{text-decoration-color:currentColor;color:#0a666a}
+.catalog-review .catalog-table .rtitle{color:#163d54;cursor:default}
+.catalog-review .catalog-table .rtitle:hover{text-decoration:none}
+.catalog-mobile-list{display:none;list-style:none;margin:0;padding:0}
+.catalog-mobile-list[hidden]{display:none!important}
+@media(max-width:700px){
+  .catalog-review .catalog-table{display:none!important}
+  .catalog-mobile-list{display:block}
+  .catalog-mobile-item{border-bottom:1px solid #dce7ed;padding:16px 14px;min-width:0}
+  .catalog-mobile-item:last-child{border-bottom:0}
+  .catalog-mobile-item .rc-num{margin:0 0 3px;font-size:11px;color:#42617a}
+  .catalog-mobile-item .rtitle{display:block;color:#173b52;font-weight:750;font-size:14px;line-height:1.5;overflow-wrap:anywhere}
+  .catalog-mobile-item .rdesc{font-size:12px;color:#526a79;line-height:1.55;margin:3px 0 12px}
+  .catalog-mobile-meta{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+  .catalog-mobile-meta .cat-name{display:inline-block;background:#edf3f7;border-radius:4px;color:#36536a;padding:5px 7px;font-size:11px;line-height:1.5;overflow-wrap:anywhere}
+  .catalog-mobile-meta .link-btn{flex-shrink:0;min-height:44px;padding:8px 11px}
+}
+@media print{
+  .catalog-review .catalog-table{display:table!important}
+  .catalog-mobile-list{display:none!important}
+}
+
+/* Review 03: report detail only. Preserve accepted Home/Catalog styles. */
+#detailView.report-detail-v3 { --rd-blue:#143653; --rd-teal:#0a7978; --rd-border:#d9e4e9; color:#23384a; }
+#detailView .report-breadcrumbs { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:9px; font-size:12px; color:#64788a; }
+#detailView .report-breadcrumbs button { color:#1a6386; font-weight:700; }
+#detailView .report-breadcrumbs .slash { color:#9aacb8; }
+#detailView .report-back { font-size:12.5px; font-weight:750; color:#175e7b; margin:0 0 13px; padding:7px 0; }
+#detailView .report-hero { border-color:#d3e1e9; border-left:4px solid #137b90; box-shadow:0 1px 2px rgba(20,54,83,.025); padding:25px 28px 22px; margin-bottom:17px; background:#fff; }
+#detailView .report-hero-top { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:13px; }
+#detailView .report-id-tag { display:inline-flex;align-items:center; padding:5px 9px; background:#e8f2f7;color:#195773;font-size:11.5px; border-radius:5px; font-weight:800;letter-spacing:.3px; }
+#detailView .report-demo-tag { border:1px solid #d3ddcc; background:#f4f7ef; color:#566b37; padding:5px 9px;border-radius:5px;font-size:11px; font-weight:740; }
+#detailView .report-category-name { color:#0f7881; font-size:12px; font-weight:780; margin:0 0 6px; }
+#detailView .report-hero h1 { font-size:clamp(22px,2.3vw,29px);line-height:1.35;letter-spacing:-.3px;color:#17364d; margin:0 0 8px; }
+#detailView .report-hero .report-lead { font-size:13px; color:#5c7182; line-height:1.75; margin:0 0 15px; }
+#detailView .report-hero-meta { display:flex; flex-wrap:wrap; gap:9px 20px;font-size:12px;color:#597386;border-top:1px solid #edf2f4;padding-top:11px; }
+#detailView .report-hero-meta span+span::before { content:'•';margin-right:14px;color:#90a8b5; }
+#detailView .report-data-shell { background:#fff; overflow:hidden; border-color:#d9e4e9; }
+#detailView .report-filter-wrap { padding:21px 24px 22px;background:#f2f7fa;border-bottom:1px solid #dce7ed; }
+#detailView .report-filter-heading { display:flex;justify-content:space-between;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:15px; }
+#detailView .report-filter-heading h2 {font-size:15px;color:#153950;margin:0 0 3px; }
+#detailView .report-filter-heading p {font-size:11.5px;color:#587181;margin:0; }
+#detailView .report-filter-info {font-size:11.5px;color:#8c5b1c;font-weight:690; }
+#detailView .report-filter-actions { display:flex;flex-wrap:wrap;gap:8px;align-items:center; }
+#detailView .adaptive-form { align-items:end;gap:12px; }
+#detailView .adaptive-fields .field {max-width:260px; flex-basis:155px; }
+#detailView .adaptive-fields .field label { color:#294d61; font-size:12px; font-weight:750; }
+#detailView .adaptive-fields .field select {background:white; border-color:#c7d9e3; min-height:42px; font-size:12.5px; }
+#detailView .adaptive-form .primary { background:#0b697a; border-color:#0b697a; min-height:42px; padding:0 21px; }
+#detailView .adaptive-form .primary:hover {background:#075667; }
+#detailView .reset-filter { min-height:42px;background:transparent;border:1px solid #bfd2dc;color:#365b6e; }
+#detailView .report-filters-dirty .primary { box-shadow:0 0 0 3px #d0eae9; }
+#detailView .report-content-top {padding:22px 25px 16px;align-items:flex-end; }
+#detailView .report-content-eyebrow {font-size:10px;letter-spacing:1px;font-weight:850;color:#1c7687;margin-bottom:5px;}
+#detailView .report-content-top h2 {font-size:19px;color:#17384e;}
+#detailView .report-content-top p {color:#597285;font-size:12px;line-height:1.6; }
+#detailView .report-actions .tool-btn {color:#244e66;border-color:#cedee6;background:white;min-height:38px;font-size:12px; }
+#detailView .report-actions .tool-btn:hover {background:#f1f8fa;border-color:#9bbfcc; }
+#detailView .adaptive-content {padding:0 24px 25px; }
+#detailView .surface { border-color:#dfe8ed; padding:19px; border-radius:9px; }
+#detailView .surface-title { color:#183e56; font-size:14px; }
+#detailView .surface-desc { color:#637d8a; font-size:11.5px;line-height:1.6; }
+#detailView .insight-panel {background:#f0f6f8;border-color:#dce9ed;}
+#detailView .insight-eyebrow {color:#52778a;}
+#detailView .insight-value {color:#0d6073;}
+#detailView .insight-info {display:none;}
+#detailView .services-lead {display:none;}
+#detailView .report-disclosure {border-color:#dce7ed;}
+#detailView .report-disclosure summary {color:#195873;font-size:12.5px; }
+#detailView .visual-table th {background:#eff5f8;color:#244a61;}
+#detailView .report-method-section {border-top:1px solid #e1e9ef;padding:19px 24px 23px;background:#fafcfd;}
+#detailView .report-method-top {display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+#detailView .report-method-top h2 {margin:0;font-size:15px;color:#17384e;}
+#detailView .report-method-top>span {color:#738b9a;font-size:11.5px;}
+#detailView .report-accordion-grid {display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px;}
+#detailView .report-info-detail {background:white;border:1px solid #dae6ec;border-radius:8px;overflow:hidden;}
+#detailView .report-info-detail summary {padding:14px 16px;cursor:pointer;color:#1f516c;font-weight:760;font-size:12.5px;}
+#detailView .report-info-detail summary:hover {background:#f3f8fa;}
+#detailView .report-info-detail p {margin:0;padding:0 16px 12px;color:#566e7e;font-size:12px;line-height:1.85;}
+#detailView .related-reports {margin:23px 0 20px;background:white;border:1px solid #d9e4e9;border-radius:10px;padding:19px 20px;}
+#detailView .related-title-row {display:flex;justify-content:space-between;align-items:start;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
+#detailView .related-title-row h2 {font-size:16px;color:#173a52;margin:0 0 4px;}
+#detailView .related-title-row p {font-size:11.5px;color:#718799;margin:0;}
+#detailView .related-all {font-size:12px;color:#176680;font-weight:750;min-height:36px; border:1px solid #c5d8e0;border-radius:6px;background:#fff;padding:7px 12px;}
+#detailView .related-list {display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;list-style:none;margin:0;padding:0;}
+#detailView .related-item {min-width:0;}
+#detailView .related-item button {width:100%;height:100%;min-height:104px;text-align:left;display:flex;gap:9px;align-items:flex-start;border:1px solid #dce7ec;border-radius:8px;background:#fafcfd;padding:14px 12px;}
+#detailView .related-item button:hover {background:#eef7f9;border-color:#88b7c4;}
+#detailView .related-code {font-size:10px;background:#e6f0f5;color:#1a637f;font-weight:850;border-radius:4px;padding:4px 6px;white-space:nowrap;}
+#detailView .related-item-text {flex:1;min-width:0;}
+#detailView .related-item-text strong {display:block;color:#213e53;font-size:12.5px;line-height:1.55;}
+#detailView .related-item-text small {display:block;color:#688296;font-size:11px;margin-top:5px;line-height:1.6;}
+#detailView .related-arrow {color:#17687b;font-weight:800;}
+#detailView .related-item button:focus-visible,#detailView .related-all:focus-visible,#detailView .report-back:focus-visible,#detailView .report-breadcrumbs button:focus-visible {outline:3px solid #e2a846;outline-offset:3px;}
+@media(max-width:950px){#detailView .related-list{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:700px){#detailView .report-hero{padding:18px 16px;}#detailView .report-filter-wrap{padding:17px 15px;}#detailView .report-content-top{padding:18px 15px 16px;}#detailView .adaptive-content{padding:0 13px 20px;}#detailView .report-method-section{padding:17px 14px;}#detailView .report-accordion-grid{grid-template-columns:1fr;}#detailView .related-reports{padding:16px 13px;}#detailView .related-list{grid-template-columns:1fr;}#detailView .related-item button{min-height:77px;}#detailView .adaptive-fields .field {flex:1 1 145px;max-width:none;}#detailView .report-content-top {align-items:stretch;}#detailView .report-actions {width:100%;}#detailView .report-actions .tool-btn {flex:1;}#detailView .report-filter-actions {width:100%;}#detailView .report-filter-actions button {flex:1;}}
+@media(max-width:380px){#detailView .report-hero h1{font-size:21px;}#detailView .report-hero-meta span+span::before{content:none;margin:0;}#detailView .report-hero-meta{gap:4px 12px;}#detailView .related-title-row{align-items:start;}}
+@media print{#detailView .report-back,#detailView .report-breadcrumbs,#detailView .report-filter-wrap,#detailView .report-actions,#detailView .related-reports{display:none!important}#detailView .report-method-section{display:block;}#detailView .report-info-detail{break-inside:avoid;}#detailView .report-hero{border-left:0;padding:10px 0;}#detailView .report-data-shell{border:0;}}
+
+
+#detailView .report-table-swipe { display:none; font-size:11.5px;color:#526f80;margin:0 0 7px;text-align:right; }
+#detailView .report-table-block .table-scroll:focus-visible {outline:3px solid #e5ad4b;outline-offset:-3px;}
+#detailView .visual-table {min-width:550px;}
+#detailView .visual-table td,#detailView .visual-table th {font-size:12px;line-height:1.55;}
+#detailView .report-content-top h2 {scroll-margin-top:15px;}
+#detailView .related-all:hover {background:#eef7fa;border-color:#94baca;}
+@media(max-width:700px){#detailView .report-table-swipe {display:block;}#detailView .visual-table{min-width:540px;}#detailView .report-hero .report-lead{font-size:12.5px;}#detailView .related-item-text strong{font-size:13px;}}
+/* Recheck 03 R2 — report-only legibility and applied filter transparency. */
+#detailView .applied-filters-note{font-size:11.5px;color:#456377;margin:6px 0 0;line-height:1.65}
+#detailView .surface-desc,#detailView .small-caption,#detailView .metric-unit,#detailView .metric-label,#detailView .report-method-top>span{color:#526a79}
+#detailView .insight-label,#detailView .report-lead,#detailView .report-hero-meta{color:#465f71}
+#detailView .chart-key,#detailView .legend-inline,#detailView .comparison-row{color:#3c5768}
+#detailView .trend-svg text,#detailView .epicurve-svg text{fill:#415d70}
+#detailView .related-title-row p,#detailView .related-item small{color:#506b7b}
+#detailView .report-hero-top .report-demo-tag{color:#455d2a}
+@media print{#detailView .applied-filters-note{color:#243d4d}#detailView .report-disclosure summary{display:list-item!important}#detailView .report-info-detail{break-inside:avoid}#detailView .report-disclosure{break-inside:avoid}}
+
+/* Review 03 R3: row header semantics while preserving table visual hierarchy. */
+#detailView .visual-table tbody th[scope="row"] { background:#fff; color:#244a61; font-size:12px; line-height:1.55; font-weight:650; border-bottom:1px solid #e8edef; padding:11px; text-align:left; font-variant-numeric:tabular-nums; }
+#detailView .visual-table tbody tr:last-child th[scope="row"] { border-bottom:0; }
+@media print { #detailView .visual-table tbody th[scope="row"] { background:#fff !important; color:#1c3135 !important; } }
+
+/* R5: EPI source-schema preview; all other report page styles unchanged. */
+#detailView .epi-import-panel{border:1px solid #cddfe9;background:#f7fbff;border-radius:9px;margin-bottom:15px;padding:13px 16px}
+#detailView .epi-import-panel summary{cursor:pointer;color:#163d58;font-weight:750}
+#detailView .epi-import-panel summary span{font-weight:400;color:#527184}
+#detailView .epi-import-inner{padding-top:12px;display:grid;gap:10px}
+#detailView .epi-import-inner p{font-size:12px;color:#526a79;margin:0}
+#detailView .epi-import-inner textarea{width:100%;max-width:100%;border:1px solid #bbd0dc;border-radius:7px;padding:10px;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:12px;min-height:95px}
+#detailView .epi-import-actions{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+#detailView .epi-upload{font-size:12px;color:#173f56;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#detailView .epi-upload input{max-width:185px;font-size:12px}
+#detailView .epi-cohort{margin-bottom:15px}
+#detailView .epi-cohort label{font-size:12px;color:#244d60;display:block;margin:8px 0}
+#detailView .epi-bind-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+#detailView .epi-bind-controls select{border:1px solid #bdd0d9;border-radius:6px;padding:8px;max-width:100%;min-width:140px}
+#detailView .epi-empty{border:1px dashed #b9cad7;border-radius:9px;text-align:center;padding:40px 15px;background:#f8fafc;margin-bottom:16px;color:#163c55}
+#detailView .epi-empty p{font-size:12px;color:#52697a;margin:8px 0 0}
+#detailView .epi-month-choice{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:14px 0}
+#detailView .epi-month-choice select{border:1px solid #bdd0d9;border-radius:6px;padding:8px;max-width:100%;min-width:220px}
+#detailView .epi-import-panel code,#detailView .small-caption code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:11px}
+@media (max-width:600px){#detailView .epi-import-panel{padding:12px}#detailView .epi-import-actions .primary{min-width:90px}#detailView .epi-month-choice select{width:100%;min-width:0}}
+@media print{#detailView .epi-import-panel,#detailView .epi-cohort,.epi-month-choice{display:none!important}}
+
+
+  /* R6: schema-grounded preview and visibility of incomplete API pagination */
+  #detailView .epi-coverage{margin:14px 0;padding:15px 18px;border:1px solid #deb980;border-left:5px solid #bd8430;border-radius:9px;background:#fff8eb;color:#513b19}
+  #detailView .epi-coverage strong{font-weight:780;color:#573b0d}
+  #detailView .epi-coverage p{margin:4px 0 0;color:#624b27;font-size:12px}
+  #detailView .epi-scope-note{font-size:12px;color:#624b27}
+  #detailView .epi-id-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:11px}
+  #detailView .epi-id-item{min-width:0;border:1px solid #d5e1e9;border-radius:7px;padding:10px 9px;display:flex;flex-direction:column;gap:2px}
+  #detailView .epi-id-item code{font-size:11px;white-space:nowrap;color:#44576a}
+  #detailView .epi-compare-legend{display:flex;gap:18px;align-items:center;margin-bottom:13px;color:#34465a;font-size:12px}
+  #detailView .epi-compare-legend span{display:flex;align-items:center;gap:6px}
+  #detailView .epi-compare-legend i{height:10px;width:10px;border-radius:2px;display:inline-block}
+  #detailView .epi-double-bars{height:31px;display:flex;flex-direction:column;justify-content:space-evenly;background:transparent;gap:3px}
+  #detailView .epi-double-bars div{height:12px;border-radius:3px;min-width:0}
+  @media(max-width:680px){#detailView .epi-id-grid{grid-template-columns:repeat(2,minmax(0,1fr))}#detailView .epi-double-bars{height:29px}}
+</style>
+</head>
+<body>
+  <a class="skip-link" href="#app">ข้ามไปยังเนื้อหาหลัก</a>
+  <div class="utility"><div class="container"><span>ระบบสารสนเทศรายงานสาธารณสุขระดับพื้นที่ <strong>อำเภอสอง จังหวัดแพร่</strong></span><span class="tag">ต้นแบบ UI/UX</span></div></div>
+  <header class="masthead"><div class="container masthead-inner"><a class="brand" href="#" id="brandHome" aria-label="กลับหน้าแรกข้อมูลพื้นฐานอำเภอสอง"><span class="symbol" aria-hidden="true">S<span style="font-size:15px">+</span></span><span><strong>Song Health Data Center</strong><small>ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</small></span></a><div class="identity-right">ระบบรายงานสถิติและตัวชี้วัด<br><strong>District Health Information Portal</strong></div></div></header>
+  <nav class="menu" aria-label="เมนูหลัก"><div class="container menu-inner"><div class="nav-group"><button class="nav-link" id="navHome" type="button" aria-current="page">หน้าแรก</button><button class="nav-link" id="navReports" type="button">กลุ่มรายงานมาตรฐาน</button><button class="nav-link" id="navAbout" type="button">เกี่ยวกับต้นแบบ</button></div><span class="small">อำเภอสอง · จังหวัดแพร่</span></div></nav>
+
+  <main class="container main" id="app" tabindex="-1">
+
+    <section id="homeView" aria-labelledby="homeH1">
+      <div class="breadcrumbs"><span>หน้าแรก</span><span class="slash">/</span><span>ข้อมูลพื้นฐานอำเภอสอง</span></div>
+      <div class="overview-heading">
+        <div><div class="eyebrow">DISTRICT OVERVIEW <span></span> จังหวัดแพร่</div><h1 id="homeH1" tabindex="-1">ข้อมูลพื้นฐานอำเภอสอง</h1><p class="subline">ประชากร · เขตการปกครอง · คลังรายงานสุขภาพ</p></div>
+        <div class="data-status"><span class="status-pulse"></span> ข้อมูลประชากรจำลอง</div>
+      </div>
+
+      <section class="overview-summary" aria-label="สรุปประชากรและการปกครอง — ข้อมูลจำลอง">
+        <div class="summary-block summary-major"><div class="summary-label">ประชากรทั้งหมด</div><div class="summary-num" id="homeTotal">—</div><div class="summary-unit">คน</div></div>
+        <div class="summary-block"><div class="summary-label">ประชากรชาย</div><div class="summary-num" id="homeMale">—</div><div class="summary-unit">คน</div></div>
+        <div class="summary-block"><div class="summary-label">ประชากรหญิง</div><div class="summary-num" id="homeFemale">—</div><div class="summary-unit">คน</div></div>
+        <div class="summary-block"><div class="summary-label">เขตการปกครอง</div><div class="summary-num">8 <small>ตำบล</small></div><div class="summary-unit">อำเภอสอง · จังหวัดแพร่</div></div>
+      </section>
+
+      <div class="overview-main">
+        <section class="panel map-section" aria-labelledby="mapTitle">
+          <div class="panel-heading"><div><div class="section-eyebrow">DISTRICT MAP</div><h2 id="mapTitle">แผนที่เขตการปกครองอำเภอสอง</h2><p>ขอบเขตรายตำบล · รหัสอำเภอ 5406</p></div><button id="resetTambon" type="button" class="soft-button">↺ ดูภาพรวมอำเภอ</button></div>
+          <div class="map-stage leaflet-stage">
+            <div id="songLeafletMap" class="song-leaflet-map" role="region" aria-label="แผนที่ Leaflet สำหรับเลือกตำบลอำเภอสอง จังหวัดแพร่ หากแผนที่โหลดไม่ได้ใช้ปุ่มเลือกตำบลด้านข้าง"></div>
+            <div class="map-load-overlay" id="gisMapOverlay"><span class="map-loader" aria-hidden="true"></span><span id="gisMapLoadingText">กำลังโหลดแผนที่...</span></div>
+          </div>
+          <div class="map-meta-bar">
+            <span id="gisMapStatus" role="status" aria-live="polite">กำลังเชื่อมต่อข้อมูลขอบเขต GIS</span>
+            <button type="button" class="map-retry view-hidden" id="gisMapRetry">ลองโหลดอีกครั้ง</button>
+            <a id="gisMapSourceLink" href="https://pherportal.moph.go.th/arcgis/rest/services/MOPH_DATA/tambon/MapServer/0" target="_blank" rel="noopener noreferrer" aria-label="ดูแหล่งข้อมูล GIS (เปิดแท็บใหม่)">แหล่งขอบเขต GIS ↗</a>
+          </div>
+          <details id="gisDiagnostics" class="gis-diagnostics view-hidden"><summary>ดูสาเหตุการโหลดแผนที่ไม่สำเร็จ</summary><p id="gisDiagnosticText"></p></details>
+        </section>
+        <aside class="panel tambon-section" aria-labelledby="tambonTitle">
+          <div class="tambon-intro"><div class="section-eyebrow">SELECT AREA</div><h2 id="tambonTitle">เลือกตำบล</h2><p>เลือกชื่อตำบล หรือคลิกพื้นที่บนแผนที่</p></div>
+          <div class="area-selector" id="tambonList" role="group" aria-label="เลือกพื้นที่ตำบล"></div>
+          <div class="selected-details"><div class="selected-kicker">ข้อมูลพื้นที่ที่เลือก</div><h3 id="selectedName" tabindex="-1">ภาพรวมอำเภอสอง</h3><p id="selectedType">เขตการปกครองอำเภอสอง จังหวัดแพร่</p><div class="selected-detail-row"><span>ประชากรทั้งหมด</span><strong id="selectedPop">—</strong></div><div class="selected-detail-row"><span>ชาย / หญิง</span><strong id="selectedMF">—</strong></div><div class="selected-detail-row"><span>จำนวนครัวเรือน</span><strong id="selectedHouseholds">—</strong></div><p id="tambonAnnouncer" class="sr-only" role="status" aria-live="polite" aria-atomic="true"></p></div>
+        </aside>
+      </div>
+
+      <section class="panel population-panel" aria-labelledby="populationTitle">
+        <div class="panel-heading"><div><div class="section-eyebrow">DEMOGRAPHIC PROFILE</div><h2 id="populationTitle">ข้อมูลประชากรแยกรายตำบล</h2><p>ประชากรแยกชาย หญิง และครัวเรือน</p></div><div class="dataset-source">ข้อมูลจำลอง · 2569</div></div>
+        <div class="table-scroll desktop-population"><table class="population-table"><caption class="sr-only">ข้อมูลประชากรจำลองแยกรายตำบล ชาย หญิง รวม และครัวเรือน</caption><thead><tr><th scope="col" style="width:65px">ลำดับ</th><th scope="col">ตำบล</th><th scope="col" class="align-right">ชาย (คน)</th><th scope="col" class="align-right">หญิง (คน)</th><th scope="col" class="align-right">รวม (คน)</th><th scope="col" class="align-right">ครัวเรือน</th><th scope="col" style="width:100px" class="align-center">เลือกพื้นที่</th></tr></thead><tbody id="popTableRows"></tbody><tfoot id="popTableFoot"></tfoot></table></div>
+        <div class="mobile-population" id="mobilePopulation" role="region" aria-label="ข้อมูลประชากรแยกรายตำบลสำหรับหน้าจอมือถือ"></div><div class="table-bottom">ข้อมูลประชากรสมมติ · ไม่ใช่สถิติทางการ</div>
+      </section>
+
+      <section class="home-reports" aria-labelledby="quickReportsTitle"><div class="home-report-heading"><div><div class="section-eyebrow">HEALTH INFORMATION LIBRARY</div><h2 id="quickReportsTitle">เข้าสู่หมวดรายงานสุขภาพ</h2><p>ค้นหารายงานมาตรฐานและตัวชี้วัดตามหมวดงานสาธารณสุข</p></div><button type="button" class="outline-action" id="homeAllReports">ดูรายงานทั้งหมด <span aria-hidden="true">↗</span></button></div><div class="home-report-grid" id="quickCategories"></div></section>
+
+      <section class="data-disclaimer" id="aboutData" aria-labelledby="aboutDataTitle" tabindex="-1"><h2 id="aboutDataTitle">ที่มาของข้อมูล</h2><span>แผนที่ขอบเขต: <a href="https://pherportal.moph.go.th/arcgis/rest/services/MOPH_DATA/tambon/MapServer/0" target="_blank" rel="noopener noreferrer">MOPH GIS</a> (สำรอง ปภ. / GISTDA) · ประชากรและรายงาน: ข้อมูลจำลองสำหรับออกแบบ ยังไม่ใช่ข้อมูล HDC จริง</span></section>
+    </section>
+    <section id="catalogView" class="view-hidden catalog-review" aria-labelledby="catalogH1">
+      <nav class="breadcrumbs" aria-label="ตำแหน่งปัจจุบัน"><button type="button" id="catalogBreadcrumbHome" class="catalog-breadcrumb-home">หน้าแรก</button><span class="slash">/</span><span aria-current="page">หมวดรายงาน</span></nav>
+      <div class="heading-row catalog-heading">
+        <div><h1 id="catalogH1" tabindex="-1">หมวดรายงานสุขภาพ</h1>
+          <p class="subline">ค้นหาและเลือกรายงานสถิติสาธารณสุขอำเภอสอง จังหวัดแพร่</p></div>
+        <span class="catalog-demo-chip">ข้อมูลตัวอย่าง</span>
+      </div>
+      <div class="layout catalog-layout">
+        <aside class="panel sidebar catalog-sidebar" aria-label="กรองตามหมวดรายงาน">
+          <div class="side-title">หมวดรายงาน <span class="sidebar-mini">6 หมวด</span></div>
+          <div class="category-list" id="categories" role="group" aria-label="เลือกหมวดรายงาน"></div>
+        </aside>
+        <section class="panel catalog-content" aria-labelledby="catalogSectionTitle">
+          <div class="section-top catalog-top">
+            <div class="section-title">
+              <h2 id="catalogSectionTitle" tabindex="-1">รายงานทั้งหมด</h2>
+              <span id="resultCount" class="countline" role="status" aria-live="polite" aria-atomic="true">—</span>
+            </div>
+            <div class="search-tools catalog-toolbar">
+              <div class="catalog-search-field">
+                <label for="searchReports">ค้นหารายงาน</label>
+                <div class="search-box">
+                  <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="7"/><path d="M16 16l5 5"/></svg>
+                  <input type="search" id="searchReports" autocomplete="off" placeholder="ค้นหาชื่อรายงาน รหัส หรือคำสำคัญ" aria-describedby="resultCount" />
+                  <button id="clearSearch" class="catalog-clear" type="button" aria-label="ล้างคำค้นหา" hidden>✕</button>
+                </div>
+              </div>
+              <div class="catalog-page-size"><label for="pageSize">แสดงต่อหน้า</label><select id="pageSize"><option value="10">10 รายการ</option><option value="20">20 รายการ</option></select></div>
+            </div>
+            <div class="catalog-filter-status" id="filterStatus" hidden>
+              <span id="activeFilterText"></span><button type="button" id="resetCatalogFilters">ล้างตัวกรองทั้งหมด</button>
+            </div>
+          </div>
+          <div class="table-scroll catalog-results" id="catalogResults">
+            <table class="list-table catalog-table">
+              <caption class="sr-only">รายการรายงานตัวอย่าง เลือกเปิดเพื่อดูรายละเอียด</caption>
+              <thead><tr><th scope="col">ชื่อรายงาน / ตัวชี้วัด</th><th scope="col">หมวดรายงาน</th><th scope="col">เปิดดู</th></tr></thead>
+              <tbody id="catalogRows"></tbody>
+            </table>
+            <ul id="catalogMobileList" class="catalog-mobile-list" aria-label="รายการรายงาน"></ul>
+          </div>
+          <div class="catalog-no-results" id="emptySearch" hidden>
+            <div class="catalog-empty-icon" aria-hidden="true">⌕</div>
+            <h3>ไม่พบรายงานที่ตรงกับการค้นหา</h3>
+            <p>ลองเปลี่ยนคำค้นหาหรือเลือกหมวดอื่น</p>
+            <button type="button" id="emptyReset" class="catalog-reset">แสดงรายงานทั้งหมด</button>
+          </div>
+          <div class="pagination catalog-pagination" id="catalogPagination">
+            <span id="pageSummary">—</span>
+            <div class="pagination-controls"><button type="button" class="page-btn" id="prevPage">ก่อนหน้า</button><span id="pageLabel" aria-label="หน้าปัจจุบัน">1 / 1</span><button type="button" class="page-btn" id="nextPage">ถัดไป</button></div>
+          </div>
+        </section>
+      </div>
+    </section>
+    <section id="detailView" class="view-hidden report-detail-v3" aria-labelledby="detailTitle">
+  <nav class="breadcrumbs report-breadcrumbs" aria-label="ลำดับหน้าของรายงาน">
+    <button type="button" id="crumbCatalog">หมวดรายงาน</button><span class="slash" aria-hidden="true">/</span>
+    <span id="crumbCat"></span><span class="slash" aria-hidden="true">/</span><span aria-current="page">รายละเอียดรายงาน</span>
+  </nav>
+  <button type="button" class="back report-back" id="backCatalog">← กลับไปยังรายการรายงาน</button>
+  <header class="detail-header report-hero">
+    <div class="report-hero-top"><span id="detailCode" class="report-id-tag"></span><span class="report-demo-tag">ข้อมูลตัวอย่าง</span></div>
+    <div class="report-category-name" id="detailCat"></div>
+    <h1 id="detailTitle" tabindex="-1"></h1>
+    <p class="report-lead" id="reportLead"></p>
+    <div class="report-hero-meta"><span id="reportModeLabel"></span><span>อำเภอสอง · จังหวัดแพร่</span></div>
+  </header>
+  <div class="panel report-adaptive report-data-shell">
+    <section class="report-filter-wrap" aria-labelledby="reportFilterTitle">
+      <div class="report-filter-heading">
+        <div><h2 id="reportFilterTitle">ตัวกรองรายงาน</h2><p>เลือกเงื่อนไขที่ต้องการแล้วกดแสดงผล</p></div>
+        <span class="report-filter-info" id="reportFilterStatus" role="status" aria-live="polite"></span>
+      </div>
+      <form class="adaptive-form" id="reportFilters">
+        <div class="adaptive-fields" id="filterFields"></div>
+        <div class="report-filter-actions"><button class="primary" type="submit">แสดงผล</button><button class="tool-btn reset-filter" id="resetReportFilters" type="button">ล้างตัวกรอง</button></div>
+      </form>
+    </section>
+    <div class="report-content-top">
+      <div><h2 id="reportHeading" tabindex="-1">ผลรายงาน</h2><p id="reportSubheading"></p><p id="appliedFiltersText" class="applied-filters-note"></p></div>
+      <div class="report-actions"><button class="tool-btn" id="exportButton" type="button">↓ ดาวน์โหลด CSV</button><button class="tool-btn" id="printButton" type="button">พิมพ์รายงาน</button></div>
+    </div>
+    <div id="reportAnnounce" class="sr-only" aria-live="polite" aria-atomic="true"></div>
+    <div id="reportContent" class="adaptive-content"></div>
+    <section class="report-method-section" aria-labelledby="reportMethodTitle">
+      <div class="report-method-top"><h2 id="reportMethodTitle">เกี่ยวกับรายงานนี้</h2><span>นิยาม · แหล่งข้อมูล · ข้อจำกัด</span></div>
+      <div class="report-accordion-grid">
+        <details class="report-info-detail"><summary>นิยามและวิธีอ่านข้อมูล</summary><p id="definitionText"></p></details>
+        <details class="report-info-detail"><summary>แหล่งข้อมูลและข้อจำกัด</summary><p>ข้อมูลทั้งหมดในหน้านี้เป็นข้อมูลสมมติสำหรับทดสอบ UX/UI ไม่ใช่สถิติจริงของ HDC หรือ MOPH Open Data</p><p>เมื่อเชื่อมต่อข้อมูลจริง ต้องแสดงแหล่งข้อมูล ช่วงเวลา รุ่นนิยาม สถานะเผยแพร่ และวันที่ต้นทางปรับปรุงตามที่ตรวจสอบได้</p></details>
+      </div>
+    </section>
+  </div>
+  <section class="related-reports" aria-labelledby="relatedReportTitle">
+    <div class="related-title-row"><div><h2 id="relatedReportTitle">รายงานที่เกี่ยวข้อง</h2><p>รายงานอื่นในหมวดเดียวกัน</p></div><button class="related-all" type="button" id="relatedBackCatalog">ดูรายงานทั้งหมด <span aria-hidden="true">→</span></button></div>
+    <ul class="related-list" id="detailShowcaseGrid"></ul>
+  </section>
+</section>
+  </main>
+  <footer class="footer"><div class="container"><span>Song Health Data Center · ต้นแบบข้อมูลพื้นฐานและคลังรายงานระดับอำเภอ</span><span>ต้นแบบ UI/UX · ประชากรจำลอง · GIS ออนไลน์</span></div></footer>
+<script>
+(() => {
+ 'use strict';
+ const cats = [
+   {id:'all',label:'รายงานทั้งหมด'},
+   {id:'population',label:'ข้อมูลประชากรและสถานะสุขภาพ'},
+   {id:'ncd',label:'โรคไม่ติดต่อเรื้อรัง (NCD)'},
+   {id:'epi',label:'การสร้างเสริมภูมิคุ้มกันโรค'},
+   {id:'promotion',label:'งานส่งเสริมสุขภาพ'},
+   {id:'services',label:'การเข้าถึงบริการสุขภาพ'},
+   {id:'surveillance',label:'เฝ้าระวังและควบคุมโรค'}
+ ];
+ const reports = [
+  ['POP-01','จำนวนประชากรตามกลุ่มอายุและเพศ','ข้อมูลประชากรตามโครงสร้างช่วงวัย','population'],
+  ['POP-02','จำนวนผู้สูงอายุจำแนกตามกลุ่มอายุ','ข้อมูลพื้นฐานด้านประชากรผู้สูงอายุ','population'],
+  ['POP-03','อัตราการเกิดและอัตราตายตามทะเบียนพื้นที่','ภาพรวมสภาวะสุขภาพประชากร','population'],
+  ['NCD-01','ร้อยละผู้ป่วยเบาหวานที่ควบคุมระดับน้ำตาลได้','ตัวชี้วัดผลลัพธ์ในการดูแลผู้ป่วย NCD','ncd'],
+  ['NCD-02','ร้อยละผู้ป่วยความดันโลหิตสูงที่ควบคุมความดันได้','ตัวชี้วัดผลลัพธ์การควบคุมโรค','ncd'],
+  ['NCD-03','ร้อยละประชากรกลุ่มเป้าหมายที่ได้รับการคัดกรองเบาหวาน','บริการคัดกรองโรคไม่ติดต่อ','ncd'],
+  ['NCD-04','ร้อยละประชากรกลุ่มเป้าหมายที่ได้รับการคัดกรองความดันโลหิตสูง','บริการคัดกรองโรคไม่ติดต่อ','ncd'],
+  ['EPI-01','ความครอบคลุมวัคซีนครบตามเกณฑ์ — s_epi_complete','ตัวอย่างการจัดรายงานจาก Schema จริง · อายุ 1, 2, 3 และ 5 ปี','epi'],
+  ['EPI-02','ความครอบคลุมวัคซีน MMR ตามกลุ่มเป้าหมาย','รายงานการได้รับวัคซีน','epi'],
+  ['EPI-03','ความครอบคลุมวัคซีน DTP ตามกลุ่มเป้าหมาย','รายงานการได้รับวัคซีน','epi'],
+  ['HP-01','ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ตามเกณฑ์','งานอนามัยแม่และเด็ก','promotion'],
+  ['HP-02','ร้อยละเด็กปฐมวัยได้รับการประเมินพัฒนาการ','การเฝ้าระวังและส่งเสริมพัฒนาการเด็ก','promotion'],
+  ['HP-03','ร้อยละประชากรได้รับการตรวจสุขภาพช่องปาก','ส่งเสริมสุขภาพช่องปาก','promotion'],
+  ['SERV-01','จำนวนผู้รับบริการผู้ป่วยนอกจำแนกตามหน่วยบริการ','สถิติบริการผู้ป่วยนอก','services'],
+  ['SERV-02','การเข้าถึงบริการปฐมภูมิของประชากรในพื้นที่','สถิติการรับบริการสุขภาพ','services'],
+  ['SERV-03','จำนวนครั้งการรับบริการสุขภาพจำแนกตามสิทธิการรักษา','รายงานการใช้บริการ','services'],
+  ['SR-01','จำนวนเหตุการณ์เฝ้าระวังโรคติดต่อรายสัปดาห์','สถิติการเฝ้าระวังโรค','surveillance'],
+  ['SR-02','ร้อยละการดำเนินงานสอบสวนโรคตามกรอบเวลาตัวอย่าง','ตัวชี้วัดกระบวนการเฝ้าระวังโรค','surveillance']
+ ].map(([id,title,desc,category],i)=>({id,title,desc,category,index:i}));
+ const locations=['หน่วยบริการตัวอย่าง A','หน่วยบริการตัวอย่าง B','หน่วยบริการตัวอย่าง C','หน่วยบริการตัวอย่าง D','หน่วยบริการตัวอย่าง E','หน่วยบริการตัวอย่าง F'];
+ const areas=['บ้านหนุน','บ้านกลาง','ห้วยหม้าย','เตาปูน','หัวเมือง','สะเอียบ','แดนชุมพล','ทุ่งน้าว'];
+ const $=id=>document.getElementById(id);
+ const state={category:'all',q:'',page:1,pageSize:10,report:null,rows:[],applied:{},exportRows:[],catalogScrollY:0,epiData:[],epiRawPayload:null,epiAgeIds:{'1':'28dd2c7955ce926456240b2ff0100bde','2':'35f4a8d465e6e1edc05f3d8ab658c551','3':'d1fe173d08e959397adf34b1d77e88d7','5':'f033ab37c30201f73f142449d037028d'},epiImportMsg:'ยังไม่ได้นำเข้าข้อมูล',epiImportText:'',epiMonthRow:0};
+ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+ const labelFor=id=>(cats.find(c=>c.id===id)||cats[0]).label;
+ const getVisible=()=>reports.filter(r=>(state.category==='all'||r.category===state.category) && `${r.title} ${r.desc} ${r.id} ${labelFor(r.category)}`.toLocaleLowerCase('th').includes(state.q.toLocaleLowerCase('th')));
+ const fmt=n=>Number(n).toLocaleString('th-TH');
+ function renderCats(){
+  const nav=$('categories'),previousScroll=nav.scrollLeft;
+  nav.innerHTML=cats.map(c=>{
+    const count=c.id==='all'?reports.length:reports.filter(r=>r.category===c.id).length;
+    return `<button class="category ${state.category===c.id?'active':''}" type="button" data-category="${c.id}" aria-pressed="${state.category===c.id}"><span>${esc(c.label)}</span><span class="category-count" aria-label="${count} รายงาน">${count}</span></button>`;
+  }).join('');
+  nav.scrollLeft=previousScroll;
+ }
+ function reportKind(r){
+  if(r.id==='POP-03')return 'vital';
+  if(r.id==='NCD-03'||r.id==='NCD-04')return 'screening';
+  if(r.id==='SR-02')return 'process';
+  if(r.id==='SERV-03')return 'insurance';
+  return r.category==='population'?'population':r.category==='epi'?'epi':r.category==='ncd'?'ncd':r.category==='surveillance'?'surveillance':r.category==='services'?'services':'promotion';
+ }
+  function renderDetailShowcase(){
+    const list=reports.filter(r=>r.category===state.report.category && r.id!==state.report.id).slice(0,3);
+    $('detailShowcaseGrid').innerHTML=list.map(r=>`<li class="related-item"><button type="button" data-demo-report="${esc(r.id)}" aria-label="เปิดรายงาน ${esc(r.title)}"><span class="related-code">${esc(r.id)}</span><span class="related-item-text"><strong>${esc(r.title)}</strong><small>${esc(r.desc)}</small></span><span class="related-arrow" aria-hidden="true">→</span></button></li>`).join('');
+    $('detailShowcaseGrid').hidden=list.length===0;
+  }
+ const kindLabels={population:'โครงสร้างประชากร',epi:'เปรียบเทียบความครอบคลุม',ncd:'แนวโน้มตามเวลา',surveillance:'กราฟระบาดวิทยา',services:'ตารางการให้บริการ',promotion:'ข้อมูลเป้าหมายและผลการดำเนินงาน',vital:'อัตราเกิดและอัตราตาย',screening:'การคัดกรองตามพื้นที่',process:'ตารางตัวชี้วัดกระบวนการ',insurance:'สถิติจำแนกสิทธิการรักษา'};
+ function renderCatalog(){
+  renderCats();
+  const all=getVisible(),total=all.length,pages=Math.max(1,Math.ceil(total/state.pageSize));
+  state.page=Math.max(1,Math.min(state.page,pages));
+  const offset=(state.page-1)*state.pageSize,items=all.slice(offset,offset+state.pageSize);
+  $('catalogRows').innerHTML=items.map(r=>`<tr>
+    <td><span class="rc-num">${esc(r.id)}</span><span class="rtitle">${esc(r.title)}</span><div class="rdesc">${esc(r.desc)}</div></td>
+    <td><span class="cat-name">${esc(labelFor(r.category))}</span></td>
+    <td><button class="link-btn" type="button" data-report="${r.id}" aria-label="เปิดรายงาน ${esc(r.title)}">เปิดรายงาน <span aria-hidden="true">→</span></button></td>
+  </tr>`).join('');
+  // Mobile has its own accessible list, avoiding CSS changes to native table semantics.
+  // Both views share exactly the same filtered/paginated items and one open action per item.
+  $('catalogMobileList').innerHTML=items.map(r=>`<li class="catalog-mobile-item">
+    <span class="rc-num">${esc(r.id)}</span>
+    <span class="rtitle">${esc(r.title)}</span>
+    <p class="rdesc">${esc(r.desc)}</p>
+    <div class="catalog-mobile-meta"><span class="cat-name">${esc(labelFor(r.category))}</span>
+      <button type="button" class="link-btn" data-report="${r.id}" aria-label="เปิดรายงาน ${esc(r.title)}">เปิดรายงาน <span aria-hidden="true">→</span></button>
+    </div>
+  </li>`).join('');
+  const empty=total===0;
+  $('catalogResults').hidden=empty;$('emptySearch').hidden=!empty;$('catalogPagination').hidden=empty;
+  $('catalogSectionTitle').textContent=labelFor(state.category);
+  $('resultCount').textContent=`${fmt(total)} รายงาน`;
+  $('pageSummary').textContent=total?`แสดง ${fmt(offset+1)}–${fmt(Math.min(total,offset+state.pageSize))} จาก ${fmt(total)} รายงาน`:'';
+  $('pageLabel').textContent=`${state.page} / ${pages}`;
+  $('prevPage').disabled=state.page===1;
+  $('nextPage').disabled=state.page>=pages;
+  $('clearSearch').hidden=!state.q;
+  const filtered=state.category!=='all'||!!state.q;
+  $('filterStatus').hidden=!filtered;
+  if(filtered){
+    const bits=[];
+    if(state.category!=='all')bits.push(labelFor(state.category));
+    if(state.q)bits.push('ค้นหา: “'+state.q+'”');
+    $('activeFilterText').textContent=bits.join(' · ');
+  }
+ }
+ function showCatalog(category){
+  const previousReport=$('detailView').classList.contains('view-hidden')?null:state.report?.id;
+  if(category){state.category=category;state.page=1;state.q='';$('searchReports').value='';}
+  $('catalogView').classList.remove('view-hidden');$('detailView').classList.add('view-hidden');$('homeView').classList.add('view-hidden');
+  $('navReports').setAttribute('aria-current','page');$('navHome').removeAttribute('aria-current');
+  renderCatalog();document.title='Song Health Data Center | หมวดรายงานสุขภาพ (ต้นแบบ)';
+  window.scrollTo({top:previousReport&&!category?(state.catalogScrollY||0):0,behavior:'auto'});
+  if(previousReport&&!category){
+    const list=window.matchMedia('(max-width:700px)').matches?$('catalogMobileList'):$('catalogRows');
+    const returnTo=list.querySelector('[data-report="'+previousReport+'"]');
+    (returnTo||$('catalogH1')).focus({preventScroll:true});
+  }
+  if(category&&window.matchMedia('(max-width:700px)').matches){
+    const nav=$('categories'),active=nav.querySelector('.active');
+    if(active){const left=active.getBoundingClientRect().left-nav.getBoundingClientRect().left+nav.scrollLeft;nav.scrollLeft=Math.max(0,left-nav.clientWidth/2+active.offsetWidth/2)}
+  }
+  // A new catalog navigation announces its heading; returning from a report
+  // above instead restores focus to the exact report action.
+  if(category || !previousReport) $('catalogH1').focus({preventScroll:true});
+ }
+ function resetCatalog(){
+  state.category='all';state.q='';state.page=1;$('searchReports').value='';renderCatalog();
+  $('searchReports').focus({preventScroll:true});
+ }
+ function catalogPageChanged(){
+  renderCatalog();
+  $('catalogSectionTitle').scrollIntoView({behavior:'auto',block:'start'});
+  $('catalogSectionTitle').focus({preventScroll:true});
+ }
+ function makeField(id,label,options){return `<div class="field"><label for="${id}">${esc(label)}</label><select name="${id}" id="${id}">${options.map(x=>`<option value="${esc(x[0])}">${esc(x[1])}</option>`).join('')}</select></div>`}
+ const fyOptions=[['2569','2569'],['2568','2568'],['2567','2567']];
+ const tbOptions=[['all','ทั้งอำเภอสอง'],...areas.map((s,i)=>[String(i),`ตำบล${s}`])];
+ function configureFilters(r){
+  const kind=reportKind(r);let f='';
+  if(kind==='population') f=makeField('year','ปีข้อมูล',[['2569','2569'],['2568','2568']])+makeField('tambon','พื้นที่',tbOptions)+(r.id==='POP-01'?makeField('ageScope','ช่วงอายุ',[['all','ทุกช่วงอายุ'],['elderly','60 ปีขึ้นไป']]):'');
+  if(kind==='epi') f=r.id==='EPI-01'?(makeField('fy','ปีข้อมูล (b_year)',[['2569','2569'],['2568','2568'],['2567','2567'],['2566','2566'],['2565','2565'],['2564','2564'],['2563','2563'],['2562','2562'],['2561','2561'],['2560','2560'],['2559','2559'],['2558','2558'],['2557','2557'],['2556','2556'],['2555','2555'],['2554','2554'],['2553','2553'],['2552','2552'],['2548','2548'],['2547','2547']])+makeField('ageGroup','อายุเด็กครบ (จับคู่กับ id)',[['1','1 ปี'],['2','2 ปี'],['3','3 ปี'],['5','5 ปี']])+makeField('epiView','มุมมอง',[['area','รายการเรียงตามพื้นที่'],['hospital','รายการเรียงตามหน่วยบริการ'],['monthly','แนวโน้มรายเดือน (หนึ่งแถว)']])+makeField('epiArea','ตำบล (จาก areacode)',[['all','ทุกตำบล'],...areas.map((a,i)=>['5406'+String(i+1).padStart(2,'0'),'ตำบล'+a])])+makeField('epiHosp','หน่วยบริการ (hospcode)',[['all','ทุกหน่วยบริการ'],...Array.from(new Set(state.epiData.filter(r=>r.areacode.startsWith('5406')).map(r=>r.hospcode).filter(x=>x&&x.length===5))).sort().map(x=>[x,x])])):(makeField('fy','ปีงบประมาณ',fyOptions)+makeField('compare','แสดงระดับ',[['subdistrict','รายตำบล'],['facility','รายหน่วยบริการ']]));
+  if(kind==='ncd') f=makeField('fy','ปีสิ้นสุดข้อมูลแนวโน้ม',fyOptions)+makeField('tambon','พื้นที่',tbOptions);
+  if(kind==='surveillance') f=makeField('fy','ปีรายงาน',fyOptions)+makeField('disease','กลุ่มเฝ้าระวัง',[['dengue','ไข้เลือดออก (จำลอง)'],['flu','ไข้หวัดใหญ่ (จำลอง)']])+makeField('season','ช่วงรายงาน',[['h1','สัปดาห์ 1–12'],['h2','สัปดาห์ 13–24']]);
+  if(kind==='services') f=makeField('fy','ปีงบประมาณ',fyOptions)+makeField('period','ช่วงเวลา',[['year','ทั้งปี'],['q1','ไตรมาส 1'],['q2','ไตรมาส 2']]);
+  if(kind==='promotion') f=makeField('fy','ปีงบประมาณ',fyOptions)+makeField('period','ช่วงเวลา',[['year','ทั้งปี'],['q1','ไตรมาส 1'],['q2','ไตรมาส 2']])+makeField('tambon','พื้นที่',tbOptions);
+  if(kind==='vital') f=makeField('fy','ปีข้อมูลล่าสุด',fyOptions)+makeField('tambon','พื้นที่',tbOptions);
+  if(kind==='screening') f=makeField('fy','ปีงบประมาณ',fyOptions)+makeField('tambon','พื้นที่',tbOptions);
+  if(kind==='process') f=makeField('fy','ปีงบประมาณ',fyOptions)+makeField('period','ช่วงเวลา',[['year','ทั้งปี'],['q1','ไตรมาส 1']]);
+  if(kind==='insurance') f=makeField('fy','ปีงบประมาณ',fyOptions)+makeField('period','ช่วงเวลา',[['year','ทั้งปี'],['q1','ไตรมาส 1']]);
+  $('filterFields').innerHTML=f;
+ 
+ 
+ 
+ 
+ }
+ function showReport(id){
+  const r=reports.find(x=>x.id===id);if(!r)return;
+  // Remember the catalog position only when entering a report from its list.
+  // Related Reports must not overwrite the original catalog return position.
+  if(!$('catalogView').classList.contains('view-hidden'))state.catalogScrollY=window.scrollY;
+  state.report=r;$('detailView').classList.remove('view-hidden');$('catalogView').classList.add('view-hidden');$('homeView').classList.add('view-hidden');
+  $('crumbCat').textContent=labelFor(r.category);$('detailCat').textContent=labelFor(r.category);
+  $('detailTitle').textContent=r.title;$('detailCode').textContent=`รหัสรายงาน: ${r.id}`;
+  $('reportLead').textContent=r.desc;
+  $('reportModeLabel').textContent=kindLabels[reportKind(r)];
+  $('navReports').setAttribute('aria-current','page');$('navHome').removeAttribute('aria-current');
+   configureFilters(r);renderResult();markReportFiltersClean();renderDetailShowcase();document.title=`${r.title} | Song Health Data Center`;window.scrollTo(0,0);
+  // In-page prototype navigation: focus the new report's title rather than
+  // leaving keyboard focus on an element that just became hidden.
+  $('detailTitle').focus({preventScroll:true});
+ }
+ const sumRows=(rows,index)=>rows.reduce((n,r)=>n+r[index],0);
+ const fnum=n=>fmt(Math.round(n));
+ const pnum=n=>Number(n).toFixed(1)+'%';
+ const multiTable=(headers,rows,caption,cls='')=>`<div class="report-table-block"><p class="report-table-swipe" aria-hidden="true">← เลื่อนตารางเพื่อดูคอลัมน์เพิ่มเติม →</p><div class="table-scroll" role="region" tabindex="0" aria-label="${esc(caption)} (เลื่อนดูแนวนอนหากตารางกว้าง)"><table class="visual-table ${cls}"><caption class="sr-only">${esc(caption)}</caption><thead><tr>${headers.map(h=>`<th scope="col">${esc(h)}</th>`).join('')}</tr></thead><tbody>${rows.map(r=>`<tr>${r.map((c,i)=>i===0?`<th scope="row">${esc(c)}</th>`:`<td>${typeof c==='number'?fmt(c):esc(c)}</td>`).join('')}</tr>`).join('')}</tbody></table></div></div>`;
+ function surface(title,desc,content,extra=''){return `<section class="surface ${extra}"><h3 class="surface-title">${esc(title)}</h3>${desc?`<p class="surface-desc">${esc(desc)}</p>`:''}${content}</section>`}
+ function detailTable(title,headers,rows){return `<details class="report-disclosure"><summary>${esc(title)} (${rows.length} รายการ)</summary><div>${multiTable(headers,rows,title)}</div></details>`}
+ function renderPopulation(q){
+  const ages=['0–4','5–9','10–14','15–19','20–24','25–29','30–34','35–39','40–44','45–49','50–54','55–59','60–64','65–69','70–74','75–79','80+'];
+  const base=[137,145,149,148,144,158,169,184,195,207,215,227,221,181,144,107,83];
+  const sex=[145,138,142,151,147,154,160,176,188,204,224,231,236,199,171,129,106];
+  // Use the same synthetic district/tambon totals as the home page.
+  const source=q.tambon==='all'?whole:tambons[Number(q.tambon)];
+  const ratio=q.year==='2569'?1:.975;
+  function allocate(weights,total){const sum=weights.reduce((a,b)=>a+b,0);let used=0;return weights.map((w,i)=>{const v=i===weights.length-1?total-used:Math.round(w/sum*total);used+=v;return v})}
+  const male=allocate(base,Math.round(source.male*ratio)),female=allocate(sex,Math.round(source.female*ratio));
+  const rows=ages.map((a,i)=>({age:a,male:male[i],female:female[i],isElderly:i>=12})).filter(x=>q.ageScope==='all'||x.isElderly);
+  const totalMale=rows.reduce((s,r)=>s+r.male,0),totalFemale=rows.reduce((s,r)=>s+r.female,0),total=totalMale+totalFemale,highest=Math.max(...rows.flatMap(x=>[x.male,x.female]));
+  const bars=`<div class="legend-inline"><span><i style="background:#639d90"></i>ชาย</span><span><i style="background:#d0a87b"></i>หญิง</span><span>หน่วย: คน (สมมติ)</span></div><div class="pyramid-chart" role="img" aria-label="แผนภูมิประชากรจำลอง จำแนกชายและหญิงตามอายุ มีตารางข้อมูลประกอบ">${rows.slice().reverse().map(r=>`<div class="pyramid-bar left" title="ชาย ${r.age}: ${fmt(r.male)} คน"><span class="pyramid-fill" style="width:${(r.male/highest*100).toFixed(1)}%"></span></div><div class="pyramid-axis">${r.age}</div><div class="pyramid-bar" title="หญิง ${r.age}: ${fmt(r.female)} คน"><span class="pyramid-fill female" style="width:${(r.female/highest*100).toFixed(1)}%"></span></div>`).join('')}</div><div class="pyramid-footer"><span>← ชาย</span><span>ช่วงอายุ (ปี)</span><span>หญิง →</span></div>`;
+  const tbl=rows.map(r=>[r.age,r.male,r.female,r.male+r.female]);
+  state.exportRows=[['ช่วงอายุ','ชาย (คน)','หญิง (คน)','รวม (คน)'],...tbl];
+  $('definitionText').textContent='รายงานโครงสร้างประชากรแยกตามเพศและกลุ่มอายุ 5 ปี เน้นอ่านความแตกต่างของโครงสร้างวัย การนับประชากรตามทะเบียน/บริการสุขภาพต้องระบุแหล่งข้อมูลและนิยามชัดเจน';
+  $('reportHeading').textContent='โครงสร้างประชากรตามช่วงอายุและเพศ';$('reportSubheading').textContent=`พ.ศ. ${q.year} · ${q.tambon==='all'?'ภาพรวมอำเภอสอง':'ตำบล'+areas[Number(q.tambon)]}${state.report.id==='POP-02'?' · อายุ 60 ปีขึ้นไป':''} · ข้อมูลจำลอง`;
+  return `<div class="visual-grid">${surface('พีระมิดประชากร','กลุ่มอายุ 5 ปี · ชายและหญิง',bars)}<aside class="insight-panel"><div class="insight-eyebrow">DEMOGRAPHIC SUMMARY</div><div class="insight-value">${fmt(total)}</div><div class="insight-label">ประชากรในช่วงอายุที่เลือก (คน)</div><div class="insight-divider"></div><ul class="context-list"><li><span>ชาย</span><strong>${fmt(totalMale)} คน</strong></li><li><span>หญิง</span><strong>${fmt(totalFemale)} คน</strong></li><li><span>สัดส่วนหญิง</span><strong>${(totalFemale/total*100).toFixed(1)}%</strong></li><li><span>จำนวนช่วงอายุ</span><strong>${rows.length} กลุ่ม</strong></li></ul><p class="insight-info">กราฟเป็นมุมมองหลัก เพราะรูปทรงช่วยสะท้อนโครงสร้างประชากรได้ดีกว่าตารางตัวเลขล้วน</p></aside></div>${detailTable('เปิดตารางจำนวนประชากรตามกลุ่มอายุ',['ช่วงอายุ','ชาย (คน)','หญิง (คน)','รวม (คน)'],tbl)}<div class="callout-note">ขนาดแท่งและค่าทั้งหมดสร้างขึ้นจากข้อมูลจำลอง ไม่ใช่จำนวนประชากรจริงของอำเภอสอง</div>`;
+ }
+ // Schema-aware preview for s_epi_complete. Data stays in the user's browser.
+ // This prototype never fetches a protected/source API or guesses cohort mapping.
+ const epiFYMonths=[['10','ต.ค.'],['11','พ.ย.'],['12','ธ.ค.'],['01','ม.ค.'],['02','ก.พ.'],['03','มี.ค.'],['04','เม.ย.'],['05','พ.ค.'],['06','มิ.ย.'],['07','ก.ค.'],['08','ส.ค.'],['09','ก.ย.']];
+ function epiInteger(v){if(v===null||v===undefined||v==='')return null; if((typeof v!=='number'&&typeof v!=='string') || !/^\d+$/.test(String(v)))return null;const n=Number(v);return Number.isSafeInteger(n)&&n>=0?n:null;}
+ function epiRate(r,n='result',d='target'){const a=epiInteger(r[n]),b=epiInteger(r[d]);return a===null||b===null||b===0?null:a/b*100;}
+ function epiRawCode(v){return v===null||v===undefined?'':String(v).trim();}
+ function epiTambon(code){const x=epiRawCode(code);if(!/^5406\d{4}$/.test(x))return 'รหัสพื้นที่ '+x;const i=Number(x.slice(4,6))-1;return i>=0&&i<areas.length?'ตำบล'+areas[i]:'รหัสพื้นที่ '+x;}
+ function epiFormat(n){return n===null||n===undefined?'—':fmt(n);}
+ function epiPercent(n){return n===null?'—':n.toLocaleString('th-TH',{minimumFractionDigits:1,maximumFractionDigits:2})+'%';}
+ function epiDatasetRows(src){
+  if(Array.isArray(src))return src;
+  if(src&&typeof src==='object'){
+   for(const k of ['data','items','rows','results','result']){
+    if(Array.isArray(src[k]))return src[k];
+    if(src[k]&&typeof src[k]==='object'&&Array.isArray(src[k].data))return src[k].data;
+   }
+  }
+  throw new Error('ไม่พบอาร์เรย์ข้อมูล กรุณานำเข้า JSON Array หรือ {data:[...]}');
+ }
+ const EPI_REPORT_IDS={
+  '1':'28dd2c7955ce926456240b2ff0100bde',
+  '2':'35f4a8d465e6e1edc05f3d8ab658c551',
+  '3':'d1fe173d08e959397adf34b1d77e88d7',
+  '5':'f033ab37c30201f73f142449d037028d'
+ };
+ function epiImport(text){
+  const payload=JSON.parse(text);
+  let rows=epiDatasetRows(payload);
+  if(rows.length>30000)throw new Error('จำนวนรายการเกินขีดจำกัดของต้นแบบ');
+  const required=['id','hospcode','areacode','b_year','target','result',...epiFYMonths.flatMap(([m])=>['target'+m,'result'+m])];
+  const errors=[],warnings=[];
+  rows=rows.map((raw,i)=>{
+    if(!raw||typeof raw!=='object'||Array.isArray(raw)){errors.push('แถว '+(i+1)+' ไม่ใช่ออบเจ็กต์');return null;}
+    const x={};for(const [k,v] of Object.entries(raw))x[k.toLowerCase()]=v;
+    const missing=required.filter(k=>!Object.prototype.hasOwnProperty.call(x,k));
+    if(missing.length){errors.push('แถว '+(i+1)+' ขาด '+missing.join(', '));return null;}
+    for(const k of ['id','hospcode','areacode','b_year','date_com'])x[k]=epiRawCode(x[k]);
+    if(!/^[a-f0-9]{32}$/i.test(x.id)||!/^\d{5}$/.test(x.hospcode)||!/^\d{8}$/.test(x.areacode)||!/^\d{4}$/.test(x.b_year)){
+      errors.push('รหัสแถว '+(i+1)+' ไม่ตรงรูปแบบที่ตรวจจากชุดข้อมูล');return null;
+    }
+    for(const k of ['target','result',...epiFYMonths.flatMap(([m])=>['target'+m,'result'+m])]){
+      if(x[k]!==null && epiInteger(x[k])===null){errors.push('ค่า '+k+' แถว '+(i+1)+' ไม่ใช่จำนวนเต็มไม่ติดลบ/ null');return null;}
+    }
+    if(x.target!==null&&x.result!==null&&x.result>x.target){errors.push('result มากกว่า target แถว '+(i+1));return null;}
+    for(const [m] of epiFYMonths)if(x['result'+m]!==null&&x['target'+m]!==null&&x['result'+m]>x['target'+m]){
+      errors.push('result'+m+' มากกว่า target'+m+' แถว '+(i+1));return null;
+    }
+    for(const k of ['target','result']){
+      if(x[k]!==null&&epiFYMonths.every(([m])=>x[k+m]!==null)){
+        const monthly=epiFYMonths.reduce((s,[m])=>s+x[k+m],0);
+        if(monthly!==x[k])warnings.push('แถว '+(i+1)+': '+k+' รวมไม่เท่าผลรายเดือน');
+      }
+    }
+    return x;
+  });
+  if(errors.length)throw new Error('Schema/Quality ไม่ผ่าน: '+errors.slice(0,3).join(' | '));
+  const n=payload&&typeof payload==='object'&&!Array.isArray(payload)&&/^(0|[1-9]\d*)$/.test(String(payload.total||''))?Number(payload.total):null;
+  const offset=payload&&Number.isSafeInteger(payload.offset)&&payload.offset>=0?payload.offset:null;
+  const limit=payload&&Number.isSafeInteger(payload.limit)&&payload.limit>0?payload.limit:null;
+  if(n!==null&&(rows.length>n||(offset!==null&&offset+rows.length>n)))warnings.push('ช่วงจำนวนรายการไม่สอดคล้อง total/offset');
+  const complete=n!==null&&offset===0&&rows.length===n;
+  state.epiRawPayload={total:n,offset,limit,complete,warnings:warnings.slice(0,20)};
+  state.epiData=rows;
+  state.epiAgeIds={...EPI_REPORT_IDS};
+  state.epiMonthRow=0;
+  state.epiImportText='';
+  state.epiImportMsg='อ่าน JSON สำเร็จ '+fmt(rows.length)+' รายการ · '+(complete?'จำนวนครบตาม total ที่ API ระบุ':'ข้อมูลบางส่วนหรือยังไม่ยืนยันจำนวนครบ');
+  return rows;
+ }
+ function epiCountChart(row){
+  const series=epiFYMonths.map(([m,label])=>({label,target:epiInteger(row['target'+m]),result:epiInteger(row['result'+m])}));
+  const W=800,H=278,L=44,R=16,T=18,B=55,pw=W-L-R,ph=H-T-B;
+  const max=Math.max(1,...series.flatMap(x=>[x.target||0,x.result||0]));
+  const grid=[0,.25,.5,.75,1].map(k=>{const val=max*k,y=T+ph*(1-k);return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#dae4eb"/><text x="${L-7}" y="${y+4}" text-anchor="end" fill="#516375">${val.toFixed(1).replace(/\.0$/,'')}</text>`}).join('');
+  const step=pw/series.length,w=Math.min(23,step*.29);
+  const rects=series.map((p,i)=>{
+    const center=L+(i+.5)*step;
+    const a=p.target===null?'':`<rect x="${center-w-1}" y="${T+ph-p.target/max*ph}" width="${w}" height="${p.target/max*ph}" rx="2" fill="#1c476b"><title>${p.label} เป้าหมาย ${p.target} คน</title></rect>`;
+    const b=p.result===null?'':`<rect x="${center+1}" y="${T+ph-p.result/max*ph}" width="${w}" height="${p.result/max*ph}" rx="2" fill="#168a87"><title>${p.label} ได้รับครบ ${p.result} คน</title></rect>`;
+    return a+b+`<text x="${center}" y="${H-25}" text-anchor="middle" fill="#516375">${p.label}</text>`;
+  }).join('');
+  return `<div role="img" aria-label="กราฟแท่งเปรียบเทียบจำนวนเป้าหมายและได้รับวัคซีนครบแต่ละเดือนสำหรับข้อมูลหนึ่งแถว มีตารางค่าเดียวกันด้านล่าง"><svg class="trend-svg" viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet"><title>จำนวนเด็กเป้าหมายและได้รับครบรายเดือน ต.ค.–ก.ย. เฉพาะแถวที่เลือก</title>${grid}${rects}</svg></div><p class="small-caption"><span style="color:#1c476b;font-weight:700">■</span> เป้าหมาย (targetMM) &nbsp; <span style="color:#168a87;font-weight:700">■</span> ได้รับครบ (resultMM) · ไม่มีการรวมข้อมูลข้ามพื้นที่หรือหน่วยบริการ</p>`;
+ }
+ function epiRowComparison(rows,labelOf){
+  const selected=rows.slice(0,8);
+  const top=Math.max(1,...selected.map(r=>epiInteger(r.target)||0));
+  return `<div class="epi-compare-legend"><span><i style="background:#1c476b"></i>เป้าหมาย</span><span><i style="background:#168a87"></i>ได้รับครบ</span></div><div class="bar-comparison">${selected.map(r=>{
+    const t=epiInteger(r.target),v=epiInteger(r.result);const label=labelOf(r);
+    return `<div class="comparison-row"><span title="${esc(label)}">${esc(label)}</span><div class="epi-double-bars" aria-hidden="true"><div style="width:${t===null?0:t/top*100}%;background:#1c476b"></div><div style="width:${v===null?0:v/top*100}%;background:#168a87"></div></div><strong>${epiFormat(v)} / ${epiFormat(t)}</strong></div>`;
+  }).join('')}</div><p class="small-caption">แสดง ${selected.length} จาก ${rows.length} แถว ตามลำดับรหัส · ไม่ใช่ยอดรวมรายตำบล/หน่วยบริการ · ดูรหัสเต็มในตาราง</p>`;
+ }
+ function epiCoverageBanner(){
+  if(!state.epiData.length)return '';
+  const {total,offset,limit,complete,warnings}=state.epiRawPayload||{};
+  const inSong=state.epiData.filter(r=>r.areacode.startsWith('5406'));
+  const tb=[...new Set(inSong.map(r=>r.areacode.slice(0,6)))].sort();
+  const hosp=[...new Set(inSong.map(r=>r.hospcode))];
+  const scope=total===null?'จำนวนทั้งหมดจาก API ไม่ทราบ':`ข้อมูลที่โหลด ${fmt(state.epiData.length)} / ${fmt(total)} รายการ`;
+  const severity=complete?'พร้อมตรวจโครงสร้างครบจำนวน':'ข้อมูลยังไม่ครบสำหรับการสรุประดับอำเภอ';
+  return `<div class="epi-coverage" role="status"><div><strong>${esc(severity)}</strong><p>${esc(scope)}${offset!==null?' · offset '+fmt(offset):''}${limit!==null?' · limit '+fmt(limit):''} · พบแถวอำเภอสอง ${fmt(inSong.length)} รายการ จาก ${tb.length} รหัสตำบล และ ${hosp.length} รหัสหน่วยบริการ</p></div><p class="epi-scope-note">${complete?'จำนวนแถวครบตาม total แต่ยังต้องตรวจนิยาม การนับซ้ำ และความครบถ้วนของพื้นที่ก่อนรวมยอด':'ห้ามนำค่าในไฟล์บางส่วนไปสรุปเป็นร้อยละของอำเภอสอง หรือตีความว่าตำบลที่ยังไม่พบมีค่าเป็นศูนย์'}</p>${warnings?.length?`<p class="epi-scope-note">Quality note: ${esc(warnings.slice(0,2).join(' · '))}</p>`:''}</div>`;
+ }
+ function renderEpiCompletePrototype(q){
+  const age=['1','2','3','5'].includes(q.ageGroup)?q.ageGroup:'1';
+  const matchedId=state.epiAgeIds[age]||EPI_REPORT_IDS[age];
+  const ids=[...new Set(state.epiData.map(r=>r.id))].sort();
+  $('reportHeading').textContent=`ความครอบคลุมการได้รับวัคซีนครบตามเกณฑ์ในเด็กอายุครบ ${age} ปี`;
+  $('reportSubheading').textContent=`ปีข้อมูล ${q.fy} · ${q.epiView==='monthly'?'รายเดือน (แถวที่เลือก)':q.epiView==='hospital'?'เรียงตามหน่วยบริการ':'เรียงตามพื้นที่'} · MOPH Open Data / s_epi_complete`;
+  $('definitionText').textContent='Data Dictionary: target = จำนวนเด็กเป้าหมาย, result = จำนวนเด็กได้รับวัคซีนครบตามเกณฑ์ และ targetMM/resultMM = ค่ารายเดือนตามปีงบประมาณ ต.ค.–ก.ย. ฟิลด์ areacode เป็นรหัสพื้นที่ 8 หลัก (ตำบลคือ 6 หลักแรก), hospcode เป็นรหัสหน่วยบริการ 5 หลัก ID แยกเป็นรหัสรายงานกลุ่มอายุ 1,2,3,5 ปี โดยคำอธิบาย Data Dictionary ที่ได้รับระบุอายุ 1 ปีเป็นหลัก กลุ่มอื่นต้องตรวจนิยามจาก metadata แยกอีกครั้ง ค่ารายเดือนคือข้อมูลของแต่ละเดือน ไม่ใช่ cumulative หากรวมหลายแถวต้องตรวจความครบถ้วนและการซ้ำก่อน';
+  const importUi=`<section class="epi-import-panel" aria-label="นำเข้าข้อมูลสำหรับตัวอย่าง"><details ${state.epiData.length?'':'open'}><summary><strong>นำเข้า JSON Response</strong> <span>— ${esc(state.epiData.length?'โหลด '+fmt(state.epiData.length)+' แถว':'ยังไม่มีข้อมูล')}</span></summary><div class="epi-import-inner"><p>ใช้ไฟล์ JSON ที่ได้รับจาก <code>POST /api/report_data</code> หรือวางเนื้อหา Response ตรงนี้ ข้อมูลประมวลผลในเบราว์เซอร์ของคุณ ไม่ส่งข้อมูลกลับเซิร์ฟเวอร์</p><label for="epiJsonInput">JSON Response</label><textarea id="epiJsonInput" rows="5" spellcheck="false" placeholder='{"data":[{"id":"...","hospcode":"06413","areacode":"54060101","b_year":"2569","target":1,"result":1,"target10":0,"result10":0,...}],"total":"2444","limit":1000,"offset":0}'>${esc(state.epiImportText)}</textarea><div class="epi-import-actions"><button type="button" id="epiLoadJson" class="primary">ตรวจและแสดง JSON</button><label class="epi-upload"><span>เลือกไฟล์ .json / .txt</span><input type="file" id="epiJsonFile" accept=".json,.txt,application/json,text/plain"></label></div><p id="epiImportStatus" role="status">${esc(state.epiImportMsg)}</p></div></details></section>`;
+  const mapping=`<section class="surface epi-cohort"><h3 class="surface-title">รหัสรายงานของกลุ่มอายุ</h3><p class="surface-desc">ID เป็นรหัสรายงาน ไม่ใช่เลขอายุโดยตรง · รหัส 1 ปีมี metadata ที่ยืนยันแล้ว ส่วน 2/3/5 ปีควรตรวจชื่อรายงานอีกครั้งก่อนเผยแพร่</p><div class="epi-id-grid">${Object.entries(EPI_REPORT_IDS).map(([a,id])=>`<div class="epi-id-item"><strong>${a} ปี</strong><code>${esc(id.slice(0,9))}…</code></div>`).join('')}</div>${ids.length&&!ids.includes(matchedId)?`<p class="epi-scope-note">ไม่พบรหัส ${esc(matchedId)} ในข้อมูลหน้าที่โหลด (ไม่สรุปว่าไม่มีข้อมูล)</p>`:''}</section>`;
+  const footer=`<p class="small-caption">Source: <code>s_epi_complete</code> · id / areacode / hospcode / b_year / date_com / target / result และ 12 คู่รายเดือน · flag_sent และ ip เป็นฟิลด์เพิ่มเติมที่พบใน Response แต่ไม่ใช่ตัวชี้วัดสำหรับกราฟ</p>`;
+  state.exportRows=[];
+  if(!state.epiData.length)return importUi+mapping+`<div class="epi-empty"><strong>รอไฟล์ JSON เพื่อแสดงผลรายงาน</strong><p>จากไฟล์ตัวอย่างที่ตรวจครั้งนี้ API ระบุ total 2,444 แต่ไฟล์มี 1,000 แถว จึงต้องระวังการสรุปยอดทั้งอำเภอ</p></div>`+footer;
+  const status=epiCoverageBanner();
+  const rows=state.epiData.filter(r=>r.id===matchedId&&r.b_year===q.fy&&r.areacode.startsWith('5406')&&(q.epiArea==='all'||r.areacode.startsWith(q.epiArea))&&(q.epiHosp==='all'||r.hospcode===q.epiHosp));
+  if(!rows.length)return importUi+status+mapping+`<div class="epi-empty"><strong>ไม่พบแถวในส่วนข้อมูลที่นำเข้า</strong><p>เงื่อนไข: ปี ${esc(q.fy)} · กลุ่มอายุ ${age} ปี · เขต 5406 · ตำบล ${esc(q.epiArea||'all')} · หน่วย ${esc(q.epiHosp||'all')} · ไม่หมายถึงค่าศูนย์</p></div>`+footer;
+  const sorted=rows.slice().sort((a,b)=>q.epiView==='hospital'?(a.hospcode.localeCompare(b.hospcode)||a.areacode.localeCompare(b.areacode)):(a.areacode.localeCompare(b.areacode)||a.hospcode.localeCompare(b.hospcode)));
+  const duplicates=sorted.length-new Set(sorted.map(r=>`${r.b_year}|${r.id}|${r.areacode}|${r.hospcode}`)).size;
+  const metrics=`<div class="metric-grid"><div class="metric-item"><div class="metric-label">แถวตรงเงื่อนไข</div><div class="metric-value">${fmt(sorted.length)}</div><div class="metric-unit">ไม่ใช่จำนวนเด็ก</div></div><div class="metric-item"><div class="metric-label">รหัสพื้นที่ 8 หลัก</div><div class="metric-value">${fmt(new Set(sorted.map(r=>r.areacode)).size)}</div><div class="metric-unit">หมู่บ้าน/พื้นที่ย่อย</div></div><div class="metric-item"><div class="metric-label">หน่วยบริการที่พบ</div><div class="metric-value">${fmt(new Set(sorted.map(r=>r.hospcode)).size)}</div><div class="metric-unit">รหัส HOSPCODE</div></div></div>`;
+  const warning=duplicates?`<div class="callout-note">ตรวจพบแถวรหัสพื้นที่และหน่วยบริการซ้ำ ${fmt(duplicates)} คู่: ยังไม่รวมยอดอัตโนมัติ</div>`:'';
+  let output='';
+  if(q.epiView==='monthly'){
+    const i=Math.min(Math.max(0,state.epiMonthRow),sorted.length-1);state.epiMonthRow=i;
+    const selected=sorted[i];
+    const monthly=epiFYMonths.map(([m,label])=>[label,epiFormat(epiInteger(selected['target'+m])),epiFormat(epiInteger(selected['result'+m])),epiPercent(epiRate(selected,'result'+m,'target'+m))]);
+    state.exportRows=[['เดือน','targetMM','resultMM','ร้อยละต่อเดือน (เฉพาะแถว)'],...monthly];
+    const pick=`<div class="epi-month-choice"><label for="epiRowPick">เลือกแถวข้อมูล เพื่อดูรายเดือน</label><select id="epiRowPick">${sorted.slice(0,500).map((r,j)=>`<option value="${j}" ${j===i?'selected':''}>${esc(epiTambon(r.areacode))} · ${esc(r.areacode)} · HOSP ${esc(r.hospcode)}</option>`).join('')}</select></div>`;
+    output=pick+surface(`จำนวนเป้าหมายและได้รับวัคซีนครบ · แถวที่เลือก`,`AREACODE ${selected.areacode} · HOSPCODE ${selected.hospcode} · date_com ${esc(selected.date_com||'ไม่ทราบ')}`,epiCountChart(selected))+detailTable('รายละเอียด 12 เดือน',['เดือน','เป้าหมาย (คน)','ได้รับครบ (คน)','ร้อยละ'],monthly);
+  }else{
+    const labelOf=r=>q.epiView==='hospital'?`HOSP ${r.hospcode} · ${r.areacode}`:`${epiTambon(r.areacode)} · ${r.areacode.slice(6,8)} · ${r.hospcode}`;
+    const list=sorted.map(r=>[epiTambon(r.areacode),r.areacode,r.hospcode,epiFormat(epiInteger(r.target)),epiFormat(epiInteger(r.result)),epiPercent(epiRate(r))]);
+    state.exportRows=[['ตำบล (จาก prefix)','AREACODE','HOSPCODE','target','result','ร้อยละต่อแถว'],...list];
+    output=surface(q.epiView==='hospital'?'เปรียบเทียบแถวข้อมูลเรียงตามหน่วยบริการ':'เปรียบเทียบแถวข้อมูลเรียงตามพื้นที่','กราฟแสดงจำนวนเป้าหมายและได้รับครบต่อแถว ไม่ใช่ยอดรวมหรืออัตราของทั้งตำบล/หน่วยบริการ',epiRowComparison(sorted,labelOf))+detailTable('ตารางรายการจาก API (ไม่รวมยอดอัตโนมัติ)',['ตำบล','AREACODE','HOSPCODE','เป้าหมาย','ได้รับครบ','ร้อยละต่อแถว'],list);
+  }
+  return importUi+status+mapping+metrics+warning+output+footer;
+ }
+ function renderEpi(q){
+  const names=q.compare==='subdistrict'?areas:locations;
+  const vaccineShift={DTP:0,MMR:-5,BCG:4}[q.vaccine]||0;
+  const yearShift=(Number(q.fy)-2569)*2;
+  const rows=names.map((name,i)=>{const base=170+i*13;const n=Math.round(base*(.79+((i*7)%17)/100)+vaccineShift+yearShift);const numerator=Math.max(0,Math.min(base,n));return {name,numerator,denominator:base,rate:numerator/base*100}});
+  const totalN=rows.reduce((s,r)=>s+r.numerator,0),totalD=rows.reduce((s,r)=>s+r.denominator,0),rate=totalN/totalD*100;
+  const bars=`<div class="chart-key"><span><i></i>ความครอบคลุมตัวอย่าง</span><span><i class="target-key"></i>เกณฑ์สาธิต 90%</span></div><div class="bar-comparison">${rows.map(r=>`<div class="comparison-row"><span>${esc(r.name)}</span><div class="bar-track" title="${esc(r.name)} ${pnum(r.rate)}"><div class="bar-fill" style="width:${r.rate.toFixed(1)}%"></div><span class="target-line"></span></div><strong>${pnum(r.rate)}</strong></div>`).join('')}</div><p class="small-caption">เกณฑ์ 90% เป็นสมมติสำหรับหน้าตา UI ไม่ใช่เกณฑ์ตัวชี้วัดทางการ</p>`;
+  const tbl=rows.map(r=>[r.name,r.denominator,r.numerator,pnum(r.rate)]);
+  const dimension=q.compare==='facility'?'หน่วยบริการ':'ตำบล';
+  state.exportRows=[[dimension,'กลุ่มเป้าหมาย','ได้รับวัคซีน','ความครอบคลุม'],...tbl];
+  $('definitionText').textContent='รายงานวัคซีนแสดงการเปรียบเทียบตามพื้นที่หรือหน่วยบริการ พร้อมจำนวนกลุ่มเป้าหมายและจำนวนได้รับวัคซีน นิยามประชากรเป้าหมายและเงื่อนไขการได้รับวัคซีนต้องอ้างอิง Contract จริงเมื่อเชื่อม API';
+  $('reportHeading').textContent=q.compare==='facility'?'ความครอบคลุมวัคซีนรายหน่วยบริการ':'ความครอบคลุมวัคซีนรายตำบล';$('reportSubheading').textContent=`ปีงบประมาณ ${q.fy} · ${q.vaccine} · ${q.compare==='subdistrict'?'รายตำบล':'รายหน่วยบริการ'} · ข้อมูลจำลอง`;
+  return `<div class="metric-grid"><div class="metric-item"><div class="metric-label">ความครอบคลุมรวม (ตัวอย่าง)</div><div class="metric-value">${pnum(rate)}</div><div class="metric-unit">ร้อยละจากข้อมูลจำลอง</div></div><div class="metric-item"><div class="metric-label">กลุ่มเป้าหมาย</div><div class="metric-value">${fmt(totalD)}</div><div class="metric-unit">คน</div></div><div class="metric-item"><div class="metric-label">ได้รับวัคซีน</div><div class="metric-value">${fmt(totalN)}</div><div class="metric-unit">คน</div></div></div><div class="visual-grid visual-grid-balanced">${surface('เปรียบเทียบความครอบคลุม','กราฟแท่งแนวนอน เหมาะกับชื่อพื้นที่ภาษาไทย',bars)}${surface('ผลราย'+dimension,'ตารางตัวตั้ง ตัวหาร และค่าร้อยละ',multiTable([dimension,'เป้าหมาย','ได้รับ','ร้อยละ'],tbl,'ผลความครอบคลุมวัคซีนจำลองราย'+dimension))}</div><p class="small-caption">กราฟและตารางถูกแสดงพร้อมกันในรายงานนี้ เพราะกราฟใช้ดูความแตกต่าง ส่วนตารางใช้ตรวจตัวเลข</p>`;
+ }
+ function lineChart(values,labels){
+  const W=760,H=320,L=55,R=25,T=25,B=49, pw=W-L-R, ph=H-T-B, pts=values.map((v,i)=>[L+i*pw/(values.length-1),T+(100-v)/100*ph]);
+  const grids=[0,25,50,75,100].map(v=>{const y=T+(100-v)/100*ph;return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#e7eee9"/><text x="${L-12}" y="${y+4}" text-anchor="end">${v}</text>`}).join('');
+  const points=pts.map(p=>p.map(x=>x.toFixed(1)).join(',')).join(' ');
+  const targetY=T+(100-75)/100*ph;
+  return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟแนวโน้มร้อยละจำลองรายปี มีตารางข้อมูลประกอบ"><title>แนวโน้มผลลัพธ์ NCD — ตัวเลขสมมติ</title>${grids}<line x1="${L}" y1="${targetY}" x2="${W-R}" y2="${targetY}" stroke="#c7a36f" stroke-dasharray="7 6" stroke-width="2"/><polyline fill="none" stroke="#357f70" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" points="${points}"/>${pts.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="5" fill="#fff" stroke="#357f70" stroke-width="3"><title>ปี ${labels[i]}: ${pnum(values[i])}</title></circle><text x="${p[0]}" y="${H-17}" text-anchor="middle">${labels[i]}</text>`).join('')}</svg>`;
+ }
+ function renderNCD(q){
+  const end=Number(q.fy),years=Array.from({length:6},(_,i)=>end-5+i);const base=q.condition==='ht'?57:48;const areaShift=q.tambon==='all'?0:(Number(q.tambon)%5-2)*1.4;
+  const values=years.map(y=>Math.round((base+(y-2564)*3.15+Math.sin((y-2564+1)*1.45)*2+areaShift)*10)/10);
+  const tbl=years.map((year,i)=>[String(year),pnum(values[i])]);
+  state.exportRows=[['ปีงบประมาณ','ร้อยละ'],...tbl];
+  $('definitionText').textContent='รายงาน NCD เน้นแสดงการเปลี่ยนแปลงตามปี ไม่ใช้ตารางยาวเป็นมุมมองหลัก ค่าเป้าหมายและสูตรจริงต้องตรวจจากรายงานต้นทาง และห้ามเปรียบเทียบคนละนิยามโดยไม่ระบุข้อจำกัด';
+  $('reportHeading').textContent='แนวโน้มผลลัพธ์การดูแลผู้ป่วย NCD';$('reportSubheading').textContent=`${q.condition==='ht'?'ความดันโลหิตสูง':'เบาหวาน'} · ปีงบประมาณ ${years[0]}–${end} · ${q.tambon==='all'?'ทั้งอำเภอ':'ตำบล'+areas[Number(q.tambon)]} · ข้อมูลจำลอง`;
+  const diff=values.at(-1)-values[0];
+  return `<div class="visual-grid">${surface('แนวโน้มย้อนหลัง 6 ปี','แสดงร้อยละตามช่วงเวลาและเส้นเกณฑ์ตัวอย่าง 75%',`<div class="chart-key"><span><i></i>ผลรายปี</span><span><i class="target-key"></i>เกณฑ์สาธิต 75%</span></div>${lineChart(values,years)}<p class="small-caption">เส้นเกณฑ์เป็นข้อมูลสมมติสำหรับแสดง UI เท่านั้น</p>`)}<aside class="insight-panel"><div class="insight-eyebrow">TREND INSIGHT</div><div class="insight-value">${pnum(values.at(-1))}</div><div class="insight-label">ปีงบประมาณ ${end} (ข้อมูลสมมติ)</div><div class="insight-divider"></div><ul class="context-list"><li><span>ปีเริ่มต้น</span><strong>${pnum(values[0])}</strong></li><li><span>ผลต่าง 6 ปี</span><strong>${diff>=0?'+':''}${diff.toFixed(1)} จุดร้อยละ</strong></li><li><span>จำนวนปี</span><strong>6 ปี</strong></li></ul><p class="insight-info">กราฟแนวโน้มอยู่เป็นส่วนหลัก และเปิดตารางรายละเอียดเพิ่มได้เมื่อจำเป็น</p></aside></div>${detailTable('เปิดข้อมูลตัวเลขรายปี',['ปีงบประมาณ','ผลลัพธ์ (ร้อยละ)'],tbl)}`;
+ }
+ function epiChart(vals,labels){
+  const W=760,H=325,L=58,R=25,T=22,B=54,pw=W-L-R,ph=H-T-B,max=Math.ceil(Math.max(...vals,5)/5)*5;
+  const grid=Array.from({length:5},(_,i)=>{const val=Math.round(max/4*i);const y=T+(max-val)/max*ph;return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#e7eee9"/><text x="${L-12}" y="${y+4}" text-anchor="end">${val}</text>`}).join('');
+  const step=pw/vals.length,w=step*.6;
+  return `<svg class="epicurve-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Epidemic Curve จำลอง แสดงจำนวนเหตุการณ์รายสัปดาห์ มีตารางรายละเอียดประกอบ"><title>เหตุการณ์เฝ้าระวังรายสัปดาห์ (ตัวเลขจำลอง)</title>${grid}${vals.map((v,i)=>{const h=v/max*ph,x=L+i*step+step*.2,y=T+ph-h;return `<rect x="${x}" y="${y}" width="${w}" height="${h}" rx="2" fill="${i===Math.floor(vals.length/2)?'#2b7869':'#7bb1a1'}"><title>สัปดาห์ ${labels[i]}: ${v} เหตุการณ์</title></rect><text x="${x+w/2}" y="${H-21}" text-anchor="middle">${labels[i]}</text>`}).join('')}</svg>`;
+ }
+ function renderSurveillance(q){
+  const start=q.season==='h1'?1:13,lab=Array.from({length:12},(_,i)=>start+i);
+  const offset=q.disease==='flu'?3:0;
+  const vals=lab.map((w,i)=>Math.round(2+(1.5+7*Math.exp(-Math.pow((i-(q.disease==='flu'?7:5))/2.5,2)))+(i*7+Number(q.fy)+offset)%4));
+  const total=vals.reduce((s,v)=>s+v,0),peak=Math.max(...vals),idx=vals.indexOf(peak),tbl=lab.map((n,i)=>['สัปดาห์ '+n,vals[i]]);
+  state.exportRows=[['สัปดาห์','เหตุการณ์ (จำลอง)'],...tbl];
+  $('definitionText').textContent='รายงานเฝ้าระวังโรคเน้นจำนวนเหตุการณ์ตามสัปดาห์เพื่อสังเกตรูปแบบการกระจายตามเวลา ข้อมูลตัวอย่างไม่ได้แทนจำนวนผู้ป่วยจริง และยังไม่ใช่การวิเคราะห์ทางระบาดวิทยาที่ได้รับการรับรอง';
+  $('reportHeading').textContent='การกระจายเหตุการณ์เฝ้าระวังรายสัปดาห์';$('reportSubheading').textContent=`${q.disease==='flu'?'ไข้หวัดใหญ่':'ไข้เลือดออก'} · ปี ${q.fy} · สัปดาห์ ${start}–${start+11} · ข้อมูลจำลอง`;
+  return `<div class="visual-grid">${surface('Epidemic Curve — รายสัปดาห์','หนึ่งแท่งแทนจำนวนเหตุการณ์หนึ่งสัปดาห์',`${epiChart(vals,lab)}<p class="small-caption">แกนตั้ง: จำนวนเหตุการณ์ (จำลอง) · แกนนอน: สัปดาห์ของปี</p>`)}<aside class="insight-panel"><div class="insight-eyebrow">SURVEILLANCE SNAPSHOT</div><div class="insight-value">${fmt(total)}</div><div class="insight-label">เหตุการณ์รวมในช่วงเวลา (สมมติ)</div><div class="insight-divider"></div><ul class="context-list"><li><span>สัปดาห์ที่พบมากสุด</span><strong>${lab[idx]}</strong></li><li><span>จำนวนสูงสุด</span><strong>${peak} เหตุการณ์</strong></li><li><span>ระยะเวลา</span><strong>12 สัปดาห์</strong></li></ul><p class="insight-info">รายงานนี้ให้กราฟแท่งรายสัปดาห์เป็นหลัก เพราะรูปแบบการเกิดเหตุการณ์ตามเวลาสำคัญกว่าค่าร้อยละ</p></aside></div>${detailTable('เปิดตารางเหตุการณ์รายสัปดาห์',['สัปดาห์','จำนวนเหตุการณ์'],tbl)}`;
+ }
+ function renderServices(q){
+  const yearFactor=1+(Number(q.fy)-2569)*.055;const periodFactor=q.period==='year'?1:q.period==='q1'?.28:.31;const boost=q.service==='opd'?1:.6;
+  const rows=locations.map((name,i)=>[name,Math.round((1220+i*245)*boost*periodFactor*yearFactor),Math.round((910+i*172)*boost*periodFactor*yearFactor)]);
+  const totalVisits=sumRows(rows,1),persons=sumRows(rows,2);
+  state.exportRows=[['หน่วยบริการ','จำนวนครั้ง','จำนวนคน (จำลอง)'],...rows];
+  $('definitionText').textContent='รายงานการให้บริการเน้นตารางตัวเลข เพราะผู้ใช้ต้องเปรียบเทียบระหว่างหน่วยบริการ ควรแยกจำนวนครั้งกับจำนวนคนอย่างชัดเจน หากไม่มีเหตุผลเชิงวิเคราะห์ ไม่จำเป็นต้องมีกราฟ';
+  $('reportHeading').textContent='สถิติการให้บริการจำแนกหน่วยบริการ';$('reportSubheading').textContent=`ปีงบประมาณ ${q.fy} · ${q.period==='year'?'ทั้งปี':q.period==='q1'?'ไตรมาส 1':'ไตรมาส 2'} · ${q.service==='opd'?'ผู้ป่วยนอก':'บริการปฐมภูมิ'} · ข้อมูลจำลอง`;
+  const table=multiTable(['หน่วยบริการ','จำนวนครั้ง','จำนวนคน'],rows,'สถิติการบริการตัวอย่าง');
+  return `<div class="services-lead"><div><span class="report-label">TABLE-FIRST REPORT</span><p>ข้อมูลประเภทนี้เหมาะกับตารางเป็นหลัก ไม่จำเป็นต้องสร้างกราฟเพิ่ม</p></div></div><div class="metric-grid"><div class="metric-item"><div class="metric-label">ครั้งบริการรวม</div><div class="metric-value">${fmt(totalVisits)}</div><div class="metric-unit">ครั้ง (จำลอง)</div></div><div class="metric-item"><div class="metric-label">ผลรวมจำนวนคนตามหน่วย</div><div class="metric-value">${fmt(persons)}</div><div class="metric-unit">คน (จำลอง)</div></div><div class="metric-item"><div class="metric-label">หน่วยบริการ</div><div class="metric-value">${rows.length}</div><div class="metric-unit">แห่ง (สมมติ)</div></div></div>${surface('ตารางการให้บริการรายหน่วย','ข้อมูลจำลองเพื่อแสดงรูปแบบการอ่านรายงาน',table)}<div class="callout-note">จำนวนครั้งไม่เท่ากับจำนวนคน และผลรวมจำนวนคนรายหน่วยอาจนับคนซ้ำข้ามหน่วยบริการ ข้อมูลหน่วยบริการในตารางเป็นข้อมูลสมมติ</div>`;
+ }
+ function renderPromotion(q){
+  // Demonstration-only fixtures: each exposed filter must change the displayed rows or values.
+  const periodFactor=q.period==='year'?1:q.period==='q1'?.27:.32;
+  const yearFactor=1+(Number(q.fy)-2569)*.06;
+  const chosen=q.tambon==='all'?areas:[areas[Number(q.tambon)]];
+  const rows=chosen.map(name=>{const i=areas.indexOf(name),target=Math.round((155+i*19)*periodFactor*yearFactor),achieved=Math.round(target*(.67+(i%5)*.05));return[name,target,achieved,pnum(achieved/target*100)]});
+  state.exportRows=[['พื้นที่','เป้าหมาย','ผลงาน','ร้อยละ'],...rows];
+  $('definitionText').textContent='รายงานส่งเสริมสุขภาพอาจนำเสนอเป็นตารางเป้าหมายและผลงานเป็นหลัก โดยเลือกรูปแบบกราฟเพิ่มเติมเฉพาะกรณีที่ช่วยสื่อสารได้ดีกว่าและตรงกับข้อมูล';
+  $('reportHeading').textContent='ผลการดำเนินงานส่งเสริมสุขภาพ';
+  $('reportSubheading').textContent=`ปีงบประมาณ ${q.fy} · ${q.period==='year'?'ทั้งปี':q.period==='q1'?'ไตรมาส 1':'ไตรมาส 2'} · ${q.tambon==='all'?'ทุกตำบล':'ตำบล'+areas[Number(q.tambon)]} · ข้อมูลจำลอง`;
+  return `${surface('ผลการดำเนินงานแยกพื้นที่','ตารางข้อมูลเหมาะกับการตรวจรายละเอียดเป้าหมายและผลงาน',multiTable(['พื้นที่','เป้าหมาย','ผลงาน','ร้อยละ'],rows,'ผลส่งเสริมสุขภาพจำลอง'))}<p class="small-caption">รูปแบบการแสดงผลขึ้นกับนิยามและจุดประสงค์ของรายงาน ไม่บังคับใช้กราฟทุกหน้า</p>`;
+ }
+
+ function simpleBarList(rows){return `<div class="bar-comparison">${rows.map(x=>`<div class="comparison-row"><span>${esc(x[0])}</span><div class="bar-track"><div class="bar-fill" style="width:${Math.min(100,Math.max(0,x[3])).toFixed(1)}%"></div></div><strong>${pnum(x[3])}</strong></div>`).join('')}</div>`}
+ function renderScreening(q){
+  const name=state.report.id==='NCD-04'?'ความดันโลหิตสูง':'เบาหวาน';
+  const chosen=q.tambon==='all'?areas:[areas[Number(q.tambon)]];
+  const yearFactor=1+(Number(q.fy)-2569)*.045;const rows=chosen.map((a,i)=>{const idx=areas.indexOf(a),goal=Math.round((310+idx*43)*yearFactor),done=Math.round(goal*(.68+(idx%5)*.055));return[a,goal,done,Number((done/goal*100).toFixed(1))]});
+  state.exportRows=[['พื้นที่','กลุ่มเป้าหมาย','ได้รับการคัดกรอง','ร้อยละ'],...rows.map(x=>[x[0],x[1],x[2],pnum(x[3])])];
+  $('definitionText').textContent='รายงานการคัดกรองแสดงกลุ่มเป้าหมายและผลคัดกรองตามพื้นที่ โดยต้องตรวจการนับคนไม่ซ้ำ เกณฑ์กลุ่มเป้าหมาย และช่วงเวลาอย่างชัดเจนก่อนแสดงผลจากแหล่งจริง';
+  $('reportHeading').textContent='ความครอบคลุมการคัดกรองรายพื้นที่';$('reportSubheading').textContent=`คัดกรอง${name} · ปีงบประมาณ ${q.fy} · ข้อมูลจำลอง`;
+  return `<div class="visual-grid visual-grid-balanced">${surface('เปรียบเทียบอัตราการคัดกรอง','ข้อมูลรายพื้นที่สำหรับดูความแตกต่าง',simpleBarList(rows))}${surface('จำนวนกลุ่มเป้าหมายและผู้รับการคัดกรอง','อ่านจำนวนจริงได้จากตาราง',multiTable(['พื้นที่','กลุ่มเป้าหมาย','คัดกรองแล้ว','ร้อยละ'],rows.map(x=>[x[0],x[1],x[2],pnum(x[3])]),'การคัดกรอง NCD จำลอง'))}</div>`;
+ }
+ function renderProcess(q){
+  const factor=(q.period==='q1'?.30:1)*(1+(Number(q.fy)-2569)*.06);const rows=areas.map((a,i)=>{const goal=Math.round((35+i*5)*factor),done=Math.round(goal*(.65+(i%4)*.07));return[a,goal,done,pnum(done/goal*100)]});
+  state.exportRows=[['พื้นที่','จำนวนเหตุการณ์','ทันเวลา','ร้อยละ'],...rows];
+  $('definitionText').textContent='รายงานตัวชี้วัดระยะเวลาการสอบสวนโรคเป็นรายงานกระบวนการ ไม่ใช่จำนวนเหตุการณ์การระบาด จึงใช้ตารางแสดงตัวตั้ง ตัวหาร และร้อยละ ไม่ใช้ Epidemic Curve';
+  $('reportHeading').textContent='ผลการดำเนินงานตามกรอบเวลาจำลอง';$('reportSubheading').textContent=`ปีงบประมาณ ${q.fy} · ${q.period==='year'?'ทั้งปี':'ไตรมาส 1'} · ข้อมูลจำลอง`;
+  return `${surface('ผลการสอบสวนโรคตามพื้นที่','ตารางรายละเอียดตัวตั้ง ตัวหาร และสัดส่วนภายในเวลาที่กำหนด',multiTable(['พื้นที่','เหตุการณ์ทั้งหมด','ภายในกรอบเวลา','ร้อยละ'],rows,'ระยะเวลาสอบสวนโรคจำลอง'))}<p class="small-caption">ชนิดรายงานเป็นตัวกำหนดการแสดงผล แม้จะอยู่ในหมวดเฝ้าระวังโรคเหมือนกัน</p>`;
+ }
+ function renderInsurance(q){
+  const labels=['สิทธิหลักประกันสุขภาพ','สิทธิประกันสังคม','สิทธิข้าราชการ','สิทธิอื่น / ไม่ระบุ'];const factor=(q.period==='year'?1:.29)*(1+(Number(q.fy)-2569)*.055);
+  const rows=labels.map((name,i)=>[name,Math.round(([4800,1600,1200,420][i])*factor),Math.round(([3500,1120,920,300][i])*factor)]);
+  state.exportRows=[['สิทธิการรักษา','จำนวนครั้ง','จำนวนคน'],...rows];
+  $('definitionText').textContent='รายงานจำแนกสิทธิการรักษาใช้ตัวแปรสิทธิ ไม่ใช่หน่วยบริการ ต้องแยกจำนวนครั้งและจำนวนคน และตรวจนิยามสิทธิที่ต้นทางระบุ';
+  $('reportHeading').textContent='การรับบริการจำแนกตามสิทธิการรักษา';$('reportSubheading').textContent=`ปีงบประมาณ ${q.fy} · ${q.period==='year'?'ทั้งปี':'ไตรมาส 1'} · ข้อมูลจำลอง`;
+  return `${surface('การรับบริการจำแนกสิทธิ','ตารางเป็นรูปแบบหลัก เพราะต้องตรวจตัวเลขตามหมวดสิทธิการรักษา',multiTable(['ประเภทสิทธิ','จำนวนครั้ง','จำนวนคน'],rows,'สิทธิการรักษาจำลอง'))}`;
+ }
+ function vitalLines(a,b,years){
+  const W=760,H=298,L=60,R=22,T=27,B=50,pw=W-L-R,ph=H-T-B,max=13;
+  const line=(v,color)=>`<polyline points="${v.map((n,i)=>`${L+i*pw/(v.length-1)},${T+(max-n)/max*ph}`).join(' ')}" fill="none" stroke="${color}" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const grids=[0,3,6,9,12].map(v=>{const y=T+(max-v)/max*ph;return `<line x1="${L}" y1="${y}" x2="${W-R}" y2="${y}" stroke="#e7eee9"/><text x="${L-12}" y="${y+4}" text-anchor="end">${v}</text>`}).join('');
+  return `<svg class="trend-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="กราฟแนวโน้มอัตราเกิดและอัตราตายจำลองต่อพันคน"><title>อัตราเกิดและอัตราตายรายปี (สมมติ)</title>${grids}${line(a,'#357f70')}${line(b,'#c7a36f')}${years.map((year,i)=>`<text x="${L+i*pw/(years.length-1)}" y="${H-20}" text-anchor="middle">${year}</text>`).join('')}</svg>`;
+ }
+ function renderVital(q){
+  const end=Number(q.fy),years=Array.from({length:6},(_,i)=>end-5+i);const shift=q.tambon==='all'?0:(Number(q.tambon)%3)*.3;
+  const births=years.map(y=>Number((10.8-(y-2564)*.45+shift).toFixed(1))),deaths=years.map(y=>Number((5.8+(y-2564)*.28+shift).toFixed(1)));
+  const rows=years.map((x,i)=>[String(x),births[i].toFixed(1),deaths[i].toFixed(1)]);
+  state.exportRows=[['ปีข้อมูล','อัตราเกิดต่อพันคน','อัตราตายต่อพันคน'],...rows];
+  $('definitionText').textContent='อัตราเกิดต่อพันประชากรและอัตราตายต่อพันประชากรต้องระบุประชากรฐานและช่วงเวลาที่สอดคล้องกัน ไม่ใช่จำนวนเหตุการณ์ดิบ และต้องไม่สรุปแนวโน้มจากต้นทางที่ใช้นิยามต่างกัน';
+  $('reportHeading').textContent='แนวโน้มอัตราเกิดและอัตราตาย';$('reportSubheading').textContent=`ปี ${years[0]}–${end} · ${q.tambon==='all'?'ทั้งอำเภอ':'ตำบล'+areas[Number(q.tambon)]} · ข้อมูลจำลอง`;
+  return `${surface('อัตราเกิดต่อประชากรพันคนเทียบอัตราตาย','กราฟเส้นสองชุด แสดงการเปลี่ยนแปลงตามเวลา',`<div class="chart-key"><span><i></i>อัตราเกิด</span><span><i style="background:#c7a36f"></i>อัตราตาย</span></div>${vitalLines(births,deaths,years)}<p class="small-caption">หน่วย: ต่อประชากร 1,000 คน (จำลอง)</p>`)}${detailTable('เปิดตารางอัตราเกิดและอัตราตาย',['ปีข้อมูล','อัตราเกิด','อัตราตาย'],rows)}`;
+ }
+
+ function renderResult(){
+  const r=state.report;if(!r)return;
+  const applied=Object.fromEntries(new FormData($('reportFilters')).entries());state.applied=applied;
+  const q={...applied};
+  // Fixed report definitions must not be silently changed by unrelated filters.
+  if(r.id==='POP-02')q.ageScope='elderly';
+  if(r.id==='EPI-02')q.vaccine='MMR';
+  if(r.id==='EPI-03')q.vaccine='DTP';
+  if(r.id==='NCD-01')q.condition='dm';
+  if(r.id==='NCD-02')q.condition='ht';
+  if(r.id==='SERV-01')q.service='opd';
+  if(r.id==='SERV-02')q.service='primary';
+  const kind=reportKind(r);
+  const views={population:renderPopulation,epi:renderEpi,ncd:renderNCD,surveillance:renderSurveillance,services:renderServices,promotion:renderPromotion,screening:renderScreening,process:renderProcess,insurance:renderInsurance,vital:renderVital};
+   $('reportContent').innerHTML=r.id==='EPI-01'?renderEpiCompletePrototype(q):views[kind](q);
+   const summary=[...$('reportFilters').querySelectorAll('select')].map(el=>`${el.labels?.[0]?.textContent?.trim()||el.name}: ${el.selectedOptions[0]?.textContent?.trim()||''}`).join(' · ');
+   $('appliedFiltersText').textContent=summary?'เงื่อนไขที่แสดง: '+summary:'';
+   $('reportAnnounce').textContent='แสดงผลรายงาน '+r.title+' ตามเงื่อนไขที่เลือกแล้ว';
+ }
+  function filtersAreDirty(){
+    const current=Object.fromEntries(new FormData($('reportFilters')).entries());
+    return JSON.stringify(current)!==JSON.stringify(state.applied);
+  }
+  function markReportFiltersClean(){
+    $('reportFilterStatus').textContent='';
+    $('reportFilters').classList.remove('report-filters-dirty');
+  }
+  function updateReportFilterState(){
+    const dirty=filtersAreDirty();
+    $('reportFilterStatus').textContent=dirty?'มีการเปลี่ยนเงื่อนไข · กดแสดงผล':'';
+    $('reportFilters').classList.toggle('report-filters-dirty',dirty);
+  }
+ function downloadCSV(){
+  if(!state.report||!state.exportRows)return;
+  if(state.report.id==='EPI-01'&&!state.exportRows.length){$('reportAnnounce').textContent='ยังไม่มีข้อมูลที่ตรวจสอบเพื่อส่งออก';return;}
+  const banner=state.report.id==='EPI-01'?'SOURCE-SCHEMA LOCAL JSON PREVIEW - NOT OFFICIALLY VERIFIED':'SONG HEALTH DATA CENTER — SYNTHETIC DEMO DATA';
+  const rows=[[banner],['Report',state.report.id+' '+state.report.title],['Applied filters',$('appliedFiltersText').textContent],...state.exportRows];
+  const safe=v=>{let s=String(v);if(/^[\s]*[=+@\-\t\r]/.test(s))s="'"+s;return '"'+s.replaceAll('"','""')+'"'};
+  const csv='\ufeff'+rows.map(r=>r.map(safe).join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`SHDC-${state.report.id}-${state.report.id==='EPI-01'?'LOCAL-PREVIEW':'SYNTHETIC'}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+ }
+
+ // Homepage population fixtures are SYNTHETIC. Official GIS polygons load from online services.
+ const tambons=[
+   {id:'ban-nun',code:'540601',name:'บ้านหนุน',male:4030,female:4315,households:2864},
+   {id:'ban-klang',code:'540602',name:'บ้านกลาง',male:3360,female:3522,households:2340},
+   {id:'huai-mai',code:'540603',name:'ห้วยหม้าย',male:3948,female:4168,households:2612},
+   {id:'tao-poon',code:'540604',name:'เตาปูน',male:2756,female:2888,households:2049},
+   {id:'hua-mueang',code:'540605',name:'หัวเมือง',male:4280,female:4496,households:3035},
+   {id:'sa-iap',code:'540606',name:'สะเอียบ',male:3556,female:3672,households:2491},
+   {id:'daen-chumphon',code:'540607',name:'แดนชุมพล',male:1869,female:1978,households:1476},
+   {id:'thung-nao',code:'540608',name:'ทุ่งน้าว',male:2958,female:3073,households:2162}
+ ];
+ let currentTambon=null;
+ const sum=(key)=>tambons.reduce((total,t)=>total+t[key],0);
+ const whole={name:'ภาพรวมอำเภอสอง',male:sum('male'),female:sum('female'),households:sum('households')};
+ const popOf=t=>t.male+t.female;
+
+ // Leaflet district explorer. Only validated 5406xx polygons; no invented shapes if API is down.
+
+ const GIS_SOURCES=[
+   {id:'moph',name:'MOPH GIS',url:'https://pherportal.moph.go.th/arcgis/rest/services/MOPH_DATA/tambon/MapServer/0',fields:'ADMIN_ID3,NAME3,NAME2,NAME1',where:"ADMIN_ID2='5406'"},
+   {id:'dpm',name:'กรมป้องกันและบรรเทาสาธารณภัย GIS',url:'https://gis-portal.disaster.go.th/arcgis/rest/services/MapDX/DPM_TH_Boundary/FeatureServer/3',fields:'TAM_CODE,TAM_NAM_T,AMP_CODE,AMP_NAM_T,PROV_CODE,PROV_NAM_T',where:"AMP_CODE='5406'"},
+   {id:'gistda',name:'GISTDA GIS',url:'https://gistdaportal.gistda.or.th/arcgis/rest/services/%E0%B8%82%E0%B9%89%E0%B8%AD%E0%B8%A1%E0%B8%B9%E0%B8%A5%E0%B9%80%E0%B8%82%E0%B8%95%E0%B8%81%E0%B8%B2%E0%B8%A3%E0%B8%9B%E0%B8%81%E0%B8%84%E0%B8%A3%E0%B8%AD%E0%B8%87/MapServer/4',fields:'P_code,A_code,T_code,P_Name_T,A_Name_T,T_Name_T',where:"P_code='54' AND A_code='06'"}
+ ];
+ const byCode=new Map(tambons.map(t=>[t.code,t]));
+ let leafletMap=null,geoLayers=null,layerByTambon=new Map(),mapBounds=null,geoLoading=false;
+ const trimThai=s=>String(s??'').replace(/^(จังหวัด|อำเภอ|ตำบล|จ\.|อ\.|ต\.)/,'').replace(/\s+/g,'').trim();
+ function gisQuery(source,format){
+   const u=new URL(source.url+'/query');
+   u.searchParams.set('where',source.where);
+   u.searchParams.set('outFields',source.fields);
+   u.searchParams.set('returnGeometry','true');
+   u.searchParams.set('outSR','4326');
+   u.searchParams.set('geometryPrecision','5');
+   u.searchParams.set('f',format);
+   return u;
+ }
+ async function fetchGIS(source){
+   const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),6800);
+   try{
+     const res=await fetch(gisQuery(source,'geojson'),{signal:controller.signal,mode:'cors'});
+     if(!res.ok)throw new Error('HTTP '+res.status);
+     const data=await res.json();
+     if(data.error||!Array.isArray(data.features))throw new Error('รูปแบบ GeoJSON ไม่ถูกต้อง');
+     return data;
+   }finally{clearTimeout(timer)}
+ }
+ // JSONP is a PROTOTYPE-ONLY CORS fallback for a fixed allowlist of public government ArcGIS URLs.
+ // Production must fetch through a controlled Fastify adapter or a vetted static GeoJSON asset.
+ let gisRequestSequence=0;
+ function requestGISJsonp(source){
+   return new Promise((resolve,reject)=>{
+     const callback='__songGIS_'+(++gisRequestSequence);
+     const script=document.createElement('script');
+     const u=gisQuery(source,'json');
+     u.searchParams.set('callback',callback);
+     let done=false;
+     const cleanup=()=>{delete window[callback];script.remove();clearTimeout(timer)};
+     const finish=(error,result)=>{if(done)return;done=true;cleanup();error?reject(error):resolve(result)};
+     const timer=setTimeout(()=>finish(new Error('JSONP timeout')),7800);
+     window[callback]=result=>finish(null,result);
+     script.onerror=()=>finish(new Error('JSONP connection error'));
+     script.src=u.href;
+     document.head.appendChild(script);
+   });
+ }
+ // Esri ArcGIS JSON has geometry.rings in lon/lat (outSR=4326); GeoJSON uses coordinates.
+ // Build polygons from ArcGIS clockwise exterior / counter-clockwise interior rings.
+ function arcgisToGeoJSON(payload){
+   if(payload?.type==='FeatureCollection'&&Array.isArray(payload.features))return payload;
+   if(payload?.error)throw new Error('ArcGIS '+(payload.error.code||'API error'));
+   if(!Array.isArray(payload?.features))throw new Error('ผลลัพธ์ ArcGIS ไม่มี features');
+   function ringArea(ring){let a=0;for(let i=0;i<ring.length-1;i++)a+=ring[i][0]*ring[i+1][1]-ring[i+1][0]*ring[i][1];return a/2}
+   function within(p,ring){let inside=false;for(let i=0,j=ring.length-1;i<ring.length;j=i++){
+     const a=ring[i],b=ring[j];if((a[1]>p[1])!==(b[1]>p[1])&&p[0]<(b[0]-a[0])*(p[1]-a[1])/(b[1]-a[1])+a[0])inside=!inside;
+   }return inside}
+   return {type:'FeatureCollection',features:payload.features.map(f=>{
+     const rings=(f.geometry?.rings||[]).filter(r=>Array.isArray(r)&&r.length>=4);
+     if(!rings.length)return {type:'Feature',properties:f.attributes||{},geometry:null};
+     let outers=rings.filter(r=>ringArea(r)<0).map(r=>[r]);
+     let holes=rings.filter(r=>ringArea(r)>=0);
+     if(!outers.length){outers=rings.map(r=>[r]);holes=[]}
+     for(const hole of holes){
+       let index=-1,smallest=Infinity;
+       for(let i=0;i<outers.length;i++)if(within(hole[0],outers[i][0])){
+         const size=Math.abs(ringArea(outers[i][0]));if(size<smallest){index=i;smallest=size}
+       }
+       if(index>=0)outers[index].push(hole);else outers.push([hole]);
+     }
+     return {type:'Feature',properties:f.attributes||{},geometry:outers.length===1?{type:'Polygon',coordinates:outers[0]}:{type:'MultiPolygon',coordinates:outers}};
+   })};
+ }
+ function checkGISData(data,source){
+   const matches=new Map();
+   for(const f of data.features){
+     const p=f.properties||{};
+     const code=source.id==='moph'?String(p.ADMIN_ID3??''):source.id==='dpm'?String(p.TAM_CODE??''):`${p.P_code||''}${p.A_code||''}${p.T_code||''}`;
+     const area=byCode.get(code);
+     const name=source.id==='moph'?p.NAME3:source.id==='dpm'?p.TAM_NAM_T:p.T_Name_T;
+     const prov=source.id==='moph'?p.NAME1:source.id==='dpm'?p.PROV_NAM_T:p.P_Name_T;
+     const amphoe=source.id==='moph'?p.NAME2:source.id==='dpm'?p.AMP_NAM_T:p.A_Name_T;
+     if(!area||!['Polygon','MultiPolygon'].includes(f.geometry?.type)||!Array.isArray(f.geometry.coordinates)||!f.geometry.coordinates.length)continue;
+     if(trimThai(name)!==trimThai(area.name))continue;
+     if(prov&&trimThai(prov)!=='แพร่')continue;
+     if(amphoe&&trimThai(amphoe)!=='สอง')continue;
+     if(matches.has(code))throw new Error('รหัสตำบลซ้ำ '+code);
+     matches.set(code,{type:'Feature',geometry:f.geometry,properties:{code,areaId:area.id,name:area.name}});
+   }
+   if(matches.size!==8)throw new Error(`ตรวจสอบขอบเขตผ่านเพียง ${matches.size}/8 ตำบล`);
+   return {type:'FeatureCollection',features:[...matches.values()]};
+ }
+ function gisStyle(feature){
+   const active=feature.properties.areaId===currentTambon;
+   return {color:active?'#056662':'#135779',weight:active?3.5:1.9,opacity:1,fillColor:active?'#0a9690':'#6cacc7',fillOpacity:active?.56:.25};
+ }
+ function updateGISSelection(moveView=false){
+   if(!geoLayers)return;
+   geoLayers.eachLayer(l=>{
+     l.setStyle(gisStyle(l.feature));
+     if(l.feature.properties.areaId===currentTambon)l.bringToFront();
+   });
+   if(moveView){
+     const target=currentTambon?layerByTambon.get(currentTambon):null;
+     const bounds=target?.getBounds?.()||mapBounds;
+     if(bounds?.isValid?.())leafletMap.fitBounds(bounds,{padding:[24,24],maxZoom:currentTambon?12:11,animate:!window.matchMedia('(prefers-reduced-motion: reduce)').matches});
+   }
+ }
+ function gisStatus(msg,error=false,diagnostics=''){
+   $('gisMapStatus').textContent=msg;
+   $('gisMapRetry').classList.toggle('view-hidden',!error);
+   $('gisMapOverlay').classList.toggle('is-error',error);
+   $('gisMapLoadingText').textContent=error?(window.L?'ขอบเขต GIS ยังไม่พร้อม — เลือกตำบลจากรายชื่อได้':'Leaflet ไม่พร้อม — ตรวจการเชื่อมต่ออินเทอร์เน็ต'):'กำลังโหลดแผนที่...';
+   $('gisMapOverlay').classList.remove('is-hidden');
+   const diagnosticsPanel=$('gisDiagnostics');
+   if(diagnosticsPanel){diagnosticsPanel.classList.toggle('view-hidden',!error);diagnosticsPanel.open=false;$('gisDiagnosticText').textContent=diagnostics||'ไม่สามารถระบุสาเหตุได้'}
+ }
+ // Fetch GeoJSON as the safe first choice. JSONP may help old ArcGIS services that block CORS.
+ async function loadOneGISSource(source){
+   const errors=[];
+   let completed=false;
+   const attempts=[
+     fetchGIS(source).then(data=>checkGISData(data,source)).catch(e=>{errors.push('GeoJSON: '+e.message);throw e}),
+     new Promise((resolve,reject)=>setTimeout(()=>{
+       if(completed){reject(new Error('fallback ไม่จำเป็น'));return}
+       requestGISJsonp(source).then(x=>resolve(checkGISData(arcgisToGeoJSON(x),source))).catch(e=>{errors.push('ArcGIS JSON: '+e.message);reject(e)});
+     },850))
+   ];
+   try{const result=await Promise.any(attempts);completed=true;return result}
+   catch{completed=true;throw new Error(errors.join(' / ')||'ไม่ตอบกลับ')}
+ }
+ async function initDistrictGIS(force=false){
+   if(geoLoading)return;
+   if(geoLayers&&!force){setTimeout(()=>leafletMap?.invalidateSize(),40);return}
+   geoLoading=true;
+   gisStatus('กำลังโหลดข้อมูลขอบเขตอำเภอสอง (5406)');
+   try{
+     if(!window.L)throw new Error('โหลด Leaflet ไม่สำเร็จ');
+     if(!leafletMap){
+       leafletMap=L.map('songLeafletMap',{center:[18.46,100.21],zoom:10,scrollWheelZoom:false,zoomControl:false});
+       L.control.zoom({position:'bottomright'}).addTo(leafletMap);
+       L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{
+         minZoom:7,maxZoom:18,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors'
+       }).addTo(leafletMap);
+     }
+     let data=null,chosen=null;
+     const errors=[];
+     for(const source of GIS_SOURCES){
+       try{data=await loadOneGISSource(source);chosen=source;break}
+       catch(e){errors.push(source.name+': '+e.message);console.info('GIS source unavailable',source.id,e.message)}
+     }
+     if(!data||!chosen)throw new Error(errors.join(' | '));
+     if(geoLayers){leafletMap.removeLayer(geoLayers);layerByTambon.clear()}
+     geoLayers=L.geoJSON(data,{
+       style:gisStyle,
+       onEachFeature(feature,layer){
+         const t=byCode.get(feature.properties.code);
+         layerByTambon.set(t.id,layer);
+         layer.bindTooltip('ตำบล'+t.name+' · '+t.code,{sticky:true,direction:'top',className:'tambon-tooltip'});
+         layer.on('click',()=>selectTambon(t.id,true));
+         layer.on('mouseover',()=>{if(t.id!==currentTambon)layer.setStyle({fillOpacity:.42,weight:2.7})});
+         layer.on('mouseout',()=>updateGISSelection());
+       }
+     }).addTo(leafletMap);
+     mapBounds=geoLayers.getBounds();
+     if(!mapBounds.isValid())throw new Error('ขอบเขตแผนที่ไม่ถูกต้อง');
+     $('gisMapStatus').textContent=`ขอบเขต GIS 8 ตำบล · ${chosen.name} · 5406`;
+     $('gisMapSourceLink').href=chosen.url;
+     $('gisMapRetry').classList.add('view-hidden');
+     $('gisMapOverlay').classList.add('is-hidden');
+     $('gisDiagnostics')?.classList.add('view-hidden');
+     setTimeout(()=>{leafletMap.invalidateSize();updateGISSelection(true)},80);
+   }catch(e){
+     console.warn('District GIS loading failed',e);
+     gisStatus('โหลดขอบเขต GIS ไม่สำเร็จ · เลือกตำบลจากรายชื่อได้',true,e.message);
+   }finally{geoLoading=false}
+ }
+ // Initialize after deferred CDN script has had a chance to run.
+ window.addEventListener('load',()=>initDistrictGIS(),{once:true});
+ $('gisMapRetry').addEventListener('click',()=>{if(!window.L){window.location.reload();return}initDistrictGIS(true)});
+
+ function renderHome(){
+   $('homeTotal').textContent=fmt(popOf(whole));
+   $('homeMale').textContent=fmt(whole.male);
+   $('homeFemale').textContent=fmt(whole.female);
+   $('tambonList').innerHTML=tambons.map((t,i)=>`<button class="area-option" type="button" data-tambon="${t.id}" aria-pressed="false"><span><span class="area-index">${String(i+1).padStart(2,'0')}</span>${esc(t.name)}</span><span class="option-arrow" aria-hidden="true">›</span></button>`).join('');
+   $('popTableRows').innerHTML=tambons.map((t,i)=>`<tr data-row="${t.id}"><td class="idx">${i+1}</td><th scope="row" class="pop-tambon">${esc(t.name)}</th><td class="align-right">${fmt(t.male)}</td><td class="align-right">${fmt(t.female)}</td><td class="align-right text-pop">${fmt(popOf(t))}</td><td class="align-right">${fmt(t.households)}</td><td class="align-center"><button class="table-action" type="button" data-tambon="${t.id}" aria-label="เลือกตำบล${esc(t.name)}เพื่อดูรายละเอียดพื้นที่">ดูข้อมูล</button></td></tr>`).join('');
+   $('popTableFoot').innerHTML=`<tr><td></td><th scope="row" class="pop-tambon">รวมทั้งอำเภอ</th><td class="align-right">${fmt(whole.male)}</td><td class="align-right">${fmt(whole.female)}</td><td class="align-right">${fmt(popOf(whole))}</td><td class="align-right">${fmt(whole.households)}</td><td></td></tr>`;
+   // Mobile alternative preserves ALL columns rather than hiding sex/household data.
+   $('mobilePopulation').innerHTML='<p class="mobile-pop-instruction">เลือกชื่อตำบลเพื่อดูรายละเอียดชาย หญิง และครัวเรือน</p>'+tambons.map(t=>`<details class="mobile-pop-item" data-pop-card="${t.id}"><summary><span class="mobile-name">${esc(t.name)}</span><span class="mobile-total">${fmt(popOf(t))} คน</span></summary><div class="mobile-pop-details"><dl><dt>ประชากรชาย</dt><dd>${fmt(t.male)} คน</dd><dt>ประชากรหญิง</dt><dd>${fmt(t.female)} คน</dd><dt>ประชากรรวม</dt><dd>${fmt(popOf(t))} คน</dd><dt>ครัวเรือน</dt><dd>${fmt(t.households)} ครัวเรือน</dd></dl><button type="button" data-tambon="${t.id}" aria-label="เลือกตำบล${esc(t.name)}เพื่อดูรายละเอียดพื้นที่">เลือกพื้นที่นี้</button></div></details>`).join('')+`<div class="mobile-pop-summary"><strong>รวมอำเภอสอง</strong><strong>${fmt(popOf(whole))} คน</strong></div>`;
+
+   $('quickCategories').innerHTML=cats.filter(c=>c.id!=='all').map((c,i)=>{const count=reports.filter(r=>r.category===c.id).length;return `<button type="button" class="quick-category" data-home-category="${c.id}"><span class="qc-top"><span class="qc-index">${String(i+1).padStart(2,'0')}</span><span><span class="qc-name">${esc(c.label)}</span><span class="qc-count" style="display:block">${fmt(count)} รายงานตัวอย่าง</span></span></span><span class="qc-chevron" aria-hidden="true">→</span></button>`}).join('');
+   selectTambon(null);
+ }
+ function selectTambon(id,fromMap=false){
+   const t=tambons.find(t=>t.id===id)||whole;
+   currentTambon=t===whole?null:id;
+   $('selectedName').textContent=t===whole?'ภาพรวมอำเภอสอง':'ตำบล'+t.name;
+   $('selectedType').textContent=t===whole?'ข้อมูลรวมทั้ง 8 ตำบล':'ประชากรรายตำบล (จำลอง)';
+   $('selectedPop').textContent=fmt(popOf(t))+' คน';
+   $('selectedMF').textContent=`${fmt(t.male)} / ${fmt(t.female)}`;
+   $('selectedHouseholds').textContent=fmt(t.households)+' ครัวเรือน';
+   $('tambonAnnouncer').textContent='เลือก'+(t===whole?'ภาพรวมอำเภอสอง':'ตำบล'+t.name)+' ประชากร '+fmt(popOf(t))+' คน';
+   document.querySelectorAll('[data-pop-card]').forEach(node=>{const active=!!id&&node.dataset.popCard===id;node.classList.toggle('is-selected',active);if(active)node.open=true;});
+   document.querySelectorAll('[data-tambon]').forEach(node=>{const active=!!id&&node.dataset.tambon===id;node.classList.toggle('active',active); if(node.hasAttribute('aria-pressed'))node.setAttribute('aria-pressed',String(active));});
+   document.querySelectorAll('[data-row]').forEach(node=>node.classList.toggle('selected',!!id&&node.dataset.row===id));
+   updateGISSelection(!fromMap);
+ }
+ function showHome(){
+   const enteringHome=$('homeView').classList.contains('view-hidden');
+   $('homeView').classList.remove('view-hidden');$('catalogView').classList.add('view-hidden');$('detailView').classList.add('view-hidden');
+   ['navReports'].forEach(id=>$(id).removeAttribute('aria-current'));
+   $('navHome').setAttribute('aria-current','page');document.title='Song Health Data Center | ข้อมูลพื้นฐานอำเภอสอง (ต้นแบบ)';
+   window.scrollTo({top:0,behavior:'auto'});
+   if(enteringHome)$('homeH1').focus({preventScroll:true});
+   if(leafletMap)setTimeout(()=>{leafletMap.invalidateSize();if(mapBounds?.isValid?.())updateGISSelection(true)},80);
+ }
+ $('tambonList').addEventListener('click',e=>{const node=e.target.closest('[data-tambon]');if(node)selectTambon(node.dataset.tambon)});
+ function scrollBehavior(){return window.matchMedia('(prefers-reduced-motion: reduce)').matches?'auto':'smooth'}
+ function navigateToSelectedTambon(id){
+   selectTambon(id);
+   const target=$('selectedName');
+   target.scrollIntoView({behavior:scrollBehavior(),block:'center'});
+   target.focus({preventScroll:true});
+ }
+ $('popTableRows').addEventListener('click',e=>{const node=e.target.closest('[data-tambon]');if(node)navigateToSelectedTambon(node.dataset.tambon)});
+ $('mobilePopulation').addEventListener('click',e=>{const node=e.target.closest('button[data-tambon]');if(node)navigateToSelectedTambon(node.dataset.tambon)});
+ $('resetTambon').addEventListener('click',()=>selectTambon(null));
+ $('quickCategories').addEventListener('click',e=>{const n=e.target.closest('[data-home-category]');if(n)showCatalog(n.dataset.homeCategory)});
+ $('homeAllReports').addEventListener('click',()=>showCatalog('all'));
+ $('categories').addEventListener('click',e=>{const el=e.target.closest('[data-category]');if(el){state.category=el.dataset.category;state.page=1;renderCatalog();const active=Array.from($('categories').querySelectorAll('[data-category]')).find(n=>n.dataset.category===state.category);active?.focus({preventScroll:true});}});
+  $('reportContent').addEventListener('click',e=>{
+   if(e.target.closest('#epiLoadJson')){
+    const raw=$('epiJsonInput')?.value||'';
+    try{epiImport(raw);const selected=Object.fromEntries(new FormData($('reportFilters')).entries());configureFilters(state.report);for(const [k,v] of Object.entries(selected)){const node=$('reportFilters').elements.namedItem(k);if(node&&Array.from(node.options||[]).some(o=>o.value===v))node.value=v;}renderResult();markReportFiltersClean();}
+    catch(err){state.epiImportMsg='ไม่สามารถอ่าน JSON: '+err.message;$('epiImportStatus').textContent=state.epiImportMsg;}
+   }
+   if(e.target.closest('#epiAssignId')){
+    const age=$('ageGroup')?.value||'1',id=$('epiBindId')?.value||'';
+    state.epiAgeIds[age]=id;state.epiMonthRow=0;renderResult();markReportFiltersClean();
+   }
+ });
+ $('reportContent').addEventListener('change',e=>{
+   if(e.target.id==='epiRowPick'){state.epiMonthRow=Number(e.target.value)||0;renderResult();markReportFiltersClean();}
+   if(e.target.id==='epiJsonFile'){
+    const file=e.target.files?.[0];if(!file)return;
+    file.text().then(raw=>{const textarea=$('epiJsonInput');if(textarea)textarea.value=raw;try{epiImport(raw);const selected=Object.fromEntries(new FormData($('reportFilters')).entries());configureFilters(state.report);for(const [k,v]of Object.entries(selected)){const node=$('reportFilters').elements.namedItem(k);if(node&&Array.from(node.options||[]).some(o=>o.value===v))node.value=v;}renderResult();markReportFiltersClean();}catch(err){state.epiImportMsg='ไม่สามารถอ่านไฟล์: '+err.message;$('epiImportStatus').textContent=state.epiImportMsg;}}).catch(err=>{if($('epiImportStatus'))$('epiImportStatus').textContent='อ่านไฟล์ไม่สำเร็จ: '+err.message;});
+   }
+ });
+ $('reportFilters').addEventListener('change', updateReportFilterState);
+  $('resetReportFilters').addEventListener('click',()=>{
+    if(!state.report)return;
+    configureFilters(state.report);renderResult();markReportFiltersClean();
+    $('reportFilters').querySelector('select')?.focus({preventScroll:true});
+  });
+  $('relatedBackCatalog').addEventListener('click',()=>showCatalog());
+ $('detailShowcaseGrid').addEventListener('click',e=>{const node=e.target.closest('[data-demo-report]');if(node)showReport(node.dataset.demoReport)});
+ $('catalogRows').addEventListener('click',e=>{const el=e.target.closest('[data-report]');if(el)showReport(el.dataset.report)});
+ $('catalogMobileList').addEventListener('click',e=>{const el=e.target.closest('[data-report]');if(el)showReport(el.dataset.report)});
+ $('catalogBreadcrumbHome').addEventListener('click',showHome);
+ $('searchReports').addEventListener('input',e=>{state.q=e.target.value.trim();state.page=1;renderCatalog()});
+ $('clearSearch').addEventListener('click',()=>{state.q='';state.page=1;$('searchReports').value='';renderCatalog();$('searchReports').focus()});
+ $('resetCatalogFilters').addEventListener('click',resetCatalog);
+ $('emptyReset').addEventListener('click',resetCatalog);
+ $('pageSize').addEventListener('change',e=>{state.pageSize=Number(e.target.value);state.page=1;renderCatalog()});
+ $('prevPage').addEventListener('click',()=>{if(state.page>1){state.page--;catalogPageChanged()}});
+ $('nextPage').addEventListener('click',()=>{state.page++;catalogPageChanged()});
+ $('navHome').addEventListener('click',showHome);
+ $('navReports').addEventListener('click',()=>showCatalog('all'));
+ $('navAbout').addEventListener('click',()=>{showHome();$('aboutData').scrollIntoView({behavior:scrollBehavior(),block:'start'});$('aboutData').focus({preventScroll:true});});
+ $('brandHome').addEventListener('click',e=>{e.preventDefault();showHome()});
+ $('backCatalog').addEventListener('click',()=>showCatalog());$('crumbCatalog').addEventListener('click',()=>showCatalog());
+ $('reportFilters').addEventListener('submit',e=>{e.preventDefault();renderResult();markReportFiltersClean();$('reportHeading').focus({preventScroll:true})});
+ $('exportButton').addEventListener('click',downloadCSV);
+ let beforePrintOpenState=[];
+ window.addEventListener('beforeprint',()=>{
+   const details=[...document.querySelectorAll('#detailView details')];
+   beforePrintOpenState=details.map(d=>d.open);
+   details.forEach(d=>d.open=true);
+ });
+ window.addEventListener('afterprint',()=>{
+   const details=[...document.querySelectorAll('#detailView details')];
+   details.forEach((d,i)=>d.open=!!beforePrintOpenState[i]);
+ });
+ $('printButton').addEventListener('click',()=>window.print());
+ renderHome();renderCatalog();showHome();
+})();
+</script>
+</body>
+</html>
