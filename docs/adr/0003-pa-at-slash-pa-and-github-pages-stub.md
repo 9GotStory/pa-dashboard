@@ -10,7 +10,7 @@
 ## การตัดสินใจ
 
 - PA ย้ายไป `/pa` โดยย้ายไฟล์เท่านั้น ไม่แก้โค้ด PA ทั้งฝั่งเว็บและฝั่ง GAS (`BATCH_ALL` คงรูปแบบและการคำนวณเดิม)
-- GitHub Pages คงไว้เป็นหน้า stub ไฟล์เดียวที่ส่งต่อไปโดเมนใหม่ (`/pa-dashboard/?cat=X` → `/pa?cat=X`, `/pa-dashboard/sync` → `/sync`) ไม่มี redirect ในแอป
+- GitHub Pages คงไว้เป็นหน้า stub (`index.html` กับ `404.html` เนื้อหาเดียวกัน) ที่ส่งต่อไปโดเมนใหม่ (`/pa-dashboard/?cat=X` → `/pa?cat=X`, `/pa-dashboard/sync` → `/sync`) ไม่มี redirect ในแอป
 - ระหว่างตัด `basePath` จนถึงขึ้น stub `deploy.yml` ต้องไม่ deploy อัตโนมัติ
 
 ## ผลที่ตามมา

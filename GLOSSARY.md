@@ -58,6 +58,16 @@
 | **rebuild** | การสั่ง Cloudflare build ใหม่ผ่าน Deploy Hook ด้วย POST `rebuild` ของ GAS (5 ครั้ง/วัน) | "redeploy", "trigger build" |
 | **Deploy Hook** | URL ของ Cloudflare Pages ที่เก็บใน `settings.deploy_hook_url` | |
 | **ล้มดัง ๆ** (fail loudly) | prebuild exit 1 เมื่อข้อมูลไม่ครบ ไม่ publish ข้อมูลบางส่วน | |
+| **script lock** | `LockService.getScriptLock()` ของ GAS ถือตอนเขียนชีตทุกครั้ง และตอนอ่านของ `catalog`/`report` เพื่อไม่ให้อ่านระหว่าง clear → write | "mutex" |
+
+## ขั้นตอนทำงาน
+
+| คำ | ความหมาย | เลี่ยง |
+|---|---|---|
+| **ticket** | GitHub issue หนึ่งใบต่อ F## ใน FEATURES มี blocking relationship ตาม "ขึ้นกับ" | "task", "card" |
+| **spec issue** | issue ใบเดียวจาก `/to-spec` ที่สรุปเป้าหมายและข้อตัดสินใจ ไม่ใส่ path ไฟล์ | |
+| **seam** | จุดที่ตกลงกันว่าจะเขียนเทสต์ (CODING_STANDARDS §5) เช่น handler ของ GAS ใน `node:vm`, `values.ts`, `build-snapshot.mjs` กับ stub server | "boundary" |
+| **expand–contract** | ลำดับงาน ขยายระบบให้รับทั้งแบบเก่าและใหม่ (Track A–C) → ย้ายผู้ใช้ (Track D) → ตัดของเก่า (Track E) | "big bang" |
 
 ## การคำนวณรายงาน
 

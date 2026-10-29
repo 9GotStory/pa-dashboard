@@ -69,4 +69,4 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 - `SPEC.md` — design (what and how), `SCHEMA.md` — sheets, GAS contracts, calc rules, TS types, `FEATURES.md` — ticket plan F01–F22 and acceptance checks
 - `GLOSSARY.md` — terms to use in code, tests, issues; `docs/adr/` — decisions (D1–D8 and more); `CODING_STANDARDS.md` — what `/code-review` checks
 - `docs/agents/` — written by `/setup-matt-pocock-skills` (issue tracker, domain context)
-- PA Dashboard files (`src/components/*`, `src/lib/kpi-*`, `src/scripts/รหัส.js` outside SPEC §12.4) are frozen; new code goes in `src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/`, `src/scripts/dc-*.js`
+- PA Dashboard files are frozen (canonical list: CODING_STANDARDS §1 — pre-existing files under `src/components/` and `src/lib/`, plus `src/scripts/รหัส.js` outside SPEC §12.4); new code goes in `src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/`, `src/scripts/dc-*.js`

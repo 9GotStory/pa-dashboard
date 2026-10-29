@@ -189,7 +189,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ส่ง `limit = 5000` ทุกคำขอ (ถ้า unit กำหนด `limit` มากกว่านี้ ใช้ค่าของ unit) ตารางที่ใหญ่ที่สุดตอนนี้ (`s_epi_complete`) มีราว 2,450 แถวทั้งจังหวัด จึงพอในหน้าเดียว
 - ส่ง `total` จาก response ไปกับ `save_kpi_data` ให้ GAS ปฏิเสธเมื่อได้แถวน้อยกว่า `total` (ข้อมูลถูกตัด) ยังไม่ทำการแบ่งหน้าด้วย `offset` ในเฟส 1 ถ้าวันหนึ่งมีตารางเกิน 5,000 แถว การปฏิเสธนี้จะบอกเอง
 - ส่งทั้งจังหวัด (`province`) ตามเดิม GAS กรอง `5406` เอง
-- เว้นช่วง 4–7 วินาทีระหว่างคำขอ และ retry เมื่อได้ 429/5xx (สคริปต์ node และ GAS ทำอยู่แล้ว ส่วนหน้า `/sync` ตอนนี้ retry เฉพาะ network error ต้องเพิ่มใน F11)
+- เว้นช่วงระหว่างคำขอ: สคริปต์ node และหน้า `/sync` 4–7 วินาที ส่วน `syncAllData` ใน GAS คง 1.5–2.5 วินาทีของเดิม (§12.4) · retry เมื่อได้ 429/5xx (สคริปต์ node และ GAS ทำอยู่แล้ว ส่วนหน้า `/sync` ตอนนี้ retry เฉพาะ network error ต้องเพิ่มใน F11)
 
 ## 8. Sync units และ GAS endpoints
 
@@ -235,12 +235,12 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | แผนที่และเลือกตำบล | Leaflet + OpenStreetMap tiles + GeoJSON ไฟล์คงที่ (SCHEMA §8, D4) รายชื่อตำบลจาก `catalog.json.areas` |
 | แผงข้อมูลพื้นที่ที่เลือก | ชื่อตำบลและรายชื่อหน่วยบริการในตำบล (จาก `catalog.json.hospitals`) ช่องประชากรรอเฟส 2 |
 | ตารางประชากรรายตำบล | ซ่อนไว้จนถึงเฟส 2 |
-| เข้าสู่หมวดรายงาน | การ์ดละหนึ่งหัวข้อที่มีรายงานเปิดอยู่ แสดงชื่อหมวด ชื่อหัวข้อ และจำนวนรายงาน ลิงก์ไป `/reports?cat={cat_id}` |
+| เข้าสู่หมวดรายงาน | การ์ดละหนึ่งหัวข้อที่มีรายงานที่ใช้งาน แสดงชื่อหมวด ชื่อหัวข้อ และจำนวนรายงาน ลิงก์ไป `/reports?cat={cat_id}` |
 | ที่มาของข้อมูล | HDC Open Data, แหล่ง GIS และเวลาที่ build |
 
 ### 9.3 คลังรายงาน `/reports`
 
-- แถบซ้าย: หมวด → หัวข้อ (ซ้อนกัน) พร้อมจำนวนรายงาน แสดงเฉพาะหัวข้อที่มีรายงานเปิดอยู่
+- แถบซ้าย: หมวด → หัวข้อ (ซ้อนกัน) พร้อมจำนวนรายงาน แสดงเฉพาะหัวข้อที่มีรายงานที่ใช้งาน
 - ค้นหาจาก `report_name`, `source_table`, `opendata_id`, ชื่อหัวข้อ และชื่อกลุ่ม โดยค้นภายในหมวด/หัวข้อที่เลือกอยู่ (`q` AND `main`/`cat`)
 - รายการจัดหัวแถวตาม หัวข้อ → กลุ่ม คอลัมน์: ชื่อรายงาน (+ `source_table`) · หัวข้อ/กลุ่ม · ข้อมูลล่าสุด (ปีล่าสุดที่มีข้อมูล หรือ "ยังไม่มีข้อมูล") · เปิดรายงาน
 - แบ่งหน้า 10/20 รายการตาม R6 และเก็บสถานะตัวกรองใน URL
@@ -322,7 +322,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - `BATCH_ALL` คงรูปแบบและการคำนวณเดิม เพิ่มแค่ `meta.years` และรายการ DC ใน `meta.kpi_config` (PA ไม่อ่านสองอย่างนี้)
 - ชีตปีปัจจุบันชื่อเดิม โครงเดิม ต่างแค่เหลือเฉพาะแถวของอำเภอ ซึ่ง PA กรองเองอยู่แล้ว
 - ไม่แก้ `kpi_registry`, `kpi_master`, `kpi_epi` และไม่เปลี่ยนคีย์ cache `PA_DASHBOARD_CACHE_V4`
-- ไม่แก้ไฟล์ PA เดิมใต้ `src/components/` และ `src/lib/` (ยกเว้นย้ายไฟล์ตาม §4)
+- ไม่แก้ไฟล์ PA เดิมใต้ `src/components/` และ `src/lib/` (ยกเว้นย้ายไฟล์ตาม §4) รายการทางการอยู่ใน CODING_STANDARDS §1
 
 ## 12. งานดูแลระบบ
 
@@ -349,13 +349,14 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `refresh --cat <cat_id>` | ทำเฉพาะหัวข้อเดียว |
 
 - `refresh` อ่านรายการหัวข้อจาก `?action=catalog`
+- ต้องมี `NEXT_PUBLIC_GAS_SCRIPT_URL` ใน env ไม่มี fallback (ต่างจาก `sync-moph-to-gas.js` ที่มี fallback เดิม)
 - เว้นช่วง 1–2 วินาทีต่อคำขอ และ retry เมื่อได้ 429
 - ไม่สั่ง rebuild เอง เพราะหลัง refresh ผู้ดูแลต้องไปติ๊กเปิดรายงานก่อน ค่อยสั่ง rebuild
 
 ### 12.4 GAS
 
-- ไฟล์ใหม่ใต้ `src/scripts/`: `dc-storage.js` (บันทึกหลายปี, sync_status, กรองอำเภอ), `dc-catalog.js` (hdc_topics/hdc_reports, save_catalog, catalog), `dc-report.js` (report), `dc-rebuild.js` (rebuild) ฟังก์ชันทั้งหมดอยู่ใน global scope เดียวกับ `รหัส.js` ตามธรรมชาติของ Apps Script
-- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`), `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่, เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
+- ไฟล์ใหม่ใต้ `src/scripts/`: `dc-storage.js` (`getYearWindow`, `sheetNameFor`, `getSyncUnits` ใหม่, บันทึกหลายปี, sync_status, กรองอำเภอ), `dc-catalog.js` (hdc_topics/hdc_reports, save_catalog, catalog), `dc-report.js` (report), `dc-rebuild.js` (rebuild) ฟังก์ชันทั้งหมดอยู่ใน global scope เดียวกับ `รหัส.js` ตามธรรมชาติของ Apps Script
+- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`) และ `SETTINGS_CACHE_KEY` → `settings_v3`, `CONFIG` เพิ่ม `DISTRICT = "5406"` และ `HISTORY_YEARS = 5`, `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่, เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
 - `syncAllData` (trigger รายวัน): ดึง `current_year` ส่ง `limit = 5000` ทุกตาราง ปฏิเสธเมื่อได้แถวน้อยกว่า `total` คงช่วงเว้น 1.5–2.5 วินาทีของเดิม บันทึกผ่านทางเดียวกับ `save_kpi_data` (`year = current_year`) และ POST `rebuild` ตอนจบถ้ามีตารางใดสำเร็จ
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"

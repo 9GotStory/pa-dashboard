@@ -8,10 +8,10 @@
 
 ### ขั้นตอนทำงาน (workflow ของ [mattpocock/skills](https://github.com/mattpocock/skills))
 
-- ติดตั้งครั้งเดียว: เปิด plugin "Skills For Real Engineers" (`claude plugin install mattpocock-skills@claude-plugins-official`) แล้วรัน `/setup-matt-pocock-skills` เลือก GitHub Issues เป็น tracker และ label ค่าเริ่มต้น สคริปต์จะเขียน `docs/agents/issue-tracker.md`, `docs/agents/domain.md` และส่วน `## Agent skills` ใน `CLAUDE.md`
-- เอกสารชุดนี้ (SPEC/SCHEMA/FEATURES) คือผลของขั้น `/grill` แล้ว ขั้นต่อไปคือ `/to-spec` → spec issue 1 ใบที่สรุปเป้าหมายและข้อตัดสินใจ (อ้าง ADR ไม่ใส่ path ไฟล์) → `/to-tickets` → issue ต่อ F## ตามหัวข้อด้านล่าง โดยใส่ "ขึ้นกับ" เป็น blocking relationship ของ GitHub และติด `ready-for-agent` เฉพาะ ticket ที่ไม่ถูก block
+- ติดตั้งครั้งเดียว: เปิด plugin "Skills For Real Engineers" (`claude plugin install mattpocock-skills@claude-plugins-official`) แล้วรัน `/setup-matt-pocock-skills` เลือก GitHub Issues เป็น tracker และ label ค่าเริ่มต้น สคริปต์จะเขียน `docs/agents/issue-tracker.md`, `docs/agents/triage-labels.md`, `docs/agents/domain.md` และส่วน `## Agent skills` ใน `CLAUDE.md`
+- เอกสารชุดนี้ (SPEC/SCHEMA/FEATURES + GLOSSARY + ADR) คือผลของขั้น `/grill-with-docs` แล้ว ขั้นต่อไปคือ `/to-spec` → spec issue 1 ใบที่สรุปเป้าหมายและข้อตัดสินใจ (อ้าง ADR ไม่ใส่ path ไฟล์) → `/to-tickets` → issue ต่อ F## ตามหัวข้อด้านล่าง โดยใส่ "ขึ้นกับ" เป็น blocking relationship ของ GitHub และติด `ready-for-agent` เฉพาะ ticket ที่ไม่ถูก block
 - ยังไม่สร้าง issue จนกว่าจะสั่ง · เมื่อสร้างแล้ว issue คือแหล่งความจริงของสถานะงาน ไฟล์นี้คือแหล่งความจริงของเกณฑ์ตรวจรับ ถ้าสองที่ขัดกันให้แก้ไฟล์นี้ก่อนแล้วอัปเดต issue
-- ต่อ ticket: `/implement` → `/tdd` เฉพาะ seam ที่ตกลงใน CODING_STANDARDS §5 (ไม่ต้องเขียนเทสต์ใหม่ที่อื่น) → `/code-review` เทียบ `CODING_STANDARDS.md` → `/pr` (body มี Summary, Evidence, Merge Danger และ `Closes #<issue>`) · ขั้นที่ต้องมีคนทำเอง (F12 รันกับชีตจริง, F21 ตั้ง Cloudflare, F22 เปิด Pages ใหม่) ใช้ `/wizard` นำทีละขั้นและบันทึกผลใน issue
+- ต่อ ticket: `/implement` ซึ่งเรียก `tdd` และ `code-review` เองตอนจบ (ไม่ต้องสั่งซ้ำ) โดย `tdd` เขียนเทสต์เฉพาะ seam ที่ตกลงใน CODING_STANDARDS §5 และ `code-review` เทียบ `CODING_STANDARDS.md` → `pr` (body มี Summary, Evidence, Merge Danger และ `Closes #<issue>`) · ขั้นที่ต้องมีคนทำเอง (F12 รันกับชีตจริง, F21 ตั้ง Cloudflare, F22 เปิด Pages ใหม่) ใช้ `/wizard` นำทีละขั้นและบันทึกผลใน issue
 - หลังปิด Track แต่ละชุดรัน `/retro` และนำสิ่งที่เรียนรู้มาแก้ไฟล์นี้หรือ ADR ไม่ใช่จำไว้เฉย ๆ
 - งานทั้งหมดเป็นรูป expand–contract: Track A–C ขยาย (GAS รับทั้งแบบเก่าและใหม่, ชีตเพิ่ม, snapshot เพิ่ม) · Track D ย้ายผู้ใช้ (เว็บอ่าน snapshot, PA ไป `/pa`) · Track E หด (GitHub Pages เหลือ stub) จึงอย่ารวม ticket ข้าม Track เป็นใบเดียว
 
@@ -20,17 +20,17 @@
 - แตก branch จาก `main` ทีละ ticket (`feat/F01-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ (ADR-0001)
 - GAS deploy ด้วย `npm run gas:sync` เมื่อ ticket ฝั่ง GAS ผ่านเกณฑ์ (รวม deploy หลายข้อพร้อมกันได้) เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
 - โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (SPEC §12.4) และทุก ticket ฝั่ง GAS ต้องมีเทสต์ใน `src/scripts/test/` ที่โหลดไฟล์ GAS ด้วย `node:vm` พร้อม stub (รันด้วย `node --test src/scripts/test/`) · ไฟล์ที่ไม่ใช่ GAS ใต้ `src/scripts/` ต้องอยู่ใน `.claspignore` (SCHEMA §10)
-- ห้ามแก้ไฟล์ PA เดิม (ไฟล์ที่มีอยู่ใต้ `src/components/` ไม่รวม `src/components/dc/` ใหม่, `src/lib/useKPIData.ts`, `kpi-*.ts`, `excel-export.ts`, `types.ts`) ยกเว้นย้ายไฟล์ใน F13 · ใน `รหัส.js` แก้เฉพาะจุดที่ SPEC §12.4 ระบุ
-- ทุก PR ต้อง `npm run build` ผ่าน (ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step)
-- ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D ทำคู่ขนานได้ตั้งแต่ F05–F06 ผ่าน และ Track E ทำท้ายสุด
+- ห้ามแก้ไฟล์ PA เดิม (รายการทางการใน CODING_STANDARDS §1: ไฟล์ที่มีอยู่ก่อนใต้ `src/components/` และ `src/lib/`) ยกเว้นย้ายไฟล์ใน F13 · ใน `รหัส.js` แก้เฉพาะจุดที่ SPEC §12.4 ระบุ
+- ทุก PR ต้อง `npm run build` ผ่าน (ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step และ prebuild จะล้มถ้ายังไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน F14 จึงต้องรอ F12)
+- ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D: F13, F15, F17 ทำคู่ขนานได้ตั้งแต่ต้น F14 ขึ้นไปรอ F12 และ Track E ทำท้ายสุด
 
 | Track | งาน | ขึ้นกับ |
 |---|---|---|
 | A — GAS | F01–F08 | — |
 | B — เครื่องมือ sync | F09–F11 | F02, F03, F04, F05, F07 |
 | C — ข้อมูล | F12 | A, B |
-| D — Frontend | F13–F20 | F05, F06 (เริ่ม F13, F15–F17 ได้ก่อน) |
-| E — Hosting | F21, F22 | D |
+| D — Frontend | F13–F20 | F13, F15, F17 ไม่ขึ้นกับใคร · F14 ขึ้นกับ C · ที่เหลือขึ้นกับ F14 |
+| E — Hosting | F21, F22 | C, D |
 
 ### ดัชนี ticket (เติมเลข issue เมื่อ `/to-tickets` สร้างแล้ว)
 
@@ -47,11 +47,11 @@
 | F09 | `sync-moph-to-gas.js` | F02, F04, F07 | |
 | F10 | `hdc-catalog.js` | F03, F05 | |
 | F11 | หน้า `/sync` | F02, F04, F07 | |
-| F12 | Backfill 5 ปีและตรวจตัวเลข (คนทำ, `/wizard`) | F08, F09, F10 | |
+| F12 | Backfill 5 ปีและตรวจตัวเลข (คนทำ, `/wizard`) | F06, F08, F09, F10 | |
 | F13 | ย้าย PA ไป `/pa` และตัด `basePath` | — | |
-| F14 | prebuild snapshot | F05, F06 | |
+| F14 | prebuild snapshot | F12 (และ F05, F06 ผ่าน F12) | |
 | F15 | ชั้นคำนวณ `src/lib/dc/` | — | |
-| F16 | โครงหน้าและธีม | F13 | |
+| F16 | โครงหน้าและธีม | F13, F14 | |
 | F17 | ไฟล์ขอบเขตตำบล | — | |
 | F18 | หน้าแรก `/` | F14, F16, F17 | |
 | F19 | คลังรายงาน `/reports` | F14, F16 | |
@@ -65,7 +65,7 @@
 
 ### F01 ตั้งค่า `district_code`, `deploy_hook_url` และ window ปี
 
-- **ทำ (ใน `รหัส.js`):** เพิ่ม `district_code` (ต้องขึ้นต้นด้วย `province_code`) และ `deploy_hook_url` ใน `SETTINGS_SCHEMA` · `CONFIG.DISTRICT = "5406"`, `CONFIG.HISTORY_YEARS = 5` · `getYearWindow(settings)` · `sheetNameFor(table, year, settings?)` · bump `SETTINGS_CACHE_KEY` เป็น `settings_v3` · เพิ่ม `**/test/**`, `**/hdc-catalog.js`, `**/*.mjs` ใน `.claspignore` และวาง harness เทสต์ตัวแรกไว้ใน `src/scripts/test/`
+- **ทำ:** ใน `รหัส.js` (ตามรายการ SPEC §12.4): เพิ่ม `district_code` (ต้องขึ้นต้นด้วย `province_code`) และ `deploy_hook_url` ใน `SETTINGS_SCHEMA` · `CONFIG.DISTRICT = "5406"`, `CONFIG.HISTORY_YEARS = 5` · bump `SETTINGS_CACHE_KEY` เป็น `settings_v3` · สร้าง `dc-storage.js` ใส่ `getYearWindow(settings)` และ `sheetNameFor(table, year, settings?)` (F02 เติม `saveTableYear` ในไฟล์เดียวกัน) · เพิ่ม `**/test/**`, `**/hdc-catalog.js`, `**/*.mjs` ใน `.claspignore` (SCHEMA §10) และวาง harness เทสต์ตัวแรกไว้ใน `src/scripts/test/`
 - **ตรวจรับ (เทสต์ใน `src/scripts/test/settings.test.js`):**
   1. `settings` ไม่มีคอลัมน์ใหม่ → `district_code = "5406"`, `deploy_hook_url = ""` โดยไม่ error
   2. `district_code = 5501` (ไม่ตรงจังหวัด) → ใช้ค่าเริ่มต้น และมี `Logger.log` ว่า `district_code has invalid value`
@@ -106,7 +106,7 @@
 
 ### F04 `BATCH_ALL`: `meta.years` และ PA/DC units
 
-- **ทำ (ใน `รหัส.js`):** `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` · `getSyncUnits` ใหม่ = PA ∪ DC (DC units มาจาก `readHdcReports()` ใน F03 แคช 60 วินาทีคีย์ `dc_units_v1` ถ้ายังไม่มีชีต = ว่าง) · `clearConfigCache` ล้าง `dc_units_v1` ด้วย · `meta.kpi_config` จาก `getSyncUnits` ใหม่ · เพิ่ม `meta.years` · การอ่านและคำนวณ `data` ไม่แตะ
+- **ทำ:** ใน `รหัส.js`: `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` · `clearConfigCache` ล้าง `dc_units_v1` ด้วย · `meta.kpi_config` จาก `getSyncUnits` ใหม่ · เพิ่ม `meta.years` · การอ่านและคำนวณ `data` ไม่แตะ — ใน `dc-storage.js`: `getSyncUnits` ใหม่ = PA ∪ DC (DC units มาจาก `readHdcReports()` ใน F03 แคช 60 วินาทีคีย์ `dc_units_v1` ถ้ายังไม่มีชีต = ว่าง) — ใน `dc-catalog.js`: `save_catalog` (F03) ล้าง `dc_units_v1` หลังเขียน (SCHEMA §3.4)
 - **ตรวจรับ:**
   1. ก่อนแก้ บันทึก response `BATCH_ALL` ไว้ หลังแก้ response เหมือนเดิมทุกฟิลด์ ยกเว้น `meta.kpi_config` ที่อาจมีรายการ DC เพิ่ม และ `meta.years` ที่เพิ่มใหม่
   2. หลัง F02 ข้อ 1 (ชีตปีปัจจุบันเหลือแถวอำเภอ) ตัวเลข `target/result` ใน `BATCH_ALL` เท่าเดิม
@@ -145,11 +145,12 @@
 
 ### F08 `setup=dc_seed`
 
-- **ทำ:** เขียนโค้ดของ `setup=dc_seed` ที่ใส่คอลัมน์ผู้ดูแลของ 21 รายงานตาม SCHEMA §6 โดยจับคู่ `opendata_id` (ข้อนี้เขียนโค้ดอย่างเดียว การรันจริงอยู่ใน F12 เพราะต้องรอ `refresh` จาก F10 ก่อน)
-- **ตรวจรับ (รันใน F12):**
-  1. ตอบ `applied: 21, not_found: []`
-  2. `?action=catalog` มี 21 รายงาน `s_dental_0_5_cavity_free` มี `col_target = "b"`, `col_result = "a"`
-  3. รัน 2 ครั้งผลเหมือนเดิม
+- **ทำ:** เขียนโค้ดของ `setup=dc_seed` ที่ใส่คอลัมน์ผู้ดูแลของ 21 รายงานตาม SCHEMA §6 โดยจับคู่ `opendata_id` (การรันกับชีตจริงอยู่ใน F12 เพราะต้องรอ `refresh` จาก F10 ก่อน)
+- **ตรวจรับ (เทสต์ด้วย stub ชีต `hdc_reports` ที่มีแถวจาก fixture ของ F03 รวม 21 `opendata_id` ตาม SCHEMA §6):**
+  1. ตอบ `applied: 21, not_found: []` และแถว `s_dental_0_5_cavity_free` มี `col_target = "b"`, `col_result = "a"`
+  2. ตัดแถว `opendata_id` ออก 1 แถวจาก stub → `applied: 20`, `not_found` มี id นั้น และไม่สร้างแถวใหม่
+  3. รัน 2 ครั้งผลเหมือนเดิม และคอลัมน์จาก API (`report_name`, `source_table`, `catalog_status`) ไม่ถูกแตะ
+- **ตรวจรับกับชีตจริง (ใน F12):** `?action=catalog` มี 21 รายงานพร้อม `subgroup`/`order`/`goal` ตาม SCHEMA §6
 
 ---
 
@@ -165,8 +166,9 @@
 
 ### F10 `src/scripts/hdc-catalog.js` (ใหม่)
 
-- **ทำ:** `find <table…>`, `refresh [--cat <cat_id>]` ตาม SPEC §12.3
+- **ทำ:** `find <table…>`, `refresh [--cat <cat_id>]` ตาม SPEC §12.3 · อ่าน `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก env เท่านั้น ไม่มี fallback
 - **ตรวจรับ:**
+  0. รันโดยไม่ตั้ง env → exit 1 พร้อมข้อความบอกชื่อ env
   1. `find` กับ 18 ตาราง → พิมพ์ `cat_id`/`category_name`/`opendata_id`/`report_name` ครบทุกตาราง และ `opendata_id` ตรงกับ SCHEMA §6 (ถ้าไม่ตรง ต้องแก้ SCHEMA ก่อนทำ F08)
   2. `refresh` หลังใส่หัวข้อใน `hdc_topics` → สรุปต่อหัวข้อ `added/updated/removed/skipped` และ `hdc_topics.report_count` ถูกเติม
   3. ได้ 429 จาก MOPH → รอแล้วลองใหม่ ไม่ล้มทั้งคำสั่ง
@@ -208,7 +210,7 @@
 ### F14 prebuild snapshot (`src/scripts/build-snapshot.mjs`)
 
 - **ทำ:** ตาม SPEC §6.2 และ SCHEMA §7: ดึง catalog + report ทุกตัว → เรียงตาม SPEC §5.4 และตัดกลุ่ม/หัวข้อ/หมวดว่าง → ตรวจความครบ (`sheet_rows = expected_rows`, ปีปัจจุบันมีแถว) → เขียน `public/data/meta.json`, `catalog.json`, `reports/{id}.json` → ตรวจขนาด → ล้มดัง ๆ · ต้องมี env `NEXT_PUBLIC_GAS_SCRIPT_URL` ไม่มี URL สำรอง · `package.json`: `"prebuild": "node src/scripts/build-snapshot.mjs"`, `"snapshot": "node src/scripts/build-snapshot.mjs"` · `.gitignore` เพิ่ม `public/data/` · `ci.yml` ส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก secrets เข้า build step · `src/lib/dc/snapshot.ts` (อ่านไฟล์ด้วย `fs` สำหรับ server component)
-- **ขึ้นกับ:** F05, F06
+- **ขึ้นกับ:** F12 (prebuild ล้มถ้าไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน จึงต้องมี seed + sync แล้ว) ซึ่งครอบ F05, F06
 - **ตรวจรับ:**
   1. `npm run snapshot` → ไฟล์ครบตามจำนวนรายงานที่ใช้งาน และ `catalog.json` เรียงหัวข้อวัคซีนเป็น กลุ่มอายุ 1 → 2 → 3 → 5 ปี โดยในกลุ่ม `s_epi1` มาก่อน fully immunized
   2. ไม่ตั้ง env → exit 1 ทันที · ชี้ env ไป URL ที่ตอบ error → exit 1 และไม่เขียนไฟล์ใด ๆ (ไม่มีไฟล์ครึ่ง ๆ กลาง ๆ)
@@ -230,6 +232,7 @@
 ### F16 โครงหน้าและธีม Data Center
 
 - **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` (อ่าน `meta.json` ตอน build) · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · route group `src/app/(dc)/layout.tsx` ห่อเฉพาะ `/`, `/reports`, `/reports/[id]` ส่วน `/pa` และ `/sync` อยู่นอก group
+- **ขึ้นกับ:** F13, F14 (footer อ่าน `meta.json` ผ่าน `snapshot.ts` ของ F14)
 - **ตรวจรับ:**
   1. `/pa` และ `/sync` ไม่มี masthead ของ Data Center และ class ของ PA ไม่เปลี่ยน
   2. `/`, `/reports`, `/reports/{id}` มี masthead และ footer แสดงผลได้ที่ความกว้าง 360px โดยไม่มี scroll แนวนอนระดับหน้า (ตารางเลื่อนได้ภายในกรอบของตัวเองตาม SPEC §9.1)
@@ -245,7 +248,7 @@
 
 ### F18 หน้าแรก `/`
 
-- **ทำ:** ตาม SPEC §9.2 · หน้าเป็น server component อ่าน `catalog.json`/`meta.json` ตอน build แล้วส่ง `areas`/`hospitals` เป็น props ให้ `src/components/dc/DistrictExplorer.tsx` (`'use client'`) ซึ่งเป็นตัวเรียก `next/dynamic(() => import('./DistrictMap'), { ssr: false })` (Next.js ไม่ให้ใช้ `ssr: false` ใน server component โดยตรง) · `DistrictMap.tsx` ใช้ Leaflet อ่าน `/geo/song-tambon.geojson` · เพิ่ม `@types/leaflet` เป็น devDependency · เลือกตำบล (คลิกแผนที่หรือปุ่ม) แสดงรายชื่อหน่วยบริการ · การ์ดหัวข้อ · วันที่ข้อมูลล่าสุด · ที่มาของข้อมูล
+- **ทำ:** ตาม SPEC §9.2 · หน้าเป็น server component อ่าน `catalog.json`/`meta.json` ตอน build แล้วส่ง `areas`/`hospitals` เป็น props ให้ `src/components/dc/DistrictExplorer.tsx` (`'use client'`) ซึ่งเป็นตัวเรียก `next/dynamic(() => import('./DistrictMap'), { ssr: false })` (Next.js ไม่ให้ใช้ `ssr: false` ใน server component โดยตรง) · `DistrictMap.tsx` ใช้ Leaflet อ่าน `/geo/song-tambon.geojson` · เพิ่ม `leaflet@1.9.4` เป็น dependency และ `@types/leaflet` เป็น devDependency · เลือกตำบล (คลิกแผนที่หรือปุ่ม) แสดงรายชื่อหน่วยบริการ · การ์ดหัวข้อ · วันที่ข้อมูลล่าสุด · ที่มาของข้อมูล
 - **ขึ้นกับ:** F14, F16, F17
 - **ตรวจรับ:**
   1. แผนที่แสดง 8 ตำบลเป็นสีและชื่อตรง `areas` คลิกตำบลแล้วแผงด้านข้างเปลี่ยนตาม
