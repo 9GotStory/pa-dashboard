@@ -73,7 +73,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ช่องทางหลักของการดึงข้อมูลยังเป็นฝั่ง client แล้วส่งเข้า GAS เหมือนเดิม เพราะ daily trigger ของ GAS ดึงจาก MOPH ได้ไม่เสถียร
 - GAS เป็นจุดเดียวที่ whitelist ตาราง กรองพื้นที่ จัดการชีตหลายปี และสั่ง rebuild
 - ข้อจำกัด GAS เดิมยังใช้: GET ส่งค่าทาง query string เท่านั้น ไม่มี custom header, POST ใช้ `Content-Type: text/plain`
-- โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ใต้ `src/scripts/` (clasp push ทุกไฟล์ใน rootDir ให้เอง) `รหัส.js` แก้เท่าที่จำเป็น (§12.4)
+- โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (clasp push ทุกไฟล์ใน rootDir ที่ไม่อยู่ใน `.claspignore` ให้เอง) `รหัส.js` แก้เท่าที่จำเป็น (§12.4) · สคริปต์ node และเทสต์ที่อยู่ใต้ `src/scripts/` ต้องถูกกันใน `.claspignore` ทุกไฟล์ ไม่อย่างนั้นจะถูก push ขึ้น Apps Script และทำให้ทั้งโปรเจกต์พัง (ไฟล์ทุกไฟล์ถูกโหลดทุกครั้งที่รัน และ `require` ไม่มีใน GAS)
 
 ## 4. Routes
 
@@ -89,7 +89,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - หน้าที่อ่าน query ด้วย `useSearchParams` ต้องห่อด้วย `<Suspense>` ตามข้อกำหนดของ static export
 - `/pa?cat=…` ใช้ได้เหมือนเดิม เพราะโค้ด PA อ่าน `window.location.pathname` อยู่แล้ว
 - ไม่มี `basePath` อีก: ลบ `basePath` และ `isProd` ออกจาก `next.config.ts` ส่วน `output: 'export'` และ `images.unoptimized` คงไว้
-- ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป
+- ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป · ตั้งแต่ตัด `basePath` (F13) จนถึงขึ้น stub (F22) `deploy.yml` ต้องไม่ build อัตโนมัติอีก (เหลือ `workflow_dispatch`) ไม่อย่างนั้นทุก push ไป `main` จะ deploy เว็บที่ไม่มี `basePath` ขึ้น `/pa-dashboard/` แล้วพัง ระหว่างนี้ GitHub Pages ค้างเวอร์ชันล่าสุดก่อน F13 ซึ่งยังใช้ได้
 - หน้า Data Center ทั้งสามอยู่ใน route group `src/app/(dc)/` ซึ่งมี `layout.tsx` ของตัวเอง (masthead + footer) ส่วน `/pa` และ `/sync` อยู่นอก group จึงไม่มี masthead และไม่ถูกแตะ metadata ของ root layout เปลี่ยนเป็นของ Data Center
 
 ## 5. แค็ตตาล็อกรายงาน
@@ -130,7 +130,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - กลุ่ม: `order` ที่น้อยที่สุดของรายงานในกลุ่ม (กฎเดียวกับ `sortKpisByGroup` ของ PA) แต่เพิ่มว่ารายงานที่ไม่มีกลุ่มอยู่ท้ายหัวข้อเสมอ (PA จัดกลุ่มว่างเหมือนกลุ่มทั่วไป)
 - รายงาน: `order` แล้วตาม `report_name`
 - `order` ว่างถือเป็นลำดับท้ายสุด เทียบชื่อด้วย `localeCompare(…, "th")`
-- การเรียงทำครั้งเดียวใน prebuild script และบันทึกลำดับไว้ใน catalog.json หน้าเว็บไม่ต้องเรียงซ้ำ
+- การเรียงทำครั้งเดียวใน prebuild script และบันทึกลำดับไว้ใน catalog.json หน้าเว็บไม่ต้องเรียงซ้ำ · กลุ่ม หัวข้อ และหมวดที่ไม่มีรายงานที่ใช้งานเลย ไม่ถูกใส่ใน catalog.json
 
 ### 5.5 ลิงก์ไปต้นทาง
 
@@ -155,9 +155,10 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - รันอัตโนมัติผ่าน npm lifecycle `prebuild` ก่อน `next build` และสั่งเองได้ด้วย `npm run snapshot` (สำหรับ dev)
 - ขั้นตอน: GET `?action=catalog` → สำหรับรายงานที่ใช้งานทุกตัว GET `?action=report&id=` → เขียนไฟล์ → พิมพ์สรุป (จำนวนรายงาน, ขนาดไฟล์ใหญ่สุด, เวลา)
 - เรียก GAS ทีละ 3 คำขอพร้อมกัน retry 3 ครั้งต่อคำขอ (รอ 2, 4, 8 วินาที)
-- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, หรือไฟล์ใดเกินขนาดเป้าหมาย 2 เท่า → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน
+- GAS ถือ script lock ระหว่างอ่านทั้ง `catalog` และ `report` (SCHEMA §3.1–3.2) จึงไม่อ่านชีตที่กำลังถูกเขียนครึ่ง ๆ กลาง ๆ และทุก block ปีมี `sheet_rows` (จำนวนแถวที่อ่านได้จากชีตก่อนกรอง `id`) กับ `expected_rows` (จาก `sync_status`) ให้ script เทียบ
+- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย)
 - ไม่ใช้ข้อมูลเก่าหรือข้อมูลบางส่วนแทนที่ของจริงเด็ดขาด
-- อ่าน URL ของ GAS จาก env `NEXT_PUBLIC_GAS_SCRIPT_URL` (ถ้าไม่มี ใช้ URL เดียวกับ `src/lib/useKPIData.ts`)
+- อ่าน URL ของ GAS จาก env `NEXT_PUBLIC_GAS_SCRIPT_URL` เท่านั้น ถ้าไม่ตั้ง → exit 1 (ไม่มี URL สำรองในโค้ด เพื่อให้ build ที่ลืมตั้ง env ล้มชัด ๆ ไม่ใช่ไปดึงจาก deployment ผิดตัว)
 
 ### 6.3 การสั่ง rebuild
 
@@ -175,13 +176,13 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | ชีตปีย้อนหลัง | หนึ่งชีตต่อ (ตาราง, ปี) ชื่อ `{table}_y{YYYY}` เช่น `s_epi1_y2568` header ของใครของมัน (คอลัมน์ต่างปีได้ ไม่ต้องรวม header) |
 | พื้นที่ | ทุกชีตเก็บเฉพาะแถวที่ `areacode` ขึ้นต้นด้วย `settings.district_code` (`5406`) GAS กรองตอนบันทึก ชีตปีปัจจุบันจึงเล็กลงราว 8 เท่าจากเดิม และ `BATCH_ALL` เร็วขึ้น (PA กรอง `5406` เองอยู่แล้ว ตัวเลขไม่เปลี่ยน) |
 | การบันทึก | แทนที่ทั้งชีตของ (ตาราง, ปี) นั้น ปีอื่นไม่ถูกแตะ |
-| เปลี่ยนปีงบอัตโนมัติ | ก่อนเขียนปี Y ทับชีตปีปัจจุบัน ถ้าชีตมีแถวของปี Z ≠ Y อยู่ (เพราะเพิ่งเปลี่ยน `current_year`) GAS ย้ายแถวปี Z ไปชีต `_y{Z}` ก่อน (แทนที่ชีตนั้น) จึงไม่มีข้อมูลหาย และไม่ต้องสั่งอะไรเอง |
+| เปลี่ยนปีงบอัตโนมัติ | ก่อนเขียนปี Y ทับชีตปีปัจจุบัน ถ้าชีตมีแถวของปี Z ≠ Y อยู่ (เพราะเพิ่งเปลี่ยน `current_year`) GAS ย้ายแถวปี Z ไปชีต `_y{Z}` ก่อน จึงไม่มีข้อมูลหาย และไม่ต้องสั่งอะไรเอง · ถ้า `_y{Z}` มีข้อมูลที่ใหม่กว่าหรือเท่ากันอยู่แล้ว (เช่น เพิ่ง sync ปี Z ซ้ำหลังเปลี่ยนปี) จะไม่ทับ แค่ทิ้งแถวเก่าจากชีตปีปัจจุบัน |
 | ข้อมูลเก่ากว่า | ถ้า `date_com` สูงสุดของข้อมูลที่ส่งมา น้อยกว่าที่มีอยู่ของ (ตาราง, ปี) เดียวกัน GAS ปฏิเสธ (`Stale data`) ยกเว้นส่ง `force: true` กันการเขียนทับด้วยไฟล์เก่า |
 | สถานะ | ชีต `sync_status` หนึ่งแถวต่อ (ตาราง, ปี): จำนวนแถว, `date_com` ล่าสุด, เวลาที่บันทึก |
 | ปีนอก window | ไม่อ่านและไม่บันทึก ชีต `_y` เก่าไม่ถูกลบอัตโนมัติ ลบเองเมื่อต้องการ |
 | sync ประจำ | เฉพาะ `current_year` เหมือนปัจจุบัน |
 | ปีย้อนหลัง | ดึงครั้งเดียว (backfill) และสั่งดึงซ้ำเองเป็นรายปีเมื่อต้องการ |
-| เปลี่ยนปีงบ | แก้ `settings.current_year` แล้ว PA กับ Data Center ขยับพร้อมกัน ก่อนเปลี่ยนควรดึงปีเดิมซ้ำอีกรอบ เพราะ HDC อาจยังปรับข้อมูลปีที่แล้ว และ sync ประจำจะไม่ดึงปีนั้นอีก |
+| เปลี่ยนปีงบ | แก้ `settings.current_year` แล้ว PA กับ Data Center ขยับพร้อมกัน · ก่อนเปลี่ยน ดึงปีเดิมซ้ำอีกรอบ เพราะ HDC อาจยังปรับข้อมูลปีที่แล้ว และ sync ประจำจะไม่ดึงปีนั้นอีก · **หลังเปลี่ยน สิ่งแรกที่ต้องทำคือ sync ปีใหม่** (หน้า `/sync` หรือรอ trigger รายวัน) เพราะจนกว่าจะถึงตอนนั้น ชีตปีปัจจุบันยังมีแถวปีเก่า และ `BATCH_ALL` ของ PA จะแสดงแถวเหล่านั้นในฐานะปีใหม่ |
 
 ### 7.1 การดึงจาก `report_data`
 
@@ -212,7 +213,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | POST | `rebuild` | `/sync`, node, `syncAllData`, ผู้ดูแล | ใหม่ |
 
 - ไม่มีการยืนยันตัวตนฝั่ง server เหมือนเดิม (D5, §14)
-- เว็บสาธารณะไม่เรียก endpoint ใดเลย จึงไม่ต้องมีแคชใน GAS
+- เว็บสาธารณะไม่เรียก endpoint ใดเลย `catalog`/`report` จึงไม่ต้องแคช · ยกเว้นรายชื่อ DC units (ชื่อตารางจาก `hdc_reports`) ซึ่ง `getSyncUnits` ต้องใช้ทุกครั้งที่ PA เรียก `BATCH_ALL` ให้แคช 60 วินาทีแบบเดียวกับ `kpi_master` (SCHEMA §3.5) ไม่อย่างนั้น PA จะช้าลงเพราะอ่านชีตเพิ่ม 2 ชีตทุกครั้ง
 
 ## 9. หน้าจอ
 
@@ -354,7 +355,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 ### 12.4 GAS
 
 - ไฟล์ใหม่ใต้ `src/scripts/`: `dc-storage.js` (บันทึกหลายปี, sync_status, กรองอำเภอ), `dc-catalog.js` (hdc_topics/hdc_reports, save_catalog, catalog), `dc-report.js` (report), `dc-rebuild.js` (rebuild) ฟังก์ชันทั้งหมดอยู่ใน global scope เดียวกับ `รหัส.js` ตามธรรมชาติของ Apps Script
-- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`), `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่, `getSyncUnits` รวม DC units, `BATCH_ALL` เพิ่ม `meta.years`, `syncAllData` เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, เมนู `onOpen` เพิ่ม "Rebuild Website"
+- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`), `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่, เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
 - `syncAllData` (trigger รายวัน): ดึง `current_year` ส่ง `limit = 5000` ทุกตาราง ปฏิเสธเมื่อได้แถวน้อยกว่า `total` คงช่วงเว้น 1.5–2.5 วินาทีของเดิม บันทึกผ่านทางเดียวกับ `save_kpi_data` (`year = current_year`) และ POST `rebuild` ตอนจบถ้ามีตารางใดสำเร็จ
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"
@@ -366,12 +367,12 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 |---|---|
 | โปรเจกต์ | ต่อกับ repo GitHub โดยตรง production branch = `main` |
 | Build | preset "Next.js (Static HTML Export)" · build command `npm run build` (npm รัน `prebuild` ให้เอง) · output `out` · env `NODE_VERSION=20` |
-| ตัวแปร build | `NEXT_PUBLIC_GAS_SCRIPT_URL`, `NEXT_PUBLIC_SYNC_PIN_CODE` (ย้ายจาก GitHub secrets) |
+| ตัวแปร build | `NEXT_PUBLIC_GAS_SCRIPT_URL`, `NEXT_PUBLIC_SYNC_PIN_CODE` (ค่าเดียวกับใน GitHub secrets ซึ่ง ci.yml ยังใช้) |
 | Deploy Hook | สร้างหนึ่งตัว แล้ววาง URL ใน `settings.deploy_hook_url` (§6.3) |
 | Preview deployments | ปิด (Preview branch control = None) เพราะ `develop` เป็นโค้ดคนละสถาปัตยกรรมที่ build แบบ static ไม่ผ่าน และกันไม่ให้ branch งานกิน build quota |
 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` (D6) ชื่อโปรเจกต์กำหนดตอนสร้าง เมื่อมีโดเมนของ สสอ.สอง บน Cloudflare ค่อยเพิ่ม custom domain |
 
-- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) ต้องมี `NEXT_PUBLIC_GAS_SCRIPT_URL` ใน GitHub secrets เพราะ prebuild ต้องดึงข้อมูลจริง ส่วน `deploy.yml` เปลี่ยนไปทำ stub (§12.6)
+- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) แต่ต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step (ตอนนี้ส่งแค่ `NODE_ENV`) เพราะ prebuild ต้องดึงข้อมูลจริงและไม่มี URL สำรอง · `deploy.yml` หยุด build อัตโนมัติตั้งแต่ F13 และเปลี่ยนไปทำ stub ใน F22 (§12.6)
 - Cloudflare Pages เสิร์ฟ `/sync` จาก `sync.html` และ redirect `/sync.html` → `/sync` เอง การตรวจรับต้องลองทั้งสองแบบ
 - build ล้ม (เช่น GAS ล่มตอน build) = เว็บคงเวอร์ชันก่อนหน้า ดูเหตุได้ใน build log ของ Cloudflare
 
@@ -398,8 +399,8 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | 5 | `setup=dc_seed` | 21 รายงานเป็น `enabled = TRUE` และไม่มีรายการ "ไม่พบ" |
 | 6 | ทดสอบการดึง `s_aged9` และ `s_epi_complete` ด้วย `limit = 5000` | จำนวนแถวที่ได้เท่ากับ `total` ของทั้งสองตาราง และ `s_aged9` เท่ากับตอนไม่ส่ง `limit` |
 | 7 | `sync-moph-to-gas.js --backfill --no-rebuild` | `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูล และมีชีต `_y` ตามนั้น |
-| 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน (สคริปต์นี้ใช้ปี `2569` คงที่ ถ้า `current_year` ไม่ใช่ 2569 ต้องแก้ค่าในสคริปต์ก่อน) | ตัวเลขตรงกับ `/pa` |
-| 9 | `npm run snapshot && npm run build` บนเครื่อง | ไฟล์ใน `public/data/` ครบ 21 รายงาน ขนาดไม่เกิน §6.1 และ `out/reports/{id}.html` มีครบ 21 ไฟล์ |
+| 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน (สคริปต์นี้ใช้ปี `2569` คงที่ ถ้า `current_year` ไม่ใช่ 2569 ต้องแก้ค่าในสคริปต์ก่อน) | KPI แบบรายปีและ EPI ตรงกับ `/pa` · KPI รายไตรมาส (`childdev4/2`, `ncd_screen_repleate1`, `ht_screen_follow`) ไม่ต้องตรง เพราะสคริปต์รวม 4 ไตรมาสเสมอ ไม่ดู `effective_quarter` |
+| 9 | `npm run build` บนเครื่อง (รัน prebuild ให้เอง) | ไฟล์ใน `public/data/` ครบ 21 รายงาน ขนาดไม่เกิน §6.1 · ทุกรายงานมี block ปีปัจจุบันที่ `rows.length > 0` และตารางที่มีรายงานเดียวมี `rows.length = expected_rows` (ยืนยันว่า `id` ในข้อมูลดิบตรงกับแค็ตตาล็อกครบทั้ง 21 รายงาน) · `out/reports/{id}.html` มีครบ 21 ไฟล์ |
 | 10 | ตรวจ Data Center บนเครื่อง (`npx serve out`) | ค่าทั้งปีระดับอำเภอของ KPI ที่ PA คิดแบบรายปีตรงกับ PA ถ้าไม่ตรง ให้ตรวจแถวที่ `result` ว่าง (PA มี fallback ไปใช้ผลรวมรายไตรมาส) และเทียบรายงานอื่น 1–2 รายงานกับหน้า HDC ระดับอำเภอ · Lighthouse ผ่าน §9.6 |
 | 11 | สร้างโปรเจกต์ Cloudflare Pages + Deploy Hook + ใส่ `deploy_hook_url` | `https://<project>.pages.dev/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/{id}` เปิดได้โดยตรง, id ปลอมได้ 404 |
 | 12 | POST `rebuild` จากเครื่อง | Cloudflare เริ่ม build ใหม่ภายใน 1 นาที และครั้งที่ 6 ในวันเดียวกันถูกปฏิเสธ |

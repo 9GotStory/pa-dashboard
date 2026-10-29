@@ -22,7 +22,7 @@
 
 - แถว 1 เป็น header · ตัวอ่านใหม่ทั้งหมด (`hdc_topics`, `hdc_reports`, `sync_status`, และการอ่าน `hospitals`/`tambon_master` ใน `?action=catalog`) อ่านคอลัมน์ตามชื่อ header (trim + ตัวพิมพ์เล็ก) แบบเดียวกับตัวอ่านแท็บ registry ของเดิม ลำดับคอลัมน์ไม่มีผล · ตัวอ่านเดิม (`settings` = trim อย่างเดียว, ชีตข้อมูล = header ตรง ๆ) ไม่แก้
 - ค่าติ๊กอ่านด้วย `parseBool` เดิม
-- header จริงที่ตรวจจากชีต 29 ต.ค. 2569: `hospitals` = `hospcode, hospname, tambon_id` (17 แถว) · `tambon_master` = `id, name_th, district_id, zip_code` (8 แถวของ `5406`) · PA อ่านสองชีตนี้ตามตำแหน่งคอลัมน์ ส่วนตัวอ่านใหม่อ่านตามชื่อ
+- header จริงที่ตรวจจากชีต 29 ต.ค. 2569: `hospitals` = `hospcode, hospname, tambon_id` (17 แถว) · `tambon_master` = `id, name_th, district_id, zip_code` (8 แถวของ `5406`) · PA อ่านสองชีตนี้ตามตำแหน่งคอลัมน์ ส่วนตัวอ่านใหม่อ่านตามชื่อ · ตารางข้อมูลทั้ง 18 ตารางตรวจ header แล้วตาม §4.1 รวม `s_kpi_dental28`/`s_kpi_dental33` ซึ่งมี `target`/`result` และมีค่า `target` จริง (comment ใน `verify-all.js` ที่ว่า dental33 ไม่มี target เป็นข้อมูลเก่า)
 
 ## 2. รายละเอียดชีต
 
@@ -114,7 +114,7 @@
 | ขนาดชีต | หลังเขียน ตัดแถวว่างท้ายชีตออก (`deleteRows`) ให้ชีตมีแถวเท่าข้อมูล + header เพื่อไม่เปลือง cell |
 | ปีนอก window | ไม่อ่าน ไม่เขียน และไม่ลบชีตอัตโนมัติ |
 
-**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้จัดกลุ่มแถวเหล่านั้นตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): เขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`) แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
+**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้จัดกลุ่มแถวเหล่านั้นตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): ถ้า `sync_status` (table, Z) ชี้ไปชีต `_y{Z}` อยู่แล้ว และ `max_date_com` ของมัน ≥ `date_com` สูงสุดของแถวที่จะย้าย → **ไม่ทับ** แค่ทิ้งแถวเหล่านั้นจากชีตปีปัจจุบัน (กรณีมีคน sync ปี Z ซ้ำไปแล้วหลังเปลี่ยนปี) ไม่อย่างนั้นเขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`) · แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
 
 คอลัมน์ทั่วไปของแถว HDC: `id` (บางตารางไม่มี เช่น `s_dental_0_5_cavity_free`), `hospcode` 5 หลัก, `areacode` 8 หลัก (จังหวัด 2 + อำเภอ 2 + ตำบล 2 + หมู่ 2), `flag_sent`, `date_com` (`YYYYMMDDHHmm` และ `s_epi1` มีวินาทีต่อท้าย), `b_year` (ปีงบประมาณ พ.ศ.), `ip`
 
@@ -124,7 +124,8 @@
 - ทุก response เป็น HTTP 200 กรณีผิดพลาดตอบ `{ "status": "error", "message": "…" }` (`createJsonError` เดิม)
 - `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + ตัวพิมพ์เล็ก + `^[a-z0-9]{8,64}$` ใช้กับ `cat_id` และ `opendata_id` ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
-- ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings)` = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
+- ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
+- `catalog` และ `report` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
 
 ### 3.1 `GET ?action=catalog`
 
@@ -151,7 +152,7 @@
 3. กรองแถวของแต่ละปี:
    1. `areacode` ขึ้นต้นด้วย `district_code` (กันแถวเก่าแบบทั้งจังหวัดที่อาจค้างอยู่)
    2. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` (ตัวพิมพ์เล็ก) = `opendata_id` เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
-4. ตอบ `GasReport` (§9): `years` เป็น array ของ `{ b_year, headers, rows, max_date_com }` เรียงปีน้อยไปมาก `rows` เป็น array ของ array ตามลำดับ `headers` (ไม่ใช่ object เพื่อลดขนาด)
+4. ตอบ `GasReport` (§9): `years` เป็น array ของ `{ b_year, headers, rows, max_date_com, sheet_rows, expected_rows }` เรียงปีน้อยไปมาก `rows` เป็น array ของ array ตามลำดับ `headers` (ไม่ใช่ object เพื่อลดขนาด) · `sheet_rows` = จำนวนแถวที่อ่านได้จากชีตหลังกรองอำเภอแต่ก่อนกรอง `id` · `expected_rows` = `sync_status.row_count` ของปีนั้น (prebuild script ใช้สองค่านี้ตรวจความครบ SPEC §6.2)
 5. ไม่แคช
 
 ### 3.3 `POST save_kpi_data` (แก้)
@@ -178,7 +179,7 @@
 6. ตรวจ `Stale data`: ถ้า `force` ไม่ใช่ `true` และ `sync_status` มีแถว (`tableName`, `year`) ที่ `max_date_com` มากกว่า `date_com` สูงสุดของแถวใหม่ ตอบ error `Stale data: existing {old} > incoming {new}` ไม่บันทึก
 7. ถ้า `year = current_year`: ทำการย้ายปีอัตโนมัติตาม §2.5 ก่อน
 8. เขียนแทนที่ชีต `sheetNameFor(tableName, year)` ทั้งชีต: clear → header (key ของแถวใหม่ตามลำดับที่พบ) → ตั้งรูปแบบคอลัมน์ข้อความ → ค่า → ตัดแถวว่างท้ายชีต
-9. upsert `sync_status` (`tableName`, `year`, `sheet`, `row_count`, `max_date_com`, `synced_at`) และลบแถวของตารางนี้ที่อยู่นอก window
+9. upsert `sync_status` (`tableName`, `year`, `sheet`, `row_count`, `max_date_com`, `synced_at`) และลบแถวของตารางนี้ที่อยู่นอก window · ถ้าชีต `sync_status` ยังไม่มี สร้างพร้อม header ตรงนี้เลย (ไม่รอ `setup=datacenter` เพราะ trigger รายวันอาจรันก่อน)
 10. บันทึก SUCCESS `Synced {table} {year}` พร้อมจำนวนแถว
 
 Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
@@ -215,6 +216,8 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 
 - การอ่านและคำนวณ **ไม่แก้** ยังอ่านชีตปีปัจจุบัน (ชื่อเดิม) ซึ่งตอนนี้มีเฉพาะแถวของอำเภอและปีเดียว
 - `getSyncUnits` เดิมเปลี่ยนชื่อเป็น `getPaUnits` (ใช้คำนวณ `data`) · `getSyncUnits` ใหม่ = PA units ∪ DC units ใช้กับ whitelist ของ `doPost`, `syncAllData` และ `meta.kpi_config` รายการ DC ไม่มี `target_months`/`effective_quarter` (เป็น `null`)
+- รายชื่อ DC units (ชื่อตารางเท่านั้น) แคชใน `CacheService` คีย์ `dc_units_v1` 60 วินาที เหมือน `kpi_master` · `?action=catalog` อ่านชีตตรงไม่ผ่านแคชนี้ · `clearConfigCache()` และ `save_catalog` ล้างคีย์นี้ด้วย · ถ้าชีต `hdc_reports` ยังไม่มี = ว่าง
+- `fetchMophForKpi` (ใช้โดย `syncAllData`) ส่ง `limit = 5000` ทุกตาราง (หรือค่าของ unit ถ้ามากกว่า) และคืน `total` จาก envelope ให้ `saveTableYear` ตรวจ
 - เพิ่ม `meta.years` = window (array ของ string เรียงน้อยไปมาก) ให้หน้า `/sync` ใช้ทำตัวเลือกปี
 - นอกจากนี้ response เหมือนเดิมทุกอย่าง PA ไม่อ่านฟิลด์ใหม่
 
@@ -232,9 +235,9 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 ```
 
 1. อ่าน `deploy_hook_url` จาก `settings` ถ้าว่าง ตอบ `{ status: "error", message: "Deploy hook not configured" }`
-2. นับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง
+2. ถือ script lock แล้วนับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (lock กันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
 3. `UrlFetchApp.fetch(hook, { method: "post", muteHttpExceptions: true })` ถ้าได้ 2xx เพิ่มตัวนับ บันทึก INFO `Rebuild requested ({reason})` และตอบ `{ status: "success", remaining_today: n }` ไม่อย่างนั้นตอบ error พร้อม status code
-4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` โดยไม่ผ่าน HTTP
+4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP
 
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
 
@@ -412,7 +415,9 @@ Request (`Content-Type: application/json`):
 - เรียงหมวด/หัวข้อ/กลุ่ม/รายงานตาม SPEC §5.4 แล้วเก็บเป็นโครงซ้อน (`DcCatalog.mains[].topics[].groups[].reports[]`) เพื่อให้หน้าเว็บวนลูปได้เลย
 - `DcReport.cat_id`/`main_report_id` ยังอยู่ในรายงานแต่ละตัว (ใช้ทำ breadcrumb และ "รายงานที่เกี่ยวข้อง")
 - `meta.latest_date_com` = `max_date_com` ที่มากที่สุดในทุกรายงาน
-- ตรวจขนาดไฟล์ตาม SPEC §6.1
+- ตัดกลุ่ม หัวข้อ และหมวดที่ไม่มีรายงานที่ใช้งานออก
+- ตรวจความครบ: ทุก block ปีต้อง `sheet_rows = expected_rows` และรายงานที่ใช้งานทุกตัวที่มีปีปัจจุบันใน `years` ต้องได้ `rows.length > 0` ไม่อย่างนั้น exit 1
+- ตรวจขนาดไฟล์ตาม SPEC §6.1: เกินเป้าหมาย = exit 1, ถึง 80% = เตือน
 
 ## 8. ขอบเขตตำบล (GeoJSON)
 
@@ -508,8 +513,10 @@ export type Cell = string | number;
 export interface DcYearBlock {
   b_year: string;
   headers: string[];
-  rows: Cell[][];                // เรียงตาม headers
+  rows: Cell[][];                // เรียงตาม headers (กรอง id แล้ว)
   max_date_com: string;
+  sheet_rows: number;            // แถวที่อ่านจากชีตก่อนกรอง id
+  expected_rows: number;         // sync_status.row_count
 }
 
 export interface DcReportData {
@@ -541,8 +548,10 @@ export interface Totals {
 | Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App (prebuild script และหน้า `/sync` ใช้) |
 | Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
 | Cloudflare Pages (build) | `NODE_VERSION` | `20` |
-| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (prebuild ใน CI ต้องใช้) |
-| เครื่องที่รันสคริปต์ node | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (ไม่บังคับ มี fallback ในสคริปต์) |
+| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม แต่ `ci.yml` ต้องส่งเข้า build step ด้วย (ตอนนี้ยังไม่ส่ง) |
+| เครื่องที่รันสคริปต์ node และ `npm run build` | `NEXT_PUBLIC_GAS_SCRIPT_URL` | prebuild script บังคับต้องมี · สคริปต์ sync/catalog ยังมี fallback เดิม |
+| `.claspignore` | `**/hdc-catalog.js`, `**/build-snapshot.mjs`, `**/test/**` (เพิ่มจากของเดิม) | กันสคริปต์ node และเทสต์ไม่ให้ถูก push ขึ้น Apps Script |
+| devDependencies ใหม่ | `tsx`, `@types/leaflet` | ตัวรันเทสต์ และ type ของ Leaflet (ไม่มีก็ build ไม่ผ่าน) |
 | ชีต `settings` | `deploy_hook_url` | URL ของ Cloudflare Deploy Hook (§2.1) |
 | GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
 | `.gitignore` | `public/data/` | ไฟล์ snapshot ไม่ commit |
