@@ -5,34 +5,28 @@
 
 ## กติกา
 
-- แตก branch จาก `main` ทีละ feature (`feat/F01-gas-auth` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ
+- แตก branch จาก `main` ทีละ feature (`feat/F02-settings-window` …) แล้ว PR เข้า `main` ส่วน `develop` (Backend v2) ไม่ใช้แล้ว ไม่ต้องแตะ
 - GAS deploy ด้วย `npm run gas:sync` ทุกครั้งที่ feature ฝั่ง GAS ผ่านเกณฑ์ deploy เป็น version ใหม่ของ deployment เดิม URL ไม่เปลี่ยน
 - ห้ามแก้ไฟล์ของ PA (`src/components/*`, `src/lib/useKPIData.ts`, `kpi-*.ts`, `excel-export.ts`, `types.ts`) ยกเว้นย้ายไฟล์ใน F13
 - ทุก PR ต้อง `npm run build` ผ่าน (ci.yml)
+- F01 และ F21 ถูกตัดออก (ดูในข้อ)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D ทำคู่ขนานได้ตั้งแต่ F06–F07 ผ่าน และ Track E ทำท้ายสุด
 
 | Track | งาน | ขึ้นกับ |
 |---|---|---|
-| A — GAS | F01–F08 | — |
-| B — เครื่องมือ sync | F09–F11 | F01, F03, F05 |
+| A — GAS | F02–F08 | — |
+| B — เครื่องมือ sync | F09–F11 | F03, F05 |
 | C — ข้อมูล | F12 | A, B |
 | D — Frontend | F13–F19 | F06, F07 (เริ่ม F13–F15 ได้ก่อน) |
-| E — Hosting | F20, F22 (F21 เลื่อนจนกว่าจะมีโดเมนเอง) | D |
+| E — Hosting | F20, F22 | D |
 
 ---
 
 ## Track A — GAS (`src/scripts/รหัส.js`)
 
-### F01 ยืนยันตัวตนด้วย token
+### F01 — ตัดออก
 
-- **ทำ:** อ่าน `WRITE_TOKEN`/`DIAG_PIN` จาก Script Properties · `doPost` ตรวจ `token` ก่อนดู `action` · `handleDiag` เทียบ `pin` กับ property · เพิ่ม `verify_token` · ลบ `CONFIG.DIAG_PIN` (SCHEMA §3.0) · `sync-moph-to-gas.js` ส่ง `token` จาก env `GAS_WRITE_TOKEN` และหยุดถ้าไม่มี (เฉพาะส่วน token ส่วนที่เหลือของสคริปต์อยู่ใน F09) เพื่อให้สคริปต์ยังใช้ได้ทันทีหลัง deploy F01
-- **ไม่ทำ:** เปลี่ยนชื่อ query `pin` ของ diag, แตะ GET, แก้หน้า `/sync` (รอ F11 — หลัง deploy F01 หน้า `/sync` เดิมจะ sync ไม่ได้จนกว่า F11 จะขึ้น)
-- **ตรวจรับ:**
-  1. POST ไม่มี `token` หรือผิด → `{status:"error", message:"Unauthorized"}` และมีแถว WARNING ใน `system_logs` ที่ไม่มีค่า token
-  2. POST `verify_token` ถูก → `{status:"success"}`
-  3. ลบ property `WRITE_TOKEN` ชั่วคราว → ทุก POST ถูกปฏิเสธ (fail closed) ใส่กลับแล้วใช้ได้
-  4. `grep DIAG_PIN src/scripts/รหัส.js` ไม่พบค่าคงที่ พบแต่ชื่อ property
-  5. `node src/scripts/sync-moph-to-gas.js --only s_kpi_dental33` โดยไม่ตั้ง env → หยุดพร้อมข้อความบอกวิธีตั้ง · ตั้ง env แล้ว → บันทึกสำเร็จ
+- การยืนยันตัวตนด้วย token ถูกตัดออกจากเฟส 1 (SPEC D5 = ยอมรับความเสี่ยง) ร่างที่เคยทำอยู่ใน branch `feat/F01-gas-auth` ไม่ merge · เลขข้อคงไว้เพื่อไม่ให้การอ้างอิงเลื่อน
 
 ### F02 ตั้งค่า `district_code` และ window ปี
 
@@ -108,7 +102,7 @@
 
 ### F09 `src/scripts/sync-moph-to-gas.js`
 
-- **ทำ:** `--year` (ซ้ำได้) · `--backfill` · `limit = 5000` + วนหน้า `offset` จนครบ `total` · ส่ง `year`, `total` (SPEC §6.1, §12.2) ส่วน token ทำแล้วใน F01
+- **ทำ:** `--year` (ซ้ำได้) · `--backfill` · `limit = 5000` + วนหน้า `offset` จนครบ `total` · ส่ง `year`, `total` (SPEC §6.1, §12.2)
 - **ตรวจรับ:**
   1. `--only s_aged9` → log แสดง `received`/`count` และจำนวนแถวที่ดึงได้ = `total` ของ MOPH
   2. ทดสอบวนหน้า: ดึง `s_epi_complete` ด้วย `limit = 1000` (ชั่วคราว) → ได้จำนวนเท่ากับ `limit = 5000` ครั้งเดียว
@@ -124,11 +118,10 @@
 
 ### F11 หน้า `/sync`
 
-- **ทำ:** login ด้วย token (`verify_token` → `sessionStorage`) · ตัวเลือกปีจาก `meta.years` ของ `BATCH_ALL` (เพิ่มใน F04) · ส่ง `year`, `total`, `token` · วนหน้าตาม F09 · ลบ `NEXT_PUBLIC_SYNC_PIN_CODE`
+- **ทำ:** ตัวเลือกปีจาก `meta.years` ของ `BATCH_ALL` (เพิ่มใน F04) · ส่ง `year`, `total` · วนหน้าตาม F09 · login ด้วย PIN คงเดิม
 - **ตรวจรับ:**
-  1. token ผิด → แจ้งผิดและไม่เข้าหน้า · ถูก → เข้าได้ และ refresh หน้าแล้วยังอยู่ (sessionStorage)
-  2. เลือกปี 2568 แล้ว sync 1 ตาราง → `sync_status` มีแถวปีนั้น
-  3. `grep -r NEXT_PUBLIC_SYNC_PIN_CODE .github src` ไม่พบ
+  1. เลือกปี 2568 แล้ว sync 1 ตาราง → `sync_status` มีแถวปีนั้น
+  2. ไม่เลือกปี → ค่าเริ่มต้นเป็น `current_year` และผลเหมือน sync แบบเดิม
 
 ---
 
@@ -222,11 +215,9 @@
 - **ทำ:** สร้างโปรเจกต์ต่อ repo ตาม SPEC §12.5 · ตั้ง env · ปิด preview · ใช้ `<project>.pages.dev` (D6)
 - **ตรวจรับ:** ขั้น 10 ใน SPEC §13 และ push ไป branch อื่นที่ไม่ใช่ `main` ไม่ทำให้เกิด deployment
 
-### F21 Cloudflare Access บน `/sync` — เลื่อน
+### F21 — ตัดออก
 
-- **เงื่อนไข:** ทำได้เมื่อมีโดเมนของ สสอ.สอง บน Cloudflare แล้วเท่านั้น (SPEC §12.5) ระหว่างนี้ `/sync` ป้องกันด้วย token ของ GAS ชั้นเดียว
-- **ทำ:** เพิ่ม custom domain → Access application + policy ตาม SPEC §12.5 → แก้ `<ORIGIN>` ใน stub (F22)
-- **ตรวจรับ:** ขั้น 11 ใน SPEC §13 และ login ด้วยอีเมลที่ไม่อยู่ใน policy ถูกปฏิเสธ
+- Cloudflare Access บน `/sync` ถูกตัดออกพร้อม D5
 
 ### F22 หน้า stub บน GitHub Pages
 
@@ -242,4 +233,4 @@
 - ชื่อคอลัมน์ผลแยกย่อย (SCHEMA §4.5) หลังตรวจ `report_schema`
 - ปุ่มรีเฟรชแค็ตตาล็อกบนหน้า `/sync`
 - ทดลองดึง MOPH ด้วย Cloudflare Pages Function
-- F21 Cloudflare Access (รอโดเมนเอง)
+- การยืนยันตัวตนฝั่ง server (D5) ถ้าความเสี่ยงเปลี่ยน เช่น เริ่มมีข้อมูลที่ไม่ใช่สาธารณะ

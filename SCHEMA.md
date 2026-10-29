@@ -1,7 +1,7 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.2 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md)
-> v0.2: เพิ่ม §3.0 การยืนยันตัวตน (token ใน Script Properties) และ `verify_token`
+> สถานะ: ร่าง v0.3 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md)
+> v0.3: ไม่มีการยืนยันตัวตนฝั่ง server (SPEC D5)
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
 
 ---
@@ -117,28 +117,6 @@
 - `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` ก่อนดู `sheet`
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + ตัวพิมพ์เล็ก + `^[a-z0-9]{8,64}$` ใช้กับ `cat_id` และ `opendata_id` ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
 
-### 3.0 การยืนยันตัวตน
-
-| ค่า | ที่เก็บ | ใช้กับ | ส่งมาใน |
-|---|---|---|---|
-| `WRITE_TOKEN` | Script Properties | ทุก `doPost` | ฟิลด์ `token` ใน body |
-| `DIAG_PIN` | Script Properties | `?action=diag` | query `pin` (ชื่อเดิม) |
-
-- อ่านด้วย `PropertiesService.getScriptProperties().getProperty(...)` ตอนรับคำขอ ไม่แคช
-- ลำดับใน `doPost`: parse body → ตรวจ `token` → จึงดู `action` ถ้า property ว่างหรือ `token` ไม่ตรง ตอบ error `Unauthorized` และบันทึก WARNING `doPost unauthorized` พร้อม `action` (ไม่บันทึก token ที่ส่งมา)
-- `handleDiag` เทียบ `pin` กับ property แทน `CONFIG.DIAG_PIN` (ลบค่าคงที่นี้ออกจากโค้ด) property ว่าง = ปฏิเสธ
-- เทียบด้วย `===` ธรรมดา GAS ไม่มี constant-time compare และความเสี่ยง timing attack ผ่าน GAS ต่ำพอที่จะยอมรับ
-- token ควรยาวอย่างน้อย 32 ตัวอักษรแบบสุ่ม เช่นจาก `openssl rand -base64 32` และเปลี่ยนทั้งสองค่าเมื่อมีคนออกจากทีม
-- GET ทุกตัวไม่ต้องใช้ token (ข้อมูลสาธารณะ)
-
-### 3.0.1 `POST verify_token` (ใหม่)
-
-```ts
-{ action: "verify_token"; token: string }
-```
-
-ตอบ `{ status: "success" }` เมื่อ token ถูก ไม่อย่างนั้น error `Unauthorized` ตาม §3.0 ใช้โดยหน้า `/sync` ตอน login เท่านั้น
-
 ### 3.1 `GET ?action=catalog`
 
 ตอบ `DcCatalog` (§8)
@@ -171,18 +149,17 @@
 ### 3.3 `POST save_kpi_data` (แก้)
 
 ```ts
-{ action: "save_kpi_data"; token: string; tableName: string; year?: string; total?: number; data: Row[] | { data: Row[] } }
+{ action: "save_kpi_data"; tableName: string; year?: string; total?: number; data: Row[] | { data: Row[] } }
 ```
 
 | ฟิลด์ | บังคับ | ความหมาย |
 |---|---|---|
-| `token` | ใช่ | §3.0 |
 | `tableName` | ใช่ | ต้องอยู่ใน sync units (เดิม) |
 | `year` | ไม่ | ค่าเริ่มต้น = `current_year` ต้องตรง `^\d{4}$` และอยู่ใน window ไม่อย่างนั้นตอบ error `Year outside window` |
 | `total` | ไม่ | `total` จาก MOPH ถ้ามีและ `data.length < total` ตอบ error `Incomplete data` โดยไม่บันทึก |
 | `data` | ใช่ | แถวจาก MOPH (array หรือ envelope `{data:[…]}` แบบเดิม) |
 
-ขั้นตอน (ถือ script lock เหมือนเดิม หลังผ่าน §3.0 แล้ว):
+ขั้นตอน (ถือ script lock เหมือนเดิม):
 
 1. ตรวจ `tableName`, `year`, `total` ตามตาราง
 2. แกะ envelope ถ้าไม่ใช่ array ตอบ error ถ้าได้ 0 แถว คงข้อมูลเดิมและบันทึก WARNING (เดิม)
@@ -203,12 +180,12 @@ Response: `{ status: "success"; year: string; received: number; count: number }`
 ### 3.4 `POST save_catalog` (ใหม่)
 
 ```ts
-{ action: "save_catalog"; token: string; cat_id: string; category_name?: string; reports: ApiReportRow[] }
+{ action: "save_catalog"; cat_id: string; category_name?: string; reports: ApiReportRow[] }
 ```
 
 `reports` คือ array จาก `by-category-id` ตามที่ได้มา (§5.2)
 
-ขั้นตอน (ถือ script lock หลังผ่าน §3.0 แล้ว):
+ขั้นตอน (ถือ script lock):
 
 1. `cat_id` ผ่าน `sanitizeHdcId` และต้องมีอยู่ใน `hdc_topics` ไม่อย่างนั้นตอบ error `Topic not in hdc_topics`
 2. ถ้า `reports` ว่าง ตอบ error `Empty report list` และไม่แก้อะไร เพื่อกันการตั้ง `removed` ทั้งหัวข้อเมื่อดึงจาก API ไม่สำเร็จ
@@ -419,12 +396,10 @@ Request (`Content-Type: application/json`):
 | ที่ | ชื่อ | ค่า |
 |---|---|---|
 | Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App |
+| Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
 | Cloudflare Pages (build) | `NODE_VERSION` | `20` |
 | เครื่องที่รันสคริปต์ node | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม (ไม่บังคับ มี fallback ในสคริปต์) |
-| เครื่องที่รันสคริปต์ node | `GAS_WRITE_TOKEN` | = `WRITE_TOKEN` ใน Script Properties |
-| GAS Script Properties | `WRITE_TOKEN`, `DIAG_PIN` | §3.0 |
-
-ลบ `NEXT_PUBLIC_SYNC_PIN_CODE` ออกจากทุกที่ (`deploy.yml`, `src/app/sync/page.tsx`, GitHub secrets)
+| GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
 
 ## 8. Type ฝั่ง frontend (`src/lib/dc-types.ts`)
 
