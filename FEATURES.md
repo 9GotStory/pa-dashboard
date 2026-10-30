@@ -1,6 +1,6 @@
 # FEATURES — Song Health Data Center เฟส 1
 
-> สถานะ: ร่าง v0.6 · 30 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) v0.6 และ [SCHEMA.md](SCHEMA.md) v0.6 · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md)
+> สถานะ: ร่าง v0.7 · 30 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) v0.7 และ [SCHEMA.md](SCHEMA.md) v0.7 · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md)
 > รายการงานเรียงตามลำดับที่ต้องทำ แต่ละข้อมีเกณฑ์ตรวจรับที่ทดสอบได้ งานจะถือว่าเสร็จเมื่อผ่านเกณฑ์ ไม่ใช่เมื่อเขียนโค้ดเสร็จ
 > ต้นแบบหน้าจอ R6 อยู่ที่ `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html`
 
@@ -96,7 +96,7 @@
 
 ### F03 ชีตแค็ตตาล็อกและ `save_catalog` (`dc-catalog.js`)
 
-- **ทำ:** `setup=datacenter` สร้าง `hdc_topics`, `hdc_reports`, `sync_status` + คอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` · `readHdcTopics()`/`readHdcReports()` พร้อม validation และนิยาม "รายงานที่ใช้งาน" · `save_catalog` ตาม SCHEMA §3.4 (ไม่ถือ lock เอง `doPost` ถือ) · `sanitizeHdcId`
+- **ทำ:** `setup=datacenter` สร้าง `hdc_topics`, `hdc_reports`, `sync_status` + คอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` · `readHdcTopics()`/`readHdcReports()` พร้อม validation และนิยาม "รายงานที่ใช้งาน" · `save_catalog` ตาม SCHEMA §3.4 (ไม่ถือ lock เอง `doPost` ถือ) · `sanitizeHdcId` (trim + `^[A-Za-z0-9_-]{8,64}$` ไม่แปลงตัวพิมพ์) · `dcCleanName` (SCHEMA §3)
 - **ตรวจรับ (ใช้ไฟล์ response จริงของหัวข้อวัคซีน 46 แถวเป็น fixture):**
   1. `setup=datacenter` รัน 2 ครั้ง → ครั้งสองตอบ `created: []`, `settings_columns_added: []` และไม่ลบข้อมูลที่มี
   2. `save_catalog` ครั้งแรก → `added: 34, updated: 0, removed: 0, skipped: 0` และทุกแถว `enabled = FALSE`
@@ -105,6 +105,8 @@
   5. ส่ง `cat_id` ที่ไม่อยู่ใน `hdc_topics` → error `Topic not in hdc_topics`
   6. ส่ง `reports: []` → error `Empty report list` และไม่มีแถวถูกตั้ง `removed`
   7. รายงานที่ `source_table` ไม่ขึ้นต้นด้วย `s_` → นับใน `skipped` ไม่ถูกเพิ่ม
+  8. fixture ที่มีรหัส `T81yHkXJY8lk8nGZQqldk` และ `iEds82J3Z67JHB8KLETD_` → ทั้งสองถูกเพิ่ม (ไม่ `skipped`) และ `opendata_id` ในชีตตรงทุกตัวอักษร ไม่ถูกแปลงเป็นตัวพิมพ์เล็ก
+  9. fixture ที่ `report_name` มี `<font color=red>…</font>` tab และช่องว่างซ้ำ และ `category_name`/`main_report_name` มีช่องว่างท้าย → ค่าในชีตไม่มีแท็ก ช่องว่างเหลือช่องเดียว ไม่มีช่องว่างหัวท้าย ทั้งใน `hdc_reports` และ `hdc_topics`
 
 
 ### F04 `BATCH_ALL`: `meta.years` และ PA/DC units
@@ -132,7 +134,7 @@
 - **ตรวจรับ:**
   1. `id` ของ fully immunized 1 ปี → ทุก block ทุกแถว `id = 28dd2c79…` และ `areacode` ขึ้นต้น `5406` · `years` เรียงปีน้อยไปมาก
   2. `id` ของ `s_epi2` → ทุกแถว `id = 71e49e4b…` · `id` ของ `s_dental_0_5_cavity_free` (ชีตไม่มีคอลัมน์ `id`) → ได้ทุกแถวของอำเภอ
-  3. `id` ที่ไม่เปิด หรือไม่มี → error `Unknown report`
+  3. `id` ที่ไม่เปิด ไม่มี หรือต่างจากที่เก็บแค่ตัวพิมพ์ → error `Unknown report`
   4. `id` ที่ผ่านรูปแบบแต่ยังไม่มีข้อมูล → `years: []`
   5. ตารางที่มี 2 ปีในชีต `s_x` และ `s_x_y2568` → ได้ 2 block header ของใครของมัน และ `sheet_rows = expected_rows` ทั้งสอง
   6. stub ให้ lock ถูกถืออยู่ → ตอบ error `Busy` ไม่ตอบข้อมูลครึ่งเดียว

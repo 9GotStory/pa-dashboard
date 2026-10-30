@@ -21,7 +21,7 @@
 | **หมวด** (main) | ชั้นบนสุดของ HDC: `main_report_id`, `main_report_name` เช่น ส่งเสริมป้องกัน | "category" (ชนกับหัวข้อ) |
 | **หัวข้อ** (topic) | ชั้นที่สองของ HDC: `cat_id`, `category_name` เช่น การสร้างเสริมภูมิคุ้มกันโรค `cat_id` = `subcatalogId` บน hdc.moph.go.th | "subcatalog", "หมวดย่อย" |
 | **กลุ่ม** (subgroup) | ชั้นที่เรากำหนดเองภายในหัวข้อ ด้วยคอลัมน์ `subgroup` เช่น กลุ่มอายุ 1 ปี | "sub-topic" |
-| **รายงาน** (report) | หน่วยที่แสดงบนเว็บ key = `opendata_id` ซึ่งเท่ากับคอลัมน์ `id` ในข้อมูลดิบ | "KPI" (คำของ PA) |
+| **รายงาน** (report) | หน่วยที่แสดงบนเว็บ key = `opendata_id` ซึ่งเท่ากับคอลัมน์ `id` ในข้อมูลดิบ ใช้ตัวพิมพ์ตามจริง | "KPI" (คำของ PA) |
 | **ตารางต้นทาง** (source table) | ตาราง HDC ที่รายงานใช้ `source_table` เช่น `s_epi_complete` ตารางเดียวมีหลายรายงานได้ | "sheet" (ชีตคือที่เก็บ ไม่ใช่ตาราง) |
 | **รายงานที่ใช้งาน** (active report) | รายงานที่ `enabled = TRUE`, หัวข้ออยู่ใน `hdc_topics` และ key ผ่านรูปแบบ (SCHEMA §2.3) | "enabled report" |
 | **opt-in** | หลักการเลือกเฉพาะหัวข้อและรายงานที่ต้องการ รายงานใหม่ปิดเสมอ | "hidden", "blacklist" |

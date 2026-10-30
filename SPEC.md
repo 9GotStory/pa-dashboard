@@ -1,6 +1,6 @@
 # SPEC — Song Health Data Center
 
-> สถานะ: ร่าง v0.6 · 30 ต.ค. 2569 · ขอบเขต: เฟส 1 · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
+> สถานะ: ร่าง v0.7 · 30 ต.ค. 2569 · ขอบเขต: เฟส 1 · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
 > เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, ไฟล์ snapshot, กติกาคำนวณ, seed), [FEATURES.md](FEATURES.md) (รายการงาน), [GLOSSARY.md](GLOSSARY.md) (คำศัพท์ที่ใช้ในเอกสารและโค้ด), [CODING_STANDARDS.md](CODING_STANDARDS.md) (มาตรฐานโค้ดที่ใช้ตรวจ PR)
 > ต้นแบบหน้าจอ: `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html` (R6) ใช้เป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขทุกตัวในไฟล์เป็นข้อมูลจำลอง
 
@@ -105,7 +105,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | รายงาน | HDC: `opendata_id`, `report_name`, `source_table` | `opendata_id` | fully immunized 1 ปี (`s_epi_complete`) |
 
 - `cat_id` คือค่าเดียวกับ `subcatalogId` บน hdc.moph.go.th
-- `opendata_id` คือค่าในคอลัมน์ `id` ของข้อมูลดิบ และเป็นรหัสเดียวกับในลิงก์รายงานของ HDC ตรวจแล้วกับ `s_epi2`, `s_epi_complete` (เทียบกับแค็ตตาล็อก) และ `s_dm_screen`, `s_aged9` (เทียบกับลิงก์ใน `kpi_master`)
+- `opendata_id` คือค่าในคอลัมน์ `id` ของข้อมูลดิบ และเป็นรหัสเดียวกับในลิงก์รายงานของ HDC ตรวจแล้วกับ `s_epi2`, `s_epi_complete` (เทียบกับแค็ตตาล็อก) และ `s_dm_screen`, `s_aged9` (เทียบกับลิงก์ใน `kpi_master`) · รหัสใช้ตัวพิมพ์ตามจริงทุกที่ ไม่แปลงเป็นตัวพิมพ์เล็ก เพราะรหัสสั้นของ HDC มีตัวพิมพ์ใหญ่ และคอลัมน์ `id` ในข้อมูลดิบเก็บตามนั้น (SCHEMA §3, §5.2)
 - ตารางเดียวมีหลายรายงานได้ เช่น `s_epi_complete` มี fully immunized 1, 2, 3 และ 5 ปี ระบบแยกด้วย `id`
 
 ### 5.2 เลือกเฉพาะที่ต้องการ (opt-in)
@@ -401,7 +401,7 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 |---|---|---|
 | 1 | Deploy GAS ใหม่ | `BATCH_ALL` ตอบเหมือนเดิมและมี `meta.years` · `save_kpi_data` ที่ไม่มี `year` บันทึกลงชีตปีปัจจุบันเฉพาะแถวอำเภอ · `/` (PA เดิม) ตัวเลขเท่าเดิม |
 | 2 | `setup=datacenter` | มีชีตใหม่ 3 ชีต และ `district_code`, `deploy_hook_url` ใน `settings` |
-| 3 | รัน snippet export ในเบราว์เซอร์ (§12.3) แล้ว `hdc-catalog.js find --from <ไฟล์>` กับ 18 ตาราง แล้วใส่ `cat_id` ของ 6 หัวข้อใน `hdc_topics` | ทุกตารางพบหัวข้อ และหัวข้อตรงกับตาราง `hdc_topics` ใน SCHEMA §6 (ยืนยันกับ export 30 ต.ค. 2569 แล้ว) |
+| 3 | รัน snippet export ในเบราว์เซอร์ (§12.3) แล้ว `hdc-catalog.js find --from <ไฟล์>` กับ 18 ตาราง แล้วใส่ `cat_id` และ `order` ของ 6 หัวข้อตามตาราง `hdc_topics` ใน SCHEMA §6 | ทุกตารางพบหัวข้อ และหัวข้อตรงกับ SCHEMA §6 (ยืนยันกับ export 30 ต.ค. 2569 แล้ว) |
 | 4 | `hdc-catalog.js refresh --from <ไฟล์>` | `hdc_reports` มีครบ 21 `opendata_id` ใน SCHEMA §6 และมีราว 241 แถวรวม 6 หัวข้อ (ตัวเลข ณ export 30 ต.ค. 2569) |
 | 5 | `setup=dc_seed` | 21 รายงานเป็น `enabled = TRUE` และไม่มีรายการ "ไม่พบ" |
 | 6 | ทดสอบการดึง `s_aged9` และ `s_epi_complete` ด้วย `limit = 5000` | จำนวนแถวที่ได้เท่ากับ `total` ของทั้งสองตาราง และ `s_aged9` เท่ากับตอนไม่ส่ง `limit` |
