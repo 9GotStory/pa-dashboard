@@ -259,6 +259,8 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   // insertCheckboxes sets every cell it covers to FALSE, so only new rows.
   if (added > 0) reportsTable.sheet.getRange(existingRows + 2, c.enabled + 1, added, 1).insertCheckboxes();
   dcWriteTable(topicsTable, DC_CATALOG_TEXT_COLUMNS);
+  // A source_table may have changed, so the cached sync units are stale.
+  CacheService.getScriptCache().remove(DC_UNITS_CACHE_KEY);
 
   if (inOtherTopic.length > 0) {
     logToSheet("INFO", "Catalog " + catId + " reports kept in another topic", inOtherTopic.join(", "));
