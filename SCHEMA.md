@@ -1,6 +1,6 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.5 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
+> สถานะ: ร่าง v0.6 · 30 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
 
 ---
@@ -33,7 +33,7 @@
 | `current_quarter` | int 1–4 | `CONFIG.CURRENT_QUARTER` | เดิม |
 | `current_year` | string `^\d{4}$` | `CONFIG.YEAR` | เดิม และเป็นปีสุดท้ายของ window |
 | `province_code` | string `^\d{2}$` | `CONFIG.PROVINCE` | เดิม |
-| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและ `Logger.log` แบบเดียวกับค่าอื่นที่ไม่ผ่าน (ไม่เขียน `system_logs` เพราะ `readSettings` ถูกเรียกทุกนาที จะทำให้ log หมุนทิ้ง) |
+| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ตรวจแค่รูปแบบ 4 หลักด้วย `validateSetting` เดิม ค่าที่ไม่ผ่านใช้ค่าเริ่มต้นและ `Logger.log` แบบเดียวกับค่าอื่น · ไม่ตรวจว่าขึ้นต้นด้วย `province_code` เพราะกฎข้ามฟิลด์ทำใน `SETTINGS_SCHEMA` ไม่ได้และต้องแก้ `readSettings` ซึ่ง SPEC §12.4 ไม่อนุญาต ค่าผิดจังหวัดจะเห็นเองเพราะทุกตารางเหลือ 0 แถวหลังกรองและมี WARNING ใน `system_logs` |
 | `deploy_hook_url` | string `^https://api\.cloudflare\.com/client/v4/pages/webhooks/deploy_hooks/[A-Za-z0-9-]+$` หรือว่าง | `""` | **ใหม่** ว่าง = ปิดการ rebuild อัตโนมัติ ค่าที่ไม่ตรงรูปแบบถือเป็นว่างและ `Logger.log` |
 
 - เพิ่มใน `SETTINGS_SCHEMA` (ชนิด `string`) และเปลี่ยน `SETTINGS_CACHE_KEY` จาก `settings_v2` เป็น `settings_v3` เพราะรูปแบบที่แคชเปลี่ยน
@@ -114,7 +114,7 @@
 | ขนาดชีต | หลังเขียน ตัดแถวว่างท้ายชีตออก (`deleteRows`) ให้ชีตมีแถวเท่าข้อมูล + header เพื่อไม่เปลือง cell |
 | ปีนอก window | ไม่อ่าน ไม่เขียน และไม่ลบชีตอัตโนมัติ |
 
-**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้จัดกลุ่มแถวเหล่านั้นตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): ถ้า `sync_status` (table, Z) ชี้ไปชีต `_y{Z}` อยู่แล้ว และ `max_date_com` ของมัน ≥ `date_com` สูงสุดของแถวที่จะย้าย → **ไม่ทับ** แค่ทิ้งแถวเหล่านั้นจากชีตปีปัจจุบัน (กรณีมีคน sync ปี Z ซ้ำไปแล้วหลังเปลี่ยนปี) ไม่อย่างนั้นเขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`) · แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
+**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้เก็บเฉพาะแถวที่ `areacode` ขึ้นต้นด้วย `district_code` (ตัวกรองเดียวกับ §3.3 ขั้น 4 เผื่อชีตยังเป็นแถวทั้งจังหวัดจากทางบันทึกเดิม แถวนอกอำเภอทิ้งพร้อม WARNING บอกจำนวน) แล้วจัดกลุ่มแถวที่เหลือตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): ถ้า `sync_status` (table, Z) ชี้ไปชีต `_y{Z}` อยู่แล้ว และ `max_date_com` ของมัน ≥ `date_com` สูงสุดของแถวที่จะย้าย → **ไม่ทับ** แค่ทิ้งแถวเหล่านั้นจากชีตปีปัจจุบัน (กรณีมีคน sync ปี Z ซ้ำไปแล้วหลังเปลี่ยนปี) ไม่อย่างนั้นเขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`, `row_count` และ `max_date_com` จากแถวที่ย้าย) · แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
 
 คอลัมน์ทั่วไปของแถว HDC: `id` (บางตารางไม่มี เช่น `s_dental_0_5_cavity_free`), `hospcode` 5 หลัก, `areacode` 8 หลัก (จังหวัด 2 + อำเภอ 2 + ตำบล 2 + หมู่ 2), `flag_sent`, `date_com` (`YYYYMMDDHHmm` และ `s_epi1` มีวินาทีต่อท้าย), `b_year` (ปีงบประมาณ พ.ศ.), `ip`
 
@@ -126,6 +126,7 @@
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + ตัวพิมพ์เล็ก + `^[a-z0-9]{8,64}$` ใช้กับ `cat_id` และ `opendata_id` ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
 - ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
 - `catalog` และ `report` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
+- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่
 
 ### 3.1 `GET ?action=catalog`
 
@@ -166,10 +167,10 @@
 | `tableName` | ใช่ | ต้องอยู่ใน sync units (เดิม) |
 | `year` | ไม่ | ค่าเริ่มต้น = `current_year` ต้องตรง `^\d{4}$` และอยู่ใน window ไม่อย่างนั้นตอบ error `Year outside window` |
 | `total` | ไม่ | `total` จาก MOPH ถ้ามีและ `data.length < total` ตอบ error `Incomplete data` โดยไม่บันทึก |
-| `force` | ไม่ | `true` = ข้ามการตรวจ `Stale data` |
+| `force` | ไม่ | `true` = ข้ามการตรวจ `Stale data` · `syncAllData` ส่ง `true` เสมอ (ADR-0005) |
 | `data` | ใช่ | แถวจาก MOPH (array หรือ envelope `{data:[…]}` แบบเดิม) |
 
-ขั้นตอน (ถือ script lock เหมือนเดิม):
+ขั้นตอน (`doPost`/`syncAllData` ถือ script lock ไว้แล้ว `saveTableYear` ไม่ถือเอง):
 
 1. ตรวจ `tableName`, `year`, `total` ตามตาราง
 2. แกะ envelope ถ้าไม่ใช่ array ตอบ error ถ้าได้ 0 แถว คงข้อมูลเดิมและบันทึก WARNING (เดิม)
@@ -185,7 +186,7 @@
 Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
 
 - `received` = จำนวนแถวที่ส่งมา · `count` = จำนวนแถวที่บันทึกหลังกรองอำเภอ (ความหมายเปลี่ยนจากเดิม ซึ่ง `count` เคยเป็นจำนวนแถวที่ส่งมา) · `archived` = ปีที่ถูกย้ายไปชีต `_y` ในครั้งนี้ (ปกติว่าง)
-- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH
+- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH และ `force = true` เพราะข้อมูลที่ดึงจาก MOPH สดคือของจริงโดยนิยาม (ADR-0005)
 
 ### 3.4 `POST save_catalog` (ใหม่)
 
@@ -195,7 +196,7 @@ Response: `{ status: "success"; year: string; sheet: string; received: number; c
 
 `reports` คือ array จาก `by-category-id` ตามที่ได้มา (§5.2)
 
-ขั้นตอน (ถือ script lock):
+ขั้นตอน (`doPost` ถือ script lock ไว้แล้ว):
 
 1. `cat_id` ผ่าน `sanitizeHdcId` และต้องมีอยู่ใน `hdc_topics` ไม่อย่างนั้นตอบ error `Topic not in hdc_topics`
 2. ถ้า `reports` ว่าง ตอบ error `Empty report list` และไม่แก้อะไร เพื่อกันการตั้ง `removed` ทั้งหัวข้อเมื่อดึงจาก API ไม่สำเร็จ
@@ -235,9 +236,9 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 ```
 
 1. อ่าน `deploy_hook_url` จาก `settings` ถ้าว่าง ตอบ `{ status: "error", message: "Deploy hook not configured" }`
-2. ถือ script lock แล้วนับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (lock กันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
+2. นับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (ผู้เรียกถือ script lock อยู่แล้ว ซึ่งกันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
 3. `UrlFetchApp.fetch(hook, { method: "post", muteHttpExceptions: true })` ถ้าได้ 2xx เพิ่มตัวนับ บันทึก INFO `Rebuild requested ({reason})` และตอบ `{ status: "success", remaining_today: n }` ไม่อย่างนั้นตอบ error พร้อม status code
-4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP
+4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP · `requestRebuild` ไม่ถือ lock เอง `rebuildWebsiteMenu` ถือให้
 
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
 
@@ -285,9 +286,9 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 - จัดกลุ่มรายตำบลด้วย `areacode.slice(0, 6)` แล้วหาชื่อจาก `areas` ถ้าไม่พบแสดง "รหัสพื้นที่ {6 หลัก}"
 - จัดกลุ่มรายหน่วยบริการด้วย `hospcode` แล้วหาชื่อจาก `hospitals` ถ้าไม่พบแสดง "หน่วยบริการ {hospcode}"
 - แนวโน้ม: คำนวณซ้ำทีละ block ปี
-- ผ่านเกณฑ์เมื่อ `pct ≥ goal` โดยเทียบค่าก่อนปัดเหมือน PA และแสดงร้อยละด้วย `formatPct` (ทศนิยม 2 ตำแหน่ง)
+- ผ่านเกณฑ์เมื่อ `pct ≥ goal` โดยเทียบค่าก่อนปัดเหมือน PA และแสดงร้อยละด้วย `formatPct` ใน `src/lib/dc/format.ts` (ทศนิยม 2 ตำแหน่ง สำเนาของ PA)
 - เกณฑ์ของรายการวัคซีน = `measure_goals[measure]` ถ้ามี ไม่อย่างนั้นใช้ `goal`
-- วันที่ข้อมูล = `max_date_com` ของ block ปีที่เลือก แปลงเลข 12–14 หลักเป็นวันที่ไทยแบบเดียวกับ PA
+- วันที่ข้อมูล = `max_date_com` ของ block ปีที่เลือก แปลงเลข 12–14 หลักเป็นวันที่ไทยด้วย `formatThaiDate` ใน `src/lib/dc/format.ts` (เขียนใหม่ให้ผลเหมือน PA ไม่ import ไฟล์ PA)
 
 ### 4.5 คอลัมน์ที่ยังไม่แสดงในเฟส 1
 
@@ -309,9 +310,9 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 
 | Endpoint | สถานะการตรวจ |
 |---|---|
-| `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริง 29 ต.ค. 2569 |
-| `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีน 29 ต.ค. 2569 |
-| `POST /api/report_data` | ใช้งานอยู่แล้ว ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
+| `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริงจากเบราว์เซอร์ 29 ต.ค. 2569 · 30 ต.ค. 2569 ทดสอบจากเครื่องผู้ดูแล: เบราว์เซอร์ได้ข้อมูล, `curl` ได้ 403, `fetch` ของ node ได้ 403 → endpoint นี้กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ ดึงผ่าน snippet ใน DevTools เท่านั้น (SPEC §12.3, ADR-0010) |
+| `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีนจากเบราว์เซอร์ 29 ต.ค. 2569 · กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์เช่นเดียวกับ `categories` |
+| `POST /api/report_data` | ใช้งานอยู่แล้ว เรียกจากสคริปต์ได้ (`curl` จากเครื่องผู้ดูแลได้ 201, 30 ต.ค. 2569) · 429 ที่พบคือการจำกัดความถี่ ให้ retry และเว้นช่วงตาม SPEC §7.1 · ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
 | `GET /api/report_year/{tableName}`, `GET /api/report_schema/{tableName}` | มาจาก repo อ้างอิง ยังไม่ได้ตรวจ และยังไม่ใช้ในเฟส 1 |
 
 Base URL: `https://opendata.moph.go.th`
@@ -356,6 +357,24 @@ Request (`Content-Type: application/json`):
 ### 5.4 ยังไม่ใช้ในเฟส 1
 
 `report_year/{tableName}` (ปีที่มีข้อมูล) และ `report_schema/{tableName}` (โครงสร้างตาราง) ควรตรวจว่า `report_schema` ให้คำอธิบายคอลัมน์หรือไม่ ถ้าให้ จะใช้ตั้งชื่อคอลัมน์ใน §4.5 ได้
+
+### 5.5 ไฟล์ export แค็ตตาล็อก (อินพุตของ `hdc-catalog.js --from`)
+
+สร้างโดย snippet `tools/hdc-catalog-export.js` ใน DevTools console บนหน้า `https://opendata.moph.go.th` (SPEC §12.3) ไฟล์เดียวต่อการ export หนึ่งครั้ง ชื่อ `hdc-catalog-YYYYMMDD.json` (ปี ค.ศ. ตามวันที่รัน) เก็บใต้ `catalog-exports/` (อยู่ใน `.gitignore`)
+
+```ts
+{
+  exported_at: string;                                        // ISO เวลาที่ export
+  source: "https://opendata.moph.go.th";
+  categories: { cat_id: string; category_name: string }[];   // response ของ §5.1 ตามที่ได้มา
+  reports: Record<string, ApiReportRow[]>;                   // key = cat_id · response ของ §5.2 ตามที่ได้มา ไม่กรองซ้ำ
+  errors: { cat_id: string; status: number }[];              // หัวข้อที่ดึงไม่สำเร็จหลัง retry
+}
+```
+
+- snippet ดึงทุกหัวข้อใน `categories` (ราว 51 หัวข้อ ใช้เวลา 1–2 นาที) ไม่ใช่เฉพาะที่อยู่ใน `hdc_topics` เพื่อให้ `find` ค้นได้ทุกตาราง
+- `find` และ `refresh` อ่านไฟล์นี้อย่างเดียว การกรองซ้ำและตรวจรูปแบบทำที่ `save_catalog` (§3.4) เหมือนเดิม
+- `refresh` ตรวจว่ามี `exported_at` และ `reports` ไม่อย่างนั้น exit 1 ว่าไม่ใช่ไฟล์ export และข้ามหัวข้อที่ไม่มี key ใน `reports` หรืออยู่ใน `errors` พร้อมข้อความ (ไม่ส่ง `reports: []` ซึ่ง GAS ปฏิเสธอยู่แล้ว)
 
 ## 6. Seed เฟส 1
 
@@ -556,3 +575,4 @@ export interface Totals {
 | ชีต `settings` | `deploy_hook_url` | URL ของ Cloudflare Deploy Hook (§2.1) |
 | GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
 | `.gitignore` | `public/data/` | ไฟล์ snapshot ไม่ commit |
+| `.gitignore` | `catalog-exports/` | ไฟล์ export แค็ตตาล็อก ไม่ commit (เพิ่มแล้ว 30 ต.ค. 2569) |
