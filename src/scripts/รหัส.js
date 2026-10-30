@@ -599,10 +599,21 @@ function syncAllData() {
     // burst days). A 1.5–2.5s randomized gap per KPI plus per-request
     // retry/backoff keeps every table green; total runtime stays ~1–2 min,
     // far under the 6-minute trigger quota.
+    // Saved through the same path as save_kpi_data. force: true because data
+    // fetched live from MOPH is real by definition, so it may replace rows
+    // with a future date_com (ADR-0005).
     let okCount = 0;
     units.forEach(function (kpi) {
-      const data = fetchMophForKpi(kpi, settings);
-      if (data !== null && saveDataToSheet(kpi.table, data, kpi.sheet, kpi.limit)) okCount++;
+      const fetched = fetchMophForKpi(kpi, settings);
+      if (
+        fetched !== null &&
+        saveTableYear(kpi.table, settings.current_year, fetched.data, {
+          total: fetched.total,
+          force: true,
+        }).status === "success"
+      ) {
+        okCount++;
+      }
       Utilities.sleep(1500 + Math.floor(Math.random() * 1000));
     });
 
@@ -621,22 +632,22 @@ function syncAllData() {
 
 /**
  * Fetch one KPI from the MOPH API with retry/backoff on 429/5xx.
- * Returns the parsed JSON (array or envelope — saveDataToSheet unwraps),
- * or null after logging the failure. Called sequentially by syncAllData.
+ * Returns { data, total }: data is the parsed JSON (array or envelope —
+ * saveTableYear unwraps), total is the envelope's `total` (undefined for a
+ * bare array). Returns null after logging the failure. Called sequentially
+ * by syncAllData.
  */
 function fetchMophForKpi(kpi, settings) {
-  // `limit` is only sent when the unit declares one: MOPH silently truncates
-  // at 1000 rows, and only large tables (s_epi_complete, ~2.4k rows) need it.
-  // Tables without it keep a byte-identical payload to before this existed.
+  // MOPH silently truncates at its page size (1000 by default), so every
+  // request asks for 5000 rows, or the unit's own limit if larger; the
+  // returned total lets saveTableYear reject a truncated page (SPEC §7.1).
   const payload = {
     tableName: kpi.table,
     year: settings.current_year,
     province: settings.province_code,
     type: "json",
+    limit: Math.max(5000, Number(kpi.limit) || 0),
   };
-  if (kpi.limit && Number(kpi.limit) > 0) {
-    payload.limit = Number(kpi.limit);
-  }
   const options = {
     method: "post",
     contentType: "application/json",
@@ -659,7 +670,8 @@ function fetchMophForKpi(kpi, settings) {
     const code = response.getResponseCode();
     if (code === 200 || code === 201) {
       try {
-        return JSON.parse(response.getContentText());
+        const json = JSON.parse(response.getContentText());
+        return { data: json, total: json ? json.total : undefined };
       } catch (parseErr) {
         Logger.log("Error: Invalid JSON for " + kpi.table);
         logToSheet("ERROR", "JSON Parse Error " + kpi.table, "Invalid JSON format");
@@ -731,6 +743,8 @@ function testConnection() {
   }
 }
 
+// Old save path, kept but no longer called: syncAllData and doPost save
+// through saveTableYear (dc-storage.js) since Data Center F02.
 function saveDataToSheet(tableName, data, sheetName, capLimit) {
   // MOPH now wraps rows in an envelope {"data": [...]}. Older responses were
   // a bare array — unwrap either shape before validating. Doing it here
@@ -1122,7 +1136,8 @@ function serveRawSheet(sheetName) {
  * Content-Type: text/plain to keep it a CORS "simple request" (GAS Web
  * Apps do not handle OPTIONS preflight).
  *
- * Expected body: { action: "save_kpi_data", tableName, sheetName?, data: [] }
+ * Expected body: { action: "save_kpi_data", tableName, year?, total?, force?, data: [] }
+ * (SCHEMA §3.3)
  */
 /**
  * Diagnostic endpoint — answers "why doesn't the server-side sync work?"
@@ -1561,27 +1576,11 @@ function doPost(e) {
       return createJsonError("Missing request body");
     }
     const json = JSON.parse(e.postData.contents);
-    if (json.action !== "save_kpi_data") {
-      return createJsonError("Unknown action: " + json.action);
-    }
-
-    const tableName = String(json.tableName || "").trim();
-    const data = json.data;
-
-    // Whitelist tableName against the sync units (CONFIG.KPIS ∪ kpi_master
-    // source_sheet values) so an attacker (or buggy client) cannot write to
-    // arbitrary sheets like settings/system_logs.
-    const kpi = getSyncUnits(readKpiMasterConfig()).find((k) => k.table === tableName);
-    if (!kpi) {
-      logToSheet("ERROR", "doPost rejected unknown table", tableName);
-      return createJsonError("Unknown table: " + tableName);
-    }
-    // sheetName is always derived from the unit — caller cannot override.
-    // This guarantees a tableName can only write to its own sheet.
-    const sheetName = kpi.sheet;
 
     // Serialize writes with a script lock so two concurrent syncs cannot
     // race on sheet.clear()/setValues() (same reason syncAllData locks).
+    // Taken once here, before dispatching on action: the save functions
+    // assume the caller holds it (SCHEMA §3).
     const lock = LockService.getScriptLock();
     let hasLock = false;
     try {
@@ -1594,14 +1593,17 @@ function doPost(e) {
     }
 
     try {
-      const success = saveDataToSheet(tableName, data, sheetName, kpi.limit);
-      if (success) {
-        return createJsonOutput({
-          status: "success",
-          count: Array.isArray(data) ? data.length : 0,
-        });
+      if (json.action === "save_kpi_data") {
+        // saveTableYear whitelists tableName against the sync units and
+        // derives the sheet name itself (SCHEMA §3.3).
+        return createJsonOutput(
+          saveTableYear(String(json.tableName || "").trim(), json.year, json.data, {
+            total: json.total,
+            force: json.force,
+          }),
+        );
       }
-      return createJsonError("Failed to save data. Check system_logs for details.");
+      return createJsonError("Unknown action: " + json.action);
     } finally {
       try {
         lock.releaseLock();
