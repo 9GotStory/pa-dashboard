@@ -13,6 +13,7 @@ import {
   Database,
   Flag,
   CalendarClock,
+  TriangleAlert,
 } from "lucide-react";
 
 // --- CONFIGURATION ---
@@ -20,6 +21,9 @@ import {
 // KPI list itself are pulled from BATCH_ALL meta at runtime so the frontend
 // never duplicates รหัส.js CONFIG (which caused drift in the past).
 const API_URL = "https://opendata.moph.go.th/api/report_data";
+// MOPH silently truncates at its page size (1000 by default), so every
+// request asks for 5000 rows, or the unit's own limit if larger (SPEC §7.1).
+const MOPH_LIMIT = 5000;
 
 interface KpiListItem {
   table: string;
@@ -36,6 +40,8 @@ interface KpiConfigRaw {
 
 interface BatchMeta {
   current_year?: unknown;
+  // The Data Center year window, oldest first (SCHEMA §3.5).
+  years?: unknown;
   province_code?: unknown;
   // GAS emits these as numbers (YYYYMMDDHHmm timestamps), not strings.
   lastUpdatedMap?: Record<string, number>;
@@ -47,11 +53,15 @@ interface GasPostResponse {
   status?: 'success' | 'error';
   message?: string;
   count?: number;
+  // POST rebuild (SCHEMA §3.7)
+  remaining_today?: number;
 }
 
 interface SyncSettings {
   current_year: string;
   province_code: string;
+  // meta.years: the year picker's options.
+  years: string[];
 }
 
 /**
@@ -77,7 +87,7 @@ function isNetworkError(err: unknown): boolean {
  * envelope. Sync must accept both shapes so a revert or A/B on MOPH's side
  * doesn't break the pipeline again.
  */
-function isMophEnvelope(v: unknown): v is { data: unknown[] } {
+function isMophEnvelope(v: unknown): v is { data: unknown[]; total?: unknown } {
   return (
     typeof v === "object" &&
     v !== null &&
@@ -115,6 +125,8 @@ export default function SyncPage() {
   // and are populated by fetchMetadata() after authentication.
   const [kpiList, setKpiList] = useState<KpiListItem[]>([]);
   const [settings, setSettings] = useState<SyncSettings | null>(null);
+  // null until the user picks one: sync settings.current_year (SPEC §12.1).
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedKPIs, setSelectedKPIs] = useState<string[]>([]);
   const [lastUpdatedMap, setLastUpdatedMap] = useState<Record<string, number>>(
     {},
@@ -152,9 +164,8 @@ export default function SyncPage() {
     ]);
   }, []);
 
-  // Fetch Metadata after login. useCallback keeps the identity stable so the
-  // useEffect below does not refetch on every render — only when auth flips.
-  // Also reused by the "Retry config load" button and post-sync refresh.
+  // Fetch Metadata after login (checkPin). Also reused by the "Retry config
+  // load" button and post-sync refresh.
   const fetchMetadata = useCallback(async () => {
     setIsFetchingMeta(true);
     setMetaError(null);
@@ -176,6 +187,12 @@ export default function SyncPage() {
       const meta = json?.meta;
       if (!meta) {
         throw new Error("BATCH_ALL response is missing meta — deploy the latest รหัส.js version.");
+      }
+      // meta.years (the window) comes with the Data Center GAS (F04). An older
+      // GAS ignores `year` and would save any year into the current-year sheet
+      // (SPEC §13), so never sync through one (as sync-moph-to-gas.js).
+      if (!Array.isArray(meta.years)) {
+        throw new Error("BATCH_ALL ไม่มี meta.years: ต้อง deploy GAS ของ Data Center (F04) ก่อน sync");
       }
 
       if (Array.isArray(meta.kpi_config)) {
@@ -216,6 +233,7 @@ export default function SyncPage() {
         setSettings({
           current_year: String(meta.current_year),
           province_code: meta.province_code ? String(meta.province_code) : "",
+          years: meta.years.map(String),
         });
       }
 
@@ -233,13 +251,6 @@ export default function SyncPage() {
     }
   }, [addLog]);
 
-  // Fetch Metadata after login
-  useEffect(() => {
-    if (isAuthenticated) {
-      fetchMetadata();
-    }
-  }, [isAuthenticated, fetchMetadata]);
-
   // ComponentProps<'form'>['onSubmit'] is the canonical type for form submit
   // handlers in React 19 — avoids the deprecated `FormEvent`/`FormEventHandler`.
   const checkPin: ComponentProps<"form">["onSubmit"] = async (e) => {
@@ -254,6 +265,9 @@ export default function SyncPage() {
 
     if (pin === serverPin) {
       setIsAuthenticated(true);
+      // Loaded by the login itself, not by an effect on isAuthenticated
+      // (react-hooks/set-state-in-effect).
+      fetchMetadata();
     } else {
       toast.error("Incorrect PIN");
       setPin("");
@@ -277,6 +291,7 @@ export default function SyncPage() {
       );
       return;
     }
+    const year = selectedYear ?? settings.current_year;
 
     // Cancel any previous in-flight sync (defensive — isSyncing check above
     // already prevents normal re-entry).
@@ -289,7 +304,7 @@ export default function SyncPage() {
     setProgress(0);
     setLogs([]); // Clear old logs
     addLog(
-      `Starting Client-Side Sync (year=${settings.current_year}, province=${settings.province_code})...`,
+      `Starting Client-Side Sync (year=${year}, province=${settings.province_code})...`,
       "start",
     );
 
@@ -304,6 +319,7 @@ export default function SyncPage() {
     }
 
     let successCount = 0;
+    let staleCount = 0;
     let failCount = 0;
 
     for (let i = 0; i < kpisToSync.length; i++) {
@@ -326,13 +342,27 @@ export default function SyncPage() {
               signal,
               body: JSON.stringify({
                 tableName: kpi.table,
-                year: settings.current_year,
+                year,
                 province: settings.province_code,
                 type: "json",
-                // Larger page size for tables MOPH truncates at 1000 rows
-                ...(kpi.limit ? { limit: kpi.limit } : {}),
+                limit: Math.max(MOPH_LIMIT, kpi.limit ?? 0),
               }),
             });
+            // 429 (rate limit) and 5xx are retried like a network error
+            // (SPEC §7.1). After the last try the status falls through to
+            // the MOPH API Error below.
+            if (fetchRes.status === 429 || fetchRes.status >= 500) {
+              retries--;
+              if (retries > 0) {
+                addLog(
+                  `MOPH ตอบ ${fetchRes.status} รอ ${delayMs / 1000} วิ แล้วลองใหม่...`,
+                  "warn",
+                );
+                await new Promise((r) => setTimeout(r, delayMs));
+                delayMs += 5000;
+                continue;
+              }
+            }
             break; // Success, exit retry loop
           } catch (err) {
             // AbortError — user navigated away, stop retrying immediately
@@ -373,7 +403,11 @@ export default function SyncPage() {
 
         // MOPH now wraps rows in {"data": [...]}. Older responses were a bare
         // array — unwrap the envelope so both shapes continue to sync.
+        // Its total (a string from MOPH) goes to GAS, which refuses fewer
+        // rows than that (Incomplete data, SPEC §7.1).
+        let total: number | undefined;
         if (!Array.isArray(data) && isMophEnvelope(data)) {
+          total = data.total == null ? undefined : Number(data.total);
           data = data.data;
         }
 
@@ -395,6 +429,8 @@ export default function SyncPage() {
           action: "save_kpi_data",
           tableName: kpi.table,
           sheetName: kpi.sheet,
+          year,
+          total,
           data: data,
         };
 
@@ -442,6 +478,14 @@ export default function SyncPage() {
         if (gasJson.status === "success") {
           addLog(`Success: ${kpi.table} synced.`, "success");
           successCount++;
+        } else if (gasJson.message?.startsWith("Stale data")) {
+          // GAS kept its newer data of this (table, year) (SCHEMA §3.3). The
+          // page never sends force; overwriting is for the node script.
+          addLog(
+            `ไม่บันทึก ${kpi.table} ปี ${year} เพราะในชีตมีข้อมูลใหม่กว่า (${gasJson.message}) ถ้าต้องการบันทึกทับ ให้รัน node src/scripts/sync-moph-to-gas.js --only ${kpi.table} --year ${year} --force`,
+            "warn",
+          );
+          staleCount++;
         } else {
           throw new Error(gasJson.message || "Unknown GAS Error");
         }
@@ -458,12 +502,39 @@ export default function SyncPage() {
     }
 
     setProgress(100);
-    setIsSyncing(false);
     addLog(
-      `Sync Completed. Success: ${successCount}, Failed: ${failCount}`,
+      `Sync Completed. Success: ${successCount}, Stale data: ${staleCount}, Failed: ${failCount}`,
       "finish",
     );
 
+    // One rebuild of the website when any table was saved (SPEC §12.1). Its
+    // result is only shown: the tables are saved either way.
+    if (successCount > 0) {
+      try {
+        const rebuildRes = await fetch(gasUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          signal,
+          body: JSON.stringify({ action: "rebuild", reason: "/sync" }),
+        });
+        if (!rebuildRes.ok) {
+          throw new Error(`GAS HTTP Error: ${rebuildRes.status}`);
+        }
+        const rebuildJson: GasPostResponse = await rebuildRes.json();
+        if (rebuildJson.status !== "success") {
+          throw new Error(rebuildJson.message || "Unknown GAS Error");
+        }
+        addLog(
+          `สั่ง rebuild แล้ว วันนี้สั่งได้อีก ${rebuildJson.remaining_today} ครั้ง`,
+          "success",
+        );
+      } catch (error) {
+        if (signal.aborted) return;
+        addLog(`ไม่ได้สั่ง rebuild: ${errorMessage(error)}`, "warn");
+      }
+    }
+
+    setIsSyncing(false);
     // Refresh metadata to show new dates
     fetchMetadata();
   };
@@ -476,6 +547,8 @@ export default function SyncPage() {
         return <CheckCircle size={16} className="text-green-400" />;
       case "error":
         return <XCircle size={16} className="text-red-400" />;
+      case "warn":
+        return <TriangleAlert size={16} className="text-amber-400" />;
       case "finish":
         return <Flag size={16} className="text-yellow-400" />;
       case "fetch":
@@ -531,6 +604,23 @@ export default function SyncPage() {
             </h1>
             <p className="text-gray-500">MOPH API Bridge & Monitor</p>
           </div>
+          {settings && !metaError && (
+            <label className="flex items-center justify-center gap-2 text-sm font-medium text-gray-700 sm:ml-auto">
+              ปีงบประมาณ
+              <select
+                value={selectedYear ?? settings.current_year}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                disabled={isSyncing}
+                className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {settings.years.map((y) => (
+                  <option key={y} value={y}>
+                    {y === settings.current_year ? `${y} (ปีปัจจุบัน)` : y}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
           {metaError ? (
             <button
               onClick={fetchMetadata}
@@ -750,7 +840,9 @@ export default function SyncPage() {
                               ? "text-blue-300 font-bold"
                               : log.type === "finish"
                                 ? "text-yellow-300 font-bold"
-                                : "text-gray-300"
+                                : log.type === "warn"
+                                  ? "text-amber-300"
+                                  : "text-gray-300"
                       }`}
                     >
                       {log.message}

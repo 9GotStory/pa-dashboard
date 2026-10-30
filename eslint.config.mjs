@@ -5,16 +5,6 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  {
-    // eslint-config-next 16.4 เปิดกฎนี้เป็น error และ src/app/sync/page.tsx
-    // (ไฟล์ PA ที่ freeze ตาม CODING_STANDARDS §1) ติดอยู่ 1 จุด ลดเป็น warning
-    // เฉพาะไฟล์นั้น จนกว่า F11 จะแตะ /sync ตาม SPEC §12.1 แล้วแก้ pattern นั้นไปพร้อมกัน
-    // ไฟล์อื่นทั้งหมดยังโดนกฎนี้เป็น error
-    files: ["src/app/sync/page.tsx"],
-    rules: {
-      "react-hooks/set-state-in-effect": "warn",
-    },
-  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
