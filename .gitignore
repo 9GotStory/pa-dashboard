@@ -44,3 +44,6 @@ next-env.d.ts
 
 # HDC catalog exports from tools/hdc-catalog-export.js (SCHEMA §5.5)
 catalog-exports/
+
+# PA snapshots from src/scripts/pa-check.mjs (docs/agents/gas-deploy.md)
+.pa-check/

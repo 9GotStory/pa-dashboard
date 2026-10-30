@@ -154,7 +154,10 @@ function fakeSheet(name, values) {
  *   properties: the script properties (PropertiesService) store.
  *   clock: the time `new Date()` returns in GAS, and the time CacheService
  *     entries expire by, in ms since the epoch; the real time at load until a
- *     test sets it.
+ *     test sets it. It never moves by itself: set it before any setup call
+ *     (60 s caches filled at the real time outlive an earlier clock), and move
+ *     it forward before asserting a timestamp was left alone (a rewrite at the
+ *     same time compares equal).
  *   toasts: every Spreadsheet.toast, in order.
  *   menus: every menu added to the spreadsheet UI (onOpen).
  *   sheet: a sheet's current data range (null if the sheet does not exist).

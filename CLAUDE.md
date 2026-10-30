@@ -79,7 +79,7 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 
 - PA Dashboard files are frozen: the canonical list is CODING_STANDARDS.md §1. `src/scripts/รหัส.js` changes only at the points listed in SPEC.md §12.4.
 - New code goes in `src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/` and `src/scripts/dc-*.js`. GAS files run in one global scope with no `require`/`import`; every node-only file under `src/scripts/` must be listed in `.claspignore`.
-- Production is shared with PA. Unless the user asks in this session, never run `npm run gas:push`, `gas:deploy` or `gas:sync`, `src/scripts/sync-moph-to-gas.js`, `hdc-catalog.js refresh`, a `rebuild`, or any POST to the live GAS URL. When asked to deploy GAS, deploy from `main` and redeploy the existing deployment (`npm run gas:deploy`); never create a new deployment, because PA hardcodes the web app URL in `src/lib/useKPIData.ts`.
+- Production is shared with PA. Unless the user asks in this session, never run `npm run gas:push`, `gas:deploy` or `gas:sync`, `npm run gas:diag` with `setup=` or `run=`, `src/scripts/sync-moph-to-gas.js`, `hdc-catalog.js refresh`, a `rebuild`, or any POST to the live GAS URL. When asked to deploy GAS, follow docs/agents/gas-deploy.md: deploy from `main` and redeploy the existing deployment (`npm run gas:deploy`); never create a new deployment, because PA hardcodes the web app URL in `src/lib/useKPIData.ts`.
 - Git: one branch per ticket (`feat/F##-<slug>`) from `main`, PR into `main`, never push to `main`. Never commit `public/data/` or `.env*`.
 - Website UI text is Thai. The spreadsheet's admin menu and toasts are English, matching PA's existing ones (#137). Use the terms in GLOSSARY.md in code, tests, issues and commit messages.
 - Use the Context7 MCP tools to fetch current docs before writing code against a library or answering a library API question (Next.js 16.4, React 19.2, Tailwind CSS 4, clasp 3, Leaflet 1.9). Don't ask first, and don't rely on memory.
@@ -108,4 +108,4 @@ Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents
 
 ### Workflow
 
-Per ticket: the user runs `/implement #<issue>` (it calls `tdd` and `code-review`) → write the PR body with `pr` → squash merge → delete the branch (CODING_STANDARDS.md §6). `ready-for-human` tickets go through `wizard`. When a Track's last ticket merges, prompt the user to run `/retro`. Full rules: FEATURES.md "กติกา".
+Per ticket: the user runs `/implement #<issue>` (it calls `tdd` and `code-review`) → write the PR body with `pr` → squash merge → delete the branch (CODING_STANDARDS.md §6) → the user runs `/clear` before the next ticket. `ready-for-human` tickets go through `wizard`. When a Track's last ticket merges, prompt the user to run `/retro`. Full rules: FEATURES.md "กติกา".
