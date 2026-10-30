@@ -129,13 +129,20 @@ async function main() {
   );
 
   let ok = 0;
+  let noData = 0;
   let fail = 0;
   // One year at a time, every table in it.
   const jobs = years.flatMap((year) => selected.map((unit) => ({ year, unit })));
   for (const { year, unit } of jobs) {
     try {
       const { rows, total } = await fetchMoph(unit.table, year, settings.province, unit.limit);
-      if (rows.length === 0) throw new Error('MOPH returned 0 rows');
+      // HDC has no rows of this table for the year, e.g. a table that starts
+      // after the first year of the window (F12): nothing to save, not a failure.
+      if (rows.length === 0) {
+        console.log(`  – ${unit.table} ${year}: no data in HDC`);
+        noData++;
+        continue;
+      }
       // A response cut short at the page size: GAS would refuse it too
       // (Incomplete data, SPEC §7.1), so it is not sent.
       if (total !== undefined && rows.length < total) {
@@ -162,13 +169,14 @@ async function main() {
     } catch (e) {
       console.error(`  ✗ ${unit.table} ${year}: ${e.message}`);
       fail++;
+    } finally {
+      // Random 4-7s pause between requests to avoid MOPH rate limiting (mirrors
+      // the sync page's WAF-avoidance pacing), after a year with no data too.
+      await sleep(4000 + Math.floor(Math.random() * 3000));
     }
-    // Random 4-7s pause between requests to avoid MOPH rate limiting (mirrors
-    // the sync page's WAF-avoidance pacing).
-    await sleep(4000 + Math.floor(Math.random() * 3000));
   }
 
-  console.log(`Done. Success: ${ok}, Failed: ${fail}`);
+  console.log(`Done. Success: ${ok}, No data: ${noData}, Failed: ${fail}`);
   if (fail > 0) process.exitCode = 1;
 
   // Rebuild only when new data was saved (SPEC §6.3). Its result is the last

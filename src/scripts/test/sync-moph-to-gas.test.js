@@ -275,8 +275,8 @@ test("deploy_hook_url empty → the last line says the Deploy Hook is not config
   assert.equal(lastLine(res.stdout), "Rebuild not requested: Deploy hook not configured");
 });
 
-test("no table saved → no POST rebuild", async (t) => {
-  const env = await start(t, () => ({ body: envelope([]) }), { hook: HOOK });
+test("no table saved (MOPH answers 500 every time) → no POST rebuild", async (t) => {
+  const env = await start(t, () => ({ status: 500, body: {} }), { hook: HOOK });
 
   const res = await run(env, ["--only", "s_kpi_dental33"]);
 
@@ -302,4 +302,18 @@ test("MOPH replies with a bare array (no total, SCHEMA §5.3) → saved, and the
 
   assert.equal(res.code, 0, res.stderr);
   assert.match(res.stdout, /✓ s_kpi_dental33 2569 → s_kpi_dental33: fetched 5 \(MOPH sent no total\), received 5, count 3\n/);
+});
+
+test("--backfill where HDC has no 2565 rows → 2565 is no data, not a failure: the other years saved, exit 0", async (t) => {
+  const env = await start(t, (body) => ({ body: envelope(body.year === "2565" ? [] : mophRows(body.year)) }));
+
+  const res = await run(env, ["--backfill", "--only", "s_kpi_dental33", "--no-rebuild"]);
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.match(res.stdout, /– s_kpi_dental33 2565: no data in HDC\n/);
+  assert.match(res.stdout, /Done\. Success: 4, No data: 1, Failed: 0\n/);
+  assert.deepEqual(
+    syncStatus(env.h).map(([, year]) => year),
+    ["2566", "2567", "2568", "2569"],
+  );
 });
