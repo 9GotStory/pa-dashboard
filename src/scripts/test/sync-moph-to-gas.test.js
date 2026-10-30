@@ -294,3 +294,12 @@ test("a mistyped flag (--no-rebiuld) → exit 1 with the usage, before reading B
   assert.deepEqual(env.moph.requests, []);
   assert.deepEqual(env.gas.posts, []);
 });
+
+test("MOPH replies with a bare array (no total, SCHEMA §5.3) → saved, and the log says there was no total to check", async (t) => {
+  const env = await start(t, (body) => ({ body: mophRows(body.year) }));
+
+  const res = await run(env, ["--only", "s_kpi_dental33", "--no-rebuild"]);
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.match(res.stdout, /✓ s_kpi_dental33 2569 → s_kpi_dental33: fetched 5 \(MOPH sent no total\), received 5, count 3\n/);
+});

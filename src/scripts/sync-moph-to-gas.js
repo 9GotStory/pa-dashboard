@@ -19,12 +19,12 @@
 const { parseArgs } = process.getBuiltinModule('node:util');
 
 // MOPH_URL and SYNC_WAIT_SCALE are for the tests (src/scripts/test/): a
-// local MOPH stub, and 0 to skip the pauses below.
+// local MOPH stub, and 0 to skip the pauses below. Empty counts as unset.
 const MOPH_URL = process.env.MOPH_URL || 'https://opendata.moph.go.th/api/report_data';
 const GAS_URL =
   process.env.NEXT_PUBLIC_GAS_SCRIPT_URL ||
   'https://script.google.com/macros/s/AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H/exec';
-const WAIT_SCALE = Number(process.env.SYNC_WAIT_SCALE ?? 1);
+const WAIT_SCALE = Number(process.env.SYNC_WAIT_SCALE || 1);
 
 const USAGE =
   'usage: node src/scripts/sync-moph-to-gas.js [--only <table> ...] [--year <YYYY> ... | --backfill] [--force] [--no-rebuild]';
@@ -109,13 +109,13 @@ async function main() {
   const meta = await fetchMetadata();
   // MOPH silently truncates at its page size (1000 by default), so every
   // request asks for 5000 rows, or the unit's own limit if larger (SPEC §7.1).
-  const kpis = (meta.kpi_config || []).filter((k) => k.table).map((k) => ({ ...k, limit: Math.max(5000, Number(k.limit) || 0) }));
+  const units = (meta.kpi_config || []).filter((u) => u.table).map((u) => ({ ...u, limit: Math.max(5000, Number(u.limit) || 0) }));
   const settings = {
     year: String(meta.current_year || '2569'),
     province: String(meta.province_code || '54'),
   };
-  const targets = args.only ? kpis.filter((k) => args.only.includes(k.table)) : kpis;
-  if (targets.length === 0) throw new Error('No KPIs selected for sync');
+  const selected = args.only ? units.filter((u) => args.only.includes(u.table)) : units;
+  if (selected.length === 0) throw new Error('No tables selected for sync');
   // --backfill: every year of the window, oldest first (meta.years, SCHEMA §3.5).
   const years = args.backfill ? meta.years : (args.year ?? [settings.year]);
   // GAS refuses any other year (Year outside window), so stop before asking MOPH.
@@ -125,41 +125,45 @@ async function main() {
   }
 
   console.log(
-    `Syncing ${targets.length}/${kpis.length} tables (years=${years.join(',')}, province=${settings.province})`,
+    `Syncing ${selected.length}/${units.length} tables (years=${years.join(',')}, province=${settings.province})`,
   );
 
   let ok = 0;
   let fail = 0;
   // One year at a time, every table in it.
-  const jobs = years.flatMap((year) => targets.map((kpi) => ({ year, kpi })));
-  for (const { year, kpi } of jobs) {
+  const jobs = years.flatMap((year) => selected.map((unit) => ({ year, unit })));
+  for (const { year, unit } of jobs) {
     try {
-      const { rows, total } = await fetchMoph(kpi.table, year, settings.province, kpi.limit);
+      const { rows, total } = await fetchMoph(unit.table, year, settings.province, unit.limit);
       if (rows.length === 0) throw new Error('MOPH returned 0 rows');
       // A response cut short at the page size: GAS would refuse it too
       // (Incomplete data, SPEC §7.1), so it is not sent.
-      if (rows.length < total) {
-        throw new Error(`MOPH sent ${rows.length} of total ${total} rows (limit ${kpi.limit}), not saved`);
+      if (total !== undefined && rows.length < total) {
+        throw new Error(
+          `MOPH sent ${rows.length} of total ${total} rows (asked for limit ${unit.limit}), not saved; ` +
+            'run it again, and if total is over the limit the table needs paging with offset (SPEC §7.1)',
+        );
       }
       // --force: GAS skips its Stale data check (SCHEMA §3.3).
       const saved = await postToGas({
         action: 'save_kpi_data',
-        tableName: kpi.table,
+        tableName: unit.table,
         year,
         total,
         force: args.force === true,
         data: rows,
       });
-      const fetched = total === undefined ? rows.length : `${rows.length} of total ${total}`;
+      // Without a total there is nothing to check the row count against.
+      const fetched = total === undefined ? `${rows.length} (MOPH sent no total)` : `${rows.length} of total ${total}`;
       console.log(
-        `  ✓ ${kpi.table} ${year} → ${saved.sheet}: fetched ${fetched}, received ${saved.received}, count ${saved.count}`,
+        `  ✓ ${unit.table} ${year} → ${saved.sheet}: fetched ${fetched}, received ${saved.received}, count ${saved.count}`,
       );
       ok++;
     } catch (e) {
-      console.error(`  ✗ ${kpi.table} ${year}: ${e.message}`);
+      console.error(`  ✗ ${unit.table} ${year}: ${e.message}`);
       fail++;
     }
-    // Random 4-7s pause between KPIs to avoid MOPH rate limiting (mirrors
+    // Random 4-7s pause between requests to avoid MOPH rate limiting (mirrors
     // the sync page's WAF-avoidance pacing).
     await sleep(4000 + Math.floor(Math.random() * 3000));
   }
