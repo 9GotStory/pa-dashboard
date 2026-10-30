@@ -52,6 +52,7 @@
 | ฟังก์ชัน GAS ระดับ handler (`doGet`/`doPost` ต่อ action, `handleDiag` ต่อ setup) และ `saveTableYear`, `getYearWindow`, `sheetNameFor`, `requestRebuild` | โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` (ชีตในหน่วยความจำ), `PropertiesService`, `UrlFetchApp`, `LockService` (นับการถือและปล่อย lock), `CacheService` ใน `src/scripts/test/` ไฟล์เทสต์ชื่อ `*.test.js` รันด้วย `npm test` | จับ logic ทั้งหมดของ GAS ได้ · ไม่จับพฤติกรรมจริงของ Sheets API และโควตา |
 | `src/lib/dc/values.ts` และ `format.ts` (ทุกฟังก์ชัน export) | `node:test` ผ่าน `tsx --test src/lib/dc/*.test.ts` (อยู่ใน `npm test` ตั้งแต่ F15) ด้วย header จริงของ 18 ตารางและแถวตัวอย่าง | จับการตรวจกลุ่มคอลัมน์ การรวมค่า และการจัดรูปแบบ · ไม่จับการแสดงผล |
 | `src/scripts/build-snapshot.mjs` | รันกับ stub HTTP server ที่ตอบ `catalog`/`report` ปลอม (สำเร็จ, error, `Busy` แล้วสำเร็จ, `Busy` ตลอด, แถวไม่ครบ, ไฟล์ใหญ่) | จับการล้มดัง ๆ และโครงไฟล์ · ไม่จับ GAS จริง |
+| `src/scripts/hdc-catalog.js` (`find`, `refresh`) | รันเป็น child process แบบที่ผู้ดูแลรัน กับไฟล์ export แค็ตตาล็อกที่ทำจาก fixture · `refresh` คุยกับ HTTP server ในเครื่องที่ส่งทุกคำขอให้ `doGet`/`doPost` ของ GAS จริงใน harness `node:vm` ข้างบน | จับลำดับหัวข้อ body ของ `save_catalog` การข้ามหัวข้อ exit code และข้อความ รวมถึงสิ่งที่ GAS เขียนลงชีต · ไม่จับ redirect ของ Apps Script และเครือข่ายจริง |
 | หน้าเว็บ | ตรวจด้วยมือตามเกณฑ์ใน FEATURES (`npx serve out`, DevTools, Lighthouse) | ไม่มี e2e อัตโนมัติในเฟส 1 |
 
 - CI รัน `npm test` แล้ว `npm run build` บน Node 24 ทุก PR ต้องผ่านทั้งสอง
