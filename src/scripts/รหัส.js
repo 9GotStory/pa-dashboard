@@ -6,7 +6,7 @@
 
 const CONFIG = {
   YEAR: "2569",
-  HISTORY_YEARS: 5, // Data Center year window: current_year − 4 … current_year
+  HISTORY_YEARS: 5, // Data Center year window: the last HISTORY_YEARS years up to current_year
   PROVINCE: "54",
   DISTRICT: "5406",
   API_URL: "https://opendata.moph.go.th/api/report_data",
@@ -69,6 +69,7 @@ function parsePositiveInt(v) {
 // within a minute; long enough to dedupe Sheets API calls across concurrent
 // doGet requests. Bump the cache keys below whenever the shape of the
 // cached payload changes (e.g. adding a new setting field).
+// Bumped v2 → v3: adds district_code and deploy_hook_url.
 const SETTINGS_CACHE_KEY = "settings_v3";
 // Bumped v3 → v4: registry now merges TWO sheets (kpi_master + kpi_epi).
 const KPI_MASTER_CACHE_KEY = "kpi_master_v4";

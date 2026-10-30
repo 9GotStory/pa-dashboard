@@ -18,12 +18,15 @@ function settingsSheet(extra) {
 }
 
 test("settings sheet without the new columns → district_code 5406, deploy_hook_url empty", () => {
-  const { gas } = loadGas({ sheets: { settings: SETTINGS_BEFORE_F01 } });
+  const { gas, logs } = loadGas({ sheets: { settings: SETTINGS_BEFORE_F01 } });
 
   const settings = gas.readSettings();
 
   assert.equal(settings.district_code, "5406");
   assert.equal(settings.deploy_hook_url, "");
+  // readSettings catches its own errors and returns defaults, so "no error"
+  // means nothing was logged.
+  assert.deepEqual(logs, []);
 });
 
 test("district_code that is not 4 digits → default 5406 and a log line", () => {
@@ -45,11 +48,15 @@ test("district_code of another province (5501) is accepted: no cross-field check
 });
 
 test("deploy_hook_url that is not a Cloudflare Deploy Hook → treated as empty", () => {
-  const { gas } = loadGas({
+  const { gas, logs } = loadGas({
     sheets: { settings: settingsSheet({ deploy_hook_url: "https://example.com/hook" }) },
   });
 
   assert.equal(gas.readSettings().deploy_hook_url, "");
+  assert.ok(
+    logs.some((line) => line.includes("deploy_hook_url has invalid value")),
+    "expected a Logger.log line about deploy_hook_url, got:\n" + logs.join("\n"),
+  );
 });
 
 test("deploy_hook_url that is a Cloudflare Deploy Hook is kept", () => {
