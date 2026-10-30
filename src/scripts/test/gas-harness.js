@@ -133,6 +133,7 @@ function fakeSheet(name, values) {
  *   sheet: (name: string) => unknown[][] | null,
  *   maxRows: (name: string) => number | null,
  *   sheetNames: () => string[],
+ *   reads: (name: string) => number,
  * }}
  *   gas: the GAS global scope (top-level functions are properties of it).
  *   logs: every Logger.log message, in order.
@@ -141,6 +142,8 @@ function fakeSheet(name, values) {
  *   fetches: every UrlFetchApp.fetch call, in order.
  *   sheet: a sheet's current data range (null if the sheet does not exist).
  *   maxRows: a sheet's row count including blank rows below the data.
+ *   reads: how many times the code looked a sheet up by name
+ *     (getSheetByName), whether or not it exists.
  */
 export function loadGas({ sheets = {}, fetch } = {}) {
   const logs = [];
@@ -151,10 +154,14 @@ export function loadGas({ sheets = {}, fetch } = {}) {
   const lock = { tryLock: 0, releaseLock: 0, nested: 0 };
   let held = false;
   const fetches = [];
+  const reads = new Map();
   const book = new Map(Object.entries(sheets).map(([name, values]) => [name, fakeSheet(name, values)]));
 
   const spreadsheet = {
-    getSheetByName: (name) => book.get(name) || null,
+    getSheetByName: (name) => {
+      reads.set(name, (reads.get(name) || 0) + 1);
+      return book.get(name) || null;
+    },
     insertSheet: (name) => {
       if (book.has(name)) throw new Error(`A sheet with the name "${name}" already exists`);
       const sheet = fakeSheet(name, []);
@@ -171,6 +178,7 @@ export function loadGas({ sheets = {}, fetch } = {}) {
       getScriptCache: () => ({
         get: (key) => (cache.has(key) ? cache.get(key) : null),
         put: (key, value) => cache.set(key, value),
+        remove: (key) => cache.delete(key),
         removeAll: (keys) => keys.forEach((k) => cache.delete(k)),
       }),
     },
@@ -223,5 +231,6 @@ export function loadGas({ sheets = {}, fetch } = {}) {
     sheet: (name) => (book.has(name) ? book.get(name).getDataRange().getValues() : null),
     maxRows: (name) => (book.has(name) ? book.get(name).getMaxRows() : null),
     sheetNames: () => [...book.keys()],
+    reads: (name) => reads.get(name) || 0,
   };
 }

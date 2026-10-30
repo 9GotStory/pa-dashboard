@@ -31,6 +31,54 @@ function sheetNameFor(table, year, settings) {
   return String(year) === s.current_year ? table : table + "_y" + year;
 }
 
+// DC unit table names in CacheService, CONFIG_CACHE_TTL_SECONDS like
+// kpi_master (SCHEMA §3.5). clearConfigCache and save_catalog remove it.
+const DC_UNITS_CACHE_KEY = "dc_units_v1";
+
+/**
+ * Sync units (SPEC §8) = PA units ∪ DC units: what syncAllData fetches, what
+ * doPost accepts and what BATCH_ALL lists in meta.kpi_config. A DC unit is a
+ * source_table of a รายงานที่ใช้งาน that is not already a PA unit; it comes
+ * after the PA units, in hdc_reports order.
+ */
+function getSyncUnits(kpiCfg) {
+  const units = getPaUnits(kpiCfg);
+  const tables = units.map(function (unit) {
+    return unit.table;
+  });
+  dcUnitTables().forEach(function (table) {
+    if (tables.indexOf(table) > -1) return;
+    tables.push(table);
+    units.push({ table: table, sheet: table, isQuarterly: false, limit: null });
+  });
+  return units;
+}
+
+/**
+ * The distinct source_table of รายงานที่ใช้งาน ([] before hdc_reports exists),
+ * cached under DC_UNITS_CACHE_KEY: every BATCH_ALL from PA needs it, and
+ * readHdcReports reads 2 sheets.
+ */
+function dcUnitTables() {
+  const cache = CacheService.getScriptCache();
+  try {
+    const cached = cache.get(DC_UNITS_CACHE_KEY);
+    if (cached) return JSON.parse(cached);
+  } catch (e) {
+    Logger.log("dcUnitTables: cache read failed: " + e);
+  }
+  const tables = [];
+  readHdcReports().forEach(function (report) {
+    if (tables.indexOf(report.source_table) === -1) tables.push(report.source_table);
+  });
+  try {
+    cache.put(DC_UNITS_CACHE_KEY, JSON.stringify(tables), CONFIG_CACHE_TTL_SECONDS);
+  } catch (e) {
+    Logger.log("dcUnitTables: cache write failed: " + e);
+  }
+  return tables;
+}
+
 const DC_SYNC_STATUS_SHEET = "sync_status";
 const DC_SYNC_STATUS_HEADERS = ["table", "b_year", "sheet", "row_count", "max_date_com", "synced_at"];
 // Columns written as plain text so Sheets keeps leading zeros (เดิม).

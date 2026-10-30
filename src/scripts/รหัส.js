@@ -37,7 +37,7 @@ const CONFIG = {
     { table: "s_kpi_dental28", sheet: "s_kpi_dental28" },
     { table: "s_kpi_dental33", sheet: "s_kpi_dental33" },
     // EPI (สร้างเสริมภูมิคุ้มกันโรค). s_epi1 (1 ปี) is NOT here — it is
-    // discovered from kpi_master `source_sheet` via getSyncUnits(), proving
+    // discovered from kpi_master `source_sheet` via getPaUnits(), proving
     // the config-only path for future tables. These four are in CONFIG only
     // because s_epi_complete needs `limit`.
     // `limit`: MOPH silently truncates responses at 1000 rows; s_epi_complete
@@ -448,16 +448,17 @@ function readKpiMasterConfig() {
 }
 
 /**
- * Invalidate cached settings/kpi_master so the next read hits the sheet.
- * Call this after editing settings or kpi_master directly (e.g. via a menu).
+ * Invalidate cached settings/kpi_master/DC units so the next read hits the
+ * sheet. Call this after editing settings, kpi_master or hdc_reports directly
+ * (e.g. via a menu).
  */
 function clearConfigCache() {
   const cache = CacheService.getScriptCache();
   try {
-    cache.removeAll([SETTINGS_CACHE_KEY, KPI_MASTER_CACHE_KEY, KPI_REGISTRY_CACHE_KEY]);
+    cache.removeAll([SETTINGS_CACHE_KEY, KPI_MASTER_CACHE_KEY, KPI_REGISTRY_CACHE_KEY, DC_UNITS_CACHE_KEY]);
     Logger.log(
       "clearConfigCache: invalidated " + SETTINGS_CACHE_KEY + ", " +
-        KPI_MASTER_CACHE_KEY + ", " + KPI_REGISTRY_CACHE_KEY,
+        KPI_MASTER_CACHE_KEY + ", " + KPI_REGISTRY_CACHE_KEY + ", " + DC_UNITS_CACHE_KEY,
     );
   } catch (e) {
     Logger.log("clearConfigCache failed: " + e);
@@ -490,13 +491,14 @@ function sanitizeGuid(v) {
 }
 
 /**
- * Sync units = CONFIG.KPIS ∪ source_sheet values from kpi_master. This is
- * the single source of truth for: what syncAllData fetches, what doGet
- * serves, what doPost accepts, and what meta.kpi_config advertises. Adding
- * a brand-new MOPH table later (e.g. กลุ่มอายุอื่น) is therefore a
- * kpi_master-row-only change — no redeploy.
+ * PA units = CONFIG.KPIS ∪ source_sheet values from kpi_master: what
+ * BATCH_ALL computes and what single-sheet mode serves. Adding a brand-new
+ * MOPH table later (e.g. กลุ่มอายุอื่น) is therefore a kpi_master-row-only
+ * change — no redeploy. getSyncUnits (dc-storage.js) adds the Data Center
+ * units for what syncAllData fetches, what doPost accepts, and what
+ * meta.kpi_config advertises (SPEC §8).
  */
-function getSyncUnits(kpiCfg) {
+function getPaUnits(kpiCfg) {
   const units = CONFIG.KPIS.map(function (k) {
     return {
       table: k.table,
@@ -589,8 +591,8 @@ function syncAllData() {
     // Pull runtime config from the settings sheet (year, province may be
     // changed without redeploying). Falls back to CONFIG defaults on errors.
     const settings = readSettings();
-    // Sync units = CONFIG.KPIS ∪ kpi_master source_sheet values, so tables
-    // registered only in the sheet (e.g. s_epi1) sync without a redeploy.
+    // Sync units = PA units ∪ DC units, so tables registered only in a sheet
+    // (s_epi1 in kpi_master, a report in hdc_reports) sync without a redeploy.
     const units = getSyncUnits(readKpiMasterConfig());
 
     // Fetch SEQUENTIALLY with spacing — NOT UrlFetchApp.fetchAll. MOPH's
@@ -902,7 +904,7 @@ const MASTER_SHEETS = ["hospitals", "tambon_master", "kpi_master", "kpi_epi"];
  * Calculates KPI values on server-side and returns only minimal data.
  * SUPPORTS: Single sheet fetch OR 'BATCH_ALL' for everything.
  *
- * Security: only MASTER_SHEETS, BATCH_ALL, and sheets listed in the sync units
+ * Security: only MASTER_SHEETS, BATCH_ALL, and sheets listed in the PA units
  * are readable. Any other `sheet` value is rejected so internal sheets
  * (settings, system_logs, …) cannot be exposed via the public endpoint.
  */
@@ -934,7 +936,7 @@ function doGet(e) {
     return serveRawSheet(sheetName);
   }
 
-  // 2. Whitelist remaining names: BATCH_ALL or a known sync-unit sheet.
+  // 2. Whitelist remaining names: BATCH_ALL or a known PA-unit sheet.
   //    Prevents leaking settings/system_logs/other internal sheets. Units
   //    include kpi_master-declared source sheets (e.g. s_epi1), so newly
   //    registered tables are servable without a redeploy.
@@ -944,7 +946,7 @@ function doGet(e) {
   // (BATCH_ALL or a single data sheet). Falls back to CONFIG defaults.
   const settings = readSettings();
   const kpiCfg = readKpiMasterConfig();
-  const units = getSyncUnits(kpiCfg);
+  const units = getPaUnits(kpiCfg);
 
   if (!isBatch) {
     const knownKpiSheet = units.some((k) => k.sheet === sheetName);
@@ -1009,11 +1011,12 @@ function doGet(e) {
       }
     });
 
-    // Sync units only — the frontend's sync page and sync-moph-to-gas.js
-    // drive off this list; virtual KPIs are computed here and must never be
-    // fetched from MOPH or POSTed back. `limit` tells clients which tables
-    // need a larger page size (MOPH truncates at 1000 rows silently).
-    const kpiConfigOut = units.map((kpi) => {
+    // Sync units only (PA ∪ DC) — the frontend's sync page and
+    // sync-moph-to-gas.js drive off this list; virtual KPIs are computed here
+    // and must never be fetched from MOPH or POSTed back. `limit` tells
+    // clients which tables need a larger page size (MOPH truncates at 1000
+    // rows silently).
+    const kpiConfigOut = getSyncUnits(kpiCfg).map((kpi) => {
       const sheetCfg = kpiCfg[kpi.table] || {};
       const isQuarterly =
         sheetCfg.isQuarterly === null || sheetCfg.isQuarterly === undefined
@@ -1033,11 +1036,13 @@ function doGet(e) {
     // frontend sync page can pull them from BATCH_ALL instead of hardcoding.
     // `registry` tells the frontend which KPI-registry tabs to fetch raw and
     // each one's category default — adding a group is manifest-only.
+    // `years` is the Data Center year window for the sync page's year picker.
     const response = {
       data: result,
       meta: {
         current_quarter: settings.current_quarter,
         current_year: settings.current_year,
+        years: getYearWindow(settings),
         province_code: settings.province_code,
         kpi_config: kpiConfigOut,
         registry: registry,

@@ -1,0 +1,513 @@
+{
+  "data": {
+    "s_kpi_anc12": [
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 30,
+        "result": 21
+      },
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 12,
+        "result": 9
+      },
+      {
+        "hospcode": "10953",
+        "areacode": "54060102",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 8,
+        "result": 8
+      },
+      {
+        "hospcode": "10702",
+        "areacode": "54010205",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 22,
+        "result": 20
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 15,
+        "result": 11
+      }
+    ],
+    "s_anc5": [],
+    "s_kpi_food": [],
+    "s_kpi_childdev4": [],
+    "s_kpi_childdev2": [
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 15,
+        "result": 4
+      },
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 9,
+        "result": 2
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 13,
+        "result": 3
+      }
+    ],
+    "s_aged9": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 210,
+        "result": 180
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 330,
+        "result": 200
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 145,
+        "result": 0
+      }
+    ],
+    "s_dm_screen": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 400,
+        "result": 215
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 350,
+        "result": 300
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 610,
+        "result": 480
+      }
+    ],
+    "s_ht_screen": [],
+    "s_ncd_screen_repleate1": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060102",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 5,
+        "result": 4
+      },
+      {
+        "hospcode": "10702",
+        "areacode": "54010205",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 8,
+        "result": 6
+      }
+    ],
+    "s_ht_screen_follow": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 11,
+        "result": 7
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 15,
+        "result": 10
+      }
+    ],
+    "s_dental_0_5_cavity_free": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 52,
+        "result": 40
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 30,
+        "result": 18
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 90,
+        "result": 77
+      }
+    ],
+    "s_kpi_dental28": [],
+    "s_kpi_dental33": [],
+    "s_epi2": [],
+    "s_epi2_dtp4": [],
+    "s_epi3": [],
+    "s_epi5": [],
+    "s_epi_complete": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 11,
+        "result": 10
+      },
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 13,
+        "result": 12
+      },
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 12,
+        "result": 9
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 21,
+        "result": 19
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 7,
+        "result": 7
+      }
+    ],
+    "s_epi_complete_1": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 11,
+        "result": 10
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 21,
+        "result": 19
+      }
+    ],
+    "s_epi_complete_3": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 13,
+        "result": 12
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 7,
+        "result": 7
+      }
+    ],
+    "s_epi1": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 12,
+        "result": 10
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 16,
+        "result": 13
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 7,
+        "result": 4
+      }
+    ],
+    "s_epi1_bcg": [
+      {
+        "hospcode": "10953",
+        "areacode": "54060101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 9,
+        "result": 8
+      },
+      {
+        "hospcode": "10701",
+        "areacode": "54010101",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 14,
+        "result": 14
+      },
+      {
+        "hospcode": "10954",
+        "areacode": "54060203",
+        "date_com": "202610290915",
+        "b_year": "2569",
+        "target": 6,
+        "result": 5
+      }
+    ]
+  },
+  "meta": {
+    "current_quarter": 2,
+    "current_year": "2569",
+    "province_code": "54",
+    "kpi_config": [
+      {
+        "table": "s_kpi_anc12",
+        "sheet": "s_kpi_anc12",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_anc5",
+        "sheet": "s_anc5",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_kpi_food",
+        "sheet": "s_kpi_food",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_kpi_childdev4",
+        "sheet": "s_kpi_childdev4",
+        "isQuarterly": true,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_kpi_childdev2",
+        "sheet": "s_kpi_childdev2",
+        "isQuarterly": true,
+        "target_months": 8,
+        "effective_quarter": 3,
+        "limit": null
+      },
+      {
+        "table": "s_aged9",
+        "sheet": "s_aged9",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_dm_screen",
+        "sheet": "s_dm_screen",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_ht_screen",
+        "sheet": "s_ht_screen",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_ncd_screen_repleate1",
+        "sheet": "s_ncd_screen_repleate1",
+        "isQuarterly": true,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_ht_screen_follow",
+        "sheet": "s_ht_screen_follow",
+        "isQuarterly": true,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_dental_0_5_cavity_free",
+        "sheet": "s_dental_0_5_cavity_free",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_kpi_dental28",
+        "sheet": "s_kpi_dental28",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_kpi_dental33",
+        "sheet": "s_kpi_dental33",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_epi2",
+        "sheet": "s_epi2",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_epi3",
+        "sheet": "s_epi3",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_epi5",
+        "sheet": "s_epi5",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      },
+      {
+        "table": "s_epi_complete",
+        "sheet": "s_epi_complete",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": 5000
+      },
+      {
+        "table": "s_epi1",
+        "sheet": "s_epi1",
+        "isQuarterly": false,
+        "target_months": null,
+        "effective_quarter": null,
+        "limit": null
+      }
+    ],
+    "registry": [
+      {
+        "sheet": "kpi_master",
+        "category": "ตัวชี้วัดพื้นฐาน",
+        "categoryOrder": 1
+      },
+      {
+        "sheet": "kpi_epi",
+        "category": "สร้างเสริมภูมิคุ้มกันโรค",
+        "categoryOrder": 2
+      }
+    ],
+    "lastUpdatedMap": {
+      "s_kpi_anc12": "202610290915",
+      "s_anc5": null,
+      "s_kpi_food": null,
+      "s_kpi_childdev4": null,
+      "s_kpi_childdev2": "202610290915",
+      "s_aged9": "202610290915",
+      "s_dm_screen": "202610290915",
+      "s_ht_screen": null,
+      "s_ncd_screen_repleate1": "202610290915",
+      "s_ht_screen_follow": "202610290915",
+      "s_dental_0_5_cavity_free": "202610290915",
+      "s_kpi_dental28": null,
+      "s_kpi_dental33": null,
+      "s_epi2": null,
+      "s_epi2_dtp4": null,
+      "s_epi3": null,
+      "s_epi5": null,
+      "s_epi_complete": "202610290915",
+      "s_epi_complete_1": "202610290915",
+      "s_epi_complete_3": "202610290915",
+      "s_epi1": "202610290915",
+      "s_epi1_bcg": "202610290915"
+    }
+  }
+}
