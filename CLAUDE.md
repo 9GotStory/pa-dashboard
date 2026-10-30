@@ -81,7 +81,7 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 - New code goes in `src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/` and `src/scripts/dc-*.js`. GAS files run in one global scope with no `require`/`import`; every node-only file under `src/scripts/` must be listed in `.claspignore`.
 - Production is shared with PA. Unless the user asks in this session, never run `npm run gas:push`, `gas:deploy` or `gas:sync`, `src/scripts/sync-moph-to-gas.js`, `hdc-catalog.js refresh`, a `rebuild`, or any POST to the live GAS URL. When asked to deploy GAS, deploy from `main` and redeploy the existing deployment (`npm run gas:deploy`); never create a new deployment, because PA hardcodes the web app URL in `src/lib/useKPIData.ts`.
 - Git: one branch per ticket (`feat/F##-<slug>`) from `main`, PR into `main`, never push to `main`. Never commit `public/data/` or `.env*`.
-- UI text is Thai. Use the terms in GLOSSARY.md in code, tests, issues and commit messages.
+- Website UI text is Thai. The spreadsheet's admin menu and toasts are English, matching PA's existing ones (#137). Use the terms in GLOSSARY.md in code, tests, issues and commit messages.
 - Use the Context7 MCP tools to fetch current docs before writing code against a library or answering a library API question (Next.js 16.4, React 19.2, Tailwind CSS 4, clasp 3, Leaflet 1.9). Don't ask first, and don't rely on memory.
 
 ## Docs map
