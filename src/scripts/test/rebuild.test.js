@@ -26,10 +26,15 @@ function post(h, body) {
   return JSON.parse(h.gas.doPost({ postData: { contents: JSON.stringify(body) } }).getContent());
 }
 
+// POST rebuild through doPost.
+function rebuild(h, reason = "test") {
+  return post(h, { action: "rebuild", reason });
+}
+
 test("deploy_hook_url empty → error Deploy hook not configured, the hook is not called", () => {
   const h = load({ hook: "" });
 
-  const res = post(h, { action: "rebuild", reason: "test" });
+  const res = rebuild(h);
 
   assert.deepEqual(res, { status: "error", message: "Deploy hook not configured" });
   assert.equal(h.fetches.length, 0);
@@ -39,8 +44,8 @@ test("5 rebuilds in one day succeed (remaining_today 4 → 0); the 6th → Rebui
   const h = load();
   h.clock.now = Date.parse("2026-10-30T10:00:00+07:00");
 
-  const five = Array.from({ length: 5 }, () => post(h, { action: "rebuild", reason: "test" }));
-  const sixth = post(h, { action: "rebuild", reason: "test" });
+  const five = Array.from({ length: 5 }, () => rebuild(h));
+  const sixth = rebuild(h);
 
   assert.deepEqual(five, [4, 3, 2, 1, 0].map((n) => ({ status: "success", remaining_today: n })));
   assert.deepEqual(sixth, { status: "error", message: "Rebuild quota exceeded for today (5/5)" });
@@ -51,11 +56,11 @@ test("5 rebuilds in one day succeed (remaining_today 4 → 0); the 6th → Rebui
 test("the next day (from midnight Asia/Bangkok) the count starts again and the previous day's key is deleted", () => {
   const h = load();
   h.clock.now = Date.parse("2026-10-30T10:00:00+07:00");
-  for (let i = 0; i < 5; i++) post(h, { action: "rebuild", reason: "test" });
+  for (let i = 0; i < 5; i++) rebuild(h);
 
   // Still 30 Oct in UTC, already 31 Oct 00:30 in Bangkok.
   h.clock.now = Date.parse("2026-10-30T17:30:00Z");
-  const res = post(h, { action: "rebuild", reason: "test" });
+  const res = rebuild(h);
 
   assert.deepEqual(res, { status: "success", remaining_today: 4 });
   assert.deepEqual([...h.properties.keys()], ["rebuild_count_2026-10-31"]);
@@ -65,9 +70,9 @@ test("hook answers 500 → error with the status, not counted against the quota"
   let code = 500;
   const h = load({ fetch: () => ({ code, body: { success: false } }) });
 
-  const failed = post(h, { action: "rebuild", reason: "test" });
+  const failed = rebuild(h);
   code = 200;
-  const next = post(h, { action: "rebuild", reason: "test" });
+  const next = rebuild(h);
 
   assert.equal(failed.status, "error");
   assert.match(failed.message, /\b500\b/);
@@ -85,9 +90,9 @@ test("hook request throws (no connection) → error without the hook URL in the 
     },
   });
 
-  const failed = post(h, { action: "rebuild", reason: "test" });
+  const failed = rebuild(h);
   fail = false;
-  const next = post(h, { action: "rebuild", reason: "test" });
+  const next = rebuild(h);
 
   assert.equal(failed.status, "error");
   assert.ok(!failed.message.includes(HOOK), failed.message);
@@ -98,7 +103,7 @@ test("hook request throws (no connection) → error without the hook URL in the 
 test("a successful rebuild logs INFO Rebuild requested ({reason}) to system_logs", () => {
   const h = load();
 
-  post(h, { action: "rebuild", reason: "sync page" });
+  rebuild(h, "sync page");
 
   const logged = h.sheet("system_logs").slice(1).map((row) => [row[1], row[2]]);
   assert.deepEqual(logged, [["INFO", "Rebuild requested (sync page)"]]);
@@ -118,7 +123,7 @@ test("POST rebuild takes the script lock once and releases it; requestRebuild al
   const h = load();
   warmCachesAndResetLock(h);
 
-  assert.equal(post(h, { action: "rebuild", reason: "test" }).status, "success");
+  assert.equal(rebuild(h).status, "success");
   assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 
   assert.equal(h.gas.requestRebuild("test").status, "success");

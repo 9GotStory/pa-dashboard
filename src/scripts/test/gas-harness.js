@@ -126,7 +126,8 @@ function fakeSheet(name, values) {
  *   fetch: answers UrlFetchApp.fetch; gets the parsed JSON payload
  *     (undefined if the request has none), returns the status code and a
  *     body (JSON-encoded unless it is a string). It may throw, like a fetch
- *     that fails to connect.
+ *     that fails to connect. A 4xx/5xx code throws unless the request sets
+ *     muteHttpExceptions, as in Apps Script.
  * @returns {{
  *   gas: any,
  *   logs: string[],
@@ -147,8 +148,8 @@ function fakeSheet(name, values) {
  *     many tryLock calls came while it was already held.
  *   fetches: every UrlFetchApp.fetch call, in order.
  *   properties: the script properties (PropertiesService) store.
- *   clock: the time `new Date()` and `Date.now()` return in GAS, in ms since
- *     the epoch; the real time at load until a test sets it.
+ *   clock: the time `new Date()` returns in GAS, in ms since the epoch; the
+ *     real time at load until a test sets it.
  *   toasts: every Spreadsheet.toast, in order.
  *   menus: every menu added to the spreadsheet UI (onOpen).
  *   sheet: a sheet's current data range (null if the sheet does not exist).
@@ -173,9 +174,6 @@ export function loadGas({ sheets = {}, fetch } = {}) {
     constructor(...args) {
       if (args.length) super(...args);
       else super(clock.now);
-    }
-    static now() {
-      return clock.now;
     }
   }
   const reads = new Map();
@@ -205,7 +203,6 @@ export function loadGas({ sheets = {}, fetch } = {}) {
           menu.items.push({ caption, functionName });
           return builder;
         },
-        addSeparator: () => builder,
         addToUi: () => {
           menus.push(menu);
         },
@@ -263,6 +260,12 @@ export function loadGas({ sheets = {}, fetch } = {}) {
         fetches.push({ url, method: options.method, payload });
         if (!fetch) throw new Error("UrlFetchApp.fetch called without a fetch stub");
         const { code, body } = fetch(url, payload);
+        // Apps Script: without muteHttpExceptions "the fetch ... throw[s] an
+        // exception if the response code indicates failure" (read here as
+        // 4xx/5xx).
+        if (code >= 400 && !options.muteHttpExceptions) {
+          throw new Error(`Request failed for ${url} returned code ${code}`);
+        }
         const text = typeof body === "string" ? body : JSON.stringify(body);
         return { getResponseCode: () => code, getContentText: () => text };
       },
