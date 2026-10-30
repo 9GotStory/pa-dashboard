@@ -930,6 +930,33 @@ function doGet(e) {
     return handleDiag(e);
   }
 
+  // Data Center catalog (SCHEMA §3.1), for the prebuild script and
+  // hdc-catalog.js. Read under the script lock, so a build never reads a
+  // sheet that saveTableYear is clearing and rewriting.
+  if (e.parameter.action === "catalog") {
+    // readSettings takes and releases the lock itself on a cache miss: read
+    // it before taking the lock (SCHEMA §3, same as doPost).
+    const settings = readSettings();
+    const lock = LockService.getScriptLock();
+    let hasLock = false;
+    try {
+      hasLock = lock.tryLock(30000);
+    } catch (lockErr) {
+      Logger.log("doGet: tryLock error: " + lockErr.toString());
+    }
+    // The prebuild script retries on Busy (SPEC §6.2).
+    if (!hasLock) return createJsonError("Busy");
+    try {
+      return createJsonOutput(dcGetCatalog(settings));
+    } finally {
+      try {
+        lock.releaseLock();
+      } catch (releaseErr) {
+        Logger.log("doGet: releaseLock error: " + releaseErr.toString());
+      }
+    }
+  }
+
   const sheetName = e.parameter.sheet;
 
   // 0. Safety Check

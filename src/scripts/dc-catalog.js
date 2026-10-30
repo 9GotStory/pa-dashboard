@@ -1,6 +1,6 @@
 /**
  * Data Center: the report catalog, hdc_topics and hdc_reports (SCHEMA §2.2,
- * §2.3, §3.4).
+ * §2.3, §3.1, §3.4).
  *
  * Shares the Apps Script global scope with รหัส.js and dc-storage.js. Read
  * those only inside functions, never at top level: file load order is not
@@ -113,7 +113,6 @@ function readHdcReports() {
       return;
     }
     const type = String(row.report_type).trim().toLowerCase();
-    const goal = String(row.goal).trim() === "" ? NaN : Number(row.goal);
     const colTarget = sanitizeToken(row.col_target);
     const colResult = sanitizeToken(row.col_result);
     const paired = colTarget !== null && colResult !== null;
@@ -126,7 +125,7 @@ function readHdcReports() {
       subgroup: String(row.subgroup).trim(),
       order: parsePositiveInt(row.order),
       report_type: type === "coverage" || type === "workload" ? type : null,
-      goal: goal >= 0 && goal <= 100 ? goal : null,
+      goal: dcGoal(row.goal),
       col_target: paired ? colTarget : null,
       col_result: paired ? colResult : null,
       catalog_status: String(row.catalog_status).trim() === "removed" ? "removed" : "active",
@@ -137,6 +136,71 @@ function readHdcReports() {
       invalid.join(", "));
   }
   return reports;
+}
+
+/**
+ * GET ?action=catalog (SCHEMA §3.1): GasCatalog (SCHEMA §9), unsorted (the
+ * prebuild script sorts it). The sheets it reads are read directly, with no
+ * cache: only the build and the admin scripts call it, and a report ticked in
+ * hdc_reports must show on the next call.
+ *
+ * The caller must hold the script lock (doGet), so no sheet is read while
+ * saveTableYear rewrites it: this function never calls LockService
+ * (SCHEMA §3). settings is the one the caller read before taking the lock.
+ */
+function dcGetCatalog(settings) {
+  const window = getYearWindow(settings);
+  const status = dcReadSyncStatus();
+  const goalRows = dcSheetRecords("kpi_epi", ["source_sheet", "value_prefix", "target"]);
+  const reports = readHdcReports().map(function (report) {
+    // A target that is not a goal (blank included) is left out, so the
+    // report's own goal applies to that รายการ (SCHEMA §6).
+    const goals = {};
+    goalRows.forEach(function (row) {
+      const prefix = sanitizeToken(row.value_prefix);
+      const goal = dcGoal(row.target);
+      if (sanitizeToken(row.source_sheet) === report.source_table && prefix !== null && goal !== null) {
+        goals[prefix] = goal;
+      }
+    });
+    report.measure_goals = goals;
+    // The window is oldest first, so the years are too.
+    report.years = [];
+    window.forEach(function (year) {
+      const row = dcFindSyncStatus(status, report.source_table, year);
+      if (row) {
+        report.years.push({
+          b_year: row.b_year,
+          row_count: row.row_count,
+          max_date_com: row.max_date_com,
+          synced_at: row.synced_at.toISOString(),
+        });
+      }
+    });
+    return report;
+  });
+  return {
+    meta: {
+      current_year: settings.current_year,
+      years: window,
+      district_code: settings.district_code,
+      generated_at: new Date().toISOString(),
+    },
+    areas: dcSheetRecords("tambon_master", ["id", "name_th", "district_id"]).filter(function (row) {
+      return String(row.district_id).trim() === settings.district_code;
+    }).map(function (row) {
+      return { id: String(row.id).trim(), name_th: String(row.name_th) };
+    }),
+    hospitals: dcSheetRecords("hospitals", ["hospcode", "hospname", "tambon_id"]).map(function (row) {
+      return {
+        hospcode: String(row.hospcode).trim(),
+        hospname: String(row.hospname),
+        tambon_id: String(row.tambon_id).trim(),
+      };
+    }),
+    topics: readHdcTopics(),
+    reports: reports,
+  };
 }
 
 /**
@@ -297,6 +361,12 @@ function sanitizeHdcId(v) {
 function dcSourceTable(v) {
   const s = String(v || "").trim();
   return DC_SOURCE_TABLE_PATTERN.test(s) ? s : null;
+}
+
+/** A เกณฑ์ cell (goal, kpi_epi target): a number 0–100, else null (blank included). */
+function dcGoal(v) {
+  const goal = String(v).trim() === "" ? NaN : Number(v);
+  return goal >= 0 && goal <= 100 ? goal : null;
 }
 
 /**
