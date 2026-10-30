@@ -60,6 +60,7 @@
 ## 6. Git และ PR
 
 - branch ต่อ ticket: `feat/F##-<slug>` จาก `main` · PR เข้า `main` · merge แบบ squash
+- หลัง squash merge ลบ branch ของ PR นั้นทั้ง local และ origin: `git checkout main && git pull --ff-only` → `git branch -D <branch>` (ต้องลบตามชื่อ เพราะ squash merge ทำให้ `git branch --merged` มองไม่เห็น) → `git push origin --delete <branch>` → `git fetch --prune` · ลบเฉพาะ branch ของ PR ที่ merge แล้ว
 - commit message: `feat:`/`fix:`/`docs:`/`chore:` + สรุปสั้น (ตามประวัติเดิมของ repo)
 - PR body ตามเทมเพลต `/pr` (Summary, Evidence, Merge Danger) ระบุ `Closes #<issue>` และผลเทสต์/ภาพหน้าจอเป็น Evidence
 - ห้าม force-push branch ที่มีคนอื่นดึงไปแล้ว และห้าม push ตรงเข้า `main`
