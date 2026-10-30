@@ -930,10 +930,11 @@ function doGet(e) {
     return handleDiag(e);
   }
 
-  // Data Center catalog (SCHEMA §3.1), for the prebuild script and
-  // hdc-catalog.js. Read under the script lock, so a build never reads a
-  // sheet that saveTableYear is clearing and rewriting.
-  if (e.parameter.action === "catalog") {
+  // Data Center catalog and report (SCHEMA §3.1, §3.2), for the prebuild
+  // script and hdc-catalog.js. Read under the script lock, so a build never
+  // reads a sheet that saveTableYear is clearing and rewriting.
+  const action = e.parameter.action;
+  if (action === "catalog" || action === "report") {
     // readSettings takes and releases the lock itself on a cache miss: read
     // it before taking the lock (SCHEMA §3, same as doPost).
     const settings = readSettings();
@@ -947,10 +948,10 @@ function doGet(e) {
     // The prebuild script retries on Busy (SPEC §6.2).
     if (!hasLock) return createJsonError("Busy");
     try {
-      return createJsonOutput(dcGetCatalog(settings));
+      return createJsonOutput(action === "catalog" ? dcGetCatalog(settings) : dcGetReport(e.parameter.id, settings));
     } catch (err) {
       // Every error is a JSON answer (SCHEMA §3), not the Apps Script error page.
-      Logger.log("doGet catalog failed: " + err);
+      Logger.log("doGet " + action + " failed: " + err);
       return createJsonError(String(err));
     } finally {
       try {
