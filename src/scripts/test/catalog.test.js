@@ -334,17 +334,18 @@ test("a report that appears later is added below; the ticks on existing rows sta
   assert.equal(reports.filter((r) => r.enabled === true).length, 33);
 });
 
-test("a list where every report fails the patterns → all skipped, the topic's rows removed, report_count 0", () => {
+test("a list where no report passes the patterns → error No valid reports, nothing written", () => {
+  // e.g. HDC changed its id format: refuse rather than set the whole topic
+  // to removed, as for an empty list.
   const h = loadWithTopics([[EPI, 20]]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+  const before = { reports: h.sheet("hdc_reports"), topics: h.sheet("hdc_topics") };
 
   const res = saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS.map((r) => ({ ...r, source_table: null })) });
 
-  assert.deepEqual(res, { status: "success", added: 0, updated: 0, removed: 34, skipped: 46 });
-  const [topic] = records(h.sheet("hdc_topics"));
-  assert.equal(topic.report_count, 0);
-  assert.equal(topic.category_name, "การสร้างเสริมภูมิคุ้มกันโรค");
-  assert.equal(topic.main_report_id, "73daf277928bc32a1b3c8e772192543c");
+  assert.deepEqual(res, { status: "error", message: "No valid reports" });
+  assert.deepEqual(h.sheet("hdc_reports"), before.reports);
+  assert.deepEqual(h.sheet("hdc_topics"), before.topics);
 });
 
 test("opendata_id values that are Object.prototype names (constructor, __proto__) are added like any other", () => {

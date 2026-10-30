@@ -188,6 +188,10 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
       main_report_name: dcCleanName(r.main_report_name),
     });
   });
+  // Nothing passing the patterns means the response changed shape (e.g. a
+  // new id format), not that every report was removed: refuse it like an
+  // empty list.
+  if (kept.length === 0) return dcRejectCatalog(catId, "No valid reports");
 
   const now = new Date();
   const reportsTable = dcReadTable(DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS);
@@ -243,14 +247,11 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   const topicRow = topicsTable.rows.filter(function (row) {
     return sanitizeHdcId(row[t.cat_id]) === catId;
   })[0];
-  // Step 7. With no report kept, the names stay as they were.
+  // Step 7.
   const first = kept[0];
-  const name = dcCleanName(categoryName) || (first ? first.category_name : "");
-  if (name) topicRow[t.category_name] = name;
-  if (first) {
-    topicRow[t.main_report_id] = first.main_report_id;
-    topicRow[t.main_report_name] = first.main_report_name;
-  }
+  topicRow[t.category_name] = dcCleanName(categoryName) || first.category_name;
+  topicRow[t.main_report_id] = first.main_report_id;
+  topicRow[t.main_report_name] = first.main_report_name;
   topicRow[t.report_count] = kept.length;
   topicRow[t.last_refreshed_at] = now;
 
