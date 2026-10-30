@@ -40,13 +40,13 @@ function dcGetReport(idRaw, settings) {
   const years = [];
   // report.years is oldest first, so the blocks are too.
   for (let i = 0; i < report.years.length; i++) {
-    const year = report.years[i];
-    const sheetName = dcFindSyncStatus(status, report.source_table, year.b_year).sheet;
+    const yearStatus = report.years[i];
+    const sheetName = dcFindSyncStatus(status, report.source_table, yearStatus.b_year).sheet;
     const sheet = ss.getSheetByName(sheetName);
     // A sheet deleted by hand: the year is left out, and system_logs tells
     // the admin, since only report.years still shows it.
     if (!sheet) {
-      logToSheet("WARNING", "Report year skipped " + report.source_table + " " + year.b_year,
+      logToSheet("WARNING", "Report year skipped " + report.source_table + " " + yearStatus.b_year,
         "sheet " + sheetName + " not found (report " + id + ")");
       continue;
     }
@@ -66,14 +66,14 @@ function dcGetReport(idRaw, settings) {
       return String(row[iId]) === id;
     });
     years.push({
-      b_year: year.b_year,
+      b_year: yearStatus.b_year,
       headers: values[0].map(String),
       rows: rows,
       max_date_com: dcMaxDateCom(rows.map(function (row) {
         return iDate > -1 ? row[iDate] : "";
       })),
       sheet_rows: inDistrict.length,
-      expected_rows: year.row_count,
+      expected_rows: yearStatus.row_count,
     });
   }
   return { report: report, years: years };
