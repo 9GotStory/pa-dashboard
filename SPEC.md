@@ -401,8 +401,8 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 |---|---|---|
 | 1 | Deploy GAS ใหม่ | `BATCH_ALL` ตอบเหมือนเดิมและมี `meta.years` · `save_kpi_data` ที่ไม่มี `year` บันทึกลงชีตปีปัจจุบันเฉพาะแถวอำเภอ · `/` (PA เดิม) ตัวเลขเท่าเดิม |
 | 2 | `setup=datacenter` | มีชีตใหม่ 3 ชีต และ `district_code`, `deploy_hook_url` ใน `settings` |
-| 3 | รัน snippet export ในเบราว์เซอร์ (§12.3) แล้ว `hdc-catalog.js find --from <ไฟล์>` กับ 18 ตาราง แล้วใส่ `cat_id` ที่ได้ใน `hdc_topics` | ทุกตารางพบหัวข้อ |
-| 4 | `hdc-catalog.js refresh --from <ไฟล์>` | `hdc_reports` มีครบ 21 `opendata_id` ใน SCHEMA §6 |
+| 3 | รัน snippet export ในเบราว์เซอร์ (§12.3) แล้ว `hdc-catalog.js find --from <ไฟล์>` กับ 18 ตาราง แล้วใส่ `cat_id` ของ 6 หัวข้อใน `hdc_topics` | ทุกตารางพบหัวข้อ และหัวข้อตรงกับตาราง `hdc_topics` ใน SCHEMA §6 (ยืนยันกับ export 30 ต.ค. 2569 แล้ว) |
+| 4 | `hdc-catalog.js refresh --from <ไฟล์>` | `hdc_reports` มีครบ 21 `opendata_id` ใน SCHEMA §6 และมีราว 241 แถวรวม 6 หัวข้อ (ตัวเลข ณ export 30 ต.ค. 2569) |
 | 5 | `setup=dc_seed` | 21 รายงานเป็น `enabled = TRUE` และไม่มีรายการ "ไม่พบ" |
 | 6 | ทดสอบการดึง `s_aged9` และ `s_epi_complete` ด้วย `limit = 5000` | จำนวนแถวที่ได้เท่ากับ `total` ของทั้งสองตาราง และ `s_aged9` เท่ากับตอนไม่ส่ง `limit` |
 | 7 | `sync-moph-to-gas.js --backfill --no-rebuild` | `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูล และมีชีต `_y` ตามนั้น |

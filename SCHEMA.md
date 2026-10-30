@@ -53,7 +53,7 @@
 | `last_refreshed_at` | GAS | datetime | เวลาที่รีเฟรชล่าสุด |
 
 - ตรวจ `cat_id` แค่ `a-z0-9` ไม่ใช่ hex เพราะมีรหัสจริงที่ไม่ใช่ hex เช่น `77e69d3ad62b4737b87sds811129462` (31 ตัว)
-- แถวเริ่มต้น: `4df360514655f79f13901ef1181ca1c7` (การสร้างเสริมภูมิคุ้มกันโรค) และหัวข้อที่ได้จาก `hdc-catalog.js find`
+- แถวเริ่มต้น: 6 หัวข้อตามตาราง `hdc_topics` ใน §6 (ผล `find` ของ 18 ตาราง ยืนยันกับไฟล์ export 30 ต.ค. 2569)
 - ลบแถวหัวข้อ = ซ่อนรายงานทั้งหัวข้อจาก snapshot และตารางของหัวข้อนั้นไม่ถูก sync ในฐานะ DC unit อีก (§2.3) ส่วนตารางที่ PA ใช้ยัง sync ตามเดิม
 
 ### 2.3 `hdc_reports` — รายงานในหัวข้อที่เลือก
@@ -319,7 +319,7 @@ Base URL: `https://opendata.moph.go.th`
 
 ### 5.1 `categories`
 
-ตอบเป็น array ของ `{ "cat_id": string, "category_name": string }` ณ 29 ต.ค. 2569 มี 51 หัวข้อ ไม่มีชื่อหมวดใน response นี้
+ตอบเป็น array ของ `{ "cat_id": string, "category_name": string }` ณ 29 ต.ค. 2569 มี 51 หัวข้อ ไม่มีชื่อหมวดใน response นี้ · export 30 ต.ค. 2569 ได้ 51 หัวข้อเท่าเดิม
 
 ### 5.2 `categorie/by-category-id/{cat_id}`
 
@@ -331,7 +331,7 @@ Base URL: `https://opendata.moph.go.th`
 | `report_name` | string | ใช้ |
 | `cat_id`, `category_name` | string | ใช้ (หัวข้อ) |
 | `main_report_id`, `main_report_name` | string | ใช้ (หมวด) |
-| `source_table` | string | ใช้ |
+| `source_table` | string \| null | ใช้ (พบ `null` 1 แถวในหัวข้อโรงเรียนและนักเรียน ตกข้อ 3 ของ §3.4) |
 | `opendata_id` | string | ใช้ เป็น key |
 | `view_count` | number | ไม่ใช้ |
 | `last_synced_at`, `created_at`, `updated_at` | ISO string | ไม่ใช้ |
@@ -341,6 +341,13 @@ Base URL: `https://opendata.moph.go.th`
 - มีรายการขยะชื่อ "dasf" (`s_psychoactive_coverage`)
 - `s_epi_complete` มี 4 รายงาน คือ อายุ 1, 2, 3 และ 5 ปี
 - `main_report_id` `73daf277928bc32a1b3c8e772192543c` = ส่งเสริมป้องกัน
+
+สิ่งที่พบในไฟล์ export ทั้ง 51 หัวข้อ (`catalog-exports/hdc-catalog-20261030.json`, 30 ต.ค. 2569, ไม่มี `errors`):
+- 1,220 แถว `opendata_id` ไม่ซ้ำ 951 ตัว แถวซ้ำ 267 ตัว ในจำนวนนี้ 19 ตัวมี `report_name` ต่างกันระหว่างแถวซ้ำ (เช่น ต่อท้าย "(ปิดรายงาน)") §3.4 ข้อ 4 เก็บแถวแรก
+- `opendata_id` 3 ตัวอยู่ใน 2 หัวข้อ (`abt2t2k4z4xeqzytwbave` ใน สุขภาพช่องปาก และ แพทย์แผนไทย · `Qe95V9DKGQYy5ij` · `Twfd175Rp8TCPca8n5GTK`) §3.4 ข้อ 5 ให้หัวข้อแรกได้สิทธิ์
+- รูปแบบ `opendata_id`: 32 hex 891 ตัว · รหัสสั้น 15–23 ตัวอักษร 59 ตัว ซึ่ง 29 ตัวมีตัวพิมพ์ใหญ่ (เช่น `T81yHkXJY8lk8nGZQqldk` ของ `s_pregnant_anemia_coverage`) และ 1 ตัวมี `_` (`iEds82J3Z67JHB8KLETD_`) · ค่าขยะ 1 ตัวเป็นชื่อตาราง (`s_rebies_overview`) · ไม่มีรหัสคู่ใดที่ต่างกันแค่ตัวพิมพ์ · คอลัมน์ `id` ในข้อมูลดิบเก็บตัวพิมพ์ตามรหัส (ทดสอบ `report_data` ของ `s_pregnant_anemia_coverage` ปี 2569 จังหวัด 54 วันที่ 30 ต.ค. 2569 ได้ `id = T81yHkXJY8lk8nGZQqldk`)
+- ทุกหัวข้อมี `main_report_id` เดียว (ไม่มีหัวข้อที่รายงานข้ามหมวด)
+- `report_name` มี HTML (`<font color=red>…</font>`) 9 รายงาน (2 รายงานอยู่ในหัวข้อการคัดกรอง ที่เหลือใน บสต. ฯลฯ ไม่มีใน 21 รายงาน seed) และ 114 รายงานมีช่องว่างซ้ำหรือช่องว่างหัวท้าย
 
 ### 5.3 `report_data`
 
@@ -378,31 +385,65 @@ Request (`Content-Type: application/json`):
 
 ## 6. Seed เฟส 1
 
-21 รายงานจาก 18 ตาราง ทุกตัวเป็น `enabled = TRUE` และ `report_type = coverage`
+21 รายงานจาก 18 ตาราง ใน 6 หัวข้อ ทุกตัวเป็น `enabled = TRUE` และ `report_type = coverage`
 
-- `opendata_id` ของ EPI มาจาก response แค็ตตาล็อกจริง
-- `opendata_id` ของ 13 KPI เดิมมาจากลิงก์ใน `kpi_master` (ขั้นตรวจรับข้อ 4 ใน SPEC §13 จะยืนยัน)
+- `opendata_id` ทั้ง 21 ตัวและหัวข้อของทุกตาราง ยืนยันแล้วกับไฟล์ export แค็ตตาล็อก 30 ต.ค. 2569 (§5.2) · ของ 13 KPI เดิมตรงกับลิงก์ใน `kpi_master` ทุกตัว
 - `goal` มาจาก `target` ใน `kpi_master`/`kpi_epi` ตามค่าที่อ่านจากชีตจริง 29 ต.ค. 2569 (ไม่ใช่ค่าใน `setupEpiSplit` ของ `รหัส.js` ซึ่งเป็นโค้ด bootstrap เก่าที่ตั้ง 95 ทุกแถวและมีแถว pcv ซึ่งชีตจริงไม่มีแล้ว)
 
-**หัวข้อ: รอผลจาก `find`**
+**แถว `hdc_topics` (ผู้ดูแลใส่ในขั้น 3 ของ SPEC §13 · จำนวนรายงาน = `opendata_id` ไม่ซ้ำที่ผ่านรูปแบบ ณ export 30 ต.ค. 2569):**
+
+| `cat_id` | หัวข้อ | หมวด | รายงานในหัวข้อ | seed เปิดใช้ |
+|---|---|---|---|---|
+| `1ed90bc32310b503b7ca9b32af425ae5` | อนามัยแม่และเด็ก | ส่งเสริมป้องกัน | 69 | 4 |
+| `bebf866fceaef84c4078965eaf619565` | การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม | ส่งเสริมป้องกัน | 4 | 1 |
+| `6966b0664b89805a484d7ac96c6edc48` | การคัดกรอง | ส่งเสริมป้องกัน | 18 | 1 |
+| `4df360514655f79f13901ef1181ca1c7` | การสร้างเสริมภูมิคุ้มกันโรค | ส่งเสริมป้องกัน | 34 | 8 |
+| `b2b59e64c4e6c92d4b1ec16a599d882b` | ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD) | ข้อมูลตอบสนอง Service Plan | 55 | 4 |
+| `db30e434e30565c12fbac44958e338d5` | ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก | ข้อมูลตอบสนอง Service Plan | 61 | 3 |
+
+- หลัง `refresh` ครบ 6 หัวข้อ `hdc_reports` มี 241 แถว (ณ export 30 ต.ค. 2569) เปิดใช้ 21
+- `s_dental_0_5_cavity_free` (`abt2t2k4z4xeqzytwbave`) อยู่ใน 2 หัวข้อของ HDC คือ สุขภาพช่องปาก และ แพทย์แผนไทย (`30bc6364fc06a33a7802e16bc596ac3b`) seed ให้อยู่หัวข้อสุขภาพช่องปาก ถ้าวันหน้าเพิ่มหัวข้อแพทย์แผนไทย แถวนี้ยังอยู่หัวข้อเดิมตาม §3.4 ข้อ 5
+- `order` ของหัวข้อ และ `order`/`subgroup` ของ 13 รายงานด้านล่าง: ค่าปัจจุบันคือลำดับเดิมของ PA (`kpi_master.order` 1–13 × 10) ยังไม่จัดใหม่ต่อหัวข้อ (รอ grill รอบ 3)
+
+**หัวข้อ: อนามัยแม่และเด็ก (`1ed90bc32310b503b7ca9b32af425ae5`)**
 
 | `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
 |---|---|---|---|---|---|
 | `1c1b8e24aff59258a806f122e264031e` | `s_kpi_anc12` | ANC ครั้งแรก ≤ 12 สัปดาห์ | 10 | 75 | |
 | `bd63b8d99f7054560fcf9c3b96f39c13` | `s_anc5` | ANC 5 ครั้งตามเกณฑ์ | 20 | 75 | |
-| `4164a7c49fcb2b8c3ccca67dcdf28bd0` | `s_kpi_food` | นมแม่อย่างเดียว < 6 เดือน | 30 | 50 | |
 | `1b60d68b1cb5b003fcba38a4a0e4027b` | `s_kpi_childdev4` | พัฒนาการสมวัย 0–5 ปี | 40 | 87 | |
 | `684e99dc7538c8b1a97f19f91a100f08` | `s_kpi_childdev2` | คัดกรองพัฒนาการ พบสงสัยล่าช้า | 50 | 20 | |
+
+**หัวข้อ: การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม (`bebf866fceaef84c4078965eaf619565`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
+| `4164a7c49fcb2b8c3ccca67dcdf28bd0` | `s_kpi_food` | นมแม่อย่างเดียว < 6 เดือน | 30 | 50 | |
+
+**หัวข้อ: การคัดกรอง (`6966b0664b89805a484d7ac96c6edc48`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
 | `aa86b13e8cb60cae6c3216b7e3e5f151` | `s_aged9` | คัดกรองผู้สูงอายุ 9 ด้าน | 60 | 80 | |
+
+**หัวข้อ: ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD) (`b2b59e64c4e6c92d4b1ec16a599d882b`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
 | `626c89f6b8d9f7ed90c72c719775eb07` | `s_dm_screen` | คัดกรองเบาหวาน 35 ปีขึ้นไป | 70 | 90 | |
 | `9702fa28cd2ec73ecc6af89d14f46874` | `s_ht_screen` | คัดกรองความดันโลหิตสูง 35 ปีขึ้นไป | 80 | 90 | |
 | `e9e461e793e8258f47d46d6956f12832` | `s_ncd_screen_repleate1` | ติดตามยืนยันวินิจฉัย สงสัยเบาหวาน | 90 | 70 | |
 | `b57439ff27302ade8c38d1dd189644a4` | `s_ht_screen_follow` | ติดตามยืนยันวินิจฉัย สงสัยความดัน | 100 | 80 | |
+
+**หัวข้อ: ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก (`db30e434e30565c12fbac44958e338d5`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
 | `abt2t2k4z4xeqzytwbave` | `s_dental_0_5_cavity_free` | เด็ก 0–5 ปี ฟันดีไม่มีผุ | 110 | 80 | `b` / `a` |
 | `e07a6ff3cd63d34a759be4bff5c1a4c6` | `s_kpi_dental28` | เด็ก 6 ปี เคลือบหลุมร่องฟันแท้ | 120 | 25 | |
 | `1fb6b46f1d1fd42362f97072f4b3b653` | `s_kpi_dental33` | ผู้สูงอายุตรวจช่องปากโดยทันตบุคลากร | 130 | 50 | |
 
-`subgroup` ของ 13 รายงานนี้ว่างไว้ก่อน จนกว่าจะรู้หัวข้อ
+`subgroup` ของ 13 รายงานนี้ว่าง (PA ไม่มีกลุ่มย่อยสำหรับ 13 KPI นี้)
 
 **หัวข้อ: การสร้างเสริมภูมิคุ้มกันโรค (`4df360514655f79f13901ef1181ca1c7`)**
 

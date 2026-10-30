@@ -173,8 +173,8 @@
 - **ตรวจรับ:**
   0. `refresh --from <ไฟล์>` โดยไม่ตั้ง env → exit 1 พร้อมข้อความบอกชื่อ env · `find` ทำงานได้โดยไม่มี env
   1. รัน snippet ในเบราว์เซอร์ → ได้ไฟล์ที่ `categories` ครบตามจำนวน ณ วันรัน (29 ต.ค. 2569 มี 51) และ `reports` มี key ครบทุก `cat_id` ที่ไม่อยู่ใน `errors` · หัวข้อวัคซีนมี 46 แถว · ถ้าได้ 429 ระหว่างทาง snippet รอแล้วลองใหม่ ไม่ต้องรันใหม่ทั้งหมด
-  2. `find --from <ไฟล์>` กับ 18 ตาราง → พิมพ์ `cat_id`/`category_name`/`opendata_id`/`report_name` ครบทุกตาราง และ `opendata_id` ตรงกับ SCHEMA §6 (ถ้าไม่ตรง ต้องแก้ SCHEMA ก่อนทำ F08)
-  3. `refresh --from <ไฟล์>` หลังใส่หัวข้อใน `hdc_topics` → สรุปต่อหัวข้อ `added/updated/removed/skipped` และ `hdc_topics.report_count` ถูกเติม
+  2. `find --from <ไฟล์>` กับ 18 ตาราง → พิมพ์ `cat_id`/`category_name`/`opendata_id`/`report_name` ครบทุกตาราง และ `cat_id`/`opendata_id` ตรงกับ SCHEMA §6 (ยืนยันกับ export 30 ต.ค. 2569 แล้ว ถ้า export ใหม่ไม่ตรง ต้องแก้ SCHEMA ก่อนทำ F08)
+  3. `refresh --from <ไฟล์>` หลังใส่ 6 หัวข้อใน `hdc_topics` → สรุปต่อหัวข้อ `added/updated/removed/skipped` และ `hdc_topics.report_count` ถูกเติมตรงกับตารางใน SCHEMA §6
   4. ไฟล์ที่ไม่มี key ของหัวข้อหนึ่ง (หรือหัวข้อนั้นอยู่ใน `errors`) → `refresh` ข้ามหัวข้อนั้นพร้อมข้อความ ไม่ POST `reports: []` · ไฟล์ที่ไม่มี `exported_at` → exit 1
 
 ### F11 หน้า `/sync`
