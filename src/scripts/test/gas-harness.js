@@ -123,13 +123,19 @@ function fakeSheet(name, values) {
  *   fetch?: (url: string, payload: any) => { code: number, body: unknown },
  * }} [options]
  *   sheets: sheet name → 2D array of cell values (row 1 = header).
- *   fetch: answers UrlFetchApp.fetch; gets the parsed JSON payload, returns
- *     the status code and a body (JSON-encoded unless it is a string).
+ *   fetch: answers UrlFetchApp.fetch; gets the parsed JSON payload
+ *     (undefined if the request has none), returns the status code and a
+ *     body (JSON-encoded unless it is a string). It may throw, like a fetch
+ *     that fails to connect.
  * @returns {{
  *   gas: any,
  *   logs: string[],
  *   lock: { tryLock: number, releaseLock: number, nested: number },
- *   fetches: { url: string, payload: any }[],
+ *   fetches: { url: string, method: string | undefined, payload: any }[],
+ *   properties: Map<string, string>,
+ *   clock: { now: number },
+ *   toasts: { message: string, title: string | undefined }[],
+ *   menus: { name: string, items: { caption: string, functionName: string }[] }[],
  *   sheet: (name: string) => unknown[][] | null,
  *   maxRows: (name: string) => number | null,
  *   sheetNames: () => string[],
@@ -140,6 +146,11 @@ function fakeSheet(name, values) {
  *   lock: how many times the script lock was taken and released, and how
  *     many tryLock calls came while it was already held.
  *   fetches: every UrlFetchApp.fetch call, in order.
+ *   properties: the script properties (PropertiesService) store.
+ *   clock: the time `new Date()` and `Date.now()` return in GAS, in ms since
+ *     the epoch; the real time at load until a test sets it.
+ *   toasts: every Spreadsheet.toast, in order.
+ *   menus: every menu added to the spreadsheet UI (onOpen).
  *   sheet: a sheet's current data range (null if the sheet does not exist).
  *   maxRows: a sheet's row count including blank rows below the data.
  *   reads: how many times the code looked a sheet up by name
@@ -154,6 +165,19 @@ export function loadGas({ sheets = {}, fetch } = {}) {
   const lock = { tryLock: 0, releaseLock: 0, nested: 0 };
   let held = false;
   const fetches = [];
+  const properties = new Map();
+  const toasts = [];
+  const menus = [];
+  const clock = { now: Date.now() };
+  class ClockDate extends Date {
+    constructor(...args) {
+      if (args.length) super(...args);
+      else super(clock.now);
+    }
+    static now() {
+      return clock.now;
+    }
+  }
   const reads = new Map();
   const book = new Map(Object.entries(sheets).map(([name, values]) => [name, fakeSheet(name, values)]));
 
@@ -168,12 +192,31 @@ export function loadGas({ sheets = {}, fetch } = {}) {
       book.set(name, sheet);
       return sheet;
     },
-    toast: () => {},
+    toast: (message, title) => {
+      toasts.push({ message: String(message), title });
+    },
+  };
+
+  const ui = {
+    createMenu: (name) => {
+      const menu = { name, items: [] };
+      const builder = {
+        addItem: (caption, functionName) => {
+          menu.items.push({ caption, functionName });
+          return builder;
+        },
+        addSeparator: () => builder,
+        addToUi: () => {
+          menus.push(menu);
+        },
+      };
+      return builder;
+    },
   };
 
   const gas = vm.createContext({
     Logger: { log: (msg) => logs.push(String(msg)) },
-    SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet },
+    SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet, getUi: () => ui },
     CacheService: {
       getScriptCache: () => ({
         get: (key) => (cache.has(key) ? cache.get(key) : null),
@@ -196,10 +239,28 @@ export function loadGas({ sheets = {}, fetch } = {}) {
         },
       }),
     },
+    PropertiesService: {
+      getScriptProperties: () => {
+        const store = {
+          // Apps Script: null if no such key exists.
+          getProperty: (key) => (properties.has(key) ? properties.get(key) : null),
+          setProperty: (key, value) => {
+            properties.set(key, String(value));
+            return store;
+          },
+          deleteProperty: (key) => {
+            properties.delete(key);
+            return store;
+          },
+          getKeys: () => [...properties.keys()],
+        };
+        return store;
+      },
+    },
     UrlFetchApp: {
       fetch: (url, options) => {
-        const payload = JSON.parse(options.payload);
-        fetches.push({ url, payload });
+        const payload = options.payload === undefined ? undefined : JSON.parse(options.payload);
+        fetches.push({ url, method: options.method, payload });
         if (!fetch) throw new Error("UrlFetchApp.fetch called without a fetch stub");
         const { code, body } = fetch(url, payload);
         const text = typeof body === "string" ? body : JSON.stringify(body);
@@ -215,7 +276,17 @@ export function loadGas({ sheets = {}, fetch } = {}) {
         getContent: () => content,
       }),
     },
-    Utilities: { sleep: () => {} },
+    Utilities: {
+      sleep: () => {},
+      // Only the pattern the code uses; any other fails loudly instead of
+      // being formatted wrong.
+      formatDate: (date, timeZone, format) => {
+        if (format !== "yyyy-MM-dd") throw new Error(`Utilities.formatDate stub: unsupported format ${format}`);
+        // en-CA formats a date as YYYY-MM-DD.
+        return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+      },
+    },
+    Date: ClockDate,
   });
 
   for (const file of gasFiles()) {
@@ -228,6 +299,10 @@ export function loadGas({ sheets = {}, fetch } = {}) {
     logs,
     lock,
     fetches,
+    properties,
+    clock,
+    toasts,
+    menus,
     sheet: (name) => (book.has(name) ? book.get(name).getDataRange().getValues() : null),
     maxRows: (name) => (book.has(name) ? book.get(name).getMaxRows() : null),
     sheetNames: () => [...book.keys()],
