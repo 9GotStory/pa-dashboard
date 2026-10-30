@@ -1258,6 +1258,17 @@ function handleDiag(e) {
     }
   }
 
+  // Optional: fill the admin columns of the phase 1 seed reports in
+  // hdc_reports (SCHEMA §3.6, §6). Idempotent — only rows whose opendata_id
+  // matches are written, and no row is added.
+  if (e.parameter.setup === "dc_seed") {
+    try {
+      out.setupDcSeed = dcSetupSeed();
+    } catch (err) {
+      out.setupDcSeed = "error: " + String(err);
+    }
+  }
+
   // Optional admin: drop KPI registry rows by table_name across all
   // registry tabs — e.g. remove retired/misconfigured KPIs without opening
   // the sheet. Token-sanitized; unknown names are reported, not fatal.

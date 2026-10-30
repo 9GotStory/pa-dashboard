@@ -1,0 +1,234 @@
+{
+  "exported_at": "2026-10-30T02:19:34.318Z",
+  "source": "https://opendata.moph.go.th",
+  "categories": [
+    {
+      "cat_id": "6966b0664b89805a484d7ac96c6edc48",
+      "category_name": "การคัดกรอง"
+    },
+    {
+      "cat_id": "bebf866fceaef84c4078965eaf619565",
+      "category_name": "การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม"
+    },
+    {
+      "cat_id": "db30e434e30565c12fbac44958e338d5",
+      "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก"
+    },
+    {
+      "cat_id": "b2b59e64c4e6c92d4b1ec16a599d882b",
+      "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)"
+    },
+    {
+      "cat_id": "1ed90bc32310b503b7ca9b32af425ae5",
+      "category_name": "อนามัยแม่และเด็ก"
+    }
+  ],
+  "reports": {
+    "1ed90bc32310b503b7ca9b32af425ae5": [
+      {
+        "id": 496,
+        "report_id": 273,
+        "report_name": "ร้อยละหญิงตั้งครรภ์ที่ได้รับการดูแลก่อนคลอด 5 ครั้ง ตามเกณฑ์",
+        "cat_id": "1ed90bc32310b503b7ca9b32af425ae5",
+        "source_table": "s_anc5",
+        "main_report_id": "73daf277928bc32a1b3c8e772192543c",
+        "category_name": "อนามัยแม่และเด็ก",
+        "main_report_name": "ส่งเสริมป้องกัน",
+        "opendata_id": "bd63b8d99f7054560fcf9c3b96f39c13",
+        "view_count": 329,
+        "last_synced_at": "2026-10-29T19:01:38.000Z",
+        "created_at": "2026-05-22T09:09:48.000Z",
+        "updated_at": "2026-10-29T19:01:38.000Z"
+      },
+      {
+        "id": 518,
+        "report_id": 528,
+        "report_name": "ร้อยละของเด็กอายุ 0-5 ปี ทั้งหมดตามช่วงอายุที่กำหนดมีพัฒนาการสมวัย",
+        "cat_id": "1ed90bc32310b503b7ca9b32af425ae5",
+        "source_table": "s_kpi_childdev4",
+        "main_report_id": "73daf277928bc32a1b3c8e772192543c",
+        "category_name": "อนามัยแม่และเด็ก",
+        "main_report_name": "ส่งเสริมป้องกัน",
+        "opendata_id": "1b60d68b1cb5b003fcba38a4a0e4027b",
+        "view_count": 95,
+        "last_synced_at": "2026-10-29T19:01:40.000Z",
+        "created_at": "2026-05-22T09:09:50.000Z",
+        "updated_at": "2026-10-29T19:01:40.000Z"
+      },
+      {
+        "id": 535,
+        "report_id": 746,
+        "report_name": "ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์",
+        "cat_id": "1ed90bc32310b503b7ca9b32af425ae5",
+        "source_table": "s_kpi_anc12",
+        "main_report_id": "73daf277928bc32a1b3c8e772192543c",
+        "category_name": "อนามัยแม่และเด็ก",
+        "main_report_name": "ส่งเสริมป้องกัน",
+        "opendata_id": "1c1b8e24aff59258a806f122e264031e",
+        "view_count": 759,
+        "last_synced_at": "2026-10-29T19:01:42.000Z",
+        "created_at": "2026-05-22T09:09:51.000Z",
+        "updated_at": "2026-10-29T19:01:42.000Z"
+      },
+      {
+        "id": 539,
+        "report_id": 769,
+        "report_name": "ร้อยละของเด็กอายุ 0-5 ปี ที่ได้รับการคัดกรองพัฒนาการ พบสงสัยล่าช้า",
+        "cat_id": "1ed90bc32310b503b7ca9b32af425ae5",
+        "source_table": "s_kpi_childdev2",
+        "main_report_id": "73daf277928bc32a1b3c8e772192543c",
+        "category_name": "อนามัยแม่และเด็ก",
+        "main_report_name": "ส่งเสริมป้องกัน",
+        "opendata_id": "684e99dc7538c8b1a97f19f91a100f08",
+        "view_count": 26,
+        "last_synced_at": "2026-10-29T19:01:42.000Z",
+        "created_at": "2026-05-22T09:09:51.000Z",
+        "updated_at": "2026-10-29T19:01:42.000Z"
+      }
+    ],
+    "bebf866fceaef84c4078965eaf619565": [
+      {
+        "id": 699,
+        "report_id": 750,
+        "report_name": "ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว",
+        "cat_id": "bebf866fceaef84c4078965eaf619565",
+        "source_table": "s_kpi_food",
+        "main_report_id": "73daf277928bc32a1b3c8e772192543c",
+        "category_name": "การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม",
+        "main_report_name": "ส่งเสริมป้องกัน",
+        "opendata_id": "4164a7c49fcb2b8c3ccca67dcdf28bd0",
+        "view_count": 141,
+        "last_synced_at": "2026-10-29T19:02:13.000Z",
+        "created_at": "2026-05-22T09:10:15.000Z",
+        "updated_at": "2026-10-29T19:02:13.000Z"
+      }
+    ],
+    "6966b0664b89805a484d7ac96c6edc48": [
+      {
+        "id": 619,
+        "report_id": 27,
+        "report_name": "การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen STEP1)",
+        "cat_id": "6966b0664b89805a484d7ac96c6edc48",
+        "source_table": "s_aged9",
+        "main_report_id": "73daf277928bc32a1b3c8e772192543c",
+        "category_name": "การคัดกรอง",
+        "main_report_name": "ส่งเสริมป้องกัน",
+        "opendata_id": "aa86b13e8cb60cae6c3216b7e3e5f151",
+        "view_count": 2115,
+        "last_synced_at": "2026-10-29T19:01:59.000Z",
+        "created_at": "2026-05-22T09:10:04.000Z",
+        "updated_at": "2026-10-29T19:01:59.000Z"
+      }
+    ],
+    "b2b59e64c4e6c92d4b1ec16a599d882b": [
+      {
+        "id": 197,
+        "report_id": 388,
+        "report_name": "ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน",
+        "cat_id": "b2b59e64c4e6c92d4b1ec16a599d882b",
+        "source_table": "s_dm_screen",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "626c89f6b8d9f7ed90c72c719775eb07",
+        "view_count": 506,
+        "last_synced_at": "2026-10-29T19:00:32.000Z",
+        "created_at": "2026-05-22T09:08:58.000Z",
+        "updated_at": "2026-10-29T19:00:32.000Z"
+      },
+      {
+        "id": 199,
+        "report_id": 395,
+        "report_name": "ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคความดันโลหิตสูง",
+        "cat_id": "b2b59e64c4e6c92d4b1ec16a599d882b",
+        "source_table": "s_ht_screen_follow",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "b57439ff27302ade8c38d1dd189644a4",
+        "view_count": 259,
+        "last_synced_at": "2026-10-29T19:00:32.000Z",
+        "created_at": "2026-05-22T09:08:59.000Z",
+        "updated_at": "2026-10-29T19:00:32.000Z"
+      },
+      {
+        "id": 216,
+        "report_id": 554,
+        "report_name": "ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยความดันโลหิตสูง",
+        "cat_id": "b2b59e64c4e6c92d4b1ec16a599d882b",
+        "source_table": "s_ht_screen",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "9702fa28cd2ec73ecc6af89d14f46874",
+        "view_count": 125,
+        "last_synced_at": "2026-10-29T19:00:34.000Z",
+        "created_at": "2026-05-22T09:09:00.000Z",
+        "updated_at": "2026-10-29T19:00:34.000Z"
+      },
+      {
+        "id": 220,
+        "report_id": 591,
+        "report_name": "ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคเบาหวาน",
+        "cat_id": "b2b59e64c4e6c92d4b1ec16a599d882b",
+        "source_table": "s_ncd_screen_repleate1",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "e9e461e793e8258f47d46d6956f12832",
+        "view_count": 489,
+        "last_synced_at": "2026-10-29T19:00:34.000Z",
+        "created_at": "2026-05-22T09:09:00.000Z",
+        "updated_at": "2026-10-29T19:00:34.000Z"
+      }
+    ],
+    "db30e434e30565c12fbac44958e338d5": [
+      {
+        "id": 108,
+        "report_id": 256,
+        "report_name": "OHSP ร้อยละเด็ก 6 ปี ได้รับการเคลือบหลุมร่องฟันแท้ เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)",
+        "cat_id": "db30e434e30565c12fbac44958e338d5",
+        "source_table": "s_kpi_dental28",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "e07a6ff3cd63d34a759be4bff5c1a4c6",
+        "view_count": 31,
+        "last_synced_at": "2026-10-29T19:00:19.000Z",
+        "created_at": "2026-05-22T09:08:48.000Z",
+        "updated_at": "2026-10-29T19:00:19.000Z"
+      },
+      {
+        "id": 109,
+        "report_id": 257,
+        "report_name": "OHSP ร้อยละผู้สูงอายุ ได้รับการตรวจช่องปาก เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)",
+        "cat_id": "db30e434e30565c12fbac44958e338d5",
+        "source_table": "s_kpi_dental33",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "1fb6b46f1d1fd42362f97072f4b3b653",
+        "view_count": 121,
+        "last_synced_at": "2026-10-29T19:00:19.000Z",
+        "created_at": "2026-05-22T09:08:48.000Z",
+        "updated_at": "2026-10-29T19:00:19.000Z"
+      },
+      {
+        "id": 970,
+        "report_id": 948,
+        "report_name": "ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)",
+        "cat_id": "db30e434e30565c12fbac44958e338d5",
+        "source_table": "s_dental_0_5_cavity_free",
+        "main_report_id": "02e752187c7282ebc9315123aa1cabbe",
+        "category_name": "ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก",
+        "main_report_name": "ข้อมูลตอบสนอง Service Plan",
+        "opendata_id": "abt2t2k4z4xeqzytwbave",
+        "view_count": 964,
+        "last_synced_at": "2026-10-29T19:00:24.000Z",
+        "created_at": "2026-06-11T03:33:11.000Z",
+        "updated_at": "2026-10-29T19:00:24.000Z"
+      }
+    ]
+  },
+  "errors": []
+}
