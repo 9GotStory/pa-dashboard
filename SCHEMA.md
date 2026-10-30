@@ -77,7 +77,7 @@
 | `catalog_status` | GAS | `active` \| `removed` | `removed` = ไม่พบใน API ครั้งล่าสุด |
 | `last_seen_at` | GAS | datetime | ครั้งล่าสุดที่พบใน API |
 
-**รายงานที่ใช้งาน** คือแถวที่ (1) `enabled = TRUE` (2) `cat_id` อยู่ใน `hdc_topics` และ (3) `opendata_id` กับ `source_table` ผ่านรูปแบบ แถวที่ไม่ผ่านข้อ 3 จะถูกข้ามและบันทึก WARNING
+**รายงานที่ใช้งาน** คือแถวที่ (1) `enabled = TRUE` (2) `cat_id` อยู่ใน `hdc_topics` และ (3) `opendata_id` กับ `source_table` ผ่านรูปแบบ แถวที่ไม่ผ่านข้อ 3 จะถูกข้ามและบันทึก WARNING ด้วย `Logger.log` ไม่ใช่ `system_logs` เพราะ `readHdcReports` ถูกเรียกทุกครั้งที่แคช DC units หมดอายุ (ราวนาทีละครั้ง) และทุกครั้งที่ build ถ้าเขียนลง `system_logs` แถวผิดแถวเดียวจะดันประวัติ sync ออกจาก 500 แถวที่เก็บ (CODING_STANDARDS §2) · แถวแบบนี้เกิดได้เฉพาะเมื่อมีคนแก้คอลัมน์ของ GAS ด้วยมือ และเห็นได้จากจำนวนรายงานใน `?action=catalog`
 
 - `source_table` บังคับขึ้นต้นด้วย `s_` ทุกตาราง summary ของ HDC ที่พบใช้รูปแบบนี้ และช่วยกันไม่ให้ชนชีตระบบ (`settings`, `hdc_reports` ฯลฯ) ซึ่งสำคัญเพราะชื่อนี้กลายเป็นชีตที่ `doPost` เขียนได้
 - `source_table` ของรายงานที่ใช้งาน คือ DC units (SPEC §8)
@@ -201,7 +201,7 @@ Response: `{ status: "success"; year: string; sheet: string; received: number; c
 
 1. `cat_id` ผ่าน `sanitizeHdcId` และต้องมีอยู่ใน `hdc_topics` ไม่อย่างนั้นตอบ error `Topic not in hdc_topics`
 2. ถ้า `reports` ว่าง ตอบ error `Empty report list` และไม่แก้อะไร เพื่อกันการตั้ง `removed` ทั้งหัวข้อเมื่อดึงจาก API ไม่สำเร็จ
-3. เก็บเฉพาะแถวที่ `opendata_id` ผ่าน `sanitizeHdcId`, `source_table` ตรง `^s_[a-z0-9_]+$` และ `cat_id` เท่ากับใน body ที่เหลือนับเป็น `skipped` · แถวที่เก็บ ทำความสะอาด `report_name`, `category_name`, `main_report_name` ด้วย `dcCleanName` ก่อน (ชื่อจาก HDC มีแท็ก `<font>` ช่องว่างซ้ำ และ tab §5.2)
+3. เก็บเฉพาะแถวที่ `opendata_id` ผ่าน `sanitizeHdcId`, `source_table` ตรง `^s_[a-z0-9_]+$` และ `cat_id` เท่ากับใน body ที่เหลือนับเป็น `skipped` · ถ้าไม่เหลือแถวที่ผ่านเลย ตอบ error `No valid reports` และไม่แก้อะไร เพราะแปลว่ารูปแบบ response เปลี่ยน (เช่นรหัสรูปแบบใหม่) หรือส่ง array ผิดหัวข้อ ไม่ใช่รายงานถูกถอดทั้งหัวข้อ (เหตุผลเดียวกับข้อ 2) · แถวที่เก็บ ทำความสะอาด `report_name`, `category_name`, `main_report_name` ด้วย `dcCleanName` ก่อน (ชื่อจาก HDC มีแท็ก `<font>` ช่องว่างซ้ำ และ tab §5.2)
 4. กรองซ้ำด้วย `opendata_id` โดยเก็บตัวแรก (แถวซ้ำไม่นับใน `skipped`)
 5. ทำทีละรายงาน:
    - มีอยู่แล้ว และ `cat_id` เดิมเท่ากับหัวข้อนี้หรือว่าง: อัปเดต `report_name`, `source_table`, `cat_id`, `category_name`, `main_report_id`, `main_report_name` ตั้ง `catalog_status = active` และ `last_seen_at = now` นับเป็น `updated`
