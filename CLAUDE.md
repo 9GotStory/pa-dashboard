@@ -91,3 +91,17 @@ Read these on demand. Don't `@`-import them: imports load into every session at 
 - SPEC.md: phase 1 design · SCHEMA.md: sheets, GAS contracts, calculation rules, TS types · FEATURES.md: tickets F01–F22, acceptance checks, workflow rules
 - GLOSSARY.md: domain terms · docs/adr/: decisions and why · CODING_STANDARDS.md: what code review checks
 - docs/reference/song-health-data-center-review-03-epi-real-response-r6.html: R6 UI mockup (its numbers are fake)
+
+## Agent skills
+
+### Issue tracker
+
+GitHub Issues on `9GotStory/pa-dashboard`, via the `gh` CLI. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
