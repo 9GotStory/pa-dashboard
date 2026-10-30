@@ -150,11 +150,11 @@
 ### 3.2 `GET ?action=report&id={opendata_id}`
 
 1. `id` ผ่าน `sanitizeHdcId` และต้องเป็นรายงานที่ใช้งาน ไม่อย่างนั้นตอบ error `Unknown report`
-2. สำหรับแต่ละปีใน `reports[].years` (จาก `sync_status`): อ่านชีตตาม `sync_status.sheet` ถ้าชีตหายไป ข้ามปีนั้นและบันทึก WARNING
+2. สำหรับแต่ละปีใน `reports[].years` (จาก `sync_status`): อ่านชีตตาม `sync_status.sheet` ถ้าชีตหายไป ข้ามปีนั้นและบันทึก WARNING ใน `system_logs` (ปีนั้นยังอยู่ใน `report.years` #113)
 3. กรองแถวของแต่ละปี:
    1. `areacode` ขึ้นต้นด้วย `district_code` (กันแถวเก่าแบบทั้งจังหวัดที่อาจค้างอยู่)
    2. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` = `opendata_id` ตรงตัวทุกตัวอักษร (ไม่แปลงตัวพิมพ์) เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
-4. ตอบ `GasReport` (§9): `years` เป็น array ของ `{ b_year, headers, rows, max_date_com, sheet_rows, expected_rows }` เรียงปีน้อยไปมาก `rows` เป็น array ของ array ตามลำดับ `headers` (ไม่ใช่ object เพื่อลดขนาด) · `sheet_rows` = จำนวนแถวที่อ่านได้จากชีตหลังกรองอำเภอแต่ก่อนกรอง `id` · `expected_rows` = `sync_status.row_count` ของปีนั้น (prebuild script ใช้สองค่านี้ตรวจความครบ SPEC §6.2)
+4. ตอบ `GasReport` (§9): `years` เป็น array ของ `{ b_year, headers, rows, max_date_com, sheet_rows, expected_rows }` เรียงปีน้อยไปมาก `rows` เป็น array ของ array ตามลำดับ `headers` (ไม่ใช่ object เพื่อลดขนาด) · `sheet_rows` = จำนวนแถวที่อ่านได้จากชีตหลังกรองอำเภอแต่ก่อนกรอง `id` · `expected_rows` = `sync_status.row_count` ของปีนั้น (prebuild script ใช้สองค่านี้ตรวจความครบ SPEC §6.2) · `max_date_com` = `date_com` สูงสุดของ `rows` ใน block นั้น (`""` ถ้าไม่มีแถว) ไม่ใช่ค่าของทั้งตารางใน `sync_status` ซึ่งอยู่ใน `report.years` แล้ว · `report` เป็น `DcReport` ตัวเดียวกับใน `?action=catalog` (#113)
 5. ไม่แคช
 
 ### 3.3 `POST save_kpi_data` (แก้)

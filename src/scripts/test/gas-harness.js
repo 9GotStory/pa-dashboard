@@ -196,6 +196,9 @@ export function loadGas({ sheets = {}, fetch } = {}) {
       book.set(name, sheet);
       return sheet;
     },
+    deleteSheet: (sheet) => {
+      for (const [name, s] of book) if (s === sheet) book.delete(name);
+    },
     toast: (message, title) => {
       toasts.push({ message: String(message), title });
     },

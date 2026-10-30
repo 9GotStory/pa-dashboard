@@ -150,9 +150,39 @@ function readHdcReports() {
  */
 function dcGetCatalog(settings) {
   const window = getYearWindow(settings);
-  const status = dcReadSyncStatus();
+  return {
+    meta: {
+      current_year: settings.current_year,
+      years: window,
+      district_code: settings.district_code,
+      generated_at: new Date().toISOString(),
+    },
+    areas: dcSheetRecords("tambon_master", ["id", "name_th", "district_id"]).filter(function (row) {
+      return String(row.district_id).trim() === settings.district_code;
+    }).map(function (row) {
+      return { id: String(row.id).trim(), name_th: String(row.name_th) };
+    }),
+    hospitals: dcSheetRecords("hospitals", ["hospcode", "hospname", "tambon_id"]).map(function (row) {
+      return {
+        hospcode: String(row.hospcode).trim(),
+        hospname: String(row.hospname),
+        tambon_id: String(row.tambon_id).trim(),
+      };
+    }),
+    topics: readHdcTopics(),
+    reports: dcCatalogReports(window, dcReadSyncStatus()),
+  };
+}
+
+/**
+ * รายงานที่ใช้งาน as the catalog lists them (SCHEMA §3.1): readHdcReports()
+ * with measure_goals from kpi_epi and years from the given sync_status rows
+ * (dcReadSyncStatus) inside the window, oldest first. ?action=report answers
+ * the same DcReport.
+ */
+function dcCatalogReports(window, status) {
   const goalRows = dcSheetRecords("kpi_epi", ["source_sheet", "value_prefix", "target"]);
-  const reports = readHdcReports().map(function (report) {
+  return readHdcReports().map(function (report) {
     // A kpi_epi target that is not a valid เกณฑ์ (blank included) is left
     // out, so the report's own goal applies to that รายการ (SCHEMA §3.1).
     // Null prototype: a value_prefix such as "__proto__" must not hit
@@ -181,28 +211,6 @@ function dcGetCatalog(settings) {
     });
     return report;
   });
-  return {
-    meta: {
-      current_year: settings.current_year,
-      years: window,
-      district_code: settings.district_code,
-      generated_at: new Date().toISOString(),
-    },
-    areas: dcSheetRecords("tambon_master", ["id", "name_th", "district_id"]).filter(function (row) {
-      return String(row.district_id).trim() === settings.district_code;
-    }).map(function (row) {
-      return { id: String(row.id).trim(), name_th: String(row.name_th) };
-    }),
-    hospitals: dcSheetRecords("hospitals", ["hospcode", "hospname", "tambon_id"]).map(function (row) {
-      return {
-        hospcode: String(row.hospcode).trim(),
-        hospname: String(row.hospname),
-        tambon_id: String(row.tambon_id).trim(),
-      };
-    }),
-    topics: readHdcTopics(),
-    reports: reports,
-  };
 }
 
 /**
