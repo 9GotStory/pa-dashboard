@@ -37,28 +37,28 @@
 
 | F | ชื่อ | ขึ้นกับ | issue |
 |---|---|---|---|
-| F01 | ตั้งค่า `district_code`, `deploy_hook_url` และ window ปี | — | |
-| F02 | บันทึกข้อมูลตามปี เฉพาะอำเภอ | F01 | |
-| F03 | ชีตแค็ตตาล็อกและ `save_catalog` | F01 | |
-| F04 | `BATCH_ALL`: `meta.years` และ PA/DC units | F02, F03 | |
-| F05 | `GET ?action=catalog` | F03 | |
-| F06 | `GET ?action=report&id=` | F02, F03 | |
-| F07 | `POST rebuild` | F01 | |
-| F08 | `setup=dc_seed` (โค้ด) | F03 | |
-| F09 | `sync-moph-to-gas.js` | F02, F04, F07 | |
-| F10 | snippet export แค็ตตาล็อก + `hdc-catalog.js --from` | F03, F05 | |
-| F11 | หน้า `/sync` | F02, F04, F07 | |
-| F12 | Backfill 5 ปีและตรวจตัวเลข (คนทำ, `/wizard`) | F06, F08, F09, F10 | |
-| F13 | ย้าย PA ไป `/pa` และตัด `basePath` | — | |
-| F14 | prebuild snapshot | F12 (และ F05, F06 ผ่าน F12) | |
-| F15 | ชั้นคำนวณ `src/lib/dc/` | F01 | |
-| F16 | โครงหน้าและธีม | F13, F14 | |
-| F17 | ไฟล์ขอบเขตตำบล | — | |
-| F18 | หน้าแรก `/` | F14, F16, F17 | |
-| F19 | คลังรายงาน `/reports` | F14, F16 | |
-| F20 | หน้ารายงาน `/reports/[id]` | F14, F15, F16 | |
-| F21 | Cloudflare Pages + Deploy Hook (คนทำ, `/wizard`) | F12, F18, F19, F20 | |
-| F22 | หน้า stub บน GitHub Pages (คนทำ, `/wizard`) | F21 | |
+| F01 | ตั้งค่า `district_code`, `deploy_hook_url` และ window ปี | — | #108 |
+| F02 | บันทึกข้อมูลตามปี เฉพาะอำเภอ | F01 | #109 |
+| F03 | ชีตแค็ตตาล็อกและ `save_catalog` | F01 | #110 |
+| F04 | `BATCH_ALL`: `meta.years` และ PA/DC units | F02, F03 | #111 |
+| F05 | `GET ?action=catalog` | F03 | #112 |
+| F06 | `GET ?action=report&id=` | F02, F03 | #113 |
+| F07 | `POST rebuild` | F01 | #114 |
+| F08 | `setup=dc_seed` (โค้ด) | F03 | #115 |
+| F09 | `sync-moph-to-gas.js` | F02, F04, F07 | #116 |
+| F10 | snippet export แค็ตตาล็อก + `hdc-catalog.js --from` | F03, F05 | #117 |
+| F11 | หน้า `/sync` | F02, F04, F07 | #118 |
+| F12 | Backfill 5 ปีและตรวจตัวเลข (คนทำ, `/wizard`) | F06, F08, F09, F10 | #119 |
+| F13 | ย้าย PA ไป `/pa` และตัด `basePath` | — | #120 |
+| F14 | prebuild snapshot | F12 (และ F05, F06 ผ่าน F12) | #121 |
+| F15 | ชั้นคำนวณ `src/lib/dc/` | F01 | #122 |
+| F16 | โครงหน้าและธีม | F13, F14 | #123 |
+| F17 | ไฟล์ขอบเขตตำบล | — | #124 |
+| F18 | หน้าแรก `/` | F14, F16, F17 | #125 |
+| F19 | คลังรายงาน `/reports` | F14, F16 | #126 |
+| F20 | หน้ารายงาน `/reports/[id]` | F14, F15, F16 | #127 |
+| F21 | Cloudflare Pages + Deploy Hook (คนทำ, `/wizard`) | F12, F18, F19, F20 | #128 |
+| F22 | หน้า stub บน GitHub Pages (คนทำ, `/wizard`) | F21 | #129 |
 
 ---
 
