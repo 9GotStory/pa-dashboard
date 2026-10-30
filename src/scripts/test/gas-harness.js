@@ -148,8 +148,9 @@ function fakeSheet(name, values) {
  *     many tryLock calls came while it was already held.
  *   fetches: every UrlFetchApp.fetch call, in order.
  *   properties: the script properties (PropertiesService) store.
- *   clock: the time `new Date()` returns in GAS, in ms since the epoch; the
- *     real time at load until a test sets it.
+ *   clock: the time `new Date()` returns in GAS, and the time CacheService
+ *     entries expire by, in ms since the epoch; the real time at load until a
+ *     test sets it.
  *   toasts: every Spreadsheet.toast, in order.
  *   menus: every menu added to the spreadsheet UI (onOpen).
  *   sheet: a sheet's current data range (null if the sheet does not exist).
@@ -216,8 +217,14 @@ export function loadGas({ sheets = {}, fetch } = {}) {
     SpreadsheetApp: { getActiveSpreadsheet: () => spreadsheet, getUi: () => ui },
     CacheService: {
       getScriptCache: () => ({
-        get: (key) => (cache.has(key) ? cache.get(key) : null),
-        put: (key, value) => cache.set(key, value),
+        // An entry expires on the harness clock after put's
+        // expirationInSeconds (Apps Script default: 600).
+        get: (key) => {
+          const entry = cache.get(key);
+          return entry && clock.now < entry.expiresAt ? entry.value : null;
+        },
+        put: (key, value, expirationInSeconds = 600) =>
+          cache.set(key, { value, expiresAt: clock.now + expirationInSeconds * 1000 }),
         remove: (key) => cache.delete(key),
         removeAll: (keys) => keys.forEach((k) => cache.delete(k)),
       }),

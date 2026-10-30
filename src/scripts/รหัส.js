@@ -567,6 +567,14 @@ function getAnnualSum(item, prefix) {
 }
 
 function syncAllData() {
+  // Pull runtime config from the settings sheet (year, province may be
+  // changed without redeploying). Falls back to CONFIG defaults on errors.
+  // Read before taking the lock below: on a cache miss readSettings and
+  // readKpiMasterConfig take and release the lock themselves, which would
+  // release this function's lock (SCHEMA §3, #136).
+  const settings = readSettings();
+  const kpiCfg = readKpiMasterConfig();
+
   // Acquire a script lock to prevent overlapping syncs (e.g. manual run
   // colliding with the daily trigger). If another sync is running, bail
   // out gracefully instead of racing on sheet.clear()/setValues().
@@ -589,12 +597,9 @@ function syncAllData() {
   }
 
   try {
-    // Pull runtime config from the settings sheet (year, province may be
-    // changed without redeploying). Falls back to CONFIG defaults on errors.
-    const settings = readSettings();
     // Sync units = PA units ∪ DC units, so tables registered only in a sheet
     // (s_epi1 in kpi_master, a report in hdc_reports) sync without a redeploy.
-    const units = getSyncUnits(readKpiMasterConfig());
+    const units = getSyncUnits(kpiCfg);
 
     // Fetch SEQUENTIALLY with spacing — NOT UrlFetchApp.fetchAll. MOPH's
     // rate limiter returns 429 when all 13 requests arrive as one burst
@@ -604,7 +609,8 @@ function syncAllData() {
     // far under the 6-minute trigger quota.
     // Saved through the same path as save_kpi_data. force: true because data
     // fetched live from MOPH is real by definition, so it may replace rows
-    // with a future date_com (ADR-0005).
+    // with a future date_com (ADR-0005). The config read before the lock is
+    // passed on: this loop outlives its 60 s cache (#136).
     let okCount = 0;
     units.forEach(function (kpi) {
       const fetched = fetchMophForKpi(kpi, settings);
@@ -613,6 +619,8 @@ function syncAllData() {
         saveTableYear(kpi.table, settings.current_year, fetched.data, {
           total: fetched.total,
           force: true,
+          settings: settings,
+          kpiCfg: kpiCfg,
         }).status === "success"
       ) {
         okCount++;
@@ -622,7 +630,7 @@ function syncAllData() {
 
     // Rebuild the website only when new data was saved (SPEC §6.3), still
     // under this lock: requestRebuild does not take it (SCHEMA §3.7).
-    if (okCount > 0) requestRebuild("daily sync");
+    if (okCount > 0) requestRebuild("daily sync", settings);
 
     SpreadsheetApp.getActiveSpreadsheet().toast(
       "Synced " + okCount + "/" + units.length + " KPIs",
