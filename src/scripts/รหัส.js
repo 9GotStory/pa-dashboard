@@ -1198,6 +1198,16 @@ function handleDiag(e) {
     }
   }
 
+  // Optional: create the Data Center sheets and settings columns
+  // (SCHEMA §3.6). Idempotent — existing sheets and data are never modified.
+  if (e.parameter.setup === "datacenter") {
+    try {
+      out.setupDatacenter = dcSetupDatacenter();
+    } catch (err) {
+      out.setupDatacenter = "error: " + String(err);
+    }
+  }
+
   // Optional admin: drop KPI registry rows by table_name across all
   // registry tabs — e.g. remove retired/misconfigured KPIs without opening
   // the sheet. Token-sanitized; unknown names are reported, not fatal.
@@ -1609,6 +1619,9 @@ function doPost(e) {
             force: json.force,
           }),
         );
+      }
+      if (json.action === "save_catalog") {
+        return createJsonOutput(dcSaveCatalog(json.cat_id, json.category_name, json.reports));
       }
       return createJsonError("Unknown action: " + json.action);
     } finally {

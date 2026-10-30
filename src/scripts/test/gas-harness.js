@@ -77,6 +77,9 @@ function fakeSheet(name, values) {
       },
       setNumberFormat: () => r,
       setFontWeight: () => r,
+      // Apps Script: "Sets the value of all cells in the range to false."
+      insertCheckboxes: () =>
+        r.setValues(Array.from({ length: numRows }, () => Array.from({ length: numCols }, () => false))),
     };
     return r;
   };
@@ -85,6 +88,7 @@ function fakeSheet(name, values) {
     getDataRange: () => range(1, 1, Math.max(lastRow(), 1), Math.max(lastColumn(), 1)),
     getRange: range,
     getLastRow: lastRow,
+    getLastColumn: lastColumn,
     getMaxRows: () => maxRows,
     clear: () => {
       cells = [];
