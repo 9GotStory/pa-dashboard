@@ -6,11 +6,15 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint",
+    "lint": "eslint && node src/scripts/check-glossary.mjs",
+    "typecheck": "tsc --noEmit",
     "test": "node --test \"src/scripts/test/**/*.test.js\"",
     "gas:push": "clasp push -f",
     "gas:deploy": "clasp deploy -i AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H",
-    "gas:sync": "npm run gas:push && npm run gas:deploy"
+    "gas:sync": "npm run gas:push && npm run gas:deploy",
+    "gas:diag": "node --env-file-if-exists=.env.local src/scripts/gas-diag.mjs",
+    "pa:snapshot": "node --env-file-if-exists=.env.local src/scripts/pa-check.mjs snapshot",
+    "pa:compare": "node src/scripts/pa-check.mjs compare"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",

@@ -22,7 +22,7 @@
 - โค้ด GAS ของ Data Center อยู่ในไฟล์ใหม่ `src/scripts/dc-*.js` (SPEC §12.4) และทุก ticket ฝั่ง GAS ต้องมีเทสต์ใน `src/scripts/test/` ที่โหลดไฟล์ GAS ด้วย `node:vm` พร้อม stub (รันด้วย `npm test` ซึ่ง F01 ตั้งไว้) · ไฟล์ที่ไม่ใช่ GAS ใต้ `src/scripts/` ต้องอยู่ใน `.claspignore` (SCHEMA §10)
 - ห้ามแก้ไฟล์ PA เดิม (รายการทางการใน CODING_STANDARDS §1: ไฟล์ที่มีอยู่ก่อนใต้ `src/components/` และ `src/lib/`) ยกเว้นย้ายไฟล์ใน F13 · ใน `รหัส.js` แก้เฉพาะจุดที่ SPEC §12.4 ระบุ
 - โค้ดของ Data Center ใต้ `src/lib/dc/` และ `src/components/dc/` ไม่ import จากไฟล์ PA (CODING_STANDARDS §4) ฟังก์ชันที่ต้องให้ผลเหมือน PA (`formatPct`, `formatThaiDate`) อยู่ใน `src/lib/dc/format.ts` · snippet สำหรับเบราว์เซอร์อยู่ใน `tools/` ไม่ใช่ `src/scripts/`
-- ทุก PR ต้อง `npm test` และ `npm run build` ผ่าน (CI รันทั้งสองตั้งแต่ F01 บน Node 24 · ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step และ prebuild จะล้มถ้ายังไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน F14 จึงต้องรอ F12)
+- ทุก PR ต้อง `npm test`, `npm run lint` และ `npm run build` ผ่าน (CI รัน test และ build ตั้งแต่ F01 และ lint ตั้งแต่ retro ของ Track A ทั้งหมดบน Node 24 · `lint` ตรวจวลีที่ GLOSSARY ให้เลี่ยงด้วย · ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step และ prebuild จะล้มถ้ายังไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน F14 จึงต้องรอ F12)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D: F13, F17 ทำคู่ขนานได้ตั้งแต่ต้น F15 รอแค่ F01 (ต่อสคริปต์ `npm test`) F14 ขึ้นไปรอ F12 และ Track E ทำท้ายสุด
 
 | Track | งาน | ขึ้นกับ |
@@ -216,18 +216,18 @@
 
 ### F14 prebuild snapshot (`src/scripts/build-snapshot.mjs`)
 
-- **ทำ:** ตาม SPEC §6.2 และ SCHEMA §7: ดึง catalog + report ทุกตัวทีละคำขอ (retry `Busy` ทุก 20 วินาทีไม่เกิน 5 นาที, error อื่น 3 ครั้ง) → เรียงตาม SPEC §5.4 และตัดกลุ่ม/หัวข้อ/หมวดว่าง → ตรวจความครบ (`sheet_rows = expected_rows`, ปีปัจจุบันมีแถว) → เขียน `public/data/meta.json`, `catalog.json`, `reports/{id}.json` → ตรวจขนาด → ล้มดัง ๆ · ต้องมี env `NEXT_PUBLIC_GAS_SCRIPT_URL` ไม่มี URL สำรอง · `package.json`: `"prebuild": "node src/scripts/build-snapshot.mjs"`, `"snapshot": "node src/scripts/build-snapshot.mjs"` · `.gitignore` เพิ่ม `public/data/` · `ci.yml` ส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก secrets เข้า build step · `src/lib/dc/snapshot.ts` (อ่านไฟล์ด้วย `fs` สำหรับ server component)
+- **ทำ:** ตาม SPEC §6.2 และ SCHEMA §7: ดึง catalog + report ทุกตัวทีละคำขอ (retry `Busy` ทุก 20 วินาทีไม่เกิน 5 นาที, error อื่น 3 ครั้ง) → เรียงตาม SPEC §5.4 และตัดกลุ่ม/หัวข้อ/หมวดว่าง → ตรวจความครบ (`sheet_rows = expected_rows`, ปีปัจจุบันมีแถว, ทุกปีใน `report.years` มี block ใน `years` เพราะ `?action=report` ข้ามปีที่ชีตหายไป SCHEMA §3.2) → เขียน `public/data/meta.json`, `catalog.json`, `reports/{id}.json` → ตรวจขนาด → ล้มดัง ๆ · ต้องมี env `NEXT_PUBLIC_GAS_SCRIPT_URL` ไม่มี URL สำรอง · `package.json`: `"prebuild": "node src/scripts/build-snapshot.mjs"`, `"snapshot": "node src/scripts/build-snapshot.mjs"` · `.gitignore` เพิ่ม `public/data/` · `ci.yml` ส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก secrets เข้า build step · `src/lib/dc/snapshot.ts` (อ่านไฟล์ด้วย `fs` สำหรับ server component)
 - **ขึ้นกับ:** F12 (prebuild ล้มถ้าไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน จึงต้องมี seed + sync แล้ว) ซึ่งครอบ F05, F06
 - **ตรวจรับ:**
   1. `npm run snapshot` → ไฟล์ครบตามจำนวนรายงานที่ใช้งาน และ `catalog.json` เรียงหัวข้อวัคซีนเป็น กลุ่มอายุ 1 → 2 → 3 → 5 ปี โดยในกลุ่ม `s_epi1` มาก่อน fully immunized
   2. ไม่ตั้ง env → exit 1 ทันที · ชี้ env ไป URL ที่ตอบ error → exit 1 และไม่เขียนไฟล์ใด ๆ (ไม่มีไฟล์ครึ่ง ๆ กลาง ๆ)
-  3. จำลองรายงานหนึ่งตัวดึงไม่ได้ หรือ block ที่ `sheet_rows ≠ expected_rows` (ใช้ stub server) → exit 1 · stub ตอบ `Busy` 2 ครั้งแล้วสำเร็จ → ผ่านโดยรอระหว่างนั้น · ตอบ `Busy` ตลอด → exit 1 เมื่อครบเวลา (ช่วงรอและเพดานตั้งผ่าน env ในเทสต์ได้)
+  3. จำลองรายงานหนึ่งตัวดึงไม่ได้, block ที่ `sheet_rows ≠ expected_rows` หรือ `years` ที่ขาดปีซึ่ง `report.years` มี (ใช้ stub server) → exit 1 · stub ตอบ `Busy` 2 ครั้งแล้วสำเร็จ → ผ่านโดยรอระหว่างนั้น · ตอบ `Busy` ตลอด → exit 1 เมื่อครบเวลา (ช่วงรอและเพดานตั้งผ่าน env ในเทสต์ได้)
   4. ขนาดไฟล์ทุกไฟล์ไม่เกิน SPEC §6.1 (เกิน = exit 1, ถึง 80% = เตือน) และ script พิมพ์ไฟล์ที่ใหญ่ที่สุด
   5. `npm run build` รัน prebuild เองและผ่าน · `git status` ไม่เห็น `public/data/` · CI ของ PR นี้ผ่านโดยใช้ secret
 
 ### F15 ชั้นคำนวณ (`src/lib/dc/types.ts`, `values.ts`, `client.ts`)
 
-- **ทำ:** type ตาม SCHEMA §9 · `values.ts` ตาม SCHEMA §4 ทั้งหมด ทำงานบน `DcYearBlock` (ตรวจกลุ่มคอลัมน์ต่อ block, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · `format.ts`: `formatPct` สำเนาจาก PA และ `formatThaiDate` เขียนใหม่ให้ผลเหมือน PA โดยไม่ import ไฟล์ PA · `client.ts` โหลด `/data/reports/{id}.json` พร้อม cache ในหน่วยความจำ · เทสต์ `values.test.ts`, `format.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test src/lib/dc/*.test.ts` และต่อท้ายสคริปต์ `npm test` ด้วย `&& tsx --test src/lib/dc/*.test.ts` ให้ CI รันด้วย (devDependencies ใหม่มี 2 ตัวทั้งโปรเจกต์: `tsx` ที่นี่ และ `@types/leaflet` ใน F18)
+- **ทำ:** type ตาม SCHEMA §9 · `values.ts` ตาม SCHEMA §4 ทั้งหมด ทำงานบน `DcYearBlock` (ตรวจกลุ่มคอลัมน์ต่อ block, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · `format.ts`: `formatPct` สำเนาจาก PA และ `formatThaiDate` เขียนใหม่ให้ผลเหมือน PA โดยไม่ import ไฟล์ PA และรับ `""` ได้โดยไม่ throw (`max_date_com` ของ block ที่ไม่มีแถว, SCHEMA §3.2) · `client.ts` โหลด `/data/reports/{id}.json` พร้อม cache ในหน่วยความจำ · เทสต์ `values.test.ts`, `format.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test src/lib/dc/*.test.ts` และต่อท้ายสคริปต์ `npm test` ด้วย `&& tsx --test src/lib/dc/*.test.ts` ให้ CI รันด้วย (devDependencies ใหม่มี 2 ตัวทั้งโปรเจกต์: `tsx` ที่นี่ และ `@types/leaflet` ใน F18)
 - **ตรวจรับ (เทสต์):**
   1. header จริงของทั้ง 18 ตาราง (ตาม SCHEMA §4.1) → ตรวจพบกลุ่มคอลัมน์ตรงตารางนั้นทุกตัว และ `s_dm_screen`/`s_aged9` ไม่ถูกมองเป็นรายไตรมาส
   2. `s_epi1` → measure 20 รายการ `s_epi2` → 6 รายการ และ `dtp_hb3` แสดงเป็น `DTP-HB3`
