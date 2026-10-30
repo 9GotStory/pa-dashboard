@@ -132,6 +132,7 @@ function fakeSheet(name, values) {
  *   gas: any,
  *   logs: string[],
  *   lock: { tryLock: number, releaseLock: number, nested: number },
+ *   otherHolder: { held: boolean },
  *   fetches: { url: string, method: string | undefined, payload: any }[],
  *   properties: Map<string, string>,
  *   clock: { now: number },
@@ -144,8 +145,11 @@ function fakeSheet(name, values) {
  * }}
  *   gas: the GAS global scope (top-level functions are properties of it).
  *   logs: every Logger.log message, in order.
- *   lock: how many times the script lock was taken and released, and how
- *     many tryLock calls came while it was already held.
+ *   lock: how many tryLock calls (failed ones included) and releaseLock
+ *     calls were made, and how many tryLock calls came while the lock was
+ *     already held.
+ *   otherHolder: set held to true to make every tryLock return false, as
+ *     when another execution keeps the script lock past the wait.
  *   fetches: every UrlFetchApp.fetch call, in order.
  *   properties: the script properties (PropertiesService) store.
  *   clock: the time `new Date()` returns in GAS, and the time CacheService
@@ -166,6 +170,7 @@ export function loadGas({ sheets = {}, fetch } = {}) {
   // outer holder's lock (SCHEMA §3), so tests expect 0.
   const lock = { tryLock: 0, releaseLock: 0, nested: 0 };
   let held = false;
+  const otherHolder = { held: false };
   const fetches = [];
   const properties = new Map();
   const toasts = [];
@@ -233,6 +238,7 @@ export function loadGas({ sheets = {}, fetch } = {}) {
       getScriptLock: () => ({
         tryLock: () => {
           lock.tryLock++;
+          if (otherHolder.held) return false;
           if (held) lock.nested++;
           held = true;
           return true;
@@ -308,6 +314,7 @@ export function loadGas({ sheets = {}, fetch } = {}) {
     gas,
     logs,
     lock,
+    otherHolder,
     fetches,
     properties,
     clock,

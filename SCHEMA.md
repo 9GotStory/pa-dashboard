@@ -142,7 +142,7 @@
 | `hospitals` | `hospitals` → `{ hospcode, hospname, tambon_id }` |
 | `topics` | ทุกแถวของ `hdc_topics` ที่ `cat_id` ผ่านรูปแบบ |
 | `reports` | รายงานที่ใช้งาน (§2.3) |
-| `reports[].measure_goals` | แถวของ `kpi_epi` ที่ `source_sheet = source_table` และมี `value_prefix` → `{ [value_prefix]: target }` |
+| `reports[].measure_goals` | แถวของ `kpi_epi` ที่ `source_sheet = source_table` และมี `value_prefix` → `{ [value_prefix]: target }` · แถวที่ `target` ไม่ใช่ตัวเลข 0–100 (รวมช่องว่าง) ถูกข้าม รายการนั้นจึงใช้ `goal` ของรายงาน เหมือนรายการที่ไม่มีใน `kpi_epi` (§6, #112) |
 | `reports[].years` | แถวของ `sync_status` ที่ `table = source_table` และอยู่ใน window เรียงตามปี |
 
 ไม่แคช เพราะถูกเรียกเฉพาะตอน build และจากสคริปต์ผู้ดูแล
