@@ -72,15 +72,16 @@ function find(file, tables) {
     }
     if (printed.size === 0) missing.push(table);
   }
+  // Even a table found may also be in a topic that failed, so always say so.
+  const failed = (exported.errors || []).map((e) => `${e.cat_id} (status ${e.status})`);
+  if (failed.length > 0) {
+    console.error(
+      `hdc-catalog: the export failed to get ${failed.join(", ")}, so these topics were not searched; ` +
+        "run tools/hdc-catalog-export.js again",
+    );
+  }
   if (missing.length > 0) {
-    console.error(`hdc-catalog: in no topic of ${file}: ${missing.join(", ")}`);
-    const failed = (exported.errors || []).map((e) => `${e.cat_id} (status ${e.status})`);
-    if (failed.length > 0) {
-      console.error(
-        `hdc-catalog: the export failed to get ${failed.join(", ")}, so these were not searched; ` +
-          "run tools/hdc-catalog-export.js again",
-      );
-    }
+    console.error(`hdc-catalog: in no topic of ${file}: ${missing.join(", ")}; check the source_table names`);
     process.exitCode = 1;
   }
 }
@@ -104,7 +105,11 @@ async function callGas(url, init) {
         text.slice(0, 200),
     );
   }
-  if (body.status === "error") throw new Error(`GAS answered: ${body.message}`);
+  if (body.status === "error") {
+    // Busy: another run held the script lock past GAS's wait (SCHEMA §3).
+    const hint = body.message === "Busy" ? "; another run holds the script lock, try again in a minute" : "";
+    throw new Error(`GAS answered: ${body.message}${hint}`);
+  }
   return body;
 }
 
@@ -119,13 +124,19 @@ async function refresh(file, catId) {
     );
   }
   const exported = readExport(file);
-  const names = new Map((exported.categories || []).map((c) => [c.cat_id, c.category_name]));
+  const topicNames = new Map((exported.categories || []).map((c) => [c.cat_id, c.category_name]));
   const failedToGet = new Map((exported.errors || []).map((e) => [e.cat_id, e.status]));
   let topics;
   try {
     ({ topics } = await callGas(`${url}?action=catalog`));
   } catch (err) {
     fail(`cannot read hdc_topics (?action=catalog): ${err.message}`);
+  }
+  if (!Array.isArray(topics)) {
+    fail(
+      "cannot read hdc_topics (?action=catalog): GAS answered with no topics; " +
+        "check NEXT_PUBLIC_GAS_SCRIPT_URL is this project's web app",
+    );
   }
   if (catId) topics = topics.filter((topic) => topic.cat_id === catId);
   if (topics.length === 0) {
@@ -137,12 +148,13 @@ async function refresh(file, catId) {
   console.log(`Catalog export of ${exported.exported_at}, ${topics.length} topics in hdc_topics`);
   let notRefreshed = 0;
   for (const [i, topic] of topics.entries()) {
-    const name = names.get(topic.cat_id);
+    const name = topicNames.get(topic.cat_id);
     const label = `[${i + 1}/${topics.length}] ${topic.cat_id} ${cleanName(name || topic.category_name)}`.trimEnd();
     const reports = exported.reports[topic.cat_id];
-    // Never an empty list: to GAS that reads as every report removed, and
-    // it refuses one (SCHEMA §3.4 step 2).
-    if (!Array.isArray(reports) || reports.length === 0) {
+    // Not a topic the export failed to get, whatever rows the file has for
+    // it (SCHEMA §5.5), and never an empty list: to GAS that reads as every
+    // report removed, and it refuses one (SCHEMA §3.4 step 2).
+    if (failedToGet.has(topic.cat_id) || !Array.isArray(reports) || reports.length === 0) {
       const why = failedToGet.has(topic.cat_id)
         ? `the export failed to get it (status ${failedToGet.get(topic.cat_id)}); run tools/hdc-catalog-export.js again`
         : "the export has no reports for it; check its cat_id in hdc_topics";
@@ -185,6 +197,7 @@ try {
   fail(`${err.message}\n${USAGE}`);
 }
 const [command, ...rest] = args.positionals;
-if (command === "find") find(args.values.from, rest);
-else if (command === "refresh") refresh(args.values.from, args.values.cat);
+// A cat_id after refresh without --cat must not refresh every topic.
+if (command === "find" && rest.length > 0) find(args.values.from, rest);
+else if (command === "refresh" && rest.length === 0) refresh(args.values.from, args.values.cat);
 else fail(USAGE);
