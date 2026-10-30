@@ -35,6 +35,8 @@ const DC_SYNC_STATUS_SHEET = "sync_status";
 const DC_SYNC_STATUS_HEADERS = ["table", "b_year", "sheet", "row_count", "max_date_com", "synced_at"];
 // Columns written as plain text so Sheets keeps leading zeros (เดิม).
 const DC_TEXT_COLUMNS = ["id", "hospcode", "areacode", "vhid"];
+// sync_status keeps these as strings (SCHEMA §2.4) instead of Sheets numbers.
+const DC_SYNC_STATUS_TEXT_COLUMNS = ["b_year", "max_date_com"];
 
 /**
  * Save one (table, year) from MOPH rows: SCHEMA §3.3 steps 1–10.
@@ -56,35 +58,35 @@ function saveTableYear(tableName, year, rows, options) {
     return unit.table === tableName;
   });
   if (!isSyncUnit) {
-    return dcSaveError("ERROR", tableName, y, "Unknown table: " + tableName);
+    return dcRejectSave("ERROR", tableName, y, "Unknown table: " + tableName);
   }
   if (!/^\d{4}$/.test(y) || getYearWindow(settings).indexOf(y) === -1) {
-    return dcSaveError("ERROR", tableName, y, "Year outside window");
+    return dcRejectSave("ERROR", tableName, y, "Year outside window");
   }
 
   // MOPH wraps rows in an envelope {"data": [...]}; older responses were a
   // bare array (เดิม).
   if (rows && !Array.isArray(rows) && Array.isArray(rows.data)) rows = rows.data;
   if (!Array.isArray(rows)) {
-    return dcSaveError("ERROR", tableName, y, "Data is not an array");
+    return dcRejectSave("ERROR", tableName, y, "Data is not an array");
   }
   const opts = options || {};
   // total may arrive as a string (SCHEMA §5.3); a non-numeric one is ignored.
   if (opts.total !== undefined && opts.total !== null && rows.length < Number(opts.total)) {
-    return dcSaveError("ERROR", tableName, y, "Incomplete data", rows.length + " of " + opts.total + " rows");
+    return dcRejectSave("ERROR", tableName, y, "Incomplete data", rows.length + " of " + opts.total + " rows");
   }
   if (rows.length === 0) {
-    return dcSaveError("WARNING", tableName, y, "Empty data", "0 rows, keeping the existing sheet");
+    return dcRejectSave("WARNING", tableName, y, "Empty data", "0 rows, keeping the existing sheet");
   }
   if (!(rows[0] && typeof rows[0] === "object" && "areacode" in rows[0])) {
-    return dcSaveError("ERROR", tableName, y, "No areacode column");
+    return dcRejectSave("ERROR", tableName, y, "No areacode column");
   }
 
   const inDistrict = rows.filter(function (row) {
-    return String(row.areacode).indexOf(settings.district_code) === 0;
+    return dcInDistrict(row.areacode, settings);
   });
   if (inDistrict.length === 0) {
-    return dcSaveError("WARNING", tableName, y, "No rows for district " + settings.district_code,
+    return dcRejectSave("WARNING", tableName, y, "No rows for district " + settings.district_code,
       "keeping the existing sheet");
   }
 
@@ -102,7 +104,7 @@ function saveTableYear(tableName, year, rows, options) {
       (inDistrict.length - kept.length) + " rows with b_year other than " + y);
   }
   if (kept.length === 0) {
-    return dcSaveError("WARNING", tableName, y, "No rows for year " + y, "keeping the existing sheet");
+    return dcRejectSave("WARNING", tableName, y, "No rows for year " + y, "keeping the existing sheet");
   }
 
   const maxDateCom = dcMaxDateCom(kept.map(function (row) {
@@ -111,7 +113,7 @@ function saveTableYear(tableName, year, rows, options) {
   if (opts.force !== true) {
     const existing = dcFindSyncStatus(dcReadSyncStatus(), tableName, y);
     if (existing && existing.max_date_com > maxDateCom) {
-      return dcSaveError("ERROR", tableName, y,
+      return dcRejectSave("ERROR", tableName, y,
         "Stale data: existing " + existing.max_date_com + " > incoming " + maxDateCom);
     }
   }
@@ -135,7 +137,7 @@ function saveTableYear(tableName, year, rows, options) {
   });
 
   const sheetName = sheetNameFor(tableName, y, settings);
-  dcWriteSheet(sheetName, headers, values);
+  dcWriteSheet(sheetName, headers, values, DC_TEXT_COLUMNS);
   dcUpsertSyncStatus(tableName, y, sheetName, kept.length, maxDateCom, getYearWindow(settings));
 
   Logger.log("Success: Synced " + kept.length + " rows for " + tableName + " " + y + " to " + sheetName);
@@ -156,20 +158,22 @@ function dcArchiveOldYears(tableName, year, settings) {
   if (!sheet) return [];
   const values = sheet.getDataRange().getValues();
   const header = values[0];
-  const iYear = header.indexOf("b_year");
+  const names = header.map(function (h) {
+    return String(h || "").trim().toLowerCase();
+  });
+  const iYear = names.indexOf("b_year");
   if (iYear === -1) return [];
   const others = values.slice(1).filter(function (row) {
     return String(row[iYear]) !== year;
   });
   if (others.length === 0) return [];
 
-  // Same filter as saveTableYear: the sheet may still hold province-wide rows
-  // written before Data Center.
-  const iArea = header.indexOf("areacode");
+  // The sheet may still hold province-wide rows written before Data Center.
+  const iArea = names.indexOf("areacode");
   const byYear = {};
   let outsideDistrict = 0;
   others.forEach(function (row) {
-    if (iArea === -1 || String(row[iArea]).indexOf(settings.district_code) !== 0) {
+    if (iArea === -1 || !dcInDistrict(row[iArea], settings)) {
       outsideDistrict++;
       return;
     }
@@ -182,7 +186,7 @@ function dcArchiveOldYears(tableName, year, settings) {
   }
 
   const window = getYearWindow(settings);
-  const iDate = header.indexOf("date_com");
+  const iDate = names.indexOf("date_com");
   const status = dcReadSyncStatus();
   const archived = [];
   Object.keys(byYear).sort().forEach(function (z) {
@@ -200,7 +204,7 @@ function dcArchiveOldYears(tableName, year, settings) {
       Logger.log("Archive: " + target + " already has " + existing.max_date_com + " >= " + maxDateCom + ", not overwritten");
       return;
     }
-    dcWriteSheet(target, header, rows);
+    dcWriteSheet(target, header, rows, DC_TEXT_COLUMNS);
     dcUpsertSyncStatus(tableName, z, target, rows.length, maxDateCom, window);
     logToSheet("SUCCESS", "Archived " + tableName + " " + z, rows.length + " rows to " + target);
     archived.push(z);
@@ -208,16 +212,26 @@ function dcArchiveOldYears(tableName, year, settings) {
   return archived;
 }
 
+/** areacode starts with settings.district_code (SCHEMA §2.5 "แถวที่เก็บ"). */
+function dcInDistrict(areacode, settings) {
+  return String(areacode).indexOf(settings.district_code) === 0;
+}
+
 /**
  * Log a rejected save to system_logs (syncAllData has no other way to show
  * it) and return the error response. Nothing has been written yet.
  */
-function dcSaveError(type, tableName, year, message, details) {
+function dcRejectSave(type, tableName, year, message, details) {
   logToSheet(type, "Save rejected " + tableName + " " + year, message + (details ? ": " + details : ""));
   return { status: "error", message: message };
 }
 
-/** Largest date_com as a string ("" if none). Same-length digit strings compare like numbers. */
+/**
+ * Largest date_com as a string ("" if none). Compared as strings: within a
+ * table date_com has one length (12 digits, or 14 with seconds in s_epi1),
+ * and a 14-digit value only extends the 12-digit prefix, so string order is
+ * time order.
+ */
 function dcMaxDateCom(dateComs) {
   return dateComs.reduce(function (max, v) {
     const s = v === null || v === undefined ? "" : String(v);
@@ -226,19 +240,20 @@ function dcMaxDateCom(dateComs) {
 }
 
 /**
- * Replace a whole sheet: clear → header → text-column format → values →
- * delete the blank rows below the data (SCHEMA §2.5). values has ≥ 1 row.
+ * Replace a whole sheet: clear → header → plain-text format for textColumns →
+ * values → delete the blank rows below the data (SCHEMA §2.5). values has
+ * ≥ 1 row.
  * The sheet is sized to exactly the data, so it is grown first when the new
  * data is longer (getRange past getMaxRows() is not documented to grow it).
  */
-function dcWriteSheet(sheetName, headers, values) {
+function dcWriteSheet(sheetName, headers, values, textColumns) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(sheetName) || ss.insertSheet(sheetName);
   sheet.clear();
   const missingRows = values.length + 1 - sheet.getMaxRows();
   if (missingRows > 0) sheet.insertRowsAfter(sheet.getMaxRows(), missingRows);
   sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
-  DC_TEXT_COLUMNS.forEach(function (col) {
+  textColumns.forEach(function (col) {
     const i = headers.indexOf(col);
     if (i > -1) sheet.getRange(2, i + 1, values.length, 1).setNumberFormat("@");
   });
@@ -303,5 +318,5 @@ function dcUpsertSyncStatus(table, year, sheetName, rowCount, maxDateCom, window
     return DC_SYNC_STATUS_HEADERS.map(function (key) {
       return row[key];
     });
-  }));
+  }), DC_SYNC_STATUS_TEXT_COLUMNS);
 }

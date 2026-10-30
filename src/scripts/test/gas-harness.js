@@ -82,7 +82,6 @@ function fakeSheet(name, values) {
   };
 
   return {
-    getName: () => name,
     getDataRange: () => range(1, 1, Math.max(lastRow(), 1), Math.max(lastColumn(), 1)),
     getRange: range,
     getLastRow: lastRow,
@@ -125,7 +124,7 @@ function fakeSheet(name, values) {
  * @returns {{
  *   gas: any,
  *   logs: string[],
- *   lock: { tryLock: number, releaseLock: number },
+ *   lock: { tryLock: number, releaseLock: number, nested: number },
  *   fetches: { url: string, payload: any }[],
  *   sheet: (name: string) => unknown[][] | null,
  *   maxRows: (name: string) => number | null,
@@ -133,7 +132,8 @@ function fakeSheet(name, values) {
  * }}
  *   gas: the GAS global scope (top-level functions are properties of it).
  *   logs: every Logger.log message, in order.
- *   lock: how many times the script lock was taken and released.
+ *   lock: how many times the script lock was taken and released, and how
+ *     many tryLock calls came while it was already held.
  *   fetches: every UrlFetchApp.fetch call, in order.
  *   sheet: a sheet's current data range (null if the sheet does not exist).
  *   maxRows: a sheet's row count including blank rows below the data.
@@ -141,7 +141,11 @@ function fakeSheet(name, values) {
 export function loadGas({ sheets = {}, fetch } = {}) {
   const logs = [];
   const cache = new Map();
-  const lock = { tryLock: 0, releaseLock: 0 };
+  // nested: tryLock calls made while the lock was already held. Apps Script
+  // does not say what that returns, and the inner releaseLock would drop the
+  // outer holder's lock (SCHEMA §3), so tests expect 0.
+  const lock = { tryLock: 0, releaseLock: 0, nested: 0 };
+  let held = false;
   const fetches = [];
   const book = new Map(Object.entries(sheets).map(([name, values]) => [name, fakeSheet(name, values)]));
 
@@ -170,10 +174,13 @@ export function loadGas({ sheets = {}, fetch } = {}) {
       getScriptLock: () => ({
         tryLock: () => {
           lock.tryLock++;
+          if (held) lock.nested++;
+          held = true;
           return true;
         },
         releaseLock: () => {
           lock.releaseLock++;
+          held = false;
         },
       }),
     },

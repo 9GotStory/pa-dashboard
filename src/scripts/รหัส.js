@@ -1577,6 +1577,13 @@ function doPost(e) {
     }
     const json = JSON.parse(e.postData.contents);
 
+    // readSettings/readKpiMasterConfig take and release the script lock
+    // themselves on a cache miss. Fill both caches before taking the lock
+    // below, so the save reads them from cache instead of releasing this
+    // handler's lock early (SCHEMA §3).
+    readSettings();
+    readKpiMasterConfig();
+
     // Serialize writes with a script lock so two concurrent syncs cannot
     // race on sheet.clear()/setValues() (same reason syncAllData locks).
     // Taken once here, before dispatching on action: the save functions

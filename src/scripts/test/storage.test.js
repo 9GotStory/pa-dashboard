@@ -45,6 +45,17 @@ function provinceRows({ year, dateCom, extra = {} }) {
   return rows;
 }
 
+// The same rows with only the first n of อำเภอ 5406 (other districts kept).
+function keepDistrictRows(rows, n) {
+  let seen = 0;
+  return rows.filter((r) => !r.areacode.startsWith("5406") || seen++ < n);
+}
+
+// A response MOPH cut at 1000 rows: total says 2444.
+function truncatedRows(dateCom) {
+  return [...provinceRows({ year: "2569", dateCom }), ...provinceRows({ year: "2569", dateCom })].slice(0, 1000);
+}
+
 // A sheet's data rows as objects keyed by its header row.
 function records(values) {
   const [header, ...rows] = values;
@@ -108,9 +119,7 @@ test("saving 2568 again with a newer date_com replaces s_x_y2568 as a whole", ()
   h.gas.saveTableYear("s_x", "2568", provinceRows({ year: "2568", dateCom: "202510010800" }), {});
 
   // The newer response has fewer district rows: only the first 3 of 5406.
-  let district = 0;
-  const newer = provinceRows({ year: "2568", dateCom: "202512150800" })
-    .filter((r) => !r.areacode.startsWith("5406") || district++ < 3);
+  const newer = keepDistrictRows(provinceRows({ year: "2568", dateCom: "202512150800" }), 3);
   const res = h.gas.saveTableYear("s_x", "2568", newer, {});
 
   assert.equal(res.status, "success", res.message);
@@ -153,8 +162,7 @@ test("total 2444 but 1000 rows sent → error Incomplete data and no sheet chang
   const h = load();
   h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
   const before = dataSheets(h);
-  const truncated = [...provinceRows({ year: "2569", dateCom: "202610310930" }), ...provinceRows({ year: "2569", dateCom: "202610310930" })]
-    .slice(0, 1000);
+  const truncated = truncatedRows("202610310930");
 
   // MOPH sends total as a string (SCHEMA §5.3).
   const res = h.gas.saveTableYear("s_x", "2569", truncated, { total: "2444" });
@@ -343,9 +351,7 @@ test("after a write every sheet has data rows + 1 rows, no blank rows left (new 
   assert.equal(h.maxRows("sync_status"), 3 + 1);
 
   // A sheet trimmed to 3 data rows grows again for the next, longer save.
-  let district = 0;
-  const three = provinceRows({ year: "2568", dateCom: "202512150800" })
-    .filter((r) => r.areacode.startsWith("5406") && district++ < 3);
+  const three = keepDistrictRows(provinceRows({ year: "2568", dateCom: "202512150800" }), 3);
   h.gas.saveTableYear("s_x", "2568", three, {});
   assert.equal(h.maxRows("s_x_y2568"), 3 + 1);
   h.gas.saveTableYear("s_x", "2568", provinceRows({ year: "2568", dateCom: "202512160800" }), {});
@@ -389,6 +395,15 @@ function warmCachesAndResetLock(h) {
   h.lock.releaseLock = 0;
 }
 
+test("doPost with cold settings/kpi_master caches never calls tryLock while it holds the lock", () => {
+  const h = load();
+
+  const res = post(h, { action: "save_kpi_data", tableName: "s_x", data: provinceRows({ year: "2569", dateCom: "202610300930" }) });
+
+  assert.equal(res.status, "success", res.message);
+  assert.equal(h.lock.nested, 0);
+});
+
 test("doPost save_kpi_data takes the script lock once and releases it; year defaults to current_year", () => {
   const h = load();
   warmCachesAndResetLock(h);
@@ -401,7 +416,7 @@ test("doPost save_kpi_data takes the script lock once and releases it; year defa
   });
 
   assert.deepEqual(res, { status: "success", year: "2569", sheet: "s_x", received: 700, count: DISTRICT_ROWS, archived: [] });
-  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1 });
+  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });
 
 test("doPost releases the lock in finally when the save throws", () => {
@@ -411,7 +426,7 @@ test("doPost releases the lock in finally when the save throws", () => {
   const res = post(h, { action: "save_kpi_data", tableName: "s_x", data: [{ areacode: "54060101" }, null] });
 
   assert.equal(res.status, "error");
-  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1 });
+  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });
 
 test("calling saveTableYear directly never calls tryLock: the caller holds the lock", () => {
@@ -421,7 +436,7 @@ test("calling saveTableYear directly never calls tryLock: the caller holds the l
   const res = h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
 
   assert.equal(res.status, "success", res.message);
-  assert.deepEqual({ ...h.lock }, { tryLock: 0, releaseLock: 0 });
+  assert.deepEqual({ ...h.lock }, { tryLock: 0, releaseLock: 0, nested: 0 });
 });
 
 // MOPH stub for syncAllData: s_x answers with `body`, every other sync unit
@@ -447,8 +462,7 @@ test("syncAllData saves MOPH data with an older date_com without Stale data (for
 });
 
 test("syncAllData passes MOPH's total: a truncated response (1000 of 2444) is not saved", () => {
-  const truncated = [...provinceRows({ year: "2569", dateCom: "202610310930" }), ...provinceRows({ year: "2569", dateCom: "202610310930" })]
-    .slice(0, 1000);
+  const truncated = truncatedRows("202610310930");
   const h = load(2569, {}, mophStub({ data: truncated, total: "2444", limit: 5000, offset: 0 }));
   h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
   const before = h.sheet("s_x");
