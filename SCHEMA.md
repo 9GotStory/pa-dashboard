@@ -1,6 +1,6 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.5 · 29 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
+> สถานะ: ร่าง v0.7 · 30 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
 
 ---
@@ -33,7 +33,7 @@
 | `current_quarter` | int 1–4 | `CONFIG.CURRENT_QUARTER` | เดิม |
 | `current_year` | string `^\d{4}$` | `CONFIG.YEAR` | เดิม และเป็นปีสุดท้ายของ window |
 | `province_code` | string `^\d{2}$` | `CONFIG.PROVINCE` | เดิม |
-| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ต้องขึ้นต้นด้วย `province_code` ถ้าไม่ตรงใช้ค่าเริ่มต้นและ `Logger.log` แบบเดียวกับค่าอื่นที่ไม่ผ่าน (ไม่เขียน `system_logs` เพราะ `readSettings` ถูกเรียกทุกนาที จะทำให้ log หมุนทิ้ง) |
+| `district_code` | string `^\d{4}$` | `CONFIG.DISTRICT` (`"5406"`, ใหม่) | **ใหม่** ตรวจแค่รูปแบบ 4 หลักด้วย `validateSetting` เดิม ค่าที่ไม่ผ่านใช้ค่าเริ่มต้นและ `Logger.log` แบบเดียวกับค่าอื่น · ไม่ตรวจว่าขึ้นต้นด้วย `province_code` เพราะกฎข้ามฟิลด์ทำใน `SETTINGS_SCHEMA` ไม่ได้และต้องแก้ `readSettings` ซึ่ง SPEC §12.4 ไม่อนุญาต ค่าผิดจังหวัดจะเห็นเองเพราะทุกตารางเหลือ 0 แถวหลังกรองและมี WARNING ใน `system_logs` |
 | `deploy_hook_url` | string `^https://api\.cloudflare\.com/client/v4/pages/webhooks/deploy_hooks/[A-Za-z0-9-]+$` หรือว่าง | `""` | **ใหม่** ว่าง = ปิดการ rebuild อัตโนมัติ ค่าที่ไม่ตรงรูปแบบถือเป็นว่างและ `Logger.log` |
 
 - เพิ่มใน `SETTINGS_SCHEMA` (ชนิด `string`) และเปลี่ยน `SETTINGS_CACHE_KEY` จาก `settings_v2` เป็น `settings_v3` เพราะรูปแบบที่แคชเปลี่ยน
@@ -44,24 +44,24 @@
 
 | คอลัมน์ | ผู้กรอก | ชนิด | ความหมาย |
 |---|---|---|---|
-| `cat_id` | ผู้ดูแล | `^[a-z0-9]{8,64}$` | **key** รหัสหัวข้อ (= `subcatalogId` ของ HDC) |
-| `order` | ผู้ดูแล | int ≥ 1 หรือว่าง | ลำดับหัวข้อ (SPEC §5.4) |
-| `category_name` | GAS | text | จาก API |
+| `cat_id` | ผู้ดูแล | `^[A-Za-z0-9_-]{8,64}$` | **key** รหัสหัวข้อ (= `subcatalogId` ของ HDC) ตัวพิมพ์ตามจริง |
+| `order` | ผู้ดูแล | int ≥ 1 หรือว่าง | ลำดับหัวข้อ (SPEC §5.4) ค่าเริ่มต้นของ 6 หัวข้อใน §6 |
+| `category_name` | GAS | text | จาก API ผ่าน `dcCleanName` (§3.4) |
 | `main_report_id` | GAS | text | จากรายงานแรกของหัวข้อ |
-| `main_report_name` | GAS | text | ชื่อหมวด |
+| `main_report_name` | GAS | text | ชื่อหมวด ผ่าน `dcCleanName` (§3.4) |
 | `report_count` | GAS | int | จำนวน `opendata_id` ไม่ซ้ำในการรีเฟรชล่าสุด |
 | `last_refreshed_at` | GAS | datetime | เวลาที่รีเฟรชล่าสุด |
 
-- ตรวจ `cat_id` แค่ `a-z0-9` ไม่ใช่ hex เพราะมีรหัสจริงที่ไม่ใช่ hex เช่น `77e69d3ad62b4737b87sds811129462` (31 ตัว)
-- แถวเริ่มต้น: `4df360514655f79f13901ef1181ca1c7` (การสร้างเสริมภูมิคุ้มกันโรค) และหัวข้อที่ได้จาก `hdc-catalog.js find`
+- ตรวจ `cat_id` ด้วยชุดอักษรแบบ nanoid ไม่ใช่ hex เพราะมีรหัสจริงที่ไม่ใช่ hex เช่น `77e69d3ad62b4737b87sds811129462` (31 ตัว) และไม่แปลงตัวพิมพ์ (§3, §5.2)
+- แถวเริ่มต้น: 6 หัวข้อตามตาราง `hdc_topics` ใน §6 (ผล `find` ของ 18 ตาราง ยืนยันกับไฟล์ export 30 ต.ค. 2569)
 - ลบแถวหัวข้อ = ซ่อนรายงานทั้งหัวข้อจาก snapshot และตารางของหัวข้อนั้นไม่ถูก sync ในฐานะ DC unit อีก (§2.3) ส่วนตารางที่ PA ใช้ยัง sync ตามเดิม
 
 ### 2.3 `hdc_reports` — รายงานในหัวข้อที่เลือก
 
 | คอลัมน์ | ผู้กรอก | ชนิด | ความหมาย |
 |---|---|---|---|
-| `opendata_id` | GAS | `^[a-z0-9]{8,64}$` | **key** = ค่า `id` ในข้อมูลดิบ (32 hex หรือรหัสสั้น 21 ตัว) |
-| `report_name` | GAS | text | ชื่อรายงานจาก HDC |
+| `opendata_id` | GAS | `^[A-Za-z0-9_-]{8,64}$` | **key** = ค่า `id` ในข้อมูลดิบ (32 hex หรือรหัสสั้น 15–23 ตัว) ตัวพิมพ์ตามจริง |
+| `report_name` | GAS | text | ชื่อรายงานจาก HDC ผ่าน `dcCleanName` (§3.4) |
 | `source_table` | GAS | `^s_[a-z0-9_]+$` | ชื่อตาราง HDC และชื่อชีตข้อมูลปีปัจจุบัน |
 | `enabled` | ผู้ดูแล | checkbox | ค่าเริ่มต้น FALSE |
 | `subgroup` | ผู้ดูแล | text หรือว่าง | ชื่อกลุ่มภายในหัวข้อ |
@@ -71,9 +71,9 @@
 | `col_target` | ผู้ดูแล | ชื่อคอลัมน์ หรือว่าง | override เป้าหมายรายปี (§4.1) |
 | `col_result` | ผู้ดูแล | ชื่อคอลัมน์ หรือว่าง | override ผลงานรายปี ต้องกรอกคู่กับ `col_target` |
 | `cat_id` | GAS | text | หัวข้อ |
-| `category_name` | GAS | text | ชื่อหัวข้อ |
+| `category_name` | GAS | text | ชื่อหัวข้อ ผ่าน `dcCleanName` (§3.4) |
 | `main_report_id` | GAS | text | หมวด |
-| `main_report_name` | GAS | text | ชื่อหมวด |
+| `main_report_name` | GAS | text | ชื่อหมวด ผ่าน `dcCleanName` (§3.4) |
 | `catalog_status` | GAS | `active` \| `removed` | `removed` = ไม่พบใน API ครั้งล่าสุด |
 | `last_seen_at` | GAS | datetime | ครั้งล่าสุดที่พบใน API |
 
@@ -114,7 +114,7 @@
 | ขนาดชีต | หลังเขียน ตัดแถวว่างท้ายชีตออก (`deleteRows`) ให้ชีตมีแถวเท่าข้อมูล + header เพื่อไม่เปลือง cell |
 | ปีนอก window | ไม่อ่าน ไม่เขียน และไม่ลบชีตอัตโนมัติ |
 
-**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้จัดกลุ่มแถวเหล่านั้นตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): ถ้า `sync_status` (table, Z) ชี้ไปชีต `_y{Z}` อยู่แล้ว และ `max_date_com` ของมัน ≥ `date_com` สูงสุดของแถวที่จะย้าย → **ไม่ทับ** แค่ทิ้งแถวเหล่านั้นจากชีตปีปัจจุบัน (กรณีมีคน sync ปี Z ซ้ำไปแล้วหลังเปลี่ยนปี) ไม่อย่างนั้นเขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`) · แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
+**การย้ายปีอัตโนมัติ (ทำก่อนเขียนชีตปีปัจจุบันทุกครั้ง):** อ่านชีตปีปัจจุบัน ถ้ามีคอลัมน์ `b_year` และพบแถวที่ `b_year ≠ year ที่กำลังบันทึก` ให้เก็บเฉพาะแถวที่ `areacode` ขึ้นต้นด้วย `district_code` (ตัวกรองเดียวกับ §3.3 ขั้น 4 เผื่อชีตยังเป็นแถวทั้งจังหวัดจากทางบันทึกเดิม แถวนอกอำเภอทิ้งพร้อม WARNING บอกจำนวน) แล้วจัดกลุ่มแถวที่เหลือตาม `b_year` แล้วสำหรับปี Z แต่ละปี (เฉพาะที่อยู่ใน window): ถ้า `sync_status` (table, Z) ชี้ไปชีต `_y{Z}` อยู่แล้ว และ `max_date_com` ของมัน ≥ `date_com` สูงสุดของแถวที่จะย้าย → **ไม่ทับ** แค่ทิ้งแถวเหล่านั้นจากชีตปีปัจจุบัน (กรณีมีคน sync ปี Z ซ้ำไปแล้วหลังเปลี่ยนปี) ไม่อย่างนั้นเขียนแทนที่ชีต `{table}_y{Z}` ด้วยแถวเหล่านั้น (header เดิมของชีตปีปัจจุบัน) และอัปเดต `sync_status` (Z → sheet `_y{Z}`, `row_count` และ `max_date_com` จากแถวที่ย้าย) · แถวของปีนอก window ทิ้งพร้อม WARNING · กรณีปกติ (ทุกแถวเป็นปีเดียวกับที่บันทึก) ไม่มีอะไรถูกย้าย
 
 คอลัมน์ทั่วไปของแถว HDC: `id` (บางตารางไม่มี เช่น `s_dental_0_5_cavity_free`), `hospcode` 5 หลัก, `areacode` 8 หลัก (จังหวัด 2 + อำเภอ 2 + ตำบล 2 + หมู่ 2), `flag_sent`, `date_com` (`YYYYMMDDHHmm` และ `s_epi1` มีวินาทีต่อท้าย), `b_year` (ปีงบประมาณ พ.ศ.), `ip`
 
@@ -123,9 +123,11 @@
 - GET ส่งค่าทาง query เท่านั้น และ POST ใช้ `Content-Type: text/plain` โดย body เป็น JSON
 - ทุก response เป็น HTTP 200 กรณีผิดพลาดตอบ `{ "status": "error", "message": "…" }` (`createJsonError` เดิม)
 - `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`
-- ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + ตัวพิมพ์เล็ก + `^[a-z0-9]{8,64}$` ใช้กับ `cat_id` และ `opendata_id` ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
+- ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + `^[A-Za-z0-9_-]{8,64}$` ไม่แปลงตัวพิมพ์ ใช้กับ `cat_id` และ `opendata_id` · รหัสใช้ตัวพิมพ์ตามจริงทุกที่ (ชีต, `?action=report&id=`, URL `/reports/{id}`, ลิงก์ HDC/Open Data, ชื่อไฟล์ CSV) เพราะรหัสสั้นของ HDC มีตัวพิมพ์ใหญ่ และคอลัมน์ `id` ในข้อมูลดิบเก็บตามนั้น (§5.2) ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
+- ฟังก์ชันใหม่ `dcCleanName(v)` = ตัดแท็ก HTML → แทนช่องว่างทุกชนิดที่ติดกัน (รวม tab และขึ้นบรรทัด) ด้วยช่องว่างเดียว → trim ใช้กับ `report_name`, `category_name`, `main_report_name` ตอน `save_catalog` (§3.4) ไม่แปลง HTML entity เพราะไม่พบในแค็ตตาล็อก (§5.2)
 - ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
 - `catalog` และ `report` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
+- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่
 
 ### 3.1 `GET ?action=catalog`
 
@@ -151,7 +153,7 @@
 2. สำหรับแต่ละปีใน `reports[].years` (จาก `sync_status`): อ่านชีตตาม `sync_status.sheet` ถ้าชีตหายไป ข้ามปีนั้นและบันทึก WARNING
 3. กรองแถวของแต่ละปี:
    1. `areacode` ขึ้นต้นด้วย `district_code` (กันแถวเก่าแบบทั้งจังหวัดที่อาจค้างอยู่)
-   2. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` (ตัวพิมพ์เล็ก) = `opendata_id` เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
+   2. ถ้าชีตมีคอลัมน์ `id` เก็บเฉพาะแถวที่ `id` = `opendata_id` ตรงตัวทุกตัวอักษร (ไม่แปลงตัวพิมพ์) เสมอ ไม่ว่าตารางจะมีกี่รายงาน (ถ้า `id` ในข้อมูลดิบไม่ตรงกับแค็ตตาล็อก จะได้ 0 แถวและเห็นชัดในขั้นตรวจรับ ดีกว่ารวมแถวของรายงานอื่นเข้ามาเงียบ ๆ) · ถ้าชีตไม่มีคอลัมน์ `id` (เช่น `s_dental_0_5_cavity_free`) ใช้ทุกแถว แต่ถ้าตารางนั้นมีรายงานที่ใช้งานมากกว่าหนึ่ง ตอบ error `Shared table without id column`
 4. ตอบ `GasReport` (§9): `years` เป็น array ของ `{ b_year, headers, rows, max_date_com, sheet_rows, expected_rows }` เรียงปีน้อยไปมาก `rows` เป็น array ของ array ตามลำดับ `headers` (ไม่ใช่ object เพื่อลดขนาด) · `sheet_rows` = จำนวนแถวที่อ่านได้จากชีตหลังกรองอำเภอแต่ก่อนกรอง `id` · `expected_rows` = `sync_status.row_count` ของปีนั้น (prebuild script ใช้สองค่านี้ตรวจความครบ SPEC §6.2)
 5. ไม่แคช
 
@@ -166,10 +168,10 @@
 | `tableName` | ใช่ | ต้องอยู่ใน sync units (เดิม) |
 | `year` | ไม่ | ค่าเริ่มต้น = `current_year` ต้องตรง `^\d{4}$` และอยู่ใน window ไม่อย่างนั้นตอบ error `Year outside window` |
 | `total` | ไม่ | `total` จาก MOPH ถ้ามีและ `data.length < total` ตอบ error `Incomplete data` โดยไม่บันทึก |
-| `force` | ไม่ | `true` = ข้ามการตรวจ `Stale data` |
+| `force` | ไม่ | `true` = ข้ามการตรวจ `Stale data` · `syncAllData` ส่ง `true` เสมอ (ADR-0005) |
 | `data` | ใช่ | แถวจาก MOPH (array หรือ envelope `{data:[…]}` แบบเดิม) |
 
-ขั้นตอน (ถือ script lock เหมือนเดิม):
+ขั้นตอน (`doPost`/`syncAllData` ถือ script lock ไว้แล้ว `saveTableYear` ไม่ถือเอง):
 
 1. ตรวจ `tableName`, `year`, `total` ตามตาราง
 2. แกะ envelope ถ้าไม่ใช่ array ตอบ error ถ้าได้ 0 แถว คงข้อมูลเดิมและบันทึก WARNING (เดิม)
@@ -185,7 +187,7 @@
 Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
 
 - `received` = จำนวนแถวที่ส่งมา · `count` = จำนวนแถวที่บันทึกหลังกรองอำเภอ (ความหมายเปลี่ยนจากเดิม ซึ่ง `count` เคยเป็นจำนวนแถวที่ส่งมา) · `archived` = ปีที่ถูกย้ายไปชีต `_y` ในครั้งนี้ (ปกติว่าง)
-- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH
+- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH และ `force = true` เพราะข้อมูลที่ดึงจาก MOPH สดคือของจริงโดยนิยาม (ADR-0005)
 
 ### 3.4 `POST save_catalog` (ใหม่)
 
@@ -195,18 +197,18 @@ Response: `{ status: "success"; year: string; sheet: string; received: number; c
 
 `reports` คือ array จาก `by-category-id` ตามที่ได้มา (§5.2)
 
-ขั้นตอน (ถือ script lock):
+ขั้นตอน (`doPost` ถือ script lock ไว้แล้ว):
 
 1. `cat_id` ผ่าน `sanitizeHdcId` และต้องมีอยู่ใน `hdc_topics` ไม่อย่างนั้นตอบ error `Topic not in hdc_topics`
 2. ถ้า `reports` ว่าง ตอบ error `Empty report list` และไม่แก้อะไร เพื่อกันการตั้ง `removed` ทั้งหัวข้อเมื่อดึงจาก API ไม่สำเร็จ
-3. เก็บเฉพาะแถวที่ `opendata_id` ผ่าน `sanitizeHdcId`, `source_table` ตรง `^s_[a-z0-9_]+$` และ `cat_id` เท่ากับใน body ที่เหลือนับเป็น `skipped`
+3. เก็บเฉพาะแถวที่ `opendata_id` ผ่าน `sanitizeHdcId`, `source_table` ตรง `^s_[a-z0-9_]+$` และ `cat_id` เท่ากับใน body ที่เหลือนับเป็น `skipped` · แถวที่เก็บ ทำความสะอาด `report_name`, `category_name`, `main_report_name` ด้วย `dcCleanName` ก่อน (ชื่อจาก HDC มีแท็ก `<font>` ช่องว่างซ้ำ และ tab §5.2)
 4. กรองซ้ำด้วย `opendata_id` โดยเก็บตัวแรก (แถวซ้ำไม่นับใน `skipped`)
 5. ทำทีละรายงาน:
    - มีอยู่แล้ว และ `cat_id` เดิมเท่ากับหัวข้อนี้หรือว่าง: อัปเดต `report_name`, `source_table`, `cat_id`, `category_name`, `main_report_id`, `main_report_name` ตั้ง `catalog_status = active` และ `last_seen_at = now` นับเป็น `updated`
    - มีอยู่แล้ว แต่ `cat_id` เดิมเป็นหัวข้ออื่น: ไม่แก้ (หัวข้อแรกได้สิทธิ์) นับเป็น `skipped` และบันทึก INFO
    - ยังไม่มี: เพิ่มแถวพร้อมคอลัมน์จาก API, `enabled = FALSE`, `catalog_status = active`, `last_seen_at = now` นับเป็น `added`
 6. แถวเดิมของหัวข้อนี้ที่ไม่อยู่ในรายการ และยังเป็น `active` ตั้งเป็น `removed` นับเป็น `removed`
-7. อัปเดตแถวใน `hdc_topics`: `category_name` (จาก body หรือรายงานแรก), `main_report_id`, `main_report_name`, `report_count`, `last_refreshed_at`
+7. อัปเดตแถวใน `hdc_topics`: `category_name` (จาก body หรือรายงานแรก ผ่าน `dcCleanName`), `main_report_id`, `main_report_name` (ผ่าน `dcCleanName`), `report_count`, `last_refreshed_at`
 8. เขียน `hdc_reports` ทั้งชีตกลับ คงลำดับคอลัมน์เดิม และต่อท้ายคอลัมน์ที่ยังไม่มี
 9. บันทึก SUCCESS
 
@@ -235,9 +237,9 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 ```
 
 1. อ่าน `deploy_hook_url` จาก `settings` ถ้าว่าง ตอบ `{ status: "error", message: "Deploy hook not configured" }`
-2. ถือ script lock แล้วนับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (lock กันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
+2. นับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (ผู้เรียกถือ script lock อยู่แล้ว ซึ่งกันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
 3. `UrlFetchApp.fetch(hook, { method: "post", muteHttpExceptions: true })` ถ้าได้ 2xx เพิ่มตัวนับ บันทึก INFO `Rebuild requested ({reason})` และตอบ `{ status: "success", remaining_today: n }` ไม่อย่างนั้นตอบ error พร้อม status code
-4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP
+4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP · `requestRebuild` ไม่ถือ lock เอง `rebuildWebsiteMenu` ถือให้
 
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
 
@@ -285,9 +287,9 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 - จัดกลุ่มรายตำบลด้วย `areacode.slice(0, 6)` แล้วหาชื่อจาก `areas` ถ้าไม่พบแสดง "รหัสพื้นที่ {6 หลัก}"
 - จัดกลุ่มรายหน่วยบริการด้วย `hospcode` แล้วหาชื่อจาก `hospitals` ถ้าไม่พบแสดง "หน่วยบริการ {hospcode}"
 - แนวโน้ม: คำนวณซ้ำทีละ block ปี
-- ผ่านเกณฑ์เมื่อ `pct ≥ goal` โดยเทียบค่าก่อนปัดเหมือน PA และแสดงร้อยละด้วย `formatPct` (ทศนิยม 2 ตำแหน่ง)
+- ผ่านเกณฑ์เมื่อ `pct ≥ goal` โดยเทียบค่าก่อนปัดเหมือน PA และแสดงร้อยละด้วย `formatPct` ใน `src/lib/dc/format.ts` (ทศนิยม 2 ตำแหน่ง สำเนาของ PA)
 - เกณฑ์ของรายการวัคซีน = `measure_goals[measure]` ถ้ามี ไม่อย่างนั้นใช้ `goal`
-- วันที่ข้อมูล = `max_date_com` ของ block ปีที่เลือก แปลงเลข 12–14 หลักเป็นวันที่ไทยแบบเดียวกับ PA
+- วันที่ข้อมูล = `max_date_com` ของ block ปีที่เลือก แปลงเลข 12–14 หลักเป็นวันที่ไทยด้วย `formatThaiDate` ใน `src/lib/dc/format.ts` (เขียนใหม่ให้ผลเหมือน PA ไม่ import ไฟล์ PA)
 
 ### 4.5 คอลัมน์ที่ยังไม่แสดงในเฟส 1
 
@@ -309,16 +311,16 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 
 | Endpoint | สถานะการตรวจ |
 |---|---|
-| `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริง 29 ต.ค. 2569 |
-| `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีน 29 ต.ค. 2569 |
-| `POST /api/report_data` | ใช้งานอยู่แล้ว ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
+| `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริงจากเบราว์เซอร์ 29 ต.ค. 2569 · 30 ต.ค. 2569 ทดสอบจากเครื่องผู้ดูแล: เบราว์เซอร์ได้ข้อมูล, `curl` ได้ 403, `fetch` ของ node ได้ 403 → endpoint นี้กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ ดึงผ่าน snippet ใน DevTools เท่านั้น (SPEC §12.3, ADR-0010) |
+| `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีนจากเบราว์เซอร์ 29 ต.ค. 2569 · กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์เช่นเดียวกับ `categories` |
+| `POST /api/report_data` | ใช้งานอยู่แล้ว เรียกจากสคริปต์ได้ (`curl` จากเครื่องผู้ดูแลได้ 201, 30 ต.ค. 2569) · 429 ที่พบคือการจำกัดความถี่ ให้ retry และเว้นช่วงตาม SPEC §7.1 · ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
 | `GET /api/report_year/{tableName}`, `GET /api/report_schema/{tableName}` | มาจาก repo อ้างอิง ยังไม่ได้ตรวจ และยังไม่ใช้ในเฟส 1 |
 
 Base URL: `https://opendata.moph.go.th`
 
 ### 5.1 `categories`
 
-ตอบเป็น array ของ `{ "cat_id": string, "category_name": string }` ณ 29 ต.ค. 2569 มี 51 หัวข้อ ไม่มีชื่อหมวดใน response นี้
+ตอบเป็น array ของ `{ "cat_id": string, "category_name": string }` ณ 29 ต.ค. 2569 มี 51 หัวข้อ ไม่มีชื่อหมวดใน response นี้ · export 30 ต.ค. 2569 ได้ 51 หัวข้อเท่าเดิม
 
 ### 5.2 `categorie/by-category-id/{cat_id}`
 
@@ -330,7 +332,7 @@ Base URL: `https://opendata.moph.go.th`
 | `report_name` | string | ใช้ |
 | `cat_id`, `category_name` | string | ใช้ (หัวข้อ) |
 | `main_report_id`, `main_report_name` | string | ใช้ (หมวด) |
-| `source_table` | string | ใช้ |
+| `source_table` | string \| null | ใช้ (พบ `null` 1 แถวในหัวข้อโรงเรียนและนักเรียน ตกข้อ 3 ของ §3.4) |
 | `opendata_id` | string | ใช้ เป็น key |
 | `view_count` | number | ไม่ใช้ |
 | `last_synced_at`, `created_at`, `updated_at` | ISO string | ไม่ใช้ |
@@ -340,6 +342,13 @@ Base URL: `https://opendata.moph.go.th`
 - มีรายการขยะชื่อ "dasf" (`s_psychoactive_coverage`)
 - `s_epi_complete` มี 4 รายงาน คือ อายุ 1, 2, 3 และ 5 ปี
 - `main_report_id` `73daf277928bc32a1b3c8e772192543c` = ส่งเสริมป้องกัน
+
+สิ่งที่พบในไฟล์ export ทั้ง 51 หัวข้อ (`catalog-exports/hdc-catalog-20261030.json`, 30 ต.ค. 2569, ไม่มี `errors`):
+- 1,220 แถว `opendata_id` ไม่ซ้ำ 951 ตัว แถวซ้ำ 267 ตัว ในจำนวนนี้ 19 ตัวมี `report_name` ต่างกันระหว่างแถวซ้ำ (เช่น ต่อท้าย "(ปิดรายงาน)") §3.4 ข้อ 4 เก็บแถวแรก
+- `opendata_id` 3 ตัวอยู่ใน 2 หัวข้อ (`abt2t2k4z4xeqzytwbave` ใน สุขภาพช่องปาก และ แพทย์แผนไทย · `Qe95V9DKGQYy5ij` · `Twfd175Rp8TCPca8n5GTK`) §3.4 ข้อ 5 ให้หัวข้อแรกได้สิทธิ์
+- รูปแบบ `opendata_id`: 32 hex 891 ตัว · รหัสสั้น 15–23 ตัวอักษร 59 ตัว ซึ่ง 29 ตัวมีตัวพิมพ์ใหญ่ (เช่น `T81yHkXJY8lk8nGZQqldk` ของ `s_pregnant_anemia_coverage`) และ 1 ตัวมี `_` (`iEds82J3Z67JHB8KLETD_`) · ค่าขยะ 1 ตัวเป็นชื่อตาราง (`s_rebies_overview`) · ตรวจแล้วว่าไม่มีรหัส 2 ตัวที่ต่างกันแค่ตัวพิมพ์ (951 รหัสเมื่อลดตัวพิมพ์ทั้งหมดยังได้ 951 ค่าไม่ซ้ำ) · คอลัมน์ `id` ในข้อมูลดิบเก็บตัวพิมพ์ตามรหัส (ทดสอบ `report_data` ของ `s_pregnant_anemia_coverage` ปี 2569 จังหวัด 54 วันที่ 30 ต.ค. 2569 ได้ `id = T81yHkXJY8lk8nGZQqldk`)
+- ทุกหัวข้อมี `main_report_id` เดียว (ไม่มีหัวข้อที่รายงานข้ามหมวด)
+- `report_name` มี HTML (`<font color=red>…</font>`) 9 รายงาน (2 รายงานอยู่ในหัวข้อการคัดกรอง ที่เหลือใน บสต. ฯลฯ ไม่มีใน 21 รายงาน seed) และ 114 รายงานมีช่องว่างซ้ำหรือช่องว่างหัวท้าย (9 ชื่อมี tab หรือขึ้นบรรทัดอยู่ในชื่อ) · `category_name` 1 หัวข้อมีช่องว่างท้าย (สาเหตุการป่วย/ตาย) · `main_report_name` สะอาด · ไม่พบ HTML entity (`&nbsp;`, `&amp;` ฯลฯ) ในชื่อใดเลย
 
 ### 5.3 `report_data`
 
@@ -357,33 +366,86 @@ Request (`Content-Type: application/json`):
 
 `report_year/{tableName}` (ปีที่มีข้อมูล) และ `report_schema/{tableName}` (โครงสร้างตาราง) ควรตรวจว่า `report_schema` ให้คำอธิบายคอลัมน์หรือไม่ ถ้าให้ จะใช้ตั้งชื่อคอลัมน์ใน §4.5 ได้
 
+### 5.5 ไฟล์ export แค็ตตาล็อก (อินพุตของ `hdc-catalog.js --from`)
+
+สร้างโดย snippet `tools/hdc-catalog-export.js` ใน DevTools console บนหน้า `https://opendata.moph.go.th` (SPEC §12.3) ไฟล์เดียวต่อการ export หนึ่งครั้ง ชื่อ `hdc-catalog-YYYYMMDD.json` (ปี ค.ศ. ตามวันที่รัน) เก็บใต้ `catalog-exports/` (อยู่ใน `.gitignore`)
+
+```ts
+{
+  exported_at: string;                                        // ISO เวลาที่ export
+  source: "https://opendata.moph.go.th";
+  categories: { cat_id: string; category_name: string }[];   // response ของ §5.1 ตามที่ได้มา
+  reports: Record<string, ApiReportRow[]>;                   // key = cat_id · response ของ §5.2 ตามที่ได้มา ไม่กรองซ้ำ
+  errors: { cat_id: string; status: number }[];              // หัวข้อที่ดึงไม่สำเร็จหลัง retry
+}
+```
+
+- snippet ดึงทุกหัวข้อใน `categories` (ราว 51 หัวข้อ ใช้เวลา 1–2 นาที) ไม่ใช่เฉพาะที่อยู่ใน `hdc_topics` เพื่อให้ `find` ค้นได้ทุกตาราง
+- `find` และ `refresh` อ่านไฟล์นี้อย่างเดียว การกรองซ้ำและตรวจรูปแบบทำที่ `save_catalog` (§3.4) เหมือนเดิม
+- `refresh` ตรวจว่ามี `exported_at` และ `reports` ไม่อย่างนั้น exit 1 ว่าไม่ใช่ไฟล์ export และข้ามหัวข้อที่ไม่มี key ใน `reports` หรืออยู่ใน `errors` พร้อมข้อความ (ไม่ส่ง `reports: []` ซึ่ง GAS ปฏิเสธอยู่แล้ว)
+
 ## 6. Seed เฟส 1
 
-21 รายงานจาก 18 ตาราง ทุกตัวเป็น `enabled = TRUE` และ `report_type = coverage`
+21 รายงานจาก 18 ตาราง ใน 6 หัวข้อ ทุกตัวเป็น `enabled = TRUE` และ `report_type = coverage`
 
-- `opendata_id` ของ EPI มาจาก response แค็ตตาล็อกจริง
-- `opendata_id` ของ 13 KPI เดิมมาจากลิงก์ใน `kpi_master` (ขั้นตรวจรับข้อ 4 ใน SPEC §13 จะยืนยัน)
+- `opendata_id` ทั้ง 21 ตัวและหัวข้อของทุกตาราง ยืนยันแล้วกับไฟล์ export แค็ตตาล็อก 30 ต.ค. 2569 (§5.2) · ของ 13 KPI เดิมตรงกับลิงก์ใน `kpi_master` ทุกตัว
 - `goal` มาจาก `target` ใน `kpi_master`/`kpi_epi` ตามค่าที่อ่านจากชีตจริง 29 ต.ค. 2569 (ไม่ใช่ค่าใน `setupEpiSplit` ของ `รหัส.js` ซึ่งเป็นโค้ด bootstrap เก่าที่ตั้ง 95 ทุกแถวและมีแถว pcv ซึ่งชีตจริงไม่มีแล้ว)
 
-**หัวข้อ: รอผลจาก `find`**
+**แถว `hdc_topics` (ผู้ดูแลใส่ในขั้น 3 ของ SPEC §13 · จำนวนรายงาน = `opendata_id` ไม่ซ้ำที่ผ่านรูปแบบ ณ export 30 ต.ค. 2569):**
+
+| `cat_id` | `order` | หัวข้อ | หมวด | รายงานในหัวข้อ | seed เปิดใช้ |
+|---|---|---|---|---|---|
+| `1ed90bc32310b503b7ca9b32af425ae5` | 10 | อนามัยแม่และเด็ก | ส่งเสริมป้องกัน | 69 | 4 |
+| `4df360514655f79f13901ef1181ca1c7` | 20 | การสร้างเสริมภูมิคุ้มกันโรค | ส่งเสริมป้องกัน | 34 | 8 |
+| `bebf866fceaef84c4078965eaf619565` | 30 | การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม | ส่งเสริมป้องกัน | 4 | 1 |
+| `6966b0664b89805a484d7ac96c6edc48` | 40 | การคัดกรอง | ส่งเสริมป้องกัน | 18 | 1 |
+| `b2b59e64c4e6c92d4b1ec16a599d882b` | 50 | ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD) | ข้อมูลตอบสนอง Service Plan | 55 | 4 |
+| `db30e434e30565c12fbac44958e338d5` | 60 | ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก | ข้อมูลตอบสนอง Service Plan | 61 | 3 |
+
+- หลัง `refresh` ครบ 6 หัวข้อ `hdc_reports` มี 241 แถว (ณ export 30 ต.ค. 2569) เปิดใช้ 21
+- `s_dental_0_5_cavity_free` (`abt2t2k4z4xeqzytwbave`) อยู่ใน 2 หัวข้อของ HDC คือ สุขภาพช่องปาก และ แพทย์แผนไทย (`30bc6364fc06a33a7802e16bc596ac3b`) seed ให้อยู่หัวข้อสุขภาพช่องปาก ถ้าวันหน้าเพิ่มหัวข้อแพทย์แผนไทย แถวนี้ยังอยู่หัวข้อเดิมตาม §3.4 ข้อ 5
+- ลำดับหัวข้อ: เรื่องเด็กอยู่ติดกัน และ EPI ซึ่งเป็นเรื่องหลักของ R6 ขึ้นก่อน หมวดส่งเสริมป้องกันจึงมาก่อน Service Plan ตาม SPEC §5.4 · ผู้ดูแลพิมพ์ `order` พร้อม `cat_id` ในขั้น 3 ของ SPEC §13 · `setup=dc_seed` เขียนเฉพาะ `hdc_reports` ไม่แตะ `hdc_topics`
+- `order` ของรายงานนับใหม่ 10, 20, 30… ภายในหัวข้อ คงลำดับสัมพัทธ์ของ `kpi_master.order` เดิม
+
+**หัวข้อ: อนามัยแม่และเด็ก (`1ed90bc32310b503b7ca9b32af425ae5`)**
 
 | `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
 |---|---|---|---|---|---|
 | `1c1b8e24aff59258a806f122e264031e` | `s_kpi_anc12` | ANC ครั้งแรก ≤ 12 สัปดาห์ | 10 | 75 | |
 | `bd63b8d99f7054560fcf9c3b96f39c13` | `s_anc5` | ANC 5 ครั้งตามเกณฑ์ | 20 | 75 | |
-| `4164a7c49fcb2b8c3ccca67dcdf28bd0` | `s_kpi_food` | นมแม่อย่างเดียว < 6 เดือน | 30 | 50 | |
-| `1b60d68b1cb5b003fcba38a4a0e4027b` | `s_kpi_childdev4` | พัฒนาการสมวัย 0–5 ปี | 40 | 87 | |
-| `684e99dc7538c8b1a97f19f91a100f08` | `s_kpi_childdev2` | คัดกรองพัฒนาการ พบสงสัยล่าช้า | 50 | 20 | |
-| `aa86b13e8cb60cae6c3216b7e3e5f151` | `s_aged9` | คัดกรองผู้สูงอายุ 9 ด้าน | 60 | 80 | |
-| `626c89f6b8d9f7ed90c72c719775eb07` | `s_dm_screen` | คัดกรองเบาหวาน 35 ปีขึ้นไป | 70 | 90 | |
-| `9702fa28cd2ec73ecc6af89d14f46874` | `s_ht_screen` | คัดกรองความดันโลหิตสูง 35 ปีขึ้นไป | 80 | 90 | |
-| `e9e461e793e8258f47d46d6956f12832` | `s_ncd_screen_repleate1` | ติดตามยืนยันวินิจฉัย สงสัยเบาหวาน | 90 | 70 | |
-| `b57439ff27302ade8c38d1dd189644a4` | `s_ht_screen_follow` | ติดตามยืนยันวินิจฉัย สงสัยความดัน | 100 | 80 | |
-| `abt2t2k4z4xeqzytwbave` | `s_dental_0_5_cavity_free` | เด็ก 0–5 ปี ฟันดีไม่มีผุ | 110 | 80 | `b` / `a` |
-| `e07a6ff3cd63d34a759be4bff5c1a4c6` | `s_kpi_dental28` | เด็ก 6 ปี เคลือบหลุมร่องฟันแท้ | 120 | 25 | |
-| `1fb6b46f1d1fd42362f97072f4b3b653` | `s_kpi_dental33` | ผู้สูงอายุตรวจช่องปากโดยทันตบุคลากร | 130 | 50 | |
+| `1b60d68b1cb5b003fcba38a4a0e4027b` | `s_kpi_childdev4` | พัฒนาการสมวัย 0–5 ปี | 30 | 87 | |
+| `684e99dc7538c8b1a97f19f91a100f08` | `s_kpi_childdev2` | คัดกรองพัฒนาการ พบสงสัยล่าช้า | 40 | 20 | |
 
-`subgroup` ของ 13 รายงานนี้ว่างไว้ก่อน จนกว่าจะรู้หัวข้อ
+**หัวข้อ: การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม (`bebf866fceaef84c4078965eaf619565`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
+| `4164a7c49fcb2b8c3ccca67dcdf28bd0` | `s_kpi_food` | นมแม่อย่างเดียว < 6 เดือน | 10 | 50 | |
+
+**หัวข้อ: การคัดกรอง (`6966b0664b89805a484d7ac96c6edc48`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
+| `aa86b13e8cb60cae6c3216b7e3e5f151` | `s_aged9` | คัดกรองผู้สูงอายุ 9 ด้าน | 10 | 80 | |
+
+**หัวข้อ: ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD) (`b2b59e64c4e6c92d4b1ec16a599d882b`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
+| `626c89f6b8d9f7ed90c72c719775eb07` | `s_dm_screen` | คัดกรองเบาหวาน 35 ปีขึ้นไป | 10 | 90 | |
+| `9702fa28cd2ec73ecc6af89d14f46874` | `s_ht_screen` | คัดกรองความดันโลหิตสูง 35 ปีขึ้นไป | 20 | 90 | |
+| `e9e461e793e8258f47d46d6956f12832` | `s_ncd_screen_repleate1` | ติดตามยืนยันวินิจฉัย สงสัยเบาหวาน | 30 | 70 | |
+| `b57439ff27302ade8c38d1dd189644a4` | `s_ht_screen_follow` | ติดตามยืนยันวินิจฉัย สงสัยความดัน | 40 | 80 | |
+
+**หัวข้อ: ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก (`db30e434e30565c12fbac44958e338d5`)**
+
+| `opendata_id` | `source_table` | รายงาน (ย่อ) | `order` | `goal` | `col_target` / `col_result` |
+|---|---|---|---|---|---|
+| `abt2t2k4z4xeqzytwbave` | `s_dental_0_5_cavity_free` | เด็ก 0–5 ปี ฟันดีไม่มีผุ | 10 | 80 | `b` / `a` |
+| `e07a6ff3cd63d34a759be4bff5c1a4c6` | `s_kpi_dental28` | เด็ก 6 ปี เคลือบหลุมร่องฟันแท้ | 20 | 25 | |
+| `1fb6b46f1d1fd42362f97072f4b3b653` | `s_kpi_dental33` | ผู้สูงอายุตรวจช่องปากโดยทันตบุคลากร | 30 | 50 | |
+
+`subgroup` ของ 13 รายงานนี้ว่าง (PA ไม่มีกลุ่มย่อยสำหรับ 13 KPI นี้)
 
 **หัวข้อ: การสร้างเสริมภูมิคุ้มกันโรค (`4df360514655f79f13901ef1181ca1c7`)**
 
@@ -451,7 +513,7 @@ export interface DcYearStatus {
 }
 
 export interface DcReport {
-  opendata_id: string;
+  opendata_id: string;        // ตัวพิมพ์ตามจริง (§3)
   report_name: string;
   source_table: string;
   cat_id: string;
@@ -556,3 +618,4 @@ export interface Totals {
 | ชีต `settings` | `deploy_hook_url` | URL ของ Cloudflare Deploy Hook (§2.1) |
 | GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
 | `.gitignore` | `public/data/` | ไฟล์ snapshot ไม่ commit |
+| `.gitignore` | `catalog-exports/` | ไฟล์ export แค็ตตาล็อก ไม่ commit (เพิ่มแล้ว 30 ต.ค. 2569) |

@@ -79,6 +79,8 @@ public/
 docs/
 ├── adr/                         บันทึกการตัดสินใจ
 └── reference/                   ต้นแบบหน้าจอ R6 (ตัวเลขเป็นข้อมูลจำลอง)
+tools/                           snippet สำหรับรันใน DevTools ของเบราว์เซอร์ (export แค็ตตาล็อก)
+catalog-exports/                 ไฟล์ export แค็ตตาล็อกจาก snippet ไม่ commit
 ```
 
 รายการไฟล์ที่ห้ามแก้แบบเต็มอยู่ใน [CODING_STANDARDS.md](CODING_STANDARDS.md) §1
@@ -122,7 +124,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm run gas:push` · `gas:deploy` · `gas:sync` | push โค้ด GAS · deploy ทับ deployment เดิม · ทำทั้งสองอย่าง (ดูหัวข้อ Deploy) |
 | `node src/scripts/sync-moph-to-gas.js [--only <table> ...]` | sync จาก MOPH เข้า GAS โดยไม่ต้องเปิดเบราว์เซอร์ (F09 เพิ่ม `--year`, `--backfill`, `--force`, `--no-rebuild`) |
 | `node src/scripts/verify-all.js` | ดึงจาก MOPH แล้วพิมพ์เป้าหมาย ผลงาน และร้อยละระดับอำเภอของแต่ละ KPI ไว้เทียบกับ PA |
-| `node src/scripts/hdc-catalog.js find\|refresh` | ค้นว่าตารางอยู่หัวข้อไหนของ HDC และรีเฟรชแค็ตตาล็อก (F10) |
+| `node src/scripts/hdc-catalog.js find\|refresh --from <ไฟล์>` | ค้นว่าตารางอยู่หัวข้อไหนของ HDC และรีเฟรชแค็ตตาล็อก จากไฟล์ที่ snippet `tools/hdc-catalog-export.js` บันทึกจากเบราว์เซอร์ เพราะ API แค็ตตาล็อกไม่รับสคริปต์ (F10, ADR-0010) |
 
 ## Deploy
 

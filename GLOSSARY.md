@@ -21,11 +21,12 @@
 | **หมวด** (main) | ชั้นบนสุดของ HDC: `main_report_id`, `main_report_name` เช่น ส่งเสริมป้องกัน | "category" (ชนกับหัวข้อ) |
 | **หัวข้อ** (topic) | ชั้นที่สองของ HDC: `cat_id`, `category_name` เช่น การสร้างเสริมภูมิคุ้มกันโรค `cat_id` = `subcatalogId` บน hdc.moph.go.th | "subcatalog", "หมวดย่อย" |
 | **กลุ่ม** (subgroup) | ชั้นที่เรากำหนดเองภายในหัวข้อ ด้วยคอลัมน์ `subgroup` เช่น กลุ่มอายุ 1 ปี | "sub-topic" |
-| **รายงาน** (report) | หน่วยที่แสดงบนเว็บ key = `opendata_id` ซึ่งเท่ากับคอลัมน์ `id` ในข้อมูลดิบ | "KPI" (คำของ PA) |
+| **รายงาน** (report) | หน่วยที่แสดงบนเว็บ key = `opendata_id` ซึ่งเท่ากับคอลัมน์ `id` ในข้อมูลดิบ ใช้ตัวพิมพ์ตามจริง | "KPI" (คำของ PA) |
 | **ตารางต้นทาง** (source table) | ตาราง HDC ที่รายงานใช้ `source_table` เช่น `s_epi_complete` ตารางเดียวมีหลายรายงานได้ | "sheet" (ชีตคือที่เก็บ ไม่ใช่ตาราง) |
 | **รายงานที่ใช้งาน** (active report) | รายงานที่ `enabled = TRUE`, หัวข้ออยู่ใน `hdc_topics` และ key ผ่านรูปแบบ (SCHEMA §2.3) | "enabled report" |
 | **opt-in** | หลักการเลือกเฉพาะหัวข้อและรายงานที่ต้องการ รายงานใหม่ปิดเสมอ | "hidden", "blacklist" |
-| **รีเฟรชแค็ตตาล็อก** | `hdc-catalog.js refresh` → `save_catalog` อัปเดตเฉพาะคอลัมน์จาก API | "sync catalog" |
+| **รีเฟรชแค็ตตาล็อก** | `hdc-catalog.js refresh --from <ไฟล์ export แค็ตตาล็อก>` → `save_catalog` อัปเดตเฉพาะคอลัมน์จาก API | "sync catalog" |
+| **ไฟล์ export แค็ตตาล็อก** (catalog export) | ไฟล์ JSON ที่ผู้ดูแลได้จาก snippet ใน DevTools ของเบราว์เซอร์ เก็บ response ของ API แค็ตตาล็อกทุกหัวข้อ เป็นอินพุตเดียวของ `hdc-catalog.js` เพราะ API นี้ไม่รับสคริปต์ | "catalog dump", "catalog cache" |
 | **`removed`** | สถานะรายงานที่หายจาก API แต่ยังเก็บแถวไว้ | "deleted" |
 
 ## ข้อมูลและชีต
@@ -44,7 +45,7 @@
 | **sync** | ดึงตารางจาก MOPH แล้ว POST `save_kpi_data` เข้า GAS | "import" |
 | **backfill** | sync ทุกปีใน window ครั้งเดียว | |
 | **`sync_status`** | ชีตที่บอกว่า (ตาราง, ปี) ใดมีข้อมูล กี่แถว `date_com` ล่าสุดเมื่อไร และอยู่ชีตไหน | |
-| **Stale data** | การปฏิเสธข้อมูลที่ `date_com` เก่ากว่าที่มี เว้นแต่ `force` | |
+| **Stale data** | การปฏิเสธข้อมูลที่ `date_com` เก่ากว่าที่มี เว้นแต่ `force` ซึ่ง `syncAllData` ส่งเสมอ | |
 | **PA units** | ตารางที่ PA คำนวณ (`CONFIG.KPIS` ∪ `source_sheet` ใน registry) | |
 | **DC units** | `source_table` ของรายงานที่ใช้งาน | |
 | **sync units** | PA units ∪ DC units = ตารางที่ whitelist ให้ sync และเขียนได้ | |
@@ -58,7 +59,7 @@
 | **rebuild** | การสั่ง Cloudflare build ใหม่ผ่าน Deploy Hook ด้วย POST `rebuild` ของ GAS (5 ครั้ง/วัน) | "redeploy", "trigger build" |
 | **Deploy Hook** | URL ของ Cloudflare Pages ที่เก็บใน `settings.deploy_hook_url` | |
 | **ล้มดัง ๆ** (fail loudly) | prebuild exit 1 เมื่อข้อมูลไม่ครบ ไม่ publish ข้อมูลบางส่วน | |
-| **script lock** | `LockService.getScriptLock()` ของ GAS ถือตอนเขียนชีตทุกครั้ง และตอนอ่านของ `catalog`/`report` เพื่อไม่ให้อ่านระหว่าง clear → write | "mutex" |
+| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
 
 ## ขั้นตอนทำงาน
 

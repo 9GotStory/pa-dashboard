@@ -41,3 +41,6 @@ yarn-error.log*
 next-env.d.ts
 
 .playwright-mcp/
+
+# HDC catalog exports from tools/hdc-catalog-export.js (SCHEMA §5.5)
+catalog-exports/
