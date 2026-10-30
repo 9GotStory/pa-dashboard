@@ -2,3 +2,6 @@
 **/verify-all.js
 **/debug-dental.js
 **/sync-moph-to-gas.js
+**/test/**
+**/hdc-catalog.js
+**/*.mjs

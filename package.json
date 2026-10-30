@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "test": "node --test \"src/scripts/test/**/*.test.js\"",
     "gas:push": "clasp push -f",
     "gas:deploy": "clasp deploy -i AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H",
     "gas:sync": "npm run gas:push && npm run gas:deploy"
