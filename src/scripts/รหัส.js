@@ -1199,7 +1199,7 @@ function handleDiag(e) {
   }
 
   // Optional: create the Data Center sheets and settings columns
-  // (SCHEMA §3.6). Idempotent — existing sheets and data are never modified.
+  // (SCHEMA §3.6). Idempotent — only missing sheets and headers are added.
   if (e.parameter.setup === "datacenter") {
     try {
       out.setupDatacenter = dcSetupDatacenter();

@@ -249,6 +249,10 @@ test("names from HDC lose <font> tags, tabs and repeated spaces, in hdc_reports 
   const [topic] = records(h.sheet("hdc_topics"));
   assert.equal(topic.category_name, "การสร้างเสริมภูมิคุ้มกันโรค");
   assert.equal(topic.main_report_name, "ส่งเสริมป้องกัน");
+
+  // A category_name in the body is cleaned too (สาเหตุการป่วย/ตาย has a trailing space, SCHEMA §5.2).
+  saveCatalog(h, { cat_id: EPI, category_name: "การสร้างเสริม  ภูมิคุ้มกันโรค\t ", reports: EPI_REPORTS });
+  assert.equal(records(h.sheet("hdc_topics"))[0].category_name, "การสร้างเสริม ภูมิคุ้มกันโรค");
 });
 
 test("a report already in another topic is left there (first topic wins) → skipped, with an INFO log", () => {
@@ -341,4 +345,16 @@ test("a list where every report fails the patterns → all skipped, the topic's 
   assert.equal(topic.report_count, 0);
   assert.equal(topic.category_name, "การสร้างเสริมภูมิคุ้มกันโรค");
   assert.equal(topic.main_report_id, "73daf277928bc32a1b3c8e772192543c");
+});
+
+test("opendata_id values that are Object.prototype names (constructor, __proto__) are added like any other", () => {
+  const h = loadWithTopics([[EPI, 20]]);
+  const [base] = EPI_REPORTS;
+  const odd = ["constructor", "__proto__"].map((id) => ({ ...base, opendata_id: id }));
+
+  const res = saveCatalog(h, { cat_id: EPI, reports: [...odd, ...EPI_REPORTS] });
+
+  assert.deepEqual(res, { status: "success", added: 36, updated: 0, removed: 0, skipped: 0 });
+  const ids = records(h.sheet("hdc_reports")).map((r) => r.opendata_id);
+  assert.ok(ids.includes("constructor") && ids.includes("__proto__"), ids.slice(0, 3).join(", "));
 });

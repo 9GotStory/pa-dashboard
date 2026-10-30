@@ -22,8 +22,8 @@ const DC_SETTINGS_COLUMNS = ["district_code", "deploy_hook_url"];
 /**
  * setup=datacenter (SCHEMA §3.6): create hdc_topics, hdc_reports and
  * sync_status with their header if missing, and append the district_code and
- * deploy_hook_url headers to settings if missing. Existing sheets and data
- * are never touched, so it can be re-run.
+ * deploy_hook_url headers to settings if missing. Only missing sheets and
+ * headers are added, so it can be re-run.
  */
 function dcSetupDatacenter() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -32,15 +32,17 @@ function dcSetupDatacenter() {
     [DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS],
     [DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS],
     [DC_SYNC_STATUS_SHEET, DC_SYNC_STATUS_HEADERS],
-  ].forEach(function (pair) {
-    if (ss.getSheetByName(pair[0])) return;
-    ss.insertSheet(pair[0]).getRange(1, 1, 1, pair[1].length).setValues([pair[1]]);
-    created.push(pair[0]);
+  ].forEach(function (sheetAndHeaders) {
+    const name = sheetAndHeaders[0];
+    const headers = sheetAndHeaders[1];
+    if (ss.getSheetByName(name)) return;
+    ss.insertSheet(name).getRange(1, 1, 1, headers.length).setValues([headers]);
+    created.push(name);
   });
 
   // settings is read by trimmed header (readSettings); a blank value below a
   // new header reads as its default.
-  const settings = ss.getSheetByName("settings") || ss.insertSheet("settings");
+  const settings = ss.getSheetByName("settings");
   const lastColumn = settings.getLastColumn();
   const existing = lastColumn > 0
     ? settings.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (h) {
@@ -87,25 +89,27 @@ function readHdcTopics() {
  * รายงานที่ใช้งาน (SCHEMA §2.3) in sheet order, read by header name: rows with
  * enabled = TRUE, whose cat_id is in hdc_topics and whose opendata_id and
  * source_table pass their patterns. An enabled row of a listed topic that
- * fails a pattern is skipped with a WARNING. Returned as DcReport (SCHEMA §9)
+ * fails a pattern is skipped with a WARNING (Logger.log: this runs on every
+ * sync units cache miss, CODING_STANDARDS §2). Returned as DcReport (SCHEMA §9)
  * without measure_goals/years; an admin value of the wrong type reads as
  * null, and col_target/col_result only as a pair. [] if hdc_reports does not
  * exist yet.
  */
 function readHdcReports() {
-  const topics = {};
+  // Null prototype: an id such as "constructor" must not hit Object.prototype.
+  const topicIds = Object.create(null);
   readHdcTopics().forEach(function (topic) {
-    topics[topic.cat_id] = true;
+    topicIds[topic.cat_id] = true;
   });
   const invalid = [];
   const reports = [];
   dcSheetRecords(DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS).forEach(function (row) {
     const catId = sanitizeHdcId(row.cat_id);
-    if (!parseBool(row.enabled) || catId === null || !topics[catId]) return;
+    if (!parseBool(row.enabled) || catId === null || !topicIds[catId]) return;
     const id = sanitizeHdcId(row.opendata_id);
-    const table = String(row.source_table).trim();
-    if (id === null || !DC_SOURCE_TABLE_PATTERN.test(table)) {
-      invalid.push(String(row.opendata_id) + " / " + table);
+    const sourceTable = dcSourceTable(row.source_table);
+    if (id === null || sourceTable === null) {
+      invalid.push(String(row.opendata_id) + " / " + String(row.source_table));
       return;
     }
     const type = String(row.report_type).trim().toLowerCase();
@@ -116,7 +120,7 @@ function readHdcReports() {
     reports.push({
       opendata_id: id,
       report_name: String(row.report_name),
-      source_table: table,
+      source_table: sourceTable,
       cat_id: catId,
       main_report_id: String(row.main_report_id).trim(),
       subgroup: String(row.subgroup).trim(),
@@ -129,8 +133,8 @@ function readHdcReports() {
     });
   });
   if (invalid.length > 0) {
-    logToSheet("WARNING", "Skipped hdc_reports rows",
-      "enabled rows with an invalid opendata_id or source_table: " + invalid.join(", "));
+    Logger.log("WARNING readHdcReports: skipped enabled rows with an invalid opendata_id or source_table: " +
+      invalid.join(", "));
   }
   return reports;
 }
@@ -160,13 +164,15 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   // Steps 3–4: keep rows of this topic whose opendata_id and source_table
   // pass their patterns, the first of each opendata_id. A duplicate is not
   // counted as skipped.
+  // Null-prototype maps: an id such as "constructor" must not hit
+  // Object.prototype.
   const kept = [];
-  const seen = {};
+  const seen = Object.create(null);
   let skipped = 0;
   reports.forEach(function (r) {
     const id = sanitizeHdcId(r.opendata_id);
-    if (id === null || !DC_SOURCE_TABLE_PATTERN.test(String(r.source_table || "")) ||
-      sanitizeHdcId(r.cat_id) !== catId) {
+    const sourceTable = dcSourceTable(r.source_table);
+    if (id === null || sourceTable === null || sanitizeHdcId(r.cat_id) !== catId) {
       skipped++;
       return;
     }
@@ -175,7 +181,7 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
     kept.push({
       opendata_id: id,
       report_name: dcCleanName(r.report_name),
-      source_table: r.source_table,
+      source_table: sourceTable,
       cat_id: catId,
       category_name: dcCleanName(r.category_name),
       main_report_id: String(r.main_report_id || "").trim(),
@@ -184,14 +190,14 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   });
 
   const now = new Date();
-  const table = dcReadTable(DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS);
-  const c = table.col;
-  const rowById = {};
-  table.rows.forEach(function (row) {
+  const reportsTable = dcReadTable(DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS);
+  const c = reportsTable.col;
+  const rowById = Object.create(null);
+  reportsTable.rows.forEach(function (row) {
     const id = sanitizeHdcId(row[c.opendata_id]);
     if (id && !rowById[id]) rowById[id] = row;
   });
-  const existingRows = table.rows.length;
+  const existingRows = reportsTable.rows.length;
   let added = 0;
   let updated = 0;
   const inOtherTopic = [];
@@ -207,12 +213,12 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
       }
       updated++;
     } else {
-      row = table.header.map(function () {
+      row = reportsTable.header.map(function () {
         return "";
       });
       row[c.enabled] = false;
       row[c.opendata_id] = report.opendata_id;
-      table.rows.push(row);
+      reportsTable.rows.push(row);
       added++;
     }
     DC_CATALOG_API_COLUMNS.forEach(function (name) {
@@ -224,7 +230,7 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
 
   // Step 6: this topic's active rows that the API no longer lists.
   let removed = 0;
-  table.rows.forEach(function (row) {
+  reportsTable.rows.forEach(function (row) {
     if (String(row[c.cat_id]).trim() === catId && !seen[sanitizeHdcId(row[c.opendata_id])] &&
       String(row[c.catalog_status]).trim() === "active") {
       row[c.catalog_status] = "removed";
@@ -232,26 +238,26 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
     }
   });
 
-  const topics = dcReadTable(DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS);
-  const t = topics.col;
-  const topic = topics.rows.filter(function (row) {
+  const topicsTable = dcReadTable(DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS);
+  const t = topicsTable.col;
+  const topicRow = topicsTable.rows.filter(function (row) {
     return sanitizeHdcId(row[t.cat_id]) === catId;
   })[0];
   // Step 7. With no report kept, the names stay as they were.
   const first = kept[0];
   const name = dcCleanName(categoryName) || (first ? first.category_name : "");
-  if (name) topic[t.category_name] = name;
+  if (name) topicRow[t.category_name] = name;
   if (first) {
-    topic[t.main_report_id] = first.main_report_id;
-    topic[t.main_report_name] = first.main_report_name;
+    topicRow[t.main_report_id] = first.main_report_id;
+    topicRow[t.main_report_name] = first.main_report_name;
   }
-  topic[t.report_count] = kept.length;
-  topic[t.last_refreshed_at] = now;
+  topicRow[t.report_count] = kept.length;
+  topicRow[t.last_refreshed_at] = now;
 
-  dcWriteTable(table, DC_CATALOG_TEXT_COLUMNS);
+  dcWriteTable(reportsTable, DC_CATALOG_TEXT_COLUMNS);
   // insertCheckboxes sets every cell it covers to FALSE, so only new rows.
-  if (added > 0) table.sheet.getRange(existingRows + 2, c.enabled + 1, added, 1).insertCheckboxes();
-  dcWriteTable(topics, DC_CATALOG_TEXT_COLUMNS);
+  if (added > 0) reportsTable.sheet.getRange(existingRows + 2, c.enabled + 1, added, 1).insertCheckboxes();
+  dcWriteTable(topicsTable, DC_CATALOG_TEXT_COLUMNS);
 
   if (inOtherTopic.length > 0) {
     logToSheet("INFO", "Catalog " + catId + " reports kept in another topic", inOtherTopic.join(", "));
@@ -275,6 +281,15 @@ function dcRejectCatalog(catId, message) {
 function sanitizeHdcId(v) {
   const s = String(v || "").trim();
   return /^[A-Za-z0-9_-]{8,64}$/.test(s) ? s : null;
+}
+
+/**
+ * Trim + DC_SOURCE_TABLE_PATTERN, for a source_table from the API or the
+ * sheet. null if it fails (including null from the API, SCHEMA §5.2).
+ */
+function dcSourceTable(v) {
+  const s = String(v || "").trim();
+  return DC_SOURCE_TABLE_PATTERN.test(s) ? s : null;
 }
 
 /**
