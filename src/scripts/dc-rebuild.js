@@ -19,12 +19,14 @@ const DC_REBUILD_COUNT_PREFIX = "rebuild_count_";
  *
  * The caller must hold the script lock (doPost / syncAllData /
  * rebuildWebsiteMenu): the lock is what stops two requests from both passing
- * at 4/5. This function never calls LockService (SCHEMA §3).
+ * at 4/5. This function never calls LockService (SCHEMA §3). settings
+ * defaults to readSettings(); syncAllData passes the one it read before
+ * taking the lock, since it outlives the 60 s settings cache.
  *
  * Returns { status: "success", remaining_today } or { status: "error", message }.
  */
-function requestRebuild(reason) {
-  const hook = readSettings().deploy_hook_url;
+function requestRebuild(reason, settings) {
+  const hook = (settings || readSettings()).deploy_hook_url;
   if (!hook) {
     Logger.log("requestRebuild: deploy_hook_url is empty, rebuild is off");
     return { status: "error", message: "Deploy hook not configured" };

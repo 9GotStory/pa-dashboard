@@ -94,15 +94,21 @@ const DC_SYNC_STATUS_TEXT_COLUMNS = ["b_year", "max_date_com"];
  * The caller must hold the script lock (doPost / syncAllData): this function
  * never calls LockService (SCHEMA §3).
  *
+ * options: { total, force, settings, kpiCfg }. settings and kpiCfg default to
+ * readSettings() and readKpiMasterConfig(), which take the lock themselves on
+ * a cache miss; syncAllData outlives their 60 s cache, so it passes the ones
+ * it read before taking the lock (SCHEMA §3).
+ *
  * Returns the save_kpi_data response: { status: "success", year, sheet,
  * received, count, archived } or { status: "error", message }.
  */
 function saveTableYear(tableName, year, rows, options) {
-  const settings = readSettings();
+  const opts = options || {};
+  const settings = opts.settings || readSettings();
   const y = year === undefined || year === null || year === "" ? settings.current_year : String(year).trim();
   // Only sync units are writable, so a caller cannot overwrite settings,
   // system_logs or any other sheet.
-  const isSyncUnit = getSyncUnits(readKpiMasterConfig()).some(function (unit) {
+  const isSyncUnit = getSyncUnits(opts.kpiCfg || readKpiMasterConfig()).some(function (unit) {
     return unit.table === tableName;
   });
   if (!isSyncUnit) {
@@ -118,7 +124,6 @@ function saveTableYear(tableName, year, rows, options) {
   if (!Array.isArray(rows)) {
     return dcRejectSave("ERROR", tableName, y, "Data is not an array");
   }
-  const opts = options || {};
   // total may arrive as a string (SCHEMA §5.3); a non-numeric one is ignored.
   if (opts.total !== undefined && opts.total !== null && rows.length < Number(opts.total)) {
     return dcRejectSave("ERROR", tableName, y, "Incomplete data", rows.length + " of " + opts.total + " rows");

@@ -471,3 +471,33 @@ test("syncAllData passes MOPH's total: a truncated response (1000 of 2444) is no
 
   assert.deepEqual(h.sheet("s_x"), before);
 });
+
+// #136: readSettings/readKpiMasterConfig take and release the lock themselves
+// on a cache miss, which would drop syncAllData's lock (SCHEMA §3).
+test("syncAllData with cold settings/kpi_master caches never calls tryLock while it holds the lock", () => {
+  const h = load(2569, {}, mophStub({ data: provinceRows({ year: "2569", dateCom: "202610300930" }), total: "700" }));
+
+  h.gas.syncAllData();
+
+  assert.equal(records(h.sheet("s_x")).length, DISTRICT_ROWS);
+  assert.equal(h.lock.nested, 0);
+  assert.equal(h.lock.releaseLock, h.lock.tryLock);
+});
+
+test("syncAllData keeps its one lock when the 60 s config caches expire mid-sync: saves and the rebuild use the config read before the lock", () => {
+  const rows = provinceRows({ year: "2569", dateCom: "202610300930" });
+  const moph = mophStub({ data: rows, total: "700" });
+  // Each MOPH answer takes 20 s, so a sync of several tables outlives the
+  // caches filled before the lock.
+  const h = load(2569, {}, (url, payload) => {
+    h.clock.now += 20000;
+    return moph(url, payload);
+  });
+  warmCachesAndResetLock(h);
+
+  h.gas.syncAllData();
+
+  assert.ok(h.fetches.length * 20 > 60, "the sync should outlive the 60 s caches");
+  assert.equal(records(h.sheet("s_x")).length, DISTRICT_ROWS);
+  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
+});

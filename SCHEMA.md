@@ -127,7 +127,7 @@
 - ฟังก์ชันใหม่ `dcCleanName(v)` = ตัดแท็ก HTML → แทนช่องว่างทุกชนิดที่ติดกัน (รวม tab และขึ้นบรรทัด) ด้วยช่องว่างเดียว → trim ใช้กับ `report_name`, `category_name`, `main_report_name` ตอน `save_catalog` (§3.4) ไม่แปลง HTML entity เพราะไม่พบในแค็ตตาล็อก (§5.2)
 - ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
 - `catalog` และ `report` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
-- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่
+- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่ handler จึงเรียกสองฟังก์ชันนี้ก่อนถือ lock (เติมแคช) และ `syncAllData` ซึ่งรันนานกว่าอายุแคช 60 วินาที อ่านครั้งเดียวก่อนถือ lock แล้วส่งค่าต่อให้ `saveTableYear` (`options.settings`, `options.kpiCfg`) และ `requestRebuild(reason, settings)` ฟังก์ชันภายในอ่านเองเฉพาะเมื่อไม่ได้รับค่า (#136)
 
 ### 3.1 `GET ?action=catalog`
 
@@ -187,7 +187,7 @@
 Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
 
 - `received` = จำนวนแถวที่ส่งมา · `count` = จำนวนแถวที่บันทึกหลังกรองอำเภอ (ความหมายเปลี่ยนจากเดิม ซึ่ง `count` เคยเป็นจำนวนแถวที่ส่งมา) · `archived` = ปีที่ถูกย้ายไปชีต `_y` ในครั้งนี้ (ปกติว่าง)
-- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH และ `force = true` เพราะข้อมูลที่ดึงจาก MOPH สดคือของจริงโดยนิยาม (ADR-0005)
+- `syncAllData` เรียกฟังก์ชันเดียวกันนี้โดยตรง (ไม่ผ่าน HTTP) ด้วย `year = current_year`, `total` จาก response ของ MOPH, `settings`/`kpiCfg` ที่อ่านไว้ก่อนถือ lock (§3) และ `force = true` เพราะข้อมูลที่ดึงจาก MOPH สดคือของจริงโดยนิยาม (ADR-0005)
 
 ### 3.4 `POST save_catalog` (ใหม่)
 
@@ -239,7 +239,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 1. อ่าน `deploy_hook_url` จาก `settings` ถ้าว่าง ตอบ `{ status: "error", message: "Deploy hook not configured" }`
 2. นับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (ผู้เรียกถือ script lock อยู่แล้ว ซึ่งกันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
 3. `UrlFetchApp.fetch(hook, { method: "post", muteHttpExceptions: true })` ถ้าได้ 2xx เพิ่มตัวนับ บันทึก INFO `Rebuild requested ({reason})` และตอบ `{ status: "success", remaining_today: n }` ไม่อย่างนั้นตอบ error พร้อม status code
-4. ฟังก์ชันภายใน `requestRebuild(reason)` ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP · `requestRebuild` ไม่ถือ lock เอง `rebuildWebsiteMenu` ถือให้
+4. ฟังก์ชันภายใน `requestRebuild(reason, settings?)` (`settings` ไม่ส่ง = `readSettings()` §3) ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP · `requestRebuild` ไม่ถือ lock เอง `rebuildWebsiteMenu` ถือให้
 
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
 
