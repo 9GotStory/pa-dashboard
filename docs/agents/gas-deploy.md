@@ -12,7 +12,7 @@ DIAG_PIN=<CONFIG.DIAG_PIN in src/scripts/รหัส.js; public, ADR-0005>
 PA_URL=https://9gotstory.github.io/pa-dashboard/
 ```
 
-The PA page is read through the installed Chrome (set `CHROME_PATH` if it is not `google-chrome`).
+`pa:snapshot` opens the PA page with Playwright in the installed Google Chrome (`channel: "chrome"`), so the machine needs Google Chrome.
 
 ## Deploy
 

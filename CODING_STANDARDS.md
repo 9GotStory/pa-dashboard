@@ -24,7 +24,7 @@
 
 ## 3. สคริปต์ node (`src/scripts/*.js`, `*.mjs` ที่ไม่ push)
 
-- ไม่มี dependency นอก Node 24 built-in (`fetch`, `fs`, `node:test`)
+- ไม่มี dependency นอก Node 24 built-in (`fetch`, `fs`, `node:test`) ยกเว้น `pa-check.mjs` ใช้ `playwright-core` (devDependency) เปิดหน้า PA ใน Google Chrome ที่ติดตั้งในเครื่อง (ผู้ใช้อนุญาต 30 ต.ค. 2569)
 - ค่าตั้งผ่าน env หรือ argument ไม่ hardcode URL · `sync-moph-to-gas.js` คง fallback ของ GAS URL ที่มีอยู่เดิม ส่วนสคริปต์ใหม่ (`hdc-catalog.js refresh`, `build-snapshot.mjs`) บังคับ `NEXT_PUBLIC_GAS_SCRIPT_URL` ไม่มี fallback
 - ล้มด้วย exit code ไม่ใช่ 0 พร้อมข้อความบอกวิธีแก้ ไม่ล้มเงียบ ไม่เขียนไฟล์ครึ่งเดียว (เขียนไฟล์ชั่วคราวแล้วค่อยย้าย หรือเขียนทั้งหมดหลังตรวจครบ)
 - เรียก MOPH ตามกติกา SPEC §7.1 (เว้นช่วง, retry 429/5xx, `limit = 5000`, ส่ง `total`) · `hdc-catalog.js` ไม่เรียก MOPH เลย อ่านไฟล์ export แค็ตตาล็อก (SCHEMA §5.5) · ห้ามสคริปต์ใดส่ง `User-Agent` หรือ header อื่นปลอมเป็นเบราว์เซอร์ (ADR-0010) · snippet ที่รันในเบราว์เซอร์อยู่ใน `tools/` ไม่ใช่ `src/scripts/`

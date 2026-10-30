@@ -7,13 +7,11 @@
 //   compare <a> <b>  exit 0 when PA is unchanged from snapshot a to b
 //
 // Env (.env.local): NEXT_PUBLIC_GAS_SCRIPT_URL (BATCH_ALL) and PA_URL (the PA
-// page). The page is read through the DevTools Protocol of the installed
-// Chrome (CHROME_PATH, default google-chrome), so no dependency is needed
-// (CODING_STANDARDS §3).
-import { spawn } from "node:child_process";
+// page). The page is opened with playwright-core in the installed Google
+// Chrome, the one dependency CODING_STANDARDS §3 allows a node script.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
+import { chromium } from "playwright-core";
 
 const DIR = ".pa-check";
 const TABS = { main: "", epi: "?cat=" + encodeURIComponent("สร้างเสริมภูมิคุ้มกันโรค") };
@@ -25,103 +23,26 @@ function fail(message) {
   process.exit(1);
 }
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
-// A DevTools Protocol client over Node's built-in WebSocket.
-function connect(wsUrl) {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl);
-    const pending = new Map();
-    let nextId = 0;
-    ws.addEventListener("message", (event) => {
-      const msg = JSON.parse(event.data);
-      const call = pending.get(msg.id);
-      if (!call) return;
-      pending.delete(msg.id);
-      if (msg.error) call.reject(new Error(`${call.method}: ${msg.error.message}`));
-      else call.resolve(msg.result);
-    });
-    ws.addEventListener("error", () => reject(new Error("cannot connect to Chrome's DevTools")));
-    ws.addEventListener("open", () =>
-      resolve({
-        send(method, params = {}, sessionId) {
-          const id = ++nextId;
-          ws.send(JSON.stringify({ id, method, params, sessionId }));
-          return new Promise((res, rej) => pending.set(id, { resolve: res, reject: rej, method }));
-        },
-        close: () => ws.close(),
-      }),
-    );
-  });
-}
-
-async function launchChrome(userDir) {
-  const args = [
-    "--headless=new", "--remote-debugging-port=0", `--user-data-dir=${userDir}`,
-    "--no-first-run", "--no-default-browser-check", "about:blank",
-  ];
-  const chrome = spawn(process.env.CHROME_PATH || "google-chrome", args, { stdio: ["ignore", "ignore", "pipe"] });
-  const wsUrl = await new Promise((resolve, reject) => {
-    let stderr = "";
-    chrome.stderr.on("data", (chunk) => {
-      stderr += chunk;
-      const m = stderr.match(/DevTools listening on (ws:\/\/\S+)/);
-      if (m) resolve(m[1]);
-    });
-    chrome.on("error", (err) => reject(new Error(`cannot start Chrome (${err.code}); set CHROME_PATH`)));
-    chrome.on("exit", (code) => reject(new Error(`Chrome exited with ${code}: ${stderr.slice(-300)}`)));
-  });
-  return { chrome, wsUrl };
-}
-
 async function capturePage(paUrl) {
-  const userDir = fs.mkdtempSync(path.join(os.tmpdir(), "pa-check-"));
-  let chrome;
+  const browser = await chromium.launch({ channel: "chrome" });
   try {
-    const launched = await launchChrome(userDir);
-    chrome = launched.chrome;
-    const cdp = await connect(launched.wsUrl);
+    const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
     const tabs = {};
     for (const [tab, query] of Object.entries(TABS)) {
       const url = paUrl + query;
-      // A new target per tab, so the previous page's cells cannot end the wait.
-      const { targetId } = await cdp.send("Target.createTarget", { url: "about:blank" });
-      const { sessionId } = await cdp.send("Target.attachToTarget", { targetId, flatten: true });
-      const page = (method, params) => cdp.send(method, params, sessionId);
-      const evaluate = async (expression) => {
-        const { result, exceptionDetails } = await page("Runtime.evaluate", { expression, returnByValue: true });
-        if (exceptionDetails) throw new Error(exceptionDetails.text);
-        return result.value;
-      };
-      await page("Emulation.setDeviceMetricsOverride", { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false });
-      await page("Page.navigate", { url });
-      const cells = `document.querySelectorAll(${JSON.stringify(CELL)})`;
-      const deadline = Date.now() + 180000;
-      while (!(await evaluate(`${cells}.length > 0`).catch(() => false))) {
-        if (Date.now() > deadline) throw new Error(`no KPI cell on ${url} after 180 s`);
-        await sleep(500);
-      }
-      await sleep(2000);
-      const labels = await evaluate(`[...${cells}].map((e) => e.getAttribute("aria-label"))`);
-      const text = await evaluate(`document.querySelector("main").innerText`);
-      const { cssContentSize } = await page("Page.getLayoutMetrics");
-      const { data } = await page("Page.captureScreenshot", {
-        format: "png",
-        captureBeyondViewport: true,
-        clip: { x: 0, y: 0, width: cssContentSize.width, height: cssContentSize.height, scale: 1 },
-      });
-      tabs[tab] = { url, labels, text, png: Buffer.from(data, "base64") };
-      await cdp.send("Target.closeTarget", { targetId });
+      await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
+      const cells = page.locator(CELL);
+      await cells.first().waitFor({ timeout: 180000 });
+      // Cells appear once BATCH_ALL is in; let the rest of the render finish.
+      await page.waitForTimeout(2000);
+      const labels = await cells.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
+      const text = await page.locator("main").innerText();
+      const png = await page.screenshot({ fullPage: true });
+      tabs[tab] = { url, labels, text, png };
     }
-    cdp.close();
     return tabs;
   } finally {
-    if (chrome && chrome.exitCode === null && chrome.signalCode === null) {
-      const exited = new Promise((resolve) => chrome.once("exit", resolve));
-      chrome.kill();
-      await exited;
-    }
-    fs.rmSync(userDir, { recursive: true, force: true, maxRetries: 3 });
+    await browser.close();
   }
 }
 
