@@ -122,7 +122,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm test` | เทสต์ GAS และการคำนวณ (F01, F15) |
 | `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build (F14) |
 | `npm run gas:push` · `gas:deploy` · `gas:sync` | push โค้ด GAS · deploy ทับ deployment เดิม · ทำทั้งสองอย่าง (ดูหัวข้อ Deploy) |
-| `node src/scripts/sync-moph-to-gas.js [--only <table> ...]` | sync จาก MOPH เข้า GAS โดยไม่ต้องเปิดเบราว์เซอร์ (F09 เพิ่ม `--year`, `--backfill`, `--force`, `--no-rebuild`) |
+| `node src/scripts/sync-moph-to-gas.js [--only <table> ...] [--year <YYYY> ... \| --backfill] [--force] [--no-rebuild]` | sync จาก MOPH เข้า GAS โดยไม่ต้องเปิดเบราว์เซอร์ · ไม่ใส่ `--year` คือปีปัจจุบัน · ตอนจบสั่ง rebuild ถ้ามีตารางบันทึกสำเร็จ (F09) |
 | `node src/scripts/verify-all.js` | ดึงจาก MOPH แล้วพิมพ์เป้าหมาย ผลงาน และร้อยละระดับอำเภอของแต่ละ KPI ไว้เทียบกับ PA |
 | `node src/scripts/hdc-catalog.js find\|refresh --from <ไฟล์>` | ค้นว่าตารางอยู่หัวข้อไหนของ HDC และรีเฟรชแค็ตตาล็อก จากไฟล์ที่ snippet `tools/hdc-catalog-export.js` บันทึกจากเบราว์เซอร์ เพราะ API แค็ตตาล็อกไม่รับสคริปต์ (F10, ADR-0010) |
 
