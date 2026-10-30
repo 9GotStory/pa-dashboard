@@ -76,8 +76,8 @@ test("BATCH_ALL without hdc_reports is the response from before F04 plus meta.ye
   assert.deepEqual({ ...res, meta }, BEFORE);
 });
 
-test("enabled reports add their source_table to meta.kpi_config once, after the PA units; data and the rest of meta are unchanged", () => {
-  // s_epi2 is already a PA unit; the other reports (s_influenza, …) stay disabled.
+test("active reports add their source_table to meta.kpi_config once, after the PA units; data and the rest of meta are unchanged", () => {
+  // s_epi2 is already a PA unit; the other reports (s_influenza, …) keep enabled = FALSE.
   const h = loadWithCatalog([IPV, EPI2]);
 
   const res = batchAll(h);
@@ -110,7 +110,7 @@ test("a report ticked after a BATCH_ALL shows up once the admin runs Clear Confi
   assert.deepEqual(batchAll(h).meta.kpi_config, [...BEFORE.meta.kpi_config, dcUnit("s_ipv")]);
 });
 
-test("save_catalog that moves an enabled report to another source_table → the next BATCH_ALL lists the new table", () => {
+test("save_catalog that moves an active report to another source_table → the next BATCH_ALL lists the new table", () => {
   const h = loadWithCatalog([IPV]);
   batchAll(h);
   const renamed = EXPORT.reports[EPI].map((r) => (r.opendata_id === IPV ? { ...r, source_table: "s_ipv2" } : r));
@@ -121,7 +121,7 @@ test("save_catalog that moves an enabled report to another source_table → the 
   assert.deepEqual(batchAll(h).meta.kpi_config, [...BEFORE.meta.kpi_config, dcUnit("s_ipv2")]);
 });
 
-test("save_kpi_data accepts the source_table of an enabled report (s_ipv) and rejects that of a disabled one (s_influenza)", () => {
+test("save_kpi_data accepts the source_table of an active report (s_ipv) and rejects that of a report with enabled = FALSE (s_influenza)", () => {
   const h = loadWithCatalog([IPV]);
 
   const ipv = post(h, { action: "save_kpi_data", tableName: "s_ipv", year: "2569", data: IPV_ROWS });
