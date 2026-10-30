@@ -105,3 +105,7 @@ Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-
 ### Domain docs
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Workflow
+
+Per ticket: the user runs `/implement #<issue>` (it calls `tdd` and `code-review`) → write the PR body with `pr` → squash merge → delete the branch (CODING_STANDARDS.md §6). `ready-for-human` tickets go through `wizard`. When a Track's last ticket merges, prompt the user to run `/retro`. Full rules: FEATURES.md "กติกา".
