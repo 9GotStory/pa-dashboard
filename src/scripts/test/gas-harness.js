@@ -145,8 +145,9 @@ function fakeSheet(name, values) {
  * }}
  *   gas: the GAS global scope (top-level functions are properties of it).
  *   logs: every Logger.log message, in order.
- *   lock: how many times the script lock was taken and released, and how
- *     many tryLock calls came while it was already held.
+ *   lock: how many tryLock calls (failed ones included) and releaseLock
+ *     calls were made, and how many tryLock calls came while the lock was
+ *     already held.
  *   otherHolder: set held to true to make every tryLock return false, as
  *     when another execution keeps the script lock past the wait.
  *   fetches: every UrlFetchApp.fetch call, in order.

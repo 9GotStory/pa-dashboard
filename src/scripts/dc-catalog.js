@@ -153,9 +153,11 @@ function dcGetCatalog(settings) {
   const status = dcReadSyncStatus();
   const goalRows = dcSheetRecords("kpi_epi", ["source_sheet", "value_prefix", "target"]);
   const reports = readHdcReports().map(function (report) {
-    // A target that is not a goal (blank included) is left out, so the
-    // report's own goal applies to that รายการ (SCHEMA §6).
-    const goals = {};
+    // A kpi_epi target that is not a valid เกณฑ์ (blank included) is left
+    // out, so the report's own goal applies to that รายการ (SCHEMA §3.1).
+    // Null prototype: a value_prefix such as "__proto__" must not hit
+    // Object.prototype.
+    const goals = Object.create(null);
     goalRows.forEach(function (row) {
       const prefix = sanitizeToken(row.value_prefix);
       const goal = dcGoal(row.target);
@@ -363,7 +365,10 @@ function dcSourceTable(v) {
   return DC_SOURCE_TABLE_PATTERN.test(s) ? s : null;
 }
 
-/** A เกณฑ์ cell (goal, kpi_epi target): a number 0–100, else null (blank included). */
+/**
+ * A เกณฑ์ cell (hdc_reports goal, kpi_epi target; SCHEMA §2.3, §3.1): a number
+ * 0–100, else null (blank included).
+ */
 function dcGoal(v) {
   const goal = String(v).trim() === "" ? NaN : Number(v);
   return goal >= 0 && goal <= 100 ? goal : null;

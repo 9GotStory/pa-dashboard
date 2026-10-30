@@ -948,6 +948,10 @@ function doGet(e) {
     if (!hasLock) return createJsonError("Busy");
     try {
       return createJsonOutput(dcGetCatalog(settings));
+    } catch (err) {
+      // Every error is a JSON answer (SCHEMA §3), not the Apps Script error page.
+      Logger.log("doGet catalog failed: " + err);
+      return createJsonError(String(err));
     } finally {
       try {
         lock.releaseLock();

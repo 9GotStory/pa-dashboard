@@ -150,7 +150,7 @@ test("reports are only the active ones: enabled = TRUE and the topic in hdc_topi
 test("measure_goals: the kpi_epi rows of the report's source_table that have a value_prefix → { [value_prefix]: target }", () => {
   const h = loadWithCatalog([[EPI, 20]], SEED_EPI);
   // A pcv4 row added back with its target left blank: pcv4 is left out, so
-  // the report's own goal applies to it (SCHEMA §6).
+  // the report's own goal applies to it (SCHEMA §3.1).
   h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("kpi_epi")
     .appendRow(["s_epi2__pcv4", "เด็กครบ 2 ปี ได้รับวัคซีน PCV4", "", 126, "", "กลุ่มอายุ 2 ปี", "s_epi2", "pcv4", ""]);
 
@@ -191,8 +191,9 @@ test("years: the report's source_table rows of sync_status inside the window, ol
   save(h, "s_epi2", "2565", epi2Rows("2565", "202209301200", 2));
   h.clock.now = Date.parse("2026-10-30T09:20:00+07:00");
   save(h, "s_epi2", "2567", epi2Rows("2567", "202409301200", 4));
-  // The fiscal year changes: the window is 2566–2570 once the 60 s settings
-  // cache runs out, and the 2565 row stays in sync_status until the next save.
+  // current_year changes to 2570: the window is 2566–2570 once the 60 s
+  // settings cache runs out, and the 2565 row stays in sync_status until the
+  // next save.
   setCell(h, "settings", 2, "current_year", 2570);
   h.clock.now = Date.parse("2026-10-30T09:30:00+07:00");
 
@@ -332,4 +333,58 @@ test("while another execution holds the script lock past the 30 s wait → error
 
   assert.deepEqual(res, { status: "error", message: "Busy" });
   assert.deepEqual(CATALOG_SHEETS.map((name) => h.reads(name)), before);
+});
+
+test("a Sheets error while reading → JSON error (SCHEMA §3), and the lock is released", () => {
+  const h = loadWithCatalog([[EPI, 20]], SEED_EPI);
+  const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
+  const getSheetByName = ss.getSheetByName;
+  ss.getSheetByName = (name) => name !== "kpi_epi" ? getSheetByName(name) : {
+    getDataRange: () => {
+      throw new Error("Service Spreadsheets timed out while accessing document");
+    },
+  };
+
+  const res = getCatalog(h);
+
+  assert.equal(res.status, "error");
+  assert.match(res.message, /timed out/);
+  assert.equal(h.lock.nested, 0);
+  assert.equal(h.lock.releaseLock, h.lock.tryLock);
+});
+
+test("hospitals and tambon_master are read by header name (trim + lower case), in any column order (SCHEMA §1)", () => {
+  // PA reads these two sheets by column position; the catalog must not.
+  const h = loadGas({
+    sheets: {
+      settings: SETTINGS,
+      tambon_master: [
+        [" District_ID", "zip_code", "Name_TH ", "ID"],
+        ["5401", "54000", "ในเวียง", "540101"],
+        ["5406", "54120", "บ้านหนุน", "540601"],
+      ],
+      hospitals: [["Tambon_ID", "HOSPNAME", " hospcode "], ["540601", "สอง", "11170"]],
+    },
+  });
+
+  const catalog = getCatalog(h);
+
+  assert.deepEqual(catalog.areas, [{ id: "540601", name_th: "บ้านหนุน" }]);
+  assert.deepEqual(catalog.hospitals, [{ hospcode: "11170", hospname: "สอง", tambon_id: "540601" }]);
+});
+
+test("an hdc_topics row whose cat_id fails the pattern is no topic; a hand-edited invalid source_table is skipped with a Logger.log WARNING", () => {
+  const h = loadWithCatalog([[EPI, 20]], SEED_EPI);
+  // The admin types a note into hdc_topics and edits a GAS column of
+  // hdc_reports by hand (SCHEMA §2.3).
+  setCell(h, "hdc_topics", 3, "cat_id", "รอเพิ่มหัวข้อ");
+  setReportCell(h, EPI5, "source_table", "S_EPI5");
+
+  const catalog = getCatalog(h);
+
+  assert.deepEqual(catalog.topics.map((t) => t.cat_id), [EPI]);
+  assert.deepEqual(ids(catalog.reports), SEED_EPI.filter((id) => id !== EPI5).sort());
+  assert.ok(h.logs.some((m) => m.startsWith("WARNING") && m.includes(EPI5)), h.logs.join("\n"));
+  // Not system_logs: the catalog is read on every build (SCHEMA §2.3).
+  assert.ok(!JSON.stringify(h.sheet("system_logs")).includes(EPI5));
 });
