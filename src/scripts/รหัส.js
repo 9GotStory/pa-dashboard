@@ -469,6 +469,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("PA Dashboard")
     .addItem("Sync All Data Now", "syncAllData")
+    .addItem("Rebuild Website", "rebuildWebsiteMenu")
     .addItem("Test API Connection", "testConnection")
     .addItem("Clear Config Cache", "clearConfigCache")
     .addToUi();
@@ -618,6 +619,10 @@ function syncAllData() {
       }
       Utilities.sleep(1500 + Math.floor(Math.random() * 1000));
     });
+
+    // Rebuild the website only when new data was saved (SPEC §6.3), still
+    // under this lock: requestRebuild does not take it (SCHEMA §3.7).
+    if (okCount > 0) requestRebuild("daily sync");
 
     SpreadsheetApp.getActiveSpreadsheet().toast(
       "Synced " + okCount + "/" + units.length + " KPIs",
@@ -1627,6 +1632,9 @@ function doPost(e) {
       }
       if (json.action === "save_catalog") {
         return createJsonOutput(dcSaveCatalog(json.cat_id, json.category_name, json.reports));
+      }
+      if (json.action === "rebuild") {
+        return createJsonOutput(requestRebuild(json.reason));
       }
       return createJsonError("Unknown action: " + json.action);
     } finally {
