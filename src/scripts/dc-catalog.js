@@ -24,37 +24,46 @@ const DC_SETTINGS_COLUMNS = ["district_code", "deploy_hook_url"];
  * sync_status with their header if missing, and append the district_code and
  * deploy_hook_url headers to settings if missing. Only missing sheets and
  * headers are added, so it can be re-run.
+ *
+ * An error is logged to system_logs and rethrown, so handleDiag still
+ * answers "error: …": a run that stops part way leaves sheets half made, and
+ * the response may not be kept (#145).
  */
 function dcSetupDatacenter() {
-  const ss = SpreadsheetApp.getActiveSpreadsheet();
-  const created = [];
-  [
-    [DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS],
-    [DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS],
-    [DC_SYNC_STATUS_SHEET, DC_SYNC_STATUS_HEADERS],
-  ].forEach(function (sheetAndHeaders) {
-    const name = sheetAndHeaders[0];
-    const headers = sheetAndHeaders[1];
-    if (ss.getSheetByName(name)) return;
-    ss.insertSheet(name).getRange(1, 1, 1, headers.length).setValues([headers]);
-    created.push(name);
-  });
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    const created = [];
+    [
+      [DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS],
+      [DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS],
+      [DC_SYNC_STATUS_SHEET, DC_SYNC_STATUS_HEADERS],
+    ].forEach(function (sheetAndHeaders) {
+      const name = sheetAndHeaders[0];
+      const headers = sheetAndHeaders[1];
+      if (ss.getSheetByName(name)) return;
+      ss.insertSheet(name).getRange(1, 1, 1, headers.length).setValues([headers]);
+      created.push(name);
+    });
 
-  // settings is read by trimmed header (readSettings); a blank value below a
-  // new header reads as its default.
-  const settings = ss.getSheetByName("settings");
-  const lastColumn = settings.getLastColumn();
-  const existing = lastColumn > 0
-    ? settings.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (h) {
-      return String(h || "").trim();
-    })
-    : [];
-  const added = DC_SETTINGS_COLUMNS.filter(function (name) {
-    return existing.indexOf(name) === -1;
-  });
-  if (added.length > 0) settings.getRange(1, lastColumn + 1, 1, added.length).setValues([added]);
+    // settings is read by trimmed header (readSettings); a blank value below a
+    // new header reads as its default.
+    const settings = ss.getSheetByName("settings");
+    const lastColumn = settings.getLastColumn();
+    const existing = lastColumn > 0
+      ? settings.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (h) {
+        return String(h || "").trim();
+      })
+      : [];
+    const added = DC_SETTINGS_COLUMNS.filter(function (name) {
+      return existing.indexOf(name) === -1;
+    });
+    if (added.length > 0) settings.getRange(1, lastColumn + 1, 1, added.length).setValues([added]);
 
-  return { created: created, settings_columns_added: added };
+    return { created: created, settings_columns_added: added };
+  } catch (err) {
+    logToSheet("ERROR", "setup=datacenter failed", String(err));
+    throw err;
+  }
 }
 
 // The phase 1 seed (SCHEMA §6): 21 reports, each enabled = TRUE with
@@ -99,34 +108,42 @@ const DC_SEED_REPORTS = [
  * Like setup=datacenter, it runs without the script lock (diag is not a lock
  * holder, SCHEMA §3). Run it after a refresh, not during one: both rewrite
  * hdc_reports, so one could undo the other.
+ *
+ * An error is logged to system_logs and rethrown, as in dcSetupDatacenter.
  */
 function dcSetupSeed() {
-  const table = dcReadTable(DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS);
-  const c = table.col;
-  // Null prototype: an id such as "constructor" must not hit Object.prototype.
-  const rowById = Object.create(null);
-  table.rows.forEach(function (row) {
-    const id = sanitizeHdcId(row[c.opendata_id]);
-    if (id && !rowById[id]) rowById[id] = row;
-  });
-  const notFound = [];
-  DC_SEED_REPORTS.forEach(function (seed) {
-    const id = seed[0];
-    const row = rowById[id];
-    if (!row) {
-      notFound.push(id);
-      return;
-    }
-    row[c.enabled] = true;
-    row[c.report_type] = "coverage";
-    row[c.subgroup] = seed[1];
-    row[c.order] = seed[2];
-    row[c.goal] = seed[3];
-    row[c.col_target] = seed[4];
-    row[c.col_result] = seed[5];
-  });
-  dcWriteTable(table, DC_CATALOG_TEXT_COLUMNS);
-  return { applied: DC_SEED_REPORTS.length - notFound.length, not_found: notFound };
+  try {
+    const table = dcReadTable(DC_HDC_REPORTS_SHEET, DC_HDC_REPORTS_HEADERS);
+    const c = table.col;
+    // Null prototype: an id such as "constructor" must not hit
+    // Object.prototype.
+    const rowById = Object.create(null);
+    table.rows.forEach(function (row) {
+      const id = sanitizeHdcId(row[c.opendata_id]);
+      if (id && !rowById[id]) rowById[id] = row;
+    });
+    const notFound = [];
+    DC_SEED_REPORTS.forEach(function (seed) {
+      const id = seed[0];
+      const row = rowById[id];
+      if (!row) {
+        notFound.push(id);
+        return;
+      }
+      row[c.enabled] = true;
+      row[c.report_type] = "coverage";
+      row[c.subgroup] = seed[1];
+      row[c.order] = seed[2];
+      row[c.goal] = seed[3];
+      row[c.col_target] = seed[4];
+      row[c.col_result] = seed[5];
+    });
+    dcWriteTable(table, DC_CATALOG_TEXT_COLUMNS);
+    return { applied: DC_SEED_REPORTS.length - notFound.length, not_found: notFound };
+  } catch (err) {
+    logToSheet("ERROR", "setup=dc_seed failed", String(err));
+    throw err;
+  }
 }
 
 // Columns of hdc_reports that come from the catalog API (SCHEMA §3.4 step 5).

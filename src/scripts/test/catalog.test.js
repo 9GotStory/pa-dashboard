@@ -95,6 +95,23 @@ test("setup=datacenter twice: the first creates the 3 sheets and 2 settings colu
   }
 });
 
+test("setup=datacenter that stops part way (insertSheet throws at hdc_reports) → error: … in the response and an ERROR row with the error in system_logs", () => {
+  const h = loadGas({ sheets: { settings: SETTINGS_BEFORE_F01 } });
+  const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
+  const insertSheet = ss.insertSheet;
+  ss.insertSheet = (name) => {
+    if (name === "hdc_reports") throw new Error("Service Spreadsheets timed out while accessing document");
+    return insertSheet(name);
+  };
+
+  const res = setupDatacenter(h);
+
+  assert.match(res, /^error: .*Service Spreadsheets timed out/);
+  const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+  assert.deepEqual(errors.map((r) => r.Message), ["setup=datacenter failed"]);
+  assert.match(errors[0].Details, /Service Spreadsheets timed out/);
+});
+
 test("first save_catalog of the vaccine topic (46 rows) → added 34, every report enabled = FALSE, topic row filled", () => {
   const h = loadWithTopics([[EPI, 20]]);
 
