@@ -143,3 +143,25 @@ test("dc_seed twice → the same answer and sheet; the API columns, the rows out
   // dc_seed writes only hdc_reports (SCHEMA §6).
   assert.deepEqual(h.sheet("hdc_topics"), topics);
 });
+
+// #145: like setup=datacenter (catalog.test.js), a failed dc_seed must leave
+// its error in system_logs.
+test("setup=dc_seed whose write to hdc_reports throws → error: … in the response and an ERROR row with the error in system_logs", () => {
+  const h = loadRefreshed();
+  const sheet = h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("hdc_reports");
+  const getRange = sheet.getRange;
+  sheet.getRange = (...args) => {
+    const range = getRange(...args);
+    range.setValues = () => {
+      throw new Error("Service Spreadsheets timed out while accessing document");
+    };
+    return range;
+  };
+
+  const res = seed(h);
+
+  assert.match(res, /^error: .*Service Spreadsheets timed out/);
+  const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+  assert.deepEqual(errors.map((r) => r.Message), ["setup=dc_seed failed"]);
+  assert.match(errors[0].Details, /Service Spreadsheets timed out/);
+});
