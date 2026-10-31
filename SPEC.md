@@ -335,6 +335,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - เพิ่มตัวเลือกปีจาก `meta.years`: ค่าเริ่มต้นเป็น `current_year` และส่ง `year`, `total` ไปกับ `save_kpi_data`
 - รายการตารางมาจาก `meta.kpi_config` เหมือนเดิม ซึ่งตอนนี้รวมตาราง DC แล้ว
 - ใช้กติกาการดึงใน §7.1 (รวม retry 429/5xx)
+- ถ้า GAS ตอบ `Stale data` แสดงเป็น warning ไม่นับเป็นตารางที่ล้ม หน้านี้ไม่ส่ง `force` การบันทึกทับใช้ `sync-moph-to-gas.js --force` (§12.2)
 - ตอนจบ ถ้ามีตารางใดสำเร็จ POST `rebuild` หนึ่งครั้ง และแสดงผล (สั่งแล้ว / ครบโควตาวันนี้ / ไม่ได้ตั้ง hook)
 
 ### 12.2 `src/scripts/sync-moph-to-gas.js`
