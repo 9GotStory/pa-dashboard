@@ -3,7 +3,7 @@ import { execFile } from "node:child_process";
 import http from "node:http";
 import path from "node:path";
 import test from "node:test";
-import { loadGas } from "./gas-harness.js";
+import { loadGas, startGas } from "./gas-harness.js";
 
 // FEATURES F09: sync-moph-to-gas.js run as a child process, the way the admin
 // runs it. GAS is a local HTTP server that hands each request to the real
@@ -27,30 +27,6 @@ function mophRows(year, dateCom = "202610290900") {
 // total is a string (SCHEMA §5.3).
 function envelope(rows, total = rows.length) {
   return { data: rows, total: String(total), limit: 5000, offset: 0 };
-}
-
-// The GAS web app on a local port, closed when the test ends. posts: the
-// body of every POST, parsed, in order.
-async function startGas(t, h) {
-  const posts = [];
-  const server = http.createServer(async (req, res) => {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    let out;
-    if (req.method === "POST") {
-      const contents = Buffer.concat(chunks).toString("utf8");
-      posts.push(JSON.parse(contents));
-      out = h.gas.doPost({ postData: { contents } });
-    } else {
-      const query = new URL(req.url, "http://localhost").searchParams;
-      out = h.gas.doGet({ parameter: Object.fromEntries(query) });
-    }
-    res.setHeader("content-type", "application/json");
-    res.end(out.getContent());
-  });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  t.after(() => server.close());
-  return { url: `http://127.0.0.1:${server.address().port}/exec`, posts };
 }
 
 // MOPH report_data on a local port, closed when the test ends. answer(body)
