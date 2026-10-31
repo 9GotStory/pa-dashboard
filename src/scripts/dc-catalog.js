@@ -60,9 +60,9 @@ function dcSetupDatacenter() {
     if (added.length > 0) settings.getRange(1, lastColumn + 1, 1, added.length).setValues([added]);
 
     return { created: created, settings_columns_added: added };
-  } catch (err) {
-    logToSheet("ERROR", "setup=datacenter failed", String(err));
-    throw err;
+  } catch (e) {
+    logToSheet("ERROR", "setup=datacenter failed", String(e));
+    throw e;
   }
 }
 
@@ -140,9 +140,9 @@ function dcSetupSeed() {
     });
     dcWriteTable(table, DC_CATALOG_TEXT_COLUMNS);
     return { applied: DC_SEED_REPORTS.length - notFound.length, not_found: notFound };
-  } catch (err) {
-    logToSheet("ERROR", "setup=dc_seed failed", String(err));
-    throw err;
+  } catch (e) {
+    logToSheet("ERROR", "setup=dc_seed failed", String(e));
+    throw e;
   }
 }
 

@@ -144,6 +144,8 @@ test("dc_seed twice → the same answer and sheet; the API columns, the rows out
   assert.deepEqual(h.sheet("hdc_topics"), topics);
 });
 
+// #145: like setup=datacenter (catalog.test.js), a failed dc_seed must leave
+// its error in system_logs.
 test("setup=dc_seed whose write to hdc_reports throws → error: … in the response and an ERROR row with the error in system_logs", () => {
   const h = loadRefreshed();
   const sheet = h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("hdc_reports");
