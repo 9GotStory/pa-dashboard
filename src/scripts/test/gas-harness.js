@@ -3,6 +3,7 @@
 // for the Google services it touches. Not a test file: `npm test` only picks
 // up *.test.js.
 import fs from "node:fs";
+import http from "node:http";
 import path from "node:path";
 import vm from "node:vm";
 
@@ -331,4 +332,29 @@ export function loadGas({ sheets = {}, fetch } = {}) {
     sheetNames: () => [...book.keys()],
     reads: (name) => reads.get(name) || 0,
   };
+}
+
+// The GAS web app of h (a loadGas result) on a local port, closed when test t
+// ends: GET goes to doGet, POST to doPost, as Apps Script does. posts: the
+// body of every POST, parsed, in order.
+export async function startGas(t, h) {
+  const posts = [];
+  const server = http.createServer(async (req, res) => {
+    const chunks = [];
+    for await (const chunk of req) chunks.push(chunk);
+    let out;
+    if (req.method === "POST") {
+      const contents = Buffer.concat(chunks).toString("utf8");
+      posts.push(JSON.parse(contents));
+      out = h.gas.doPost({ postData: { contents } });
+    } else {
+      const query = new URL(req.url, "http://localhost").searchParams;
+      out = h.gas.doGet({ parameter: Object.fromEntries(query) });
+    }
+    res.setHeader("content-type", "application/json");
+    res.end(out.getContent());
+  });
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  t.after(() => server.close());
+  return { url: `http://127.0.0.1:${server.address().port}/exec`, posts };
 }

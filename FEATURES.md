@@ -195,7 +195,7 @@
 
 - **ทำ:** ตามขั้น 3–8 ใน SPEC §13: รัน snippet export ในเบราว์เซอร์ → `find --from` → ใส่ `hdc_topics` → `refresh --from` → `dc_seed` → `--backfill --no-rebuild` → sync ปีปัจจุบัน → `verify-all.js`
 - **ตรวจรับ:**
-  1. `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูลใน window (บางตารางอาจไม่มีปีเก่า ให้บันทึกไว้ว่าตารางไหนเริ่มปีไหน) และมีชีต `_y` ตรงกับ `sync_status.sheet`
+  1. `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูลใน window (บางตารางอาจไม่มีปีเก่า ให้บันทึกไว้ว่าตารางไหนเริ่มปีไหน: คือบรรทัด `– <ตาราง> <ปี>: no data in HDC` ใน log ของ `--backfill` ซึ่งไม่นับเป็นล้ม `--backfill` จึงยัง exit 0) และมีชีต `_y` ตรงกับ `sync_status.sheet`
   2. `verify-all.js` ในวันเดียวกับ sync: KPI แบบรายปีและ EPI ตรงกับ `/pa` (สคริปต์ใช้ปี 2569 คงที่และรวม 4 ไตรมาสเสมอ KPI รายไตรมาสจึงไม่ต้องตรง ถ้า `current_year` เปลี่ยนแล้ว แก้ค่าในสคริปต์ก่อน)
   3. ค่ารายปีระดับอำเภอจาก `?action=report` ของ KPI แบบรายปี (เช่น `s_dm_screen`) คำนวณด้วยมือหรือสคริปต์แล้วตรงกับ PA
   4. บันทึกเวลาที่ `syncAllData` ใช้ต่อรอบจาก `system_logs` (SUCCESS แรกถึงสุดท้าย) ถ้าเกิน 4 นาที เปิด issue ตาม SPEC §14
@@ -210,7 +210,7 @@
 - **ตรวจรับ:**
   1. `npm run build` ผ่าน และ `out/pa.html` มีอยู่
   2. `grep -r "/pa-dashboard" out/` ไม่พบ
-  3. `npm start` แล้วเปิด `/pa` และ `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` → หน้าตาและตัวเลขเหมือน production ปัจจุบัน แท็บเปิดถูก
+  3. `npm start` แล้วเปิด `/pa` และ `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` → หน้าตาและตัวเลขเหมือน production ปัจจุบัน แท็บเปิดถูก · ตัวเลขและข้อความตรวจด้วย `npm run pa:snapshot -- prod` (production) กับ `PA_URL=http://localhost:3000/pa npm run pa:snapshot -- f13-local` แล้ว `npm run pa:compare -- prod f13-local` ต้องได้ "PA unchanged"
   4. `git diff --stat` ไม่มีไฟล์ใน `src/components` หรือ `src/lib` เปลี่ยน (นอกจาก rename)
   5. หลัง merge ไม่มี workflow run ของ `deploy.yml` เกิดขึ้นเอง และ `https://9gotstory.github.io/pa-dashboard/` ยังเป็น PA เวอร์ชันก่อนหน้า
 
@@ -227,7 +227,7 @@
 
 ### F15 ชั้นคำนวณ (`src/lib/dc/types.ts`, `values.ts`, `client.ts`)
 
-- **ทำ:** type ตาม SCHEMA §9 · `values.ts` ตาม SCHEMA §4 ทั้งหมด ทำงานบน `DcYearBlock` (ตรวจกลุ่มคอลัมน์ต่อ block, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · `format.ts`: `formatPct` สำเนาจาก PA และ `formatThaiDate` เขียนใหม่ให้ผลเหมือน PA โดยไม่ import ไฟล์ PA และรับ `""` ได้โดยไม่ throw (`max_date_com` ของ block ที่ไม่มีแถว, SCHEMA §3.2) · `client.ts` โหลด `/data/reports/{id}.json` พร้อม cache ในหน่วยความจำ · เทสต์ `values.test.ts`, `format.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test src/lib/dc/*.test.ts` และต่อท้ายสคริปต์ `npm test` ด้วย `&& tsx --test src/lib/dc/*.test.ts` ให้ CI รันด้วย (devDependencies ใหม่ของ Data Center มี 2 ตัว: `tsx` ที่นี่ และ `@types/leaflet` ใน F18 นอกจาก `playwright-core` ของ `pa-check.mjs` ตาม CODING_STANDARDS §3)
+- **ทำ:** type ตาม SCHEMA §9 · `values.ts` ตาม SCHEMA §4 ทั้งหมด ทำงานบน `DcYearBlock` (ตรวจกลุ่มคอลัมน์ต่อ block, measure, เป้าหมาย/ผลงานต่อแถว, รวม, จัดกลุ่มพื้นที่/หน่วย, แนวโน้ม, ผ่านเกณฑ์, วันที่ข้อมูล) · `format.ts`: `formatPct` สำเนาจาก PA และ `formatThaiDate` เขียนใหม่ให้ผลเหมือน PA โดยไม่ import ไฟล์ PA และรับ `""` ได้โดยไม่ throw (`max_date_com` ของ block ที่ไม่มีแถว, SCHEMA §3.2) · `client.ts` โหลด `/data/reports/{id}.json` พร้อม cache ในหน่วยความจำ · เทสต์ `values.test.ts`, `format.test.ts` ด้วย `node:test` รันผ่าน `npx tsx --test src/lib/dc/*.test.ts` และต่อท้ายสคริปต์ `npm test` ด้วย `&& tsx --test src/lib/dc/*.test.ts` ให้ CI รันด้วย (devDependencies ใหม่ของ Data Center มี 2 ตัว: `tsx` ที่นี่ และ `@types/leaflet` ใน F18 นอกจาก `playwright-core` ของ `pa-check.mjs` และ `dc-check.mjs` ตาม CODING_STANDARDS §3)
 - **ตรวจรับ (เทสต์):**
   1. header จริงของทั้ง 18 ตาราง (ตาม SCHEMA §4.1) → ตรวจพบกลุ่มคอลัมน์ตรงตารางนั้นทุกตัว และ `s_dm_screen`/`s_aged9` ไม่ถูกมองเป็นรายไตรมาส
   2. `s_epi1` → measure 20 รายการ `s_epi2` → 6 รายการ และ `dtp_hb3` แสดงเป็น `DTP-HB3`
@@ -239,12 +239,13 @@
 
 ### F16 โครงหน้าและธีม Data Center
 
-- **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` (อ่าน `meta.json` ตอน build) · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · route group `src/app/(dc)/layout.tsx` ห่อเฉพาะ `/`, `/reports`, `/reports/[id]` ส่วน `/pa` และ `/sync` อยู่นอก group
+- **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` (อ่าน `meta.json` ตอน build) · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · route group `src/app/(dc)/layout.tsx` ห่อเฉพาะ `/`, `/reports`, `/reports/[id]` ส่วน `/pa` และ `/sync` อยู่นอก group · `src/scripts/dc-check.mjs` (`npm run dc:check`, CODING_STANDARDS §5) หลัง `npm run build` เปิดทุกหน้า HTML ของ `/`, `/reports`, `/reports/[id]` ใน `out/` ด้วย `playwright-core` ที่ความกว้าง 360px แล้ว exit 1 พร้อมชื่อหน้าและสิ่งที่ผิดเมื่อพบ: request ไป `script.google.com`, control ที่ไม่มี label, `<table>` ที่ไม่มี `<caption>`, `<svg>` ที่ไม่ได้ตั้ง `aria-hidden="true"` แต่ไม่มี `role="img"` + `aria-label`, scroll แนวนอนระดับหน้า, คำว่า "จำลอง"/"ตัวอย่าง" หรือ error ในหน้า (กฎ CODING_STANDARDS §4)
 - **ขึ้นกับ:** F13, F14 (footer อ่าน `meta.json` ผ่าน `snapshot.ts` ของ F14)
 - **ตรวจรับ:**
   1. `/pa` และ `/sync` ไม่มี masthead ของ Data Center และ class ของ PA ไม่เปลี่ยน
   2. `/`, `/reports`, `/reports/{id}` มี masthead และ footer แสดงผลได้ที่ความกว้าง 360px โดยไม่มี scroll แนวนอนระดับหน้า (ตารางเลื่อนได้ภายในกรอบของตัวเองตาม SPEC §9.1)
   3. footer แสดงเวลาที่ build ตรงกับ `meta.json`
+  4. `npm run dc:check` ผ่านกับ build นี้ และล้ม (exit 1 พร้อมชื่อหน้า) เมื่อจงใจทำผิดทีละกฎ แล้วคืนโค้ดกลับ
 
 ### F17 ไฟล์ขอบเขตตำบล
 
@@ -316,6 +317,7 @@
 - รายงานชนิด `workload`
 - ชื่อคอลัมน์ผลแยกย่อย (SCHEMA §4.5) หลังตรวจ `report_schema`
 - ปุ่มรีเฟรชแค็ตตาล็อกบนหน้า `/sync`
+- `/sync` แสดงวันที่อัปเดตล่าสุดของปีที่เลือก (ตอนนี้มาจากชีตปีปัจจุบันเสมอ ต้องให้ GAS ส่ง `sync_status` รายปีมาด้วย) จากรีวิว F11
 - ย้าย PA มาอ่าน snapshot
 - ทดลองดึง MOPH ด้วย Cloudflare Pages Function
 - การแบ่งหน้า `offset` ของ `report_data` เมื่อมีตารางเกิน 5,000 แถว

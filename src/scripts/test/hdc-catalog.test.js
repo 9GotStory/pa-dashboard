@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
 import vm from "node:vm";
-import { loadGas } from "./gas-harness.js";
+import { loadGas, startGas } from "./gas-harness.js";
 
 // FEATURES F10: hdc-catalog.js run as a child process, the way the admin
 // runs it. refresh talks to a local HTTP server that hands each request to
@@ -122,30 +122,6 @@ function gasWithTopics(topics) {
   const sheet = h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("hdc_topics");
   topics.forEach((topic, i) => sheet.getRange(i + 2, 1, 1, 2).setValues([topic]));
   return h;
-}
-
-// The GAS web app on a local port, closed when the test ends. posts: the
-// body of every POST, parsed, in order.
-async function startGas(t, h) {
-  const posts = [];
-  const server = http.createServer(async (req, res) => {
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    let out;
-    if (req.method === "POST") {
-      const contents = Buffer.concat(chunks).toString("utf8");
-      posts.push(JSON.parse(contents));
-      out = h.gas.doPost({ postData: { contents } });
-    } else {
-      const query = new URL(req.url, "http://localhost").searchParams;
-      out = h.gas.doGet({ parameter: Object.fromEntries(query) });
-    }
-    res.setHeader("content-type", "application/json");
-    res.end(out.getContent());
-  });
-  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  t.after(() => server.close());
-  return { url: `http://127.0.0.1:${server.address().port}/exec`, posts };
 }
 
 // refresh's summary lines, one per topic it saved.
