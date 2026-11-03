@@ -14,7 +14,7 @@ PA_URL=https://9gotstory.github.io/pa-dashboard/
 
 `pa:snapshot` opens the PA page with Playwright in the installed Google Chrome (`channel: "chrome"`), so the machine needs Google Chrome.
 
-`npm run gas:push`, `gas:deploy` and `gas:sync` run `clasp` from PATH: install clasp 3 for the Node version that runs npm (`npm i -g @google/clasp@3.4.1`) and sign in once with `clasp login`. Before a deploy, `clasp --version` prints 3.4.1.
+clasp is a devDependency pinned in package.json, so `npm ci` installs it and `npm run gas:push`, `gas:deploy` and `gas:sync` use it under any Node version. Sign in once with `npx clasp login`.
 
 ## Deploy
 
@@ -23,7 +23,7 @@ PA_URL=https://9gotstory.github.io/pa-dashboard/
 3. `npm run pa:snapshot -- after`, then `npm run pa:compare -- before after`. Exit 0 means PA shows the same. Rows that `saveTableYear` narrowed to the district and the current year count as unchanged. Any other change prints max `date_com` before and after: a newer one is new MOPH data, the same one is a code change.
 4. When the deploy changes `syncAllData`, read `system_logs` after the next daily run (14:00–15:00) and compare again. `logToSheet` keeps the newest 500 rows at the bottom (rows 2–501 once full), so read the tail: `system_logs!A440:D501` through the Google Sheets MCP, or `npm run gas:diag -- logs=60`.
 
-Roll back with `clasp redeploy <deploymentId> -V <previous version>` (`clasp deployments` lists them), then push the previous code: whether triggers run the deployed version or HEAD is not documented.
+Roll back with `npx clasp redeploy <deploymentId> -V <previous version>` (`npx clasp deployments` lists them), then push the previous code: whether triggers run the deployed version or HEAD is not documented.
 
 ## Diag setups
 

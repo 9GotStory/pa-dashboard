@@ -136,11 +136,10 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 
 ### GAS
 
-ครั้งแรกบนเครื่อง: ติดตั้ง clasp, เปิด Google Apps Script API ที่ <https://script.google.com/home/usersettings> แล้ว login
+ครั้งแรกบนเครื่อง: เปิด Google Apps Script API ที่ <https://script.google.com/home/usersettings> แล้ว login ด้วย clasp ที่ `npm ci` ติดตั้งให้ (devDependency ตรึงเวอร์ชันไว้ ไม่ต้องติดตั้ง global)
 
 ```bash
-npm install -g @google/clasp
-clasp login
+npx clasp login
 ```
 
 ทุกครั้งที่ deploy
