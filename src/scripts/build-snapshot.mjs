@@ -216,7 +216,16 @@ function gaps({ report, years }, currentYear) {
   ];
 }
 
-const problems = fetched.flatMap((data) => gaps(data, catalog.meta.current_year));
+const currentYear = catalog.meta.current_year;
+const problems = fetched.flatMap((data) => gaps(data, currentYear));
+// gaps lets through a report without the current year (not synced yet), but at
+// least one must have rows in it, or the year is not synced at all (SPEC §6.2).
+if (!fetched.some((data) => data.years.some((block) => block.b_year === currentYear && block.rows.length > 0))) {
+  problems.push(
+    `no active report has rows in the current year ${currentYear}: sync ${currentYear} first ` +
+      "(the /sync page or the daily trigger, SPEC §7), or check current_year in the settings sheet",
+  );
+}
 if (problems.length > 0) {
   fail(`the snapshot would be incomplete, so nothing is written (SPEC §6.2):\n  ${problems.join("\n  ")}`);
 }

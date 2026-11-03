@@ -438,6 +438,18 @@ test("a report with no years yet, and one with 0 rows in a past year only → bo
   assert.deepEqual(snap.read(`reports/${pastEmpty.opendata_id}.json`).years[0].rows, []);
 });
 
+test("no active report with rows in the current year (every report has 2568 only, 2569 not synced yet) → exit 1 saying to sync 2569 first; an earlier snapshot is left as it was", async (t) => {
+  const catalog = seedCatalog();
+  for (const r of catalog.reports) r.years = r.years.filter((y) => y.b_year !== "2569");
+  const gas = await startStub(t, gasOf(catalog));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /\n {2}no active report has rows in the current year 2569: sync 2569 first/);
+  assertOldSnapshot(res.cwd);
+});
+
 test("no active report in the catalog → exit 1 saying to tick enabled in hdc_reports; nothing written", async (t) => {
   const gas = await startStub(t, gasOf({ ...seedCatalog(), reports: [] }));
 
