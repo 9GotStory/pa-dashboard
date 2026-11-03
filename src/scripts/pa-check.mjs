@@ -32,7 +32,9 @@ async function capturePage(paUrl) {
       const url = paUrl + query;
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       const cells = page.locator(CELL);
-      await cells.first().waitFor({ timeout: 180000 });
+      await cells.first().waitFor({ timeout: 180000 }).catch(() => {
+        throw new Error(`no KPI cell on ${url} within 3 min: check that it opens in Chrome and GAS answers BATCH_ALL, then rerun`);
+      });
       // Cells appear once BATCH_ALL is in; let the rest of the render finish.
       await page.waitForTimeout(2000);
       const labels = await cells.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
@@ -145,5 +147,6 @@ try {
   else if (command === "compare" && args.length === 2) compare(checkName(args[0]), checkName(args[1]));
   else fail("usage: pa-check.mjs snapshot <name> | compare <before> <after>");
 } catch (err) {
-  fail(err.message);
+  // Playwright messages end in a multi-line call log; the first line names the failure.
+  fail(err.message.split("\n")[0]);
 }

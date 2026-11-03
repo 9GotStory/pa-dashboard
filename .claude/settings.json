@@ -1,0 +1,24 @@
+{
+  "permissions": {
+    "ask": [
+      "Bash(npm run *gas:push*)",
+      "Bash(npm run *gas:deploy*)",
+      "Bash(npm run *gas:sync*)",
+      "Bash(npm run *gas:diag*setup=*)",
+      "Bash(npm run *gas:diag*run=*)",
+      "Bash(node *gas-diag.mjs*setup=*)",
+      "Bash(node *gas-diag.mjs*run=*)",
+      "Bash(clasp *)",
+      "Bash(npx *clasp*)",
+      "Bash(npm exec *clasp*)",
+      "Bash(fnm exec *)",
+      "Bash(node *sync-moph-to-gas.js*)",
+      "Bash(node *hdc-catalog.js refresh*)",
+      "Bash(curl *script.google.com/macros/*)",
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push *:main)",
+      "Bash(git push *:main *)"
+    ]
+  }
+}
