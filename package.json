@@ -4,7 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
     "build": "next build",
+    "snapshot": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
     "start": "next start",
     "lint": "eslint && node src/scripts/check-glossary.mjs",
     "typecheck": "tsc --noEmit",
