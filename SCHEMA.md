@@ -610,7 +610,7 @@ export interface Totals {
 | Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App (prebuild script และหน้า `/sync` ใช้) |
 | Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
 | Cloudflare Pages (build) | `NODE_VERSION` | `24` (Node 20 หมดอายุ 30 เม.ย. 2569) |
-| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม แต่ `ci.yml` ต้องส่งเข้า build step ด้วย (ตอนนี้ยังไม่ส่ง) |
+| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม และ `ci.yml` ส่งเข้า build step ตั้งแต่ F14 เพราะ prebuild ต้องใช้ |
 | เครื่องที่รันสคริปต์ node และ `npm run build` | `NEXT_PUBLIC_GAS_SCRIPT_URL` | `build-snapshot.mjs` และ `hdc-catalog.js` บังคับต้องมี · `sync-moph-to-gas.js` ยังมี fallback เดิม |
 | `.claspignore` | `**/test/**`, `**/hdc-catalog.js`, `**/*.mjs` (เพิ่มจากของเดิม) | กันสคริปต์ node และเทสต์ไม่ให้ถูก push ขึ้น Apps Script |
 | dependencies ใหม่ | `leaflet@1.9.4` | แผนที่หน้าแรก (ตอนนี้ `package.json` ยังไม่มี) |

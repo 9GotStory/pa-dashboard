@@ -40,7 +40,7 @@ if (!url) {
 // One GET to GAS: its JSON body. Throws why not: GAS out of reach, an HTTP
 // status other than 200 (GAS answers everything with 200, SCHEMA §3) or an
 // answer that is not JSON.
-async function get(query) {
+async function fetchJson(query) {
   let res;
   try {
     res = await fetch(`${url}?${query}`);
@@ -59,14 +59,14 @@ async function get(query) {
 // GAS's answer to a GET with query (SPEC §6.2): Busy is asked again until
 // BUSY_LIMIT, any other failure (an error answer included) retried 3 times.
 // Throws the failure it gives up on.
-async function callGas(query) {
+async function callGasWithRetry(query) {
   const busyUntil = Date.now() + BUSY_LIMIT;
   let retries = 0;
   for (;;) {
     let body;
     let failure;
     try {
-      body = await get(query);
+      body = await fetchJson(query);
       if (body.status === "error") failure = `GAS answered: ${body.message}`;
     } catch (err) {
       failure = err.message;
@@ -141,18 +141,16 @@ function nest(catalog, reports) {
   };
 }
 
+const CHECK_URL = "check that NEXT_PUBLIC_GAS_SCRIPT_URL is the /exec URL of this project's GAS web app";
 const started = Date.now();
 let catalog;
 try {
-  catalog = await callGas("action=catalog");
+  catalog = await callGasWithRetry("action=catalog");
 } catch (err) {
   fail(`cannot get the catalog (?action=catalog): ${err.message}`);
 }
 if (!catalog.meta || !Array.isArray(catalog.topics) || !Array.isArray(catalog.reports)) {
-  fail(
-    "?action=catalog answered without meta, topics and reports; check that NEXT_PUBLIC_GAS_SCRIPT_URL " +
-      "is the /exec URL of this project's GAS web app",
-  );
+  fail(`?action=catalog answered without meta, topics and reports; ${CHECK_URL}`);
 }
 if (catalog.reports.length === 0) {
   fail("?action=catalog lists no active report: tick enabled in hdc_reports for the reports to publish (SPEC §5.2)");
@@ -173,11 +171,16 @@ console.log(`build-snapshot: ?action=catalog lists ${catalog.reports.length} act
 const answers = new Map();
 for (const [i, entry] of catalog.reports.entries()) {
   console.log(`  [${i + 1}/${catalog.reports.length}] ${entry.opendata_id} ${entry.source_table}`);
+  let data;
   try {
-    answers.set(entry.opendata_id, await callGas(`action=report&id=${encodeURIComponent(entry.opendata_id)}`));
+    data = await callGasWithRetry(`action=report&id=${encodeURIComponent(entry.opendata_id)}`);
   } catch (err) {
     fail(`cannot get report ${entry.opendata_id} (${entry.source_table}): ${err.message}`);
   }
+  if (!data.report || !Array.isArray(data.years)) {
+    fail(`?action=report&id=${entry.opendata_id} answered without report and years; ${CHECK_URL}`);
+  }
+  answers.set(entry.opendata_id, data);
 }
 const fetched = [...answers.values()];
 
@@ -229,27 +232,29 @@ const meta = {
     .flatMap((data) => data.years.map((block) => block.max_date_com))
     .reduce((max, v) => (v > max ? v : max), ""),
 };
-// Each file as written, with its size target (SPEC §6.1, before gzip).
+// Each file as written, with its size limit (SPEC §6.1, before gzip).
 const files = [
   ["meta.json", meta, 1 * KB],
   ["catalog.json", nest(catalog, fetched.map((data) => data.report)), 100 * KB],
   ...[...answers].map(([id, data]) => [`reports/${id}.json`, data, 500 * KB]),
-].map(([file, content, target]) => {
+].map(([file, content, maxBytes]) => {
   const json = JSON.stringify(content);
-  return { file, json, bytes: Buffer.byteLength(json), target };
+  return { file, json, bytes: Buffer.byteLength(json), maxBytes };
 });
-const kb = (bytes) => (bytes / KB).toFixed(1).replace(/\.0$/, "");
-const over = files.filter((f) => f.bytes > f.target);
+const formatKb = (bytes) => (bytes / KB).toFixed(1).replace(/\.0$/, "");
+const over = files.filter((f) => f.bytes > f.maxBytes);
 if (over.length > 0) {
   fail(
-    "the snapshot would break the size targets of SPEC §6.1, so nothing is written:\n  " +
-      over.map((f) => `${f.file} is ${kb(f.bytes)} KB, over its ${kb(f.target)} KB target`).join("\n  "),
+    "the snapshot would break the size limits of SPEC §6.1, so nothing is written:\n  " +
+      over.map((f) => `${f.file} is ${formatKb(f.bytes)} KB, over its ${formatKb(f.maxBytes)} KB limit`).join("\n  "),
   );
 }
 
-for (const f of files.filter((f) => f.bytes >= 0.8 * f.target)) {
-  const pct = Math.floor((f.bytes / f.target) * 100);
-  console.warn(`build-snapshot: warning: ${f.file} is ${kb(f.bytes)} KB, ${pct}% of its ${kb(f.target)} KB target (SPEC §6.1)`);
+for (const f of files.filter((f) => f.bytes >= 0.8 * f.maxBytes)) {
+  const pct = Math.floor((f.bytes / f.maxBytes) * 100);
+  console.warn(
+    `build-snapshot: warning: ${f.file} is ${formatKb(f.bytes)} KB, ${pct}% of its ${formatKb(f.maxBytes)} KB limit (SPEC §6.1)`,
+  );
 }
 
 // Every check has passed: only now is the earlier snapshot replaced, as a
@@ -261,5 +266,5 @@ for (const { file, json } of files) fs.writeFileSync(path.join(OUT, file), json)
 const largest = files.reduce((a, b) => (b.bytes > a.bytes ? b : a));
 console.log(
   `build-snapshot: wrote ${fetched.length} reports to ${OUT} in ${((Date.now() - started) / 1000).toFixed(1)} s; ` +
-    `the largest file is ${largest.file}, ${kb(largest.bytes)} KB`,
+    `the largest file is ${largest.file}, ${formatKb(largest.bytes)} KB`,
 );

@@ -1,10 +1,12 @@
+// A build error if a client component imports this file (CODING_STANDARDS §4);
+// Next.js handles server-only itself, no package needed.
+import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import type { DcCatalog, SnapshotMeta } from "./types";
 
 // The snapshot that build-snapshot.mjs writes before next build (SCHEMA §7),
-// for server components to read at build time. Client components never
-// import this file (CODING_STANDARDS §4).
+// for server components to read at build time.
 const DIR = path.join(process.cwd(), "public", "data");
 
 function read<T>(file: string): T {

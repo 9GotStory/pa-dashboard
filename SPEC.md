@@ -380,7 +380,7 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | Preview deployments | ปิด (Preview branch control = None) เพราะ `develop` เป็นโค้ดคนละสถาปัตยกรรมที่ build แบบ static ไม่ผ่าน และกันไม่ให้ branch งานกิน build quota |
 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` (D6) ชื่อโปรเจกต์กำหนดตอนสร้าง เมื่อมีโดเมนของ สสอ.สอง บน Cloudflare ค่อยเพิ่ม custom domain |
 
-- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) แต่ต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step (ตอนนี้ส่งแค่ `NODE_ENV`) เพราะ prebuild ต้องดึงข้อมูลจริงและไม่มี URL สำรอง · `deploy.yml` หยุด build อัตโนมัติตั้งแต่ F13 และเปลี่ยนไปทำ stub ใน F22 (§12.6)
+- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) และส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step (ตั้งแต่ F14) เพราะ prebuild ต้องดึงข้อมูลจริงและไม่มี URL สำรอง · `deploy.yml` หยุด build อัตโนมัติตั้งแต่ F13 และเปลี่ยนไปทำ stub ใน F22 (§12.6)
 - Cloudflare Pages เสิร์ฟ `/sync` จาก `sync.html` และ redirect `/sync.html` → `/sync` เอง การตรวจรับต้องลองทั้งสองแบบ
 - build ล้ม (เช่น GAS ล่มตอน build) = เว็บคงเวอร์ชันก่อนหน้า ดูเหตุได้ใน build log ของ Cloudflare
 

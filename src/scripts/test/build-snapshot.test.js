@@ -311,6 +311,21 @@ test("a URL whose answer is JSON but no catalog (another web app) → exit 1 say
   assert.equal(snapshot(res.cwd), null);
 });
 
+test("a report answer without report and years → exit 1 saying to check the URL; nothing written", async (t) => {
+  const catalog = seedCatalog();
+  const odd = catalog.reports.find((r) => r.source_table === "s_aged9");
+  const gas = await startStub(t, gasOf(catalog, (r) => ({ body: r === odd ? { status: "success" } : reportAnswer(r) })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 1);
+  assert.match(
+    res.stderr,
+    /^build-snapshot: \?action=report&id=aa86b13e8cb60cae6c3216b7e3e5f151 answered without report and years; check that NEXT_PUBLIC_GAS_SCRIPT_URL/,
+  );
+  assert.equal(snapshot(res.cwd), null);
+});
+
 test("a report whose opendata_id is not an HDC id (../escape) → exit 1 naming it, and no file written for it anywhere", async (t) => {
   const catalog = seedCatalog();
   catalog.reports[0].opendata_id = "../../escape";
@@ -357,10 +372,10 @@ test("a report whose first 3 answers fail (connection dropped, HTTP 500, not JSO
 // first passed to change(answer) to edit.
 function seedGasWith(table, change) {
   const catalog = seedCatalog();
-  const target = catalog.reports.find((r) => r.source_table === table);
+  const changed = catalog.reports.find((r) => r.source_table === table);
   return gasOf(catalog, (r) => {
     const answer = reportAnswer(r);
-    if (r === target) change(answer);
+    if (r === changed) change(answer);
     return { body: answer };
   });
 }
@@ -556,17 +571,17 @@ function seedGasWithBulkyAged9(bytes) {
 }
 const AGED9_FILE = "reports/aa86b13e8cb60cae6c3216b7e3e5f151.json";
 
-test("a reports/{id}.json over its 500 KB target (SPEC §6.1) → exit 1 naming the file and its size; an earlier snapshot is left as it was", async (t) => {
+test("a reports/{id}.json over its 500 KB limit (SPEC §6.1) → exit 1 naming the file and its size; an earlier snapshot is left as it was", async (t) => {
   const gas = await startStub(t, seedGasWithBulkyAged9(520 * 1024));
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
   assert.equal(res.code, 1);
-  assert.match(res.stderr, /\n {2}reports\/aa86b13e8cb60cae6c3216b7e3e5f151\.json is 521\.\d KB, over its 500 KB target/);
+  assert.match(res.stderr, /\n {2}reports\/aa86b13e8cb60cae6c3216b7e3e5f151\.json is 521\.\d KB, over its 500 KB limit/);
   assertOldSnapshot(res.cwd);
 });
 
-test("a reports/{id}.json at 88% of its target → written with one warning naming it, exit 0; the last line names it as the largest file", async (t) => {
+test("a reports/{id}.json at 88% of its limit → written with one warning naming it, exit 0; the last line names it as the largest file", async (t) => {
   const gas = await startStub(t, seedGasWithBulkyAged9(440 * 1024));
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
@@ -577,7 +592,7 @@ test("a reports/{id}.json at 88% of its target → written with one warning nami
   assert.equal(warnings.length, 1, res.stderr);
   assert.match(
     warnings[0],
-    /^build-snapshot: warning: reports\/aa86b13e8cb60cae6c3216b7e3e5f151\.json is 441\.\d KB, 88% of its 500 KB target \(SPEC §6\.1\)$/,
+    /^build-snapshot: warning: reports\/aa86b13e8cb60cae6c3216b7e3e5f151\.json is 441\.\d KB, 88% of its 500 KB limit \(SPEC §6\.1\)$/,
   );
   assert.match(
     res.stdout.trimEnd().split("\n").at(-1),
