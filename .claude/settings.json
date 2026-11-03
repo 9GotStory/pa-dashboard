@@ -10,6 +10,7 @@
       "Bash(node *gas-diag.mjs*run=*)",
       "Bash(clasp *)",
       "Bash(npx *clasp*)",
+      "Bash(*node_modules/.bin/clasp *)",
       "Bash(npm exec *clasp*)",
       "Bash(fnm exec *)",
       "Bash(node *sync-moph-to-gas.js*)",
