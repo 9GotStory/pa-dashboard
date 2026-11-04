@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { HEADERS } from "./fixtures/headers-20261104";
-import type { Cell, DcReport, DcYearBlock, Family } from "./types";
+import type { Cell, DcReport, DcYearBlock, Family, ReportQuery } from "./types";
 import { families, goalFor, measureLabel, measures, passes, periods, totals, totalsBy, trend } from "./values";
 
 // FEATURES F15: the coverage rules of SCHEMA §4 on year blocks, with the real
@@ -20,7 +20,59 @@ function block(headers: string[], rows: Record<string, Cell>[] = [], b_year = "2
   };
 }
 
-const NO_OVERRIDE = { col_target: null, col_result: null };
+const MONTHS = ["10", "11", "12", "01", "02", "03", "04", "05", "06", "07", "08", "09"];
+
+// Reports as catalog.json has them (4 Nov 2569). Only col_target/col_result
+// of a report decide its columns, so DM_SCREEN stands for every report
+// without them; DENTAL has b and a.
+const DM_SCREEN: DcReport = {
+  opendata_id: "626c89f6b8d9f7ed90c72c719775eb07",
+  report_name: "ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน",
+  source_table: "s_dm_screen",
+  cat_id: "b2b59e64c4e6c92d4b1ec16a599d882b",
+  main_report_id: "02e752187c7282ebc9315123aa1cabbe",
+  subgroup: "",
+  order: 10,
+  report_type: "coverage",
+  goal: 90,
+  col_target: null,
+  col_result: null,
+  measure_goals: {},
+  catalog_status: "active",
+  years: [],
+};
+const DENTAL: DcReport = {
+  opendata_id: "abt2t2k4z4xeqzytwbave",
+  report_name: "ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)",
+  source_table: "s_dental_0_5_cavity_free",
+  cat_id: "db30e434e30565c12fbac44958e338d5",
+  main_report_id: "02e752187c7282ebc9315123aa1cabbe",
+  subgroup: "",
+  order: 10,
+  report_type: "coverage",
+  goal: 80,
+  col_target: "b",
+  col_result: "a",
+  measure_goals: {},
+  catalog_status: "active",
+  years: [],
+};
+const S_EPI2: DcReport = {
+  opendata_id: "71e49e4b61aafee17761601c506d5f85",
+  report_name: "ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส",
+  source_table: "s_epi2",
+  cat_id: "4df360514655f79f13901ef1181ca1c7",
+  main_report_id: "73daf277928bc32a1b3c8e772192543c",
+  subgroup: "กลุ่มอายุ 2 ปี",
+  order: 20,
+  report_type: "coverage",
+  goal: 90,
+  col_target: null,
+  col_result: null,
+  measure_goals: { dtp4: 90, opv4: 90, mmr1: 95, mmr2: 95, je2: 90 },
+  catalog_status: "active",
+  years: [],
+};
 
 // SCHEMA §4.1 by table: s_dental_0_5_cavity_free is OVERRIDE through its
 // hdc_reports row (b, a), every other table has no col_target/col_result.
@@ -47,7 +99,7 @@ const FAMILIES: [string, Family[]][] = [
 
 for (const [table, expected] of FAMILIES) {
   test(`real header of ${table} → กลุ่มคอลัมน์ ${expected.join(" + ")} and no other`, () => {
-    const report = table === "s_dental_0_5_cavity_free" ? { col_target: "b", col_result: "a" } : NO_OVERRIDE;
+    const report = table === "s_dental_0_5_cavity_free" ? DENTAL : DM_SCREEN;
     assert.deepEqual(families(block(HEADERS[table]), report), expected);
   });
 }
@@ -85,7 +137,7 @@ test("3 rows with target 10/20/0 and result 5/10/0 → T 30, R 15, ร้อย�
     { hospcode: "06413", areacode: "54060102", target: 20, result: 10 },
     { hospcode: "06414", areacode: "54060801", target: 0, result: 0 },
   ]);
-  assert.deepEqual(totals(b, NO_OVERRIDE, WHOLE_YEAR), { target: 30, result: 15, pct: 50 });
+  assert.deepEqual(totals(b, DM_SCREEN, WHOLE_YEAR), { target: 30, result: 15, pct: 50 });
 });
 
 test("rows whose target is 0 or empty everywhere → ร้อยละ null, not 0", () => {
@@ -93,7 +145,7 @@ test("rows whose target is 0 or empty everywhere → ร้อยละ null, no
     { hospcode: "06413", areacode: "54060101", target: 0, result: 0 },
     { hospcode: "06414", areacode: "54060801", target: "", result: 2 },
   ]);
-  assert.deepEqual(totals(b, NO_OVERRIDE, WHOLE_YEAR), { target: 0, result: 2, pct: null });
+  assert.deepEqual(totals(b, DM_SCREEN, WHOLE_YEAR), { target: 0, result: 2, pct: null });
 });
 
 test("col_target b, col_result a on a header that also has target/result → ทั้งปี from b and a (OVERRIDE wins over ANNUAL)", () => {
@@ -101,7 +153,7 @@ test("col_target b, col_result a on a header that also has target/result → ท
     { hospcode: "06413", areacode: "54060101", target: 100, result: 1, c: 3, b: 10, a: 8 },
     { hospcode: "06414", areacode: "54060801", target: 100, result: 1, c: 4, b: 10, a: 7 },
   ]);
-  assert.deepEqual(totals(b, { col_target: "b", col_result: "a" }, WHOLE_YEAR), { target: 20, result: 15, pct: 75 });
+  assert.deepEqual(totals(b, DENTAL, WHOLE_YEAR), { target: 20, result: 15, pct: 75 });
 });
 
 test("measure bcg on s_epi1 with target/result added → ทั้งปี from Σ target{MM} and Σ bcg_{MM} (M_B wins over ANNUAL)", () => {
@@ -110,31 +162,31 @@ test("measure bcg on s_epi1 with target/result added → ทั้งปี from
     { hospcode: "06413", areacode: "54060101", target: 100, result: 1, target10: 2, bcg_10: 2, dtp1_10: 2 },
     { hospcode: "06413", areacode: "54060102", target: 100, result: 1, target01: 2, bcg_01: 1, dtp1_01: 2 },
   ]);
-  assert.deepEqual(totals(b, NO_OVERRIDE, { area: "all", period: "year", measure: "bcg" }), { target: 4, result: 3, pct: 75 });
+  assert.deepEqual(totals(b, DM_SCREEN, { area: "all", period: "year", measure: "bcg" }), { target: 4, result: 3, pct: 75 });
 });
 
 test("s_kpi_childdev4 (quarters only) → ทั้งปี is the sum of all 4 quarters, not PA's 3 (SCHEMA §4.3)", () => {
   const b = block(HEADERS.s_kpi_childdev4, [
     { hospcode: "06413", areacode: "54060101", target1: 5, result1: 4, target2: 5, result2: 4, target3: 5, result3: 4, target4: 5, result4: 3 },
   ]);
-  assert.deepEqual(totals(b, NO_OVERRIDE, WHOLE_YEAR), { target: 20, result: 15, pct: 75 });
+  assert.deepEqual(totals(b, DM_SCREEN, WHOLE_YEAR), { target: 20, result: 15, pct: 75 });
 });
 
 test("s_epi_complete without target/result → ทั้งปี is the sum of the 12 months of M_A", () => {
   const b = block(HEADERS.s_epi_complete.filter((h) => h !== "target" && h !== "result"), [
     { hospcode: "06413", areacode: "54060101", target10: 4, result10: 3, target09: 4, result09: 3 },
   ]);
-  assert.deepEqual(totals(b, NO_OVERRIDE, WHOLE_YEAR), { target: 8, result: 6, pct: 75 });
+  assert.deepEqual(totals(b, DM_SCREEN, WHOLE_YEAR), { target: 8, result: 6, pct: 75 });
 });
 
 test("s_dental_0_5_cavity_free without col_target/col_result → no rule applies: null, not zeros", () => {
   const b = block(HEADERS.s_dental_0_5_cavity_free, [{ hospcode: "06413", areacode: "54060101", c: 1, b: 10, a: 8 }]);
-  assert.equal(totals(b, NO_OVERRIDE, WHOLE_YEAR), null);
+  assert.equal(totals(b, { ...DENTAL, col_target: null, col_result: null }, WHOLE_YEAR), null);
 });
 
 // One row per case: the period's own columns hold 4 and 3; the other
 // columns hold other values, so a wrong column shows in the sums.
-const PERIOD_CASES: [string, string, { period: "q2" | "q3" | "q4" | "m01" | "m11"; measure: string | null }, Record<string, Cell>][] = [
+const PERIOD_CASES: [string, string, Pick<ReportQuery, "period" | "measure">, Record<string, Cell>][] = [
   ["s_kpi_anc12", "Q_A target2/result2", { period: "q2", measure: null },
     { target: 90, result: 1, target1: 50, result1: 1, target2: 4, result2: 3, target3: 50, result3: 1 }],
   ["s_ncd_screen_repleate1", "Q_B targetq3/resultq3", { period: "q3", measure: null },
@@ -147,36 +199,36 @@ const PERIOD_CASES: [string, string, { period: "q2" | "q3" | "q4" | "m01" | "m11
     { target10: 50, mmr1_10: 1, target11: 4, mmr1_11: 3, mmr2_11: 1, dtp4_11: 2 }],
 ];
 
-for (const [table, used, q, cells] of PERIOD_CASES) {
-  test(`${q.period}${q.measure ? ` of ${q.measure}` : ""} on ${table} → ${used} only`, () => {
+for (const [table, used, query, cells] of PERIOD_CASES) {
+  test(`${query.period}${query.measure ? ` of ${query.measure}` : ""} on ${table} → ${used} only`, () => {
     const b = block(HEADERS[table], [{ hospcode: "06413", areacode: "54060101", ...cells }]);
-    assert.deepEqual(totals(b, NO_OVERRIDE, { area: "all", ...q }), { target: 4, result: 3, pct: 75 });
+    assert.deepEqual(totals(b, DM_SCREEN, { area: "all", ...query }), { target: 4, result: 3, pct: 75 });
   });
 }
 
 test("q1 on s_dm_screen and s_aged9 (result1–4 or result1–9 without target1–4) → null: they are not quarterly", () => {
   for (const table of ["s_dm_screen", "s_aged9"]) {
     const b = block(HEADERS[table], [{ hospcode: "06413", areacode: "54060101", target: 4, result: 3, result1: 2 }]);
-    assert.equal(totals(b, NO_OVERRIDE, { area: "all", period: "q1", measure: null }), null, table);
+    assert.equal(totals(b, DM_SCREEN, { area: "all", period: "q1", measure: null }), null, table);
   }
 });
 
-const MONTH_PERIODS = ["m10", "m11", "m12", "m01", "m02", "m03", "m04", "m05", "m06", "m07", "m08", "m09"];
+const MONTH_PERIODS = MONTHS.map((m) => `m${m}`);
 
 test("periods: s_kpi_anc12 → ทั้งปี and quarters 1–4; s_epi_complete and s_epi1 → ทั้งปี and the months ต.ค.–ก.ย.", () => {
-  assert.deepEqual(periods(block(HEADERS.s_kpi_anc12), NO_OVERRIDE), ["year", "q1", "q2", "q3", "q4"]);
-  assert.deepEqual(periods(block(HEADERS.s_epi_complete), NO_OVERRIDE), ["year", ...MONTH_PERIODS]);
-  assert.deepEqual(periods(block(HEADERS.s_epi1), NO_OVERRIDE), ["year", ...MONTH_PERIODS]);
+  assert.deepEqual(periods(block(HEADERS.s_kpi_anc12), DM_SCREEN), ["year", "q1", "q2", "q3", "q4"]);
+  assert.deepEqual(periods(block(HEADERS.s_epi_complete), DM_SCREEN), ["year", ...MONTH_PERIODS]);
+  assert.deepEqual(periods(block(HEADERS.s_epi1), DM_SCREEN), ["year", ...MONTH_PERIODS]);
 });
 
 test("periods: s_dental_0_5_cavity_free with b/a, s_dm_screen and s_aged9 → ทั้งปี only", () => {
-  assert.deepEqual(periods(block(HEADERS.s_dental_0_5_cavity_free), { col_target: "b", col_result: "a" }), ["year"]);
-  assert.deepEqual(periods(block(HEADERS.s_dm_screen), NO_OVERRIDE), ["year"]);
-  assert.deepEqual(periods(block(HEADERS.s_aged9), NO_OVERRIDE), ["year"]);
+  assert.deepEqual(periods(block(HEADERS.s_dental_0_5_cavity_free), DENTAL), ["year"]);
+  assert.deepEqual(periods(block(HEADERS.s_dm_screen), DM_SCREEN), ["year"]);
+  assert.deepEqual(periods(block(HEADERS.s_aged9), DM_SCREEN), ["year"]);
 });
 
 test("periods: a header no rule knows (s_dental_0_5_cavity_free without col_target/col_result) → none", () => {
-  assert.deepEqual(periods(block(HEADERS.s_dental_0_5_cavity_free), NO_OVERRIDE), []);
+  assert.deepEqual(periods(block(HEADERS.s_dental_0_5_cavity_free), { ...DENTAL, col_target: null, col_result: null }), []);
 });
 
 test("area 540601 → only the rows whose areacode starts with 540601 (a tambon is the first 6 digits, SPEC §10)", () => {
@@ -186,7 +238,7 @@ test("area 540601 → only the rows whose areacode starts with 540601 (a tambon 
     { hospcode: "06414", areacode: "54060801", target: 50, result: 1 },
     { hospcode: "06415", areacode: "54060201", target: 50, result: 1 },
   ]);
-  assert.deepEqual(totals(b, NO_OVERRIDE, { area: "540601", period: "year", measure: null }), { target: 4, result: 3, pct: 75 });
+  assert.deepEqual(totals(b, DM_SCREEN, { area: "540601", period: "year", measure: null }), { target: 4, result: 3, pct: 75 });
 });
 
 // Names from catalog.json (tambon_master and hospitals of PA-Data), part of them
@@ -210,7 +262,7 @@ test("by area → one row per tambon named from areas, in code order; a code not
     { hospcode: "11170", areacode: "54060107", target: 2, result: 2 },
     { hospcode: "06420", areacode: "54060403", target: 0, result: 0 },
   ]);
-  assert.deepEqual(totalsBy(b, NO_OVERRIDE, { area: "all", period: "year", measure: null, by: "area" }, NAMES), [
+  assert.deepEqual(totalsBy(b, DM_SCREEN, { area: "all", period: "year", measure: null, by: "area" }, NAMES), [
     { key: "540601", name: "บ้านหนุน", totals: { target: 4, result: 3, pct: 75 } },
     { key: "540604", name: "รหัสพื้นที่ 540604", totals: { target: 0, result: 0, pct: null } },
     { key: "540608", name: "ทุ่งน้าว", totals: { target: 4, result: 1, pct: 25 } },
@@ -226,7 +278,7 @@ test("area 540601 by hosp → the rows of that tambon by hospcode, whatever the 
     { hospcode: "06414", areacode: "54060801", target: 50, result: 1 },
     { hospcode: "77777", areacode: "54060103", target: 4, result: 3 },
   ]);
-  assert.deepEqual(totalsBy(b, NO_OVERRIDE, { area: "540601", period: "year", measure: null, by: "hosp" }, NAMES), [
+  assert.deepEqual(totalsBy(b, DM_SCREEN, { area: "540601", period: "year", measure: null, by: "hosp" }, NAMES), [
     { key: "06413", name: "บ้านหนุน", totals: { target: 4, result: 3, pct: 75 } },
     { key: "06414", name: "ทุ่งน้าว", totals: { target: 4, result: 1, pct: 25 } },
     { key: "11170", name: "สอง", totals: { target: 2, result: 2, pct: 100 } },
@@ -236,30 +288,12 @@ test("area 540601 by hosp → the rows of that tambon by hospcode, whatever the 
 
 test("by area on a header no rule knows → null, as totals", () => {
   const b = block(HEADERS.s_dental_0_5_cavity_free, [{ hospcode: "06413", areacode: "54060101", b: 10, a: 8 }]);
-  assert.equal(totalsBy(b, NO_OVERRIDE, { area: "all", period: "year", measure: null, by: "area" }, NAMES), null);
+  const report = { ...DENTAL, col_target: null, col_result: null };
+  assert.equal(totalsBy(b, report, { area: "all", period: "year", measure: null, by: "area" }, NAMES), null);
 });
 
-// The s_epi2 report as catalog.json has it (4 Nov 2569)
-const S_EPI2: DcReport = {
-  opendata_id: "71e49e4b61aafee17761601c506d5f85",
-  report_name: "ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส",
-  source_table: "s_epi2",
-  cat_id: "4df360514655f79f13901ef1181ca1c7",
-  main_report_id: "73daf277928bc32a1b3c8e772192543c",
-  subgroup: "กลุ่มอายุ 2 ปี",
-  order: 20,
-  report_type: "coverage",
-  goal: 90,
-  col_target: null,
-  col_result: null,
-  measure_goals: { dtp4: 90, opv4: 90, mmr1: 95, mmr2: 95, je2: 90 },
-  catalog_status: "active",
-  years: [],
-};
-
 test("2 block ปี whose headers differ (2568: mmr1 before target{MM}, no pcv4) → each year from its own header; pcv4 in 2568 → null, not 0", () => {
-  const months = ["10", "11", "12", "01", "02", "03", "04", "05", "06", "07", "08", "09"];
-  const h2568 = ["hospcode", "areacode", "date_com", "b_year", ...months.map((m) => `mmr1_${m}`), ...months.map((m) => `target${m}`)];
+  const h2568 = ["hospcode", "areacode", "date_com", "b_year", ...MONTHS.map((m) => `mmr1_${m}`), ...MONTHS.map((m) => `target${m}`)];
   const data = {
     report: S_EPI2,
     years: [
@@ -287,6 +321,10 @@ test("เกณฑ์ of s_epi2: mmr1 → 95 from measure_goals (kpi_epi); pcv4,
   assert.equal(goalFor(S_EPI2, "mmr1"), 95);
   assert.equal(goalFor(S_EPI2, "pcv4"), 90);
   assert.equal(goalFor(S_EPI2, null), 90);
+});
+
+test("เกณฑ์ of a measure named like an Object property (constructor, from ?measure=) → the report's goal, not a function", () => {
+  assert.equal(goalFor(S_EPI2, "constructor"), 90);
 });
 
 test("ร้อยละ 89.999 with เกณฑ์ 90 → not passed: compared before rounding, as PA does", () => {
