@@ -1,7 +1,9 @@
-// Data Center types, as SCHEMA §9 gives them: the part that the snapshot
-// readers (snapshot.ts) return.
+// Data Center types, as SCHEMA §9 gives them.
 
 export type ReportType = "coverage" | "workload";
+
+export type Month = "10" | "11" | "12" | "01" | "02" | "03" | "04" | "05" | "06" | "07" | "08" | "09";
+export type Period = "year" | "q1" | "q2" | "q3" | "q4" | `m${Month}`;
 
 /** One row of sync_status */
 export interface DcYearStatus {
@@ -66,4 +68,53 @@ export interface SnapshotMeta {
   years: string[];
   report_count: number;
   latest_date_com: string; // "" if there is no data yet
+}
+
+export type Cell = string | number;
+
+/** GAS's ?action=report answer and the content of reports/{id}.json (same shape) */
+export interface DcYearBlock {
+  b_year: string;
+  headers: string[];
+  rows: Cell[][]; // in headers order (id already filtered)
+  max_date_com: string;
+  sheet_rows: number; // rows read from the sheet before the id filter
+  expected_rows: number; // sync_status.row_count
+}
+
+export interface DcReportData {
+  report: DcReport;
+  years: DcYearBlock[]; // oldest year first
+}
+export type GasReport = DcReportData;
+
+/** /reports/{id} query: accepted values and defaults */
+export interface ReportQuery {
+  year: string; // 4 digits · default = the latest year in report.years
+  area: "all" | string; // "all" or a 6-digit tambon code · default "all"
+  period: Period; // default "year"
+  measure: string | null; // measure prefix (M_B tables only) · default the first measure
+  by: "area" | "hosp"; // default "area" · forced to "hosp" when area ≠ "all"
+}
+
+export interface Totals {
+  target: number;
+  result: number;
+  pct: number | null;
+}
+
+/** Column family (SCHEMA §4.1) */
+export type Family = "ANNUAL" | "Q_A" | "Q_B" | "Q_C" | "M_A" | "M_B" | "OVERRIDE";
+
+/** Totals of one tambon or hospital (SCHEMA §4.4) */
+export interface UnitTotals {
+  key: string; // 6-digit tambon code or hospcode
+  name: string;
+  totals: Totals;
+}
+
+/** One year of a trend (SCHEMA §4.4) */
+export interface TrendPoint {
+  b_year: string;
+  totals: Totals | null; // null = no usable columns that year, shown as "—"
 }
