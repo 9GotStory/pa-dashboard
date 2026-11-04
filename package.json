@@ -10,7 +10,7 @@
     "start": "npx serve@latest out",
     "lint": "eslint && node src/scripts/check-glossary.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "node --test \"src/scripts/test/**/*.test.js\"",
+    "test": "node --test \"src/scripts/test/**/*.test.js\" && tsx --test src/lib/dc/*.test.ts",
     "gas:push": "clasp push -f",
     "gas:deploy": "clasp deploy -i AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H",
     "gas:sync": "npm run gas:push && npm run gas:deploy",
@@ -43,6 +43,7 @@
     "eslint-config-next": "16.4.3",
     "playwright-core": "^1.64.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   },
   "overrides": {

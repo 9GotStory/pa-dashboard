@@ -601,6 +601,22 @@ export interface Totals {
   result: number;
   pct: number | null;
 }
+
+/** กลุ่มคอลัมน์ (§4.1) */
+export type Family = "ANNUAL" | "Q_A" | "Q_B" | "Q_C" | "M_A" | "M_B" | "OVERRIDE";
+
+/** ผลรวมของตำบลหรือหน่วยบริการหนึ่ง (§4.4) */
+export interface UnitTotals {
+  key: string;                   // รหัสตำบล 6 หลัก หรือ hospcode
+  name: string;
+  totals: Totals;
+}
+
+/** ค่าของปีหนึ่งในแนวโน้ม (§4.4) */
+export interface TrendPoint {
+  b_year: string;
+  totals: Totals | null;         // null = ปีนั้นไม่มีคอลัมน์ที่ใช้ได้ แสดง "—"
+}
 ```
 
 ## 10. ตัวแปรแวดล้อมและค่าตั้งนอกโค้ด
