@@ -11,7 +11,7 @@ export default function Home() {
   const { areas, hospitals, mains } = readCatalog();
   const { built_at, latest_date_com } = readMeta();
   const topics = mains.flatMap((main) =>
-    main.topics.map((topic) => ({ main, topic, reports: topic.groups.reduce((n, g) => n + g.reports.length, 0) })),
+    main.topics.map((topic) => ({ topic, count: topic.groups.reduce((n, g) => n + g.reports.length, 0) })),
   );
 
   return (
@@ -52,7 +52,7 @@ export default function Home() {
           </Link>
         </div>
         <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {topics.map(({ main, topic, reports }, i) => (
+          {topics.map(({ topic, count }, i) => (
             <li key={topic.cat_id} className="min-w-0">
               <Link
                 href={`/reports?cat=${topic.cat_id}`}
@@ -65,9 +65,9 @@ export default function Home() {
                   {String(i + 1).padStart(2, "0")}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <small className="block text-[11px] font-semibold text-dc-teal">{main.main_report_name}</small>
+                  <small className="block text-[11px] font-semibold text-dc-teal">{topic.main_report_name}</small>
                   <strong className="block text-[13px] leading-snug font-semibold text-dc-ink">{topic.category_name}</strong>
-                  <small className="mt-0.5 block text-xs text-dc-muted">{reports} รายงาน</small>
+                  <small className="mt-0.5 block text-xs text-dc-muted">{count} รายงาน</small>
                 </span>
                 <span aria-hidden="true" className="text-lg text-dc-muted">
                   →

@@ -2,7 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useState } from "react";
-import { preconnect, preload } from "react-dom";
+import { preconnect } from "react-dom";
 import type { DcCatalog } from "@/lib/dc/types";
 
 type Area = DcCatalog["areas"][number];
@@ -13,23 +13,23 @@ type Hospital = DcCatalog["hospitals"][number];
 // ssr: false only in a client component, hence this wrapper.
 const DistrictMap = dynamic(() => import("./DistrictMap"), { ssr: false });
 
+const TILE_SERVER = "https://tile.openstreetmap.org";
+
 /**
  * The map and ตำบล picker of the home page (SPEC §9.2): pick a ตำบล on the
  * map or with its button to see its หน่วยบริการ, from hospitals.tambon_id
- * in catalog.json; pick it again, or ดูภาพรวมอำเภอ, for the whole อำเภอ. The
- * buttons work without the map, as when its tiles or boundaries cannot load.
+ * in catalog.json, and ดูภาพรวมอำเภอ for the whole อำเภอ. The buttons work
+ * without the map, as when its tiles or boundaries cannot load.
  */
 export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; hospitals: Hospital[] }) {
-  // A map tile is the largest paint on a phone (LCP, SPEC §9.6). The page's
-  // <head> starts the boundaries' download and the tile server's connection,
-  // so neither waits for Leaflet; the map's fetch takes the preloaded file.
-  preload("/geo/song-tambon.geojson", { as: "fetch", crossOrigin: "anonymous" });
-  preconnect("https://tile.openstreetmap.org");
+  // A map tile is the largest paint on a phone (LCP, SPEC §9.6): the page's
+  // <head> opens the tile server's connection before Leaflet has loaded.
+  preconnect(TILE_SERVER);
   const [selected, setSelected] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "failed">("loading");
-  const toggle = (id: string) => setSelected((current) => (current === id ? null : id));
   const area = areas.find((a) => a.id === selected);
-  const units = hospitals.filter((h) => h.tambon_id === selected);
+  const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
+  const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
 
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1.48fr)_minmax(300px,0.83fr)] lg:gap-5">
@@ -50,7 +50,13 @@ export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; 
           </button>
         </div>
         <div className="relative h-[345px] sm:h-[410px] lg:h-[500px]">
-          <DistrictMap areas={areas} selected={selected} onSelect={toggle} onLoad={(ok) => setMapStatus(ok ? "ready" : "failed")} />
+          <DistrictMap
+            areas={areas}
+            tileServer={TILE_SERVER}
+            selected={selected}
+            onSelect={setSelected}
+            onLoad={(ok) => setMapStatus(ok ? "ready" : "failed")}
+          />
           {mapStatus !== "ready" && (
             <p role="status" className="absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-muted">
               {mapStatus === "loading" ? "กำลังโหลดแผนที่…" : "โหลดขอบเขตตำบลไม่สำเร็จ เลือกตำบลจากรายชื่อได้"}
@@ -74,7 +80,7 @@ export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; 
                 key={a.id}
                 type="button"
                 aria-pressed={on}
-                onClick={() => toggle(a.id)}
+                onClick={() => setSelected(a.id)}
                 className={`flex min-h-11 min-w-0 items-center justify-between gap-1.5 rounded-[5px] border px-2.5 text-left text-[13px] ${
                   on
                     ? "border-dc-teal bg-dc-teal/10 font-bold text-dc-navy shadow-[inset_3px_0_0_var(--color-dc-teal)]"
@@ -96,15 +102,15 @@ export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; 
         </div>
         <div className="m-3.5 mt-auto rounded-[7px] border border-t-[3px] border-dc-border border-t-dc-teal bg-dc-blue-light/60 px-4 py-3.5">
           <p className="text-[11px] font-bold text-dc-teal">ข้อมูลพื้นที่ที่เลือก</p>
-          <h3 className="font-prompt text-lg font-semibold text-dc-navy">{area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง"}</h3>
+          <h3 className="font-prompt text-lg font-semibold text-dc-navy">{title}</h3>
           {area ? (
             <>
               <p className="text-xs text-dc-muted">
-                รหัสตำบล {area.id} · หน่วยบริการ {units.length} แห่ง
+                รหัสตำบล {area.id} · หน่วยบริการ {areaHospitals.length} แห่ง
               </p>
-              {units.length > 0 ? (
+              {areaHospitals.length > 0 ? (
                 <ul className="mt-2.5">
-                  {units.map((h) => (
+                  {areaHospitals.map((h) => (
                     <li key={h.hospcode} className="flex justify-between gap-3 border-t border-dc-border py-1.5 text-[13px]">
                       <span className="font-semibold text-dc-ink">{h.hospname}</span>
                       <span className="text-xs text-dc-muted tabular-nums">รหัส {h.hospcode}</span>
@@ -124,7 +130,7 @@ export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; 
             </>
           )}
           <p role="status" className="sr-only">
-            {area ? `เลือกตำบล${area.name_th} หน่วยบริการ ${units.length} แห่ง` : "ภาพรวมอำเภอสอง"}
+            {area ? `เลือก${title} หน่วยบริการ ${areaHospitals.length} แห่ง` : title}
           </p>
         </div>
       </aside>

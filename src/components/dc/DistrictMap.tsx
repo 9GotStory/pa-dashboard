@@ -3,11 +3,9 @@
 import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import type { DcCatalog } from "@/lib/dc/types";
+import type { AreaBoundary, DcCatalog } from "@/lib/dc/types";
 
 type Area = DcCatalog["areas"][number];
-/** The properties of a ตำบล in public/geo/song-tambon.geojson that the map uses (SCHEMA §8) */
-type Boundary = { ADMIN_ID3: string };
 type Drawn = { map: L.Map; paths: Map<string, L.Polygon>; bounds: L.LatLngBounds };
 
 // R6's map: every ตำบล in dc-blue and the selected one in dc-teal. The colours
@@ -20,20 +18,22 @@ const SELECTED: L.PathOptions = { weight: 3.5, fillOpacity: 0.55 };
 
 /**
  * The map of the home page (SPEC §9.2): the ตำบล of
- * public/geo/song-tambon.geojson over OpenStreetMap tiles, named from
- * catalog.json's areas. A click on a ตำบล picks it and leaves the view where
- * it is; a pick from elsewhere moves the map to that ตำบล, or to the whole
- * อำเภอ when none is picked, as in R6. onLoad says whether the boundaries
- * loaded. Leaflet needs the browser, so DistrictExplorer loads this file on
- * its own, after the page.
+ * public/geo/song-tambon.geojson over OpenStreetMap tiles from tileServer,
+ * named from catalog.json's areas. A click on a ตำบล picks it and leaves the
+ * view where it is; a pick from elsewhere moves the map to that ตำบล, or to
+ * the whole อำเภอ when none is picked, as in R6. onLoad says whether the
+ * boundaries loaded. Leaflet needs the browser, so DistrictExplorer loads
+ * this file on its own, after the page.
  */
 export default function DistrictMap({
   areas,
+  tileServer,
   selected,
   onSelect,
   onLoad,
 }: {
   areas: Area[];
+  tileServer: string;
   selected: string | null;
   onSelect: (id: string) => void;
   onLoad: (ok: boolean) => void;
@@ -42,59 +42,64 @@ export default function DistrictMap({
   const [drawn, setDrawn] = useState<Drawn | null>(null);
   const fromMap = useRef(false);
   const pick = useEffectEvent((id: string) => {
+    // The ตำบล on show already: no change, so no effect run to clear the flag
+    if (id === selected) return;
     fromMap.current = true;
     onSelect(id);
   });
   const hover = useEffectEvent((id: string, path: L.Polygon, over: boolean) => {
     if (id !== selected) path.setStyle(over ? HOVER : PLAIN);
   });
-  const loaded = useEffectEvent((ok: boolean) => onLoad(ok));
+  const loaded = useEffectEvent(onLoad);
 
   useEffect(() => {
     const map = L.map(box.current!, { zoomControl: false, scrollWheelZoom: false });
     L.control.zoom({ position: "bottomright", zoomInTitle: "ขยายแผนที่", zoomOutTitle: "ย่อแผนที่" }).addTo(map);
-    L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    L.tileLayer(`${tileServer}/{z}/{x}/{y}.png`, {
       maxZoom: 18,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     // The boundaries draw what the ตำบล buttons offer, so screen readers skip them.
     map.getPane("overlayPane")?.setAttribute("aria-hidden", "true");
-    let live = true;
+    let ignore = false;
     fetch("/geo/song-tambon.geojson")
       .then((res) => {
         if (!res.ok) throw new Error(`/geo/song-tambon.geojson: HTTP ${res.status}`);
-        return res.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.Geometry, Boundary>>;
+        return res.json() as Promise<GeoJSON.FeatureCollection<GeoJSON.Geometry, AreaBoundary>>;
       })
-      .then((data) => {
-        if (!live) return;
-        const names = new Map(areas.map((a) => [a.id, a.name_th]));
-        const paths = new Map<string, L.Polygon>();
-        const layer = L.geoJSON<Boundary>(data, {
-          filter: (feature) => names.has(feature.properties.ADMIN_ID3),
-          style: () => ({ ...PLAIN, className: PATH }),
-          onEachFeature: (feature, layer) => {
-            const id = feature.properties.ADMIN_ID3;
-            const path = layer as L.Polygon;
-            paths.set(id, path);
-            path.bindTooltip(`ตำบล${names.get(id)}`, { sticky: true, direction: "top" });
-            path.on({
-              click: () => pick(id),
-              mouseover: () => hover(id, path, true),
-              mouseout: () => hover(id, path, false),
-            });
-          },
-        }).addTo(map);
-        setDrawn({ map, paths, bounds: layer.getBounds() });
-        loaded(true);
-      })
-      .catch(() => {
-        if (live) loaded(false);
-      });
+      // A failed load shows its message; an error while drawing is a bug and stays uncaught.
+      .then(
+        (data) => {
+          if (ignore) return;
+          const names = new Map(areas.map((a) => [a.id, a.name_th]));
+          const paths = new Map<string, L.Polygon>();
+          const boundaries = L.geoJSON<AreaBoundary>(data, {
+            filter: (feature) => names.has(feature.properties.ADMIN_ID3),
+            style: () => ({ ...PLAIN, className: PATH }),
+            onEachFeature: (feature, layer) => {
+              const id = feature.properties.ADMIN_ID3;
+              const path = layer as L.Polygon;
+              paths.set(id, path);
+              path.bindTooltip(`ตำบล${names.get(id)}`, { sticky: true, direction: "top" });
+              path.on({
+                click: () => pick(id),
+                mouseover: () => hover(id, path, true),
+                mouseout: () => hover(id, path, false),
+              });
+            },
+          }).addTo(map);
+          setDrawn({ map, paths, bounds: boundaries.getBounds() });
+          loaded(true);
+        },
+        () => {
+          if (!ignore) loaded(false);
+        },
+      );
     return () => {
-      live = false;
+      ignore = true;
       map.remove();
     };
-  }, [areas]);
+  }, [areas, tileServer]);
 
   useEffect(() => {
     if (!drawn) return;

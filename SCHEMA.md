@@ -569,6 +569,11 @@ export interface SnapshotMeta {
   latest_date_com: string;       // "" ถ้ายังไม่มีข้อมูล
 }
 
+/** properties ของตำบลใน public/geo/song-tambon.geojson ที่แผนที่หน้าแรกอ่าน (§8) */
+export interface AreaBoundary {
+  ADMIN_ID3: string;             // รหัสตำบล 6 หลัก = areas[].id
+}
+
 export type Cell = string | number;
 
 /** response ของ GAS ?action=report และเนื้อหา reports/{id}.json (รูปแบบเดียวกัน) */
