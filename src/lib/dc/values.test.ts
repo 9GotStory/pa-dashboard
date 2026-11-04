@@ -2,7 +2,20 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { HEADERS } from "./fixtures/headers-20261104";
 import type { Cell, DcReport, DcYearBlock, Family, ReportQuery } from "./types";
-import { families, goalFor, measureLabel, measures, passes, periods, totals, totalsBy, trend } from "./values";
+import {
+  dataYears,
+  families,
+  goalFor,
+  measureLabel,
+  measures,
+  passes,
+  periods,
+  reportQuery,
+  totals,
+  totalsBy,
+  trend,
+  yearBlock,
+} from "./values";
 
 // FEATURES F15: the coverage rules of SCHEMA §4 on year blocks, with the real
 // headers of the 18 tables (CODING_STANDARDS §5).
@@ -338,4 +351,75 @@ test("ร้อยละ equal to the เกณฑ์ → passed (pct ≥ goal)"
 test("no ร้อยละ (target 0) or no เกณฑ์ → no verdict: null", () => {
   assert.equal(passes(null, 90), null);
   assert.equal(passes(95, null), null);
+});
+
+// FEATURES F20: ?year=&area=&period=&measure=&by= of /reports/{id} as a
+// ReportQuery for the report's data (SPEC §9.4, SCHEMA §9). s_epi2 here has
+// 2568 with mmr1 only and 2569 with the real header.
+const MMR1_ONLY = ["hospcode", "areacode", "date_com", "b_year", ...MONTHS.map((m) => `mmr1_${m}`), ...MONTHS.map((m) => `target${m}`)];
+const EPI2_DATA = {
+  report: S_EPI2,
+  years: [
+    block(MMR1_ONLY, [{ hospcode: "06413", areacode: "54060101", target10: 4, mmr1_10: 2 }], "2568"),
+    block(HEADERS.s_epi2, [{ hospcode: "06413", areacode: "54060101", target10: 2, mmr1_10: 1 }], "2569"),
+  ],
+};
+const query = (search: string) => reportQuery(EPI2_DATA, new URLSearchParams(search), NAMES);
+
+test("no query on s_epi2 → the latest ปีงบประมาณ, ทั้งอำเภอ, ทั้งปี, that year's first measure dtp4, by area (the defaults of SCHEMA §9)", () => {
+  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: "dtp4", by: "area" });
+});
+
+test("?year=2568 → 2568, and its measure default comes from 2568's own columns: mmr1, not dtp4 of 2569", () => {
+  assert.deepEqual(query("year=2568"), { year: "2568", area: "all", period: "year", measure: "mmr1", by: "area" });
+});
+
+test("?year=2560, a year without data → kept as 2560 with no measure, so the page says ไม่มีข้อมูลปี 2560 ในระบบ instead of another year", () => {
+  assert.deepEqual(query("year=2560"), { year: "2560", area: "all", period: "year", measure: null, by: "area" });
+});
+
+test("a block ปี without rows (the id filter left none, SCHEMA §3.2) → not a year with data: not offered, not the default, and no block for it", () => {
+  const data = {
+    report: S_EPI2,
+    years: [block(MMR1_ONLY, [{ hospcode: "06413", areacode: "54060101", target10: 4, mmr1_10: 2 }], "2567"), block(MMR1_ONLY, [], "2568")],
+  };
+  assert.deepEqual(dataYears(data), ["2567"]);
+  assert.equal(reportQuery(data, new URLSearchParams(""), NAMES).year, "2567");
+  assert.equal(yearBlock(data, "2568"), null);
+});
+
+test("years with data → latest first, as the ปีงบประมาณ options list them", () => {
+  assert.deepEqual(dataYears(EPI2_DATA), ["2569", "2568"]);
+});
+
+test("?measure=mmr1 → mmr1; pcv4 in 2568, whose columns lack it, or MMR1 in another letter case → that year's first measure", () => {
+  assert.equal(query("measure=mmr1").measure, "mmr1");
+  assert.equal(query("year=2568&measure=pcv4").measure, "mmr1");
+  assert.equal(query("measure=MMR1").measure, "dtp4");
+});
+
+test("?measure= on a report without measures (s_epi_complete) → null", () => {
+  const data = { report: DM_SCREEN, years: [block(HEADERS.s_epi_complete, [{ hospcode: "06413", areacode: "54060101", target: 1, result: 1 }])] };
+  assert.equal(reportQuery(data, new URLSearchParams("measure=bcg"), NAMES).measure, null);
+});
+
+test("?period= → kept when the year's columns have it (q2 on s_kpi_anc12, m01 on s_epi_complete), else ทั้งปี (q2 on s_epi_complete, m13)", () => {
+  const row = { hospcode: "06413", areacode: "54060101", target: 1, result: 1 };
+  const anc12 = { report: DM_SCREEN, years: [block(HEADERS.s_kpi_anc12, [row])] };
+  const complete = { report: DM_SCREEN, years: [block(HEADERS.s_epi_complete, [row])] };
+  const period = (data: typeof anc12, search: string) => reportQuery(data, new URLSearchParams(search), NAMES).period;
+  assert.equal(period(anc12, "period=q2"), "q2");
+  assert.equal(period(complete, "period=m01"), "m01");
+  assert.equal(period(complete, "period=q2"), "year");
+  assert.equal(period(complete, "period=m13"), "year");
+});
+
+test("?area=540601 → that ตำบล, compared by หน่วยบริการ even with by=area (SPEC §9.4); a code not in areas → ทั้งอำเภอ", () => {
+  assert.deepEqual(query("area=540601&by=area"), { year: "2569", area: "540601", period: "year", measure: "dtp4", by: "hosp" });
+  assert.equal(query("area=540699").area, "all");
+});
+
+test("?by=hosp → by หน่วยบริการ for ทั้งอำเภอ; any other by → by area", () => {
+  assert.equal(query("by=hosp").by, "hosp");
+  assert.equal(query("by=tambon").by, "area");
 });
