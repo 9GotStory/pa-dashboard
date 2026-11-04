@@ -222,7 +222,8 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 - Masthead และเมนูตาม R6: **หน้าแรก · คลังรายงาน · PA Dashboard** (ตัดเมนู "เกี่ยวกับต้นแบบ")
 - Footer: แหล่งข้อมูล (HDC Open Data, ขอบเขต GIS), เวลาที่ build (`meta.json`) และวันที่ข้อมูลล่าสุด
-- สี: นำ token ของ R6 (`--green #17695f` ฯลฯ) มาเป็น theme ของ Data Center ใน `globals.css` ส่วนฟอนต์ใช้ Prompt/Sarabun ที่มีอยู่
+- สี: นำ token ชุดสุดท้ายของ R6 คือบล็อก "HOME R3" กรมท่า/teal (`--green #155b86`, เมนู `#143653` ฯลฯ) ซึ่งทับชุดแรก (`--green #17695f`) จึงเป็นสีที่ R6 แสดงจริง มาเป็น theme ของ Data Center ใน `globals.css` ชื่อ `--color-dc-*` (ตัดสิน 4 พ.ย. 2569)
+- ฟอนต์ใช้ Prompt/Sarabun ที่มีอยู่: หัวเรื่อง `font-prompt` ข้อความ `font-dc` (Sarabun) ซึ่ง layout ของ `(dc)` ตั้งไว้แล้ว ไม่ใช้ `font-sans` เพราะได้ฟอนต์ของเครื่อง (§11)
 - ไม่มีคำว่า "ข้อมูลจำลอง" หรือ "ข้อมูลตัวอย่าง" อีก เพราะทุกตัวเลขมาจาก HDC
 - รูปแบบการเข้าถึงตาม R6: จัดการ focus, ตารางเลื่อนแนวนอน, รายการแบบมือถือ
 - กราฟวาดด้วย SVG แบบ R6 ไม่เพิ่มไลบรารีกราฟ
