@@ -5,6 +5,8 @@ import type {
   DcReportData,
   DcYearBlock,
   Family,
+  LibraryPage,
+  LibraryQuery,
   Month,
   Period,
   ReportQuery,
@@ -280,4 +282,60 @@ export function reportSearch(query: ReportQuery): string {
   if (query.measure !== null) params.set("measure", query.measure);
   params.set("by", query.by);
   return `?${params}`;
+}
+
+/** The query of /reports (?main=&cat=&q=&page=&size=) as a LibraryQuery, with the defaults of SCHEMA §9 */
+export function libraryQuery(mains: DcCatalog["mains"], params: URLSearchParams): LibraryQuery {
+  const cat = mains.flatMap((m) => m.topics).find((t) => t.cat_id === params.get("cat"))?.cat_id ?? null;
+  // One หัวข้อ or one หมวด is picked at a time, and the หัวข้อ is the narrower
+  const main = cat === null ? (mains.find((m) => m.main_report_id === params.get("main"))?.main_report_id ?? null) : null;
+  const page = params.get("page") ?? "";
+  return {
+    main,
+    cat,
+    q: params.get("q") ?? "",
+    page: /^[1-9]\d*$/.test(page) ? Number(page) : 1,
+    size: params.get("size") === "20" ? 20 : 10,
+  };
+}
+
+/**
+ * One page of the reports /reports lists for a query (SPEC §9.3), by หัวข้อ
+ * and กลุ่ม in catalog.json order: those of the หมวด or หัวข้อ picked whose
+ * report_name, source_table, opendata_id, หัวข้อ or กลุ่ม contains the
+ * search, whatever its letter case. A page past the last shows the last.
+ */
+export function libraryPage(mains: DcCatalog["mains"], query: LibraryQuery): LibraryPage {
+  const search = query.q.trim().toLocaleLowerCase("th");
+  const found = mains
+    .filter((m) => query.main === null || m.main_report_id === query.main)
+    .flatMap((m) => m.topics.filter((t) => query.cat === null || t.cat_id === query.cat))
+    .flatMap((topic) => topic.groups.flatMap((g) => g.reports.map((report) => ({ topic, subgroup: g.subgroup, report }))))
+    .filter(({ topic, subgroup, report }) =>
+      [report.report_name, report.source_table, report.opendata_id, topic.category_name, subgroup].some((text) =>
+        text.toLocaleLowerCase("th").includes(search),
+      ),
+    );
+  const pages = Math.max(1, Math.ceil(found.length / query.size));
+  const page = Math.min(query.page, pages);
+  // A กลุ่ม cut by the page break goes on under its หัวข้อ again on the next page
+  const groups: LibraryPage["groups"] = [];
+  for (const { topic, subgroup, report } of found.slice((page - 1) * query.size, page * query.size)) {
+    const last = groups.at(-1);
+    if (last?.topic === topic && last.subgroup === subgroup) last.reports.push(report);
+    else groups.push({ topic, subgroup, reports: [report] });
+  }
+  return { groups, total: found.length, page, pages };
+}
+
+/** The URL query of a LibraryQuery without its defaults, which libraryQuery reads back: "" for the defaults alone (SPEC §9.3) */
+export function librarySearch(query: LibraryQuery): string {
+  const params = new URLSearchParams();
+  if (query.main !== null) params.set("main", query.main);
+  if (query.cat !== null) params.set("cat", query.cat);
+  if (query.q) params.set("q", query.q);
+  if (query.page > 1) params.set("page", String(query.page));
+  if (query.size !== 10) params.set("size", String(query.size));
+  const search = params.toString();
+  return search && `?${search}`;
 }

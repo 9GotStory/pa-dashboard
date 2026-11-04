@@ -271,7 +271,7 @@
 
 ### F19 คลังรายงาน `/reports`
 
-- **ทำ:** ตาม SPEC §9.3 · server component ส่ง `catalog.json` ให้ client component กรอง/ค้นหา/แบ่งหน้า · สถานะใน URL (`main`, `cat`, `q`, `page`) · ห่อ `useSearchParams` ด้วย `<Suspense>`
+- **ทำ:** ตาม SPEC §9.3 · server component ส่ง `catalog.json` ให้ client component กรอง/ค้นหา/แบ่งหน้า · สถานะใน URL (`main`, `cat`, `q`, `page`, `size`) · ห่อ `useSearchParams` ด้วย `<Suspense>`
 - **ขึ้นกับ:** F14, F16
 - **ตรวจรับ:**
   1. `/reports?cat=4df36051…` เปิดมาเลือกหัวข้อวัคซีนและแสดง 8 รายงานใน 4 กลุ่ม เรียง กลุ่มอายุ 1 → 2 → 3 → 5 ปี และในกลุ่ม `s_epi1` มาก่อน fully immunized
