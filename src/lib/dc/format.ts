@@ -12,6 +12,13 @@ export function formatPct(val: number): string {
   return val.toFixed(2);
 }
 
+const counts = new Intl.NumberFormat("th-TH");
+
+/** A เป้าหมาย or ผลงาน with Thai digit grouping: 1234567 → "1,234,567" */
+export function formatCount(val: number): string {
+  return counts.format(val);
+}
+
 /**
  * date_com (YYYYMMDDHHmm; s_epi1 adds seconds) as PA shows it, e.g.
  * "3 พฤศจิกายน 2569 เวลา 05:57 น."; "" for "" (a block ปี without rows) or

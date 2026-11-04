@@ -1,10 +1,9 @@
+import { formatCount } from "@/lib/dc/format";
 import type { Totals } from "@/lib/dc/types";
 
 const HEIGHT = 210;
 const PLOT_TOP = 12;
 const PLOT_HEIGHT = HEIGHT - PLOT_TOP - 30;
-
-const count = new Intl.NumberFormat("th-TH");
 
 /** The smallest of 1, 2 or 5 × 10ⁿ at or above v, so the axis reads in round numbers */
 function niceMax(v: number): number {
@@ -22,20 +21,20 @@ export default function PeriodChart({ title, points }: { title: string; points: 
   const ticks = Number.isInteger(top / 2) ? [0, top / 2, top] : [0, top];
   // The plot as a share of the width, right of the count axis, which is wider
   // for longer counts so "1,000" still fits at 360 px
-  const plotX = 4 + 2.5 * Math.max(...ticks.map((t) => count.format(t).length));
+  const plotX = 4 + 2.5 * Math.max(...ticks.map((t) => formatCount(t).length));
   const plotWidth = 98 - plotX;
   const slot = 100 / points.length;
   const y = (v: number) => (1 - v / top) * 100;
   const label =
     `${title}: ` +
     points
-      .map((p) => (p.totals ? `${p.label} เป้าหมาย ${count.format(p.totals.target)} ผลงาน ${count.format(p.totals.result)}` : `${p.label} —`))
+      .map((p) => (p.totals ? `${p.label} เป้าหมาย ${formatCount(p.totals.target)} ผลงาน ${formatCount(p.totals.result)}` : `${p.label} —`))
       .join(", ");
   return (
     <svg role="img" aria-label={label} width="100%" height={HEIGHT} className="block text-xs">
       {ticks.map((t) => (
         <text key={t} x={`${plotX - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-muted tabular-nums">
-          {count.format(t)}
+          {formatCount(t)}
         </text>
       ))}
       {/* 12 months stagger on two lines, so their names never touch at 360 px */}

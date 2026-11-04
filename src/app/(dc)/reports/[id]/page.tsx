@@ -98,7 +98,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border bg-white print:border-0">
         {report.report_type === "coverage" ? (
-          <CoverageReport id={report.opendata_id} names={{ areas: catalog.areas, hospitals: catalog.hospitals }} />
+          <CoverageReport id={report.opendata_id} names={{ areas: catalog.areas, hospitals: catalog.hospitals }} years={catalog.meta.years} />
         ) : (
           // workload, empty or anything else: not shown in phase 1 (SPEC §9.4)
           <section aria-labelledby="unsupported-title" className="px-4 py-10 text-center sm:px-6">
@@ -120,7 +120,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           </h2>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
             <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4">
-              <h3 className="text-[13px] font-bold text-dc-navy">แหล่งข้อมูล</h3>
+              <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">แหล่งข้อมูล</h3>
               <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
                 <dt className="text-dc-muted">ตารางต้นทาง</dt>
                 <dd>{report.source_table}</dd>
@@ -143,13 +143,18 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </dl>
             </div>
             <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4 text-xs leading-relaxed">
-              <h3 className="text-[13px] font-bold text-dc-navy">วิธีคำนวณ</h3>
-              <p className="mt-1">
-                รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
-                แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
-                {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
-              </p>
-              <h3 className="mt-3 text-[13px] font-bold text-dc-navy">ข้อจำกัด</h3>
+              {/* The coverage method only: another report_type has no page of its own yet */}
+              {report.report_type === "coverage" && (
+                <>
+                  <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-navy">วิธีคำนวณ</h3>
+                  <p className="mb-3">
+                    รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
+                    แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
+                    {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
+                  </p>
+                </>
+              )}
+              <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">ข้อจำกัด</h3>
               <ul className="mt-1 list-disc pl-4">
                 <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
                 <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>

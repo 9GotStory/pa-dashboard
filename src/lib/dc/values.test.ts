@@ -11,6 +11,7 @@ import {
   passes,
   periods,
   reportQuery,
+  reportSearch,
   totals,
   totalsBy,
   trend,
@@ -305,12 +306,14 @@ test("by area on a header no rule knows → null, as totals", () => {
   assert.equal(totalsBy(b, report, { area: "all", period: "year", measure: null, by: "area" }, NAMES), null);
 });
 
+// s_epi2's columns in a year with mmr1 only, placed before target{MM}
+const MMR1_ONLY = ["hospcode", "areacode", "date_com", "b_year", ...MONTHS.map((m) => `mmr1_${m}`), ...MONTHS.map((m) => `target${m}`)];
+
 test("2 block ปี whose headers differ (2568: mmr1 before target{MM}, no pcv4) → each year from its own header; pcv4 in 2568 → null, not 0", () => {
-  const h2568 = ["hospcode", "areacode", "date_com", "b_year", ...MONTHS.map((m) => `mmr1_${m}`), ...MONTHS.map((m) => `target${m}`)];
   const data = {
     report: S_EPI2,
     years: [
-      block(h2568, [
+      block(MMR1_ONLY, [
         { hospcode: "06413", areacode: "54060101", target10: 4, mmr1_10: 2 },
         { hospcode: "06414", areacode: "54060801", target11: 4, mmr1_11: 4 },
       ], "2568"),
@@ -356,7 +359,6 @@ test("no ร้อยละ (target 0) or no เกณฑ์ → no verdict: nul
 // FEATURES F20: ?year=&area=&period=&measure=&by= of /reports/{id} as a
 // ReportQuery for the report's data (SPEC §9.4, SCHEMA §9). s_epi2 here has
 // 2568 with mmr1 only and 2569 with the real header.
-const MMR1_ONLY = ["hospcode", "areacode", "date_com", "b_year", ...MONTHS.map((m) => `mmr1_${m}`), ...MONTHS.map((m) => `target${m}`)];
 const EPI2_DATA = {
   report: S_EPI2,
   years: [
@@ -422,4 +424,14 @@ test("?area=540601 → that ตำบล, compared by หน่วยบริ�
 test("?by=hosp → by หน่วยบริการ for ทั้งอำเภอ; any other by → by area", () => {
   assert.equal(query("by=hosp").by, "hosp");
   assert.equal(query("by=tambon").by, "area");
+});
+
+test("a ReportQuery → ?year=&area=&period=&measure=&by= in the order of SPEC §9.4, which reportQuery reads back as the same query", () => {
+  const q = { year: "2568", area: "540601", period: "m11", measure: "mmr1", by: "hosp" } as const;
+  assert.equal(reportSearch(q), "?year=2568&area=540601&period=m11&measure=mmr1&by=hosp");
+  assert.deepEqual(reportQuery(EPI2_DATA, new URLSearchParams(reportSearch(q)), NAMES), q);
+});
+
+test("a ReportQuery without a measure → no measure in the URL", () => {
+  assert.equal(reportSearch({ year: "2569", area: "all", period: "year", measure: null, by: "area" }), "?year=2569&area=all&period=year&by=area");
 });

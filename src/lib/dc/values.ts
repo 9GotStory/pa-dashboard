@@ -56,7 +56,7 @@ function overrideColumns(report: DcReport): Columns | null {
 // change asks for the same block's columns dozens of times, s_epi1 has 259
 // columns and 20 measures, and the result must show within 100 ms (SPEC §9.6).
 const headerSets = new WeakMap<DcYearBlock, Set<string>>();
-const blockMeasures = new WeakMap<DcYearBlock, string[]>();
+const blockMeasures = new WeakMap<DcYearBlock, readonly string[]>();
 
 /** A family is there only when the header has every one of its columns (SCHEMA §4.2) */
 function hasColumns(block: DcYearBlock, cols: Columns): boolean {
@@ -76,10 +76,10 @@ export function families(block: DcYearBlock, report: DcReport): Family[] {
 
 /**
  * The measures of an M_B block in column order: each prefix (not target or
- * result) with all 12 {measure}_{MM} columns and target{MM} (SCHEMA §4.2).
- * The same array for the same block each time: callers must not change it.
+ * result) with all 12 {measure}_{MM} columns and target{MM} (SCHEMA §4.2),
+ * the same array for the same block each time
  */
-export function measures(block: DcYearBlock): string[] {
+export function measures(block: DcYearBlock): readonly string[] {
   const known = blockMeasures.get(block);
   if (known) return known;
   const prefixes = new Set<string>();
@@ -272,4 +272,12 @@ export function reportQuery(
   // One ตำบล is compared by หน่วยบริการ only (SPEC §9.4)
   const by = area !== "all" || params.get("by") === "hosp" ? "hosp" : "area";
   return { year, area, period, measure, by };
+}
+
+/** The URL query of a ReportQuery, which reportQuery reads back: ?year=&area=&period=&measure=&by= (SPEC §9.4) */
+export function reportSearch(query: ReportQuery): string {
+  const params = new URLSearchParams({ year: query.year, area: query.area, period: query.period });
+  if (query.measure !== null) params.set("measure", query.measure);
+  params.set("by", query.by);
+  return `?${params}`;
 }

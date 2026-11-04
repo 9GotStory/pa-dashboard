@@ -1,10 +1,10 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { Suspense, startTransition, useEffect, useState, type ChangeEvent, type ReactNode } from "react";
+import { Suspense, startTransition, useEffect, useOptimistic, useRef, useState, type ReactNode, type RefObject } from "react";
 import { loadReport } from "@/lib/dc/client";
-import { csvFileName, formatPct, formatThaiDate, toCsv } from "@/lib/dc/format";
-import type { Cell, DcCatalog, DcReportData, DcYearBlock, Period, ReportQuery, Totals, UnitTotals } from "@/lib/dc/types";
+import { csvFileName, formatCount, formatPct, formatThaiDate, toCsv } from "@/lib/dc/format";
+import type { Cell, DcCatalog, DcReportData, DcYearBlock, Period, ReportQuery, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
 import {
   dataYears,
   goalFor,
@@ -13,6 +13,7 @@ import {
   passes,
   periods,
   reportQuery,
+  reportSearch,
   totals,
   totalsBy,
   trend,
@@ -24,28 +25,29 @@ import UnitChart from "./charts/UnitChart";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
 
-/** ช่วงเวลา as the form lists it and as a chart axis shortens it */
-const PERIOD_LABELS: Record<Period, [string, string]> = {
-  year: ["ทั้งปี", "ทั้งปี"],
-  q1: ["ไตรมาส 1 (ต.ค.–ธ.ค.)", "ไตรมาส 1"],
-  q2: ["ไตรมาส 2 (ม.ค.–มี.ค.)", "ไตรมาส 2"],
-  q3: ["ไตรมาส 3 (เม.ย.–มิ.ย.)", "ไตรมาส 3"],
-  q4: ["ไตรมาส 4 (ก.ค.–ก.ย.)", "ไตรมาส 4"],
-  m10: ["ตุลาคม", "ต.ค."],
-  m11: ["พฤศจิกายน", "พ.ย."],
-  m12: ["ธันวาคม", "ธ.ค."],
-  m01: ["มกราคม", "ม.ค."],
-  m02: ["กุมภาพันธ์", "ก.พ."],
-  m03: ["มีนาคม", "มี.ค."],
-  m04: ["เมษายน", "เม.ย."],
-  m05: ["พฤษภาคม", "พ.ค."],
-  m06: ["มิถุนายน", "มิ.ย."],
-  m07: ["กรกฎาคม", "ก.ค."],
-  m08: ["สิงหาคม", "ส.ค."],
-  m09: ["กันยายน", "ก.ย."],
+/** ช่วงเวลา as the form lists it (name) and as a chart axis shortens it (short) */
+const PERIOD_LABELS: Record<Period, { name: string; short: string }> = {
+  year: { name: "ทั้งปี", short: "ทั้งปี" },
+  q1: { name: "ไตรมาส 1 (ต.ค.–ธ.ค.)", short: "ไตรมาส 1" },
+  q2: { name: "ไตรมาส 2 (ม.ค.–มี.ค.)", short: "ไตรมาส 2" },
+  q3: { name: "ไตรมาส 3 (เม.ย.–มิ.ย.)", short: "ไตรมาส 3" },
+  q4: { name: "ไตรมาส 4 (ก.ค.–ก.ย.)", short: "ไตรมาส 4" },
+  m10: { name: "ตุลาคม", short: "ต.ค." },
+  m11: { name: "พฤศจิกายน", short: "พ.ย." },
+  m12: { name: "ธันวาคม", short: "ธ.ค." },
+  m01: { name: "มกราคม", short: "ม.ค." },
+  m02: { name: "กุมภาพันธ์", short: "ก.พ." },
+  m03: { name: "มีนาคม", short: "มี.ค." },
+  m04: { name: "เมษายน", short: "เม.ย." },
+  m05: { name: "พฤษภาคม", short: "พ.ค." },
+  m06: { name: "มิถุนายน", short: "มิ.ย." },
+  m07: { name: "กรกฎาคม", short: "ก.ค." },
+  m08: { name: "สิงหาคม", short: "ส.ค." },
+  m09: { name: "กันยายน", short: "ก.ย." },
 };
 
-const count = new Intl.NumberFormat("th-TH");
+/** What เปรียบเทียบตาม compares by */
+const UNIT_LABELS: Record<ReportQuery["by"], string> = { area: "ตำบล", hosp: "หน่วยบริการ" };
 
 /** ร้อยละ as shown, "—" when the เป้าหมาย is 0 (SPEC §9.4) */
 function pctText(pct: number | null): string {
@@ -61,18 +63,10 @@ function describe(q: ReportQuery, names: Names): string {
   return [
     `ปีงบประมาณ ${q.year}`,
     areaLabel(q.area, names),
-    PERIOD_LABELS[q.period][0],
+    PERIOD_LABELS[q.period].name,
     ...(q.measure === null ? [] : [`รายการ ${measureLabel(q.measure)}`]),
-    q.by === "area" ? "เปรียบเทียบรายตำบล" : "เปรียบเทียบรายหน่วยบริการ",
+    `เปรียบเทียบราย${UNIT_LABELS[q.by]}`,
   ].join(" · ");
-}
-
-/** The URL query of a ReportQuery, in the order of SPEC §9.4 */
-function search(q: ReportQuery): string {
-  const params = new URLSearchParams({ year: q.year, area: q.area, period: q.period });
-  if (q.measure !== null) params.set("measure", q.measure);
-  params.set("by", q.by);
-  return `?${params}`;
 }
 
 function Status({ children }: { children: ReactNode }) {
@@ -89,7 +83,7 @@ function Status({ children }: { children: ReactNode }) {
  * writes the query to the URL with history.pushState, which Next.js passes to
  * useSearchParams, so back, forward and a shared link show the same result.
  */
-export default function CoverageReport(props: { id: string; names: Names }) {
+export default function CoverageReport(props: { id: string; names: Names; years: string[] }) {
   return (
     <Suspense fallback={<Status>กำลังโหลดข้อมูลรายงาน…</Status>}>
       <Coverage {...props} />
@@ -97,14 +91,17 @@ export default function CoverageReport(props: { id: string; names: Names }) {
   );
 }
 
-function Coverage({ id, names }: { id: string; names: Names }) {
+function Coverage({ id, names, years }: { id: string; names: Names; years: string[] }) {
   const params = useSearchParams();
+  // The query แสดงผล applies, shown at once. Next.js takes a new URL in a
+  // transition that re-renders its router tree from the top: the first change
+  // after a page load took 95 ms (111 at worst) at 4× CPU against the 100 ms
+  // of FEATURES F20, and 60 ms (97 at worst) this way. React drops it in the
+  // render that brings the URL's own query.
+  const [search, setSearch] = useOptimistic(`?${params}`);
+  const heading = useRef<HTMLHeadingElement>(null);
   const [load, setLoad] = useState<{ data: DcReportData } | "loading" | "failed">("loading");
   const [attempt, setAttempt] = useState(0);
-  // The query แสดงผล applied, shown at once: Next.js takes a new URL in a
-  // transition that re-renders its router tree from the top, which put the
-  // first change after a page load past the 100 ms of SPEC §9.6 at 4× CPU
-  const [applied, setApplied] = useState<string | null>(null);
   useEffect(() => {
     let ignore = false;
     loadReport(id).then(
@@ -138,24 +135,23 @@ function Coverage({ id, names }: { id: string; names: Names }) {
       </Status>
     );
   }
-  const shown = applied ?? `?${params}`;
-  const query = reportQuery(load.data, new URLSearchParams(shown), names);
+  const query = reportQuery(load.data, new URLSearchParams(search), names);
   const apply = (q: ReportQuery) => {
-    const next = search(q);
-    if (next === shown) return;
-    setApplied(next);
-    // Cleared in the same transition as Next.js's URL update, so the page
-    // goes from this query to the URL's, the same one, with no step between
-    startTransition(() => {
-      setApplied(null);
-      window.history.pushState(null, "", next);
-    });
+    const next = reportSearch(q);
+    if (next !== search) {
+      startTransition(() => {
+        setSearch(next);
+        window.history.pushState(null, "", next);
+      });
+    }
+    // As R6 does: focus on the result, not on a form that is drawn again
+    heading.current?.focus({ preventScroll: true });
   };
   return (
     <>
       {/* Remounted when the query changes (แสดงผล, back, forward), so the form shows what the results show */}
-      <Filters key={shown} data={load.data} names={names} query={query} onApply={apply} />
-      <Results data={load.data} names={names} query={query} />
+      <Filters key={search} data={load.data} names={names} query={query} onApply={apply} />
+      <Results data={load.data} names={names} query={query} years={years} heading={heading} />
     </>
   );
 }
@@ -166,7 +162,7 @@ function Select(props: {
   value: string;
   options: [value: string, text: string][];
   disabled?: string[];
-  onChange: (e: ChangeEvent<HTMLSelectElement>) => void;
+  onPick: (name: keyof ReportQuery, value: string) => void;
 }) {
   return (
     <div className="flex min-w-0 flex-col gap-1 sm:w-44">
@@ -177,7 +173,7 @@ function Select(props: {
         id={`filter-${props.name}`}
         name={props.name}
         value={props.value}
-        onChange={props.onChange}
+        onChange={(e) => props.onPick(props.name, e.target.value)}
         className="h-10 w-full min-w-0 rounded-md border border-dc-border bg-white px-2 text-[13px] text-dc-ink"
       >
         {props.options.map(([value, text]) => (
@@ -198,7 +194,7 @@ function Select(props: {
 function Filters({ data, names, query, onApply }: { data: DcReportData; names: Names; query: ReportQuery; onApply: (q: ReportQuery) => void }) {
   const years = dataYears(data);
   // A year without data (?year=2560) is not in the list: the form offers the latest instead
-  const [picked, setPicked] = useState<Record<string, string>>(() => ({
+  const [picked, setPicked] = useState<Record<keyof ReportQuery, string>>(() => ({
     year: years.includes(query.year) ? query.year : (years[0] ?? ""),
     area: query.area,
     period: query.period,
@@ -210,7 +206,7 @@ function Filters({ data, names, query, onApply }: { data: DcReportData; names: N
   const block = yearBlock(data, draft.year);
   const periodOptions = block ? periods(block, data.report) : [];
   const measureOptions = block ? measures(block) : [];
-  const pick = (e: ChangeEvent<HTMLSelectElement>) => setPicked({ ...picked, [e.target.name]: e.target.value });
+  const pick = (name: keyof ReportQuery, value: string) => setPicked({ ...picked, [name]: value });
   return (
     <section aria-labelledby="filters-title" className="border-b border-dc-border bg-dc-blue-light/50 px-4 py-5 sm:px-6 print:hidden">
       <h2 id="filters-title" className="font-prompt text-[15px] font-semibold text-dc-navy">
@@ -225,20 +221,20 @@ function Filters({ data, names, query, onApply }: { data: DcReportData; names: N
         className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
         <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-          <Select name="year" label="ปีงบประมาณ" value={draft.year} options={years.map((y) => [y, y])} onChange={pick} />
+          <Select name="year" label="ปีงบประมาณ" value={draft.year} options={years.map((y) => [y, y])} onPick={pick} />
           <Select
             name="area"
             label="พื้นที่"
             value={draft.area}
             options={[["all", "ทั้งอำเภอ"], ...names.areas.map((a): [string, string] => [a.id, `ตำบล${a.name_th}`])]}
-            onChange={pick}
+            onPick={pick}
           />
           <Select
             name="period"
             label="ช่วงเวลา"
             value={draft.period}
-            options={(periodOptions.length > 0 ? periodOptions : ["year" as const]).map((p) => [p, PERIOD_LABELS[p][0]])}
-            onChange={pick}
+            options={(periodOptions.length > 0 ? periodOptions : ["year" as const]).map((p) => [p, PERIOD_LABELS[p].name])}
+            onPick={pick}
           />
           {measureOptions.length > 0 && (
             <Select
@@ -246,7 +242,7 @@ function Filters({ data, names, query, onApply }: { data: DcReportData; names: N
               label="รายการวัคซีน"
               value={draft.measure ?? ""}
               options={measureOptions.map((m) => [m, measureLabel(m)])}
-              onChange={pick}
+              onPick={pick}
             />
           )}
           {/* One ตำบล is compared by หน่วยบริการ only (SPEC §9.4) */}
@@ -254,12 +250,9 @@ function Filters({ data, names, query, onApply }: { data: DcReportData; names: N
             name="by"
             label="เปรียบเทียบตาม"
             value={draft.by}
-            options={[
-              ["area", "ตำบล"],
-              ["hosp", "หน่วยบริการ"],
-            ]}
+            options={(["area", "hosp"] as const).map((by): [string, string] => [by, UNIT_LABELS[by]])}
             disabled={draft.area === "all" ? [] : ["area"]}
-            onChange={pick}
+            onPick={pick}
           />
         </div>
         <button type="submit" className="h-10 rounded-md bg-dc-blue px-5 font-semibold text-white hover:bg-dc-blue-dark">
@@ -273,7 +266,7 @@ function Filters({ data, names, query, onApply }: { data: DcReportData; names: N
 function Surface({ title, children }: { title: string; children: ReactNode }) {
   return (
     <section className="min-w-0 rounded-[9px] border border-dc-border bg-white p-4">
-      <h3 className="mb-3 text-sm font-bold text-dc-navy">{title}</h3>
+      <h3 className="mb-3 font-prompt text-sm font-semibold text-dc-navy">{title}</h3>
       {children}
     </section>
   );
@@ -288,13 +281,20 @@ function Key({ swatch, children }: { swatch: string; children: ReactNode }) {
   );
 }
 
-/** ตัวเลขสรุป, กราฟ A–C and the table of the query (SPEC §9.4), or why there is nothing to show */
-function Results({ data, names, query }: { data: DcReportData; names: Names; query: ReportQuery }) {
+/** The result of the query (SPEC §9.4), or why there is nothing to show */
+function Results(props: {
+  data: DcReportData;
+  names: Names;
+  query: ReportQuery;
+  years: string[];
+  heading: RefObject<HTMLHeadingElement | null>;
+}) {
+  const { data, names, query, years, heading } = props;
   const { report } = data;
   const block = yearBlock(data, query.year);
   const units = block && totalsBy(block, report, query, names);
   const total = block && totals(block, report, query);
-  const shown = block && units && total && units.length > 0 ? { block, units, total } : null;
+  const figures = block && units && total && units.length > 0 ? { block, units, total } : null;
   // Never zeros for what is not there (SPEC §9.4)
   const problem = !block
     ? query.year
@@ -305,12 +305,12 @@ function Results({ data, names, query }: { data: DcReportData; names: Names; que
       : `ไม่มีข้อมูลของ${areaLabel(query.area, names)}ในปี ${query.year}`;
   // No year at all: the report has no data yet, so there is no filter to name
   const summary = query.year ? describe(query, names) : "";
-  const unitLabel = query.by === "area" ? "ตำบล" : "หน่วยบริการ";
+  const unitLabel = UNIT_LABELS[query.by];
   const totalLabel = `รวม${areaLabel(query.area, names)}`;
 
   const downloadCsv = () => {
-    if (!shown) return;
-    const { block, units, total } = shown;
+    if (!figures) return;
+    const { block, units, total } = figures;
     const rows: Cell[][] = [
       ["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"],
       ["รายงาน", `${report.report_name} (${report.opendata_id})`],
@@ -335,7 +335,9 @@ function Results({ data, names, query }: { data: DcReportData; names: Names; que
     <>
       <div className="flex flex-col gap-3 px-4 pt-5 pb-4 sm:flex-row sm:items-end sm:justify-between sm:px-6">
         <div>
-          <h2 className="font-prompt text-lg font-semibold text-dc-navy">ผลรายงาน</h2>
+          <h2 ref={heading} tabIndex={-1} className="font-prompt text-lg font-semibold text-dc-navy">
+            ผลรายงาน
+          </h2>
           {/* Read out after แสดงผล, as R6 announces the new result */}
           <p aria-live="polite" className="text-xs text-dc-ink">
             {summary}
@@ -346,7 +348,7 @@ function Results({ data, names, query }: { data: DcReportData; names: Names; que
           <button
             type="button"
             onClick={downloadCsv}
-            disabled={!shown}
+            disabled={!figures}
             className="min-h-10 flex-1 rounded-md border border-dc-border bg-white px-3 text-xs font-semibold text-dc-navy hover:bg-dc-blue-light disabled:opacity-50 sm:flex-none"
           >
             ดาวน์โหลด CSV
@@ -360,21 +362,27 @@ function Results({ data, names, query }: { data: DcReportData; names: Names; que
           </button>
         </div>
       </div>
-      {shown ? <Shown data={data} query={query} {...shown} unitLabel={unitLabel} totalLabel={totalLabel} /> : <Status>{problem}</Status>}
+      {figures ? (
+        <Figures data={data} query={query} years={years} {...figures} unitLabel={unitLabel} totalLabel={totalLabel} />
+      ) : (
+        <Status>{problem}</Status>
+      )}
     </>
   );
 }
 
-function Shown(props: {
+/** ตัวเลขสรุป, กราฟ A–C and the table of a year with data */
+function Figures(props: {
   data: DcReportData;
   query: ReportQuery;
+  years: string[];
   block: DcYearBlock;
   units: UnitTotals[];
   total: Totals;
   unitLabel: string;
   totalLabel: string;
 }) {
-  const { data, query, block, units, total, unitLabel, totalLabel } = props;
+  const { data, query, years, block, units, total, unitLabel, totalLabel } = props;
   const goal = goalFor(data.report, query.measure);
   const passed = passes(total.pct, goal);
   // กราฟ C: months when the table has them, else quarters (SCHEMA §4.3)
@@ -382,10 +390,13 @@ function Shown(props: {
   const months = available.filter((p) => p.startsWith("m"));
   const steps = months.length > 0 ? months : available.filter((p) => p.startsWith("q"));
   const stepName = months.length > 0 ? "เดือน" : "ไตรมาส";
-  const stepPoints = steps.map((p) => ({ label: PERIOD_LABELS[p][1], totals: totals(block, data.report, { ...query, period: p }) }));
+  const stepPoints = steps.map((p) => ({ label: PERIOD_LABELS[p].short, totals: totals(block, data.report, { ...query, period: p }) }));
+  // กราฟ B over the whole window: a year without a block ปี is "—", not left out of the axis (SCHEMA §4.2)
+  const byYear = new Map(trend(data, query).map((point) => [point.b_year, point]));
+  const trendPoints: TrendPoint[] = years.map((year) => byYear.get(year) ?? { b_year: year, totals: null });
   const tiles: [string, string][] = [
-    ["เป้าหมาย", count.format(total.target)],
-    ["ผลงาน", count.format(total.result)],
+    ["เป้าหมาย", formatCount(total.target)],
+    ["ผลงาน", formatCount(total.result)],
     ["ร้อยละ", pctText(total.pct)],
   ];
   return (
@@ -419,7 +430,7 @@ function Shown(props: {
         <section className="min-w-0">
           <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border">
             <table className="w-full border-collapse text-xs tabular-nums">
-              <caption className="bg-white px-4 pt-4 pb-3 text-left text-sm font-bold text-dc-navy">เป้าหมาย ผลงาน และร้อยละราย{unitLabel}</caption>
+              <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-navy">เป้าหมาย ผลงาน และร้อยละราย{unitLabel}</caption>
               <thead className="bg-dc-blue-light text-dc-navy">
                 <tr>
                   <th scope="col" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
@@ -442,8 +453,8 @@ function Shown(props: {
                     <th scope="row" className="px-2 py-2 text-left font-normal whitespace-nowrap sm:px-3">
                       {u.name}
                     </th>
-                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{count.format(u.totals.target)}</td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{count.format(u.totals.result)}</td>
+                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(u.totals.target)}</td>
+                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(u.totals.result)}</td>
                     <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{pctText(u.totals.pct)}</td>
                   </tr>
                 ))}
@@ -453,8 +464,8 @@ function Shown(props: {
                   <th scope="row" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
                     {totalLabel}
                   </th>
-                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{count.format(total.target)}</td>
-                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{count.format(total.result)}</td>
+                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(total.target)}</td>
+                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(total.result)}</td>
                   <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{pctText(total.pct)}</td>
                 </tr>
               </tfoot>
@@ -466,7 +477,7 @@ function Shown(props: {
             <Key swatch="h-0.5 w-4 bg-dc-blue">ร้อยละรายปี</Key>
             {goal !== null && <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>}
           </p>
-          <TrendChart title="แนวโน้มร้อยละรายปี" points={trend(data, query)} goal={goal} />
+          <TrendChart title="แนวโน้มร้อยละรายปี" points={trendPoints} goal={goal} />
         </Surface>
         {stepPoints.length > 0 && (
           <Surface title={`เป้าหมายและผลงานราย${stepName} ปีงบประมาณ ${query.year}`}>

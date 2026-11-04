@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { csvFileName, formatPct, formatThaiDate, toCsv } from "./format";
+import { csvFileName, formatCount, formatPct, formatThaiDate, toCsv } from "./format";
 
 // FEATURES F15: the display helpers that must print what PA prints, checked
 // against PA's own output (CODING_STANDARDS §5).
@@ -36,5 +36,11 @@ test("CSV cells starting with = + - @ tab or CR, after spaces too as in R6 → '
 
 test("CSV file name → SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv (SPEC §9.4), the id in its own letter case (SCHEMA §3)", () => {
   assert.equal(csvFileName({ source_table: "s_epi_complete", opendata_id: "28dd2c7955ce926456240b2ff0100bde" }, "2569"), "SHDC-s_epi_complete-28dd2c79-2569.csv");
-  assert.equal(csvFileName({ source_table: "s_dental_0_5_cavity_free", opendata_id: "AbT2t2K4z4xeqzytwbave" }, "2568"), "SHDC-s_dental_0_5_cavity_free-AbT2t2K4-2568.csv");
+  // A real HDC id in mixed case (SCHEMA §5.2), from the catalog export of 30 Oct 2569
+  assert.equal(csvFileName({ source_table: "s_child_mom_hepb", opendata_id: "Qe95V9DKGQYy5ij" }, "2568"), "SHDC-s_child_mom_hepb-Qe95V9DK-2568.csv");
+});
+
+test("เป้าหมาย and ผลงาน → Thai grouping with commas: 1234567 → \"1,234,567\", 0 → \"0\"", () => {
+  assert.equal(formatCount(1234567), "1,234,567");
+  assert.equal(formatCount(0), "0");
 });
