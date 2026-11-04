@@ -155,9 +155,9 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 - รันอัตโนมัติผ่าน npm lifecycle `prebuild` ก่อน `next build` และสั่งเองได้ด้วย `npm run snapshot` (สำหรับ dev)
 - ขั้นตอน: GET `?action=catalog` → สำหรับรายงานที่ใช้งานทุกตัว GET `?action=report&id=` → เขียนไฟล์ → พิมพ์สรุป (จำนวนรายงาน, ขนาดไฟล์ใหญ่สุด, เวลา)
-- เรียก GAS ทีละคำขอ ไม่มี concurrency เพราะ GAS ถือ script lock ตอนอ่านอยู่แล้ว คำขอที่ยิงพร้อมกันแค่ต่อคิวรอ · retry สองแบบ: ได้ error `Busy` (lock ถูกถือ เช่น `syncAllData` กำลังรันซึ่งกินเวลา 1–3 นาที) ลองใหม่ทุก 20 วินาทีได้นานสุด 5 นาที · error อื่น (เครือข่าย, HTTP ไม่ใช่ 200, JSON ผิด) retry 3 ครั้ง รอ 2, 4, 8 วินาที
+- เรียก GAS ทีละคำขอ ไม่มี concurrency เพราะ GAS ถือ script lock ตอนอ่านอยู่แล้ว คำขอที่ยิงพร้อมกันแค่ต่อคิวรอ · retry สองแบบ: ได้ error `Busy` (lock ถูกถือ เช่น `syncAllData` กำลังรันซึ่งกินเวลา 1–3 นาที) ลองใหม่ทุก 20 วินาทีได้นานสุด 5 นาที · error อื่น (เครือข่าย, HTTP ไม่ใช่ 200, JSON ผิด หรือ GAS ตอบ error อื่นที่ไม่ใช่ `Busy` เพราะ `doGet` ส่ง exception ชั่วคราวกลับมาเป็น JSON ที่ HTTP 200) retry 3 ครั้ง รอ 2, 4, 8 วินาที
 - GAS ถือ script lock ระหว่างอ่านทั้ง `catalog` และ `report` (SCHEMA §3.1–3.2) จึงไม่อ่านชีตที่กำลังถูกเขียนครึ่ง ๆ กลาง ๆ และทุก block ปีมี `sheet_rows` (จำนวนแถวที่อ่านได้จากชีตก่อนกรอง `id`) กับ `expected_rows` (จาก `sync_status`) ให้ script เทียบ
-- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย)
+- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, ปีใดใน `report.years` ไม่มี block ใน `years` (ชีตหาย SCHEMA §3.2), รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, ไม่มีรายงานที่ใช้งานตัวใดมีแถวในปีปัจจุบันเลย (ยังไม่ได้ sync ปีปัจจุบัน หรือ `current_year` ผิด), หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย)
 - ไม่ใช้ข้อมูลเก่าหรือข้อมูลบางส่วนแทนที่ของจริงเด็ดขาด
 - อ่าน URL ของ GAS จาก env `NEXT_PUBLIC_GAS_SCRIPT_URL` เท่านั้น ถ้าไม่ตั้ง → exit 1 (ไม่มี URL สำรองในโค้ด เพื่อให้ build ที่ลืมตั้ง env ล้มชัด ๆ ไม่ใช่ไปดึงจาก deployment ผิดตัว)
 
@@ -380,7 +380,7 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | Preview deployments | ปิด (Preview branch control = None) เพราะ `develop` เป็นโค้ดคนละสถาปัตยกรรมที่ build แบบ static ไม่ผ่าน และกันไม่ให้ branch งานกิน build quota |
 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` (D6) ชื่อโปรเจกต์กำหนดตอนสร้าง เมื่อมีโดเมนของ สสอ.สอง บน Cloudflare ค่อยเพิ่ม custom domain |
 
-- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) แต่ต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step (ตอนนี้ส่งแค่ `NODE_ENV`) เพราะ prebuild ต้องดึงข้อมูลจริงและไม่มี URL สำรอง · `deploy.yml` หยุด build อัตโนมัติตั้งแต่ F13 และเปลี่ยนไปทำ stub ใน F22 (§12.6)
+- `.github/workflows/ci.yml` คงไว้ (build check ของ PR) และส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step (ตั้งแต่ F14) เพราะ prebuild ต้องดึงข้อมูลจริงและไม่มี URL สำรอง · `deploy.yml` หยุด build อัตโนมัติตั้งแต่ F13 และเปลี่ยนไปทำ stub ใน F22 (§12.6)
 - Cloudflare Pages เสิร์ฟ `/sync` จาก `sync.html` และ redirect `/sync.html` → `/sync` เอง การตรวจรับต้องลองทั้งสองแบบ
 - build ล้ม (เช่น GAS ล่มตอน build) = เว็บคงเวอร์ชันก่อนหน้า ดูเหตุได้ใน build log ของ Cloudflare
 

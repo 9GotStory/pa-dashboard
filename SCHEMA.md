@@ -478,7 +478,7 @@ Request (`Content-Type: application/json`):
 - `DcReport.cat_id`/`main_report_id` ยังอยู่ในรายงานแต่ละตัว (ใช้ทำ breadcrumb และ "รายงานที่เกี่ยวข้อง")
 - `meta.latest_date_com` = `max_date_com` ที่มากที่สุดในทุกรายงาน
 - ตัดกลุ่ม หัวข้อ และหมวดที่ไม่มีรายงานที่ใช้งานออก
-- ตรวจความครบ: ทุก block ปีต้อง `sheet_rows = expected_rows` และรายงานที่ใช้งานทุกตัวที่มีปีปัจจุบันใน `years` ต้องได้ `rows.length > 0` ไม่อย่างนั้น exit 1
+- ตรวจความครบ: ทุก block ปีต้อง `sheet_rows = expected_rows`, ทุกปีใน `report.years` ต้องมี block ใน `years` (§3.2 ข้ามปีที่ชีตหาย), รายงานที่ใช้งานทุกตัวที่มีปีปัจจุบันใน `years` ต้องได้ `rows.length > 0` และต้องมีรายงานที่ใช้งานอย่างน้อยหนึ่งตัวที่มีแถวในปีปัจจุบัน ไม่อย่างนั้น exit 1 (รายงานที่ยังไม่มีปีปัจจุบันผ่านได้ หน้าเว็บแสดงปีล่าสุดที่มีข้อมูล หรือ "ยังไม่มีข้อมูล" ถ้าไม่มีสักปี SPEC §9.3)
 - ตรวจขนาดไฟล์ตาม SPEC §6.1: เกินเป้าหมาย = exit 1, ถึง 80% = เตือน
 
 ## 8. ขอบเขตตำบล (GeoJSON)
@@ -610,7 +610,7 @@ export interface Totals {
 | Cloudflare Pages (build) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | URL ของ GAS Web App (prebuild script และหน้า `/sync` ใช้) |
 | Cloudflare Pages (build) | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` (เดิมอยู่ใน GitHub secrets) |
 | Cloudflare Pages (build) | `NODE_VERSION` | `24` (Node 20 หมดอายุ 30 เม.ย. 2569) |
-| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม แต่ `ci.yml` ต้องส่งเข้า build step ด้วย (ตอนนี้ยังไม่ส่ง) |
+| GitHub secrets (ci.yml) | `NEXT_PUBLIC_GAS_SCRIPT_URL` | เดิม และ `ci.yml` ส่งเข้า build step ตั้งแต่ F14 เพราะ prebuild ต้องใช้ |
 | เครื่องที่รันสคริปต์ node และ `npm run build` | `NEXT_PUBLIC_GAS_SCRIPT_URL` | `build-snapshot.mjs` และ `hdc-catalog.js` บังคับต้องมี · `sync-moph-to-gas.js` ยังมี fallback เดิม |
 | `.claspignore` | `**/test/**`, `**/hdc-catalog.js`, `**/*.mjs` (เพิ่มจากของเดิม) | กันสคริปต์ node และเทสต์ไม่ให้ถูก push ขึ้น Apps Script |
 | dependencies ใหม่ | `leaflet@1.9.4` | แผนที่หน้าแรก (ตอนนี้ `package.json` ยังไม่มี) |

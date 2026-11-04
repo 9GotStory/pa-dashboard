@@ -47,3 +47,6 @@ catalog-exports/
 
 # PA snapshots from src/scripts/pa-check.mjs (docs/agents/gas-deploy.md)
 .pa-check/
+
+# Data Center snapshot from src/scripts/build-snapshot.mjs (SPEC §6.1)
+public/data/

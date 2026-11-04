@@ -35,3 +35,5 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          # prebuild reads the snapshot from GAS (build-snapshot.mjs, SPEC §6.2)
+          NEXT_PUBLIC_GAS_SCRIPT_URL: ${{ secrets.NEXT_PUBLIC_GAS_SCRIPT_URL }}
