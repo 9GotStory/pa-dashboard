@@ -589,7 +589,7 @@ export type GasReport = DcReportData;
 
 /** query ของ /reports/{id} — ค่าที่ยอมรับและค่าเริ่มต้น */
 export interface ReportQuery {
-  year: string;                  // 4 หลัก · default = ปีล่าสุดใน report.years
+  year: string;                  // 4 หลัก · default = ปีล่าสุดที่ block มีแถว ("" ถ้ายังไม่มีสักปี) · ปีที่ไม่มีข้อมูลคงไว้ให้หน้าแสดง "ไม่มีข้อมูลปี … ในระบบ"
   area: "all" | string;          // "all" หรือรหัสตำบล 6 หลัก · default "all"
   period: Period;                // default "year"
   measure: string | null;        // prefix ของรายการวัคซีน (เฉพาะตาราง M_B) · default รายการแรก
