@@ -52,9 +52,17 @@ function overrideColumns(report: DcReport): Columns | null {
   return report.col_target && report.col_result ? { target: [report.col_target], result: [report.col_result] } : null;
 }
 
+// Worked out once per block ปี, which never changes once loaded: a filter
+// change asks for the same block's columns dozens of times, s_epi1 has 259
+// columns and 20 measures, and the result must show within 100 ms (SPEC §9.6).
+const headerSets = new WeakMap<DcYearBlock, Set<string>>();
+const blockMeasures = new WeakMap<DcYearBlock, readonly string[]>();
+
 /** A family is there only when the header has every one of its columns (SCHEMA §4.2) */
 function hasColumns(block: DcYearBlock, cols: Columns): boolean {
-  return [...cols.target, ...cols.result].every((c) => block.headers.includes(c));
+  const headers = headerSets.get(block) ?? new Set(block.headers);
+  headerSets.set(block, headers);
+  return [...cols.target, ...cols.result].every((c) => headers.has(c));
 }
 
 /** The column families whose columns are all in the block's header (SCHEMA §4.1–4.2) */
@@ -68,15 +76,20 @@ export function families(block: DcYearBlock, report: DcReport): Family[] {
 
 /**
  * The measures of an M_B block in column order: each prefix (not target or
- * result) with all 12 {measure}_{MM} columns and target{MM} (SCHEMA §4.2)
+ * result) with all 12 {measure}_{MM} columns and target{MM} (SCHEMA §4.2),
+ * the same array for the same block each time
  */
-export function measures(block: DcYearBlock): string[] {
+export function measures(block: DcYearBlock): readonly string[] {
+  const known = blockMeasures.get(block);
+  if (known) return known;
   const prefixes = new Set<string>();
   for (const h of block.headers) {
     const prefix = /^(.+)_(0[1-9]|1[0-2])$/.exec(h)?.[1];
     if (prefix && prefix !== "target" && prefix !== "result") prefixes.add(prefix);
   }
-  return [...prefixes].filter((p) => hasColumns(block, monthColumns(`${p}_`)));
+  const found = [...prefixes].filter((p) => hasColumns(block, monthColumns(`${p}_`)));
+  blockMeasures.set(block, found);
+  return found;
 }
 
 /** A measure as shown: upper case with "-" for "_" (dtp_hb3 → DTP-HB3) */
@@ -222,4 +235,49 @@ export function goalFor(report: DcReport, measure: string | null): number | null
 /** pct ≥ goal before rounding, as PA does (SCHEMA §4.4); null when there is no ร้อยละ or no เกณฑ์ */
 export function passes(pct: number | null, goal: number | null): boolean | null {
   return pct === null || goal === null ? null : pct >= goal;
+}
+
+/**
+ * The block ปี of a year when it has rows, else null: a block that the id
+ * filter left empty (SCHEMA §3.2) has no data to show, not zeros
+ */
+export function yearBlock(data: DcReportData, year: string): DcYearBlock | null {
+  return data.years.find((b) => b.b_year === year && b.rows.length > 0) ?? null;
+}
+
+/** The years with data, latest first: the ปีงบประมาณ a report page offers (SPEC §9.4) */
+export function dataYears(data: DcReportData): string[] {
+  return data.years.filter((b) => b.rows.length > 0).map((b) => b.b_year).reverse();
+}
+
+/**
+ * The query of /reports/{id} (?year=&area=&period=&measure=&by=) as a
+ * ReportQuery for the report's data, with the defaults of SCHEMA §9. A
+ * 4-digit year without data is kept, so the page says so instead of showing
+ * another year, and year is "" for a report without any data. measure and
+ * period are always ones the year's columns have, as totals() expects.
+ */
+export function reportQuery(
+  data: DcReportData,
+  params: URLSearchParams,
+  names: Pick<DcCatalog, "areas">,
+): ReportQuery {
+  const asked = params.get("year");
+  const year = asked && /^\d{4}$/.test(asked) ? asked : (dataYears(data)[0] ?? "");
+  const block = yearBlock(data, year);
+  const found = block ? measures(block) : [];
+  const measure = found.find((m) => m === params.get("measure")) ?? found[0] ?? null;
+  const period = (block ? periods(block, data.report) : []).find((p) => p === params.get("period")) ?? "year";
+  const area = names.areas.find((a) => a.id === params.get("area"))?.id ?? "all";
+  // One ตำบล is compared by หน่วยบริการ only (SPEC §9.4)
+  const by = area !== "all" || params.get("by") === "hosp" ? "hosp" : "area";
+  return { year, area, period, measure, by };
+}
+
+/** The URL query of a ReportQuery, which reportQuery reads back: ?year=&area=&period=&measure=&by= (SPEC §9.4) */
+export function reportSearch(query: ReportQuery): string {
+  const params = new URLSearchParams({ year: query.year, area: query.area, period: query.period });
+  if (query.measure !== null) params.set("measure", query.measure);
+  params.set("by", query.by);
+  return `?${params}`;
 }

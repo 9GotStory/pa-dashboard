@@ -90,7 +90,7 @@ export type GasReport = DcReportData;
 
 /** /reports/{id} query: accepted values and defaults */
 export interface ReportQuery {
-  year: string; // 4 digits · default = the latest year in report.years
+  year: string; // 4 digits · default = the latest year whose block has rows ("" if none) · a year without data is kept
   area: "all" | string; // "all" or a 6-digit tambon code · default "all"
   period: Period; // default "year"
   measure: string | null; // measure prefix (M_B tables only) · default the first measure

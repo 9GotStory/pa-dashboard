@@ -1,11 +1,12 @@
 import Link from "next/link";
 import MainNav from "./MainNav";
 
-// Masthead and main menu of the Data Center pages, after R6 (SPEC §9.1).
+// Masthead and main menu of the Data Center pages, after R6 (SPEC §9.1). A
+// printed page keeps the name and drops the menu, as R6 prints.
 export default function Masthead() {
   return (
     <>
-      <div className="border-b border-dc-border bg-dc-blue-light text-xs text-dc-ink">
+      <div className="border-b border-dc-border bg-dc-blue-light text-xs text-dc-ink print:hidden">
         <p className="mx-auto max-w-7xl px-4 py-1.5 sm:px-7">
           ระบบสารสนเทศรายงานสาธารณสุขระดับพื้นที่ <strong className="font-semibold whitespace-nowrap">อำเภอสอง จังหวัดแพร่</strong>
         </p>
@@ -32,7 +33,7 @@ export default function Masthead() {
           </p>
         </div>
       </header>
-      <nav aria-label="เมนูหลัก" className="bg-dc-navy">
+      <nav aria-label="เมนูหลัก" className="bg-dc-navy print:hidden">
         <div className="mx-auto flex max-w-7xl justify-between gap-4 sm:px-7">
           <MainNav />
           <span className="hidden items-center text-xs text-dc-blue-light md:flex">อำเภอสอง · จังหวัดแพร่</span>
