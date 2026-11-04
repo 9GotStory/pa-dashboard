@@ -210,7 +210,7 @@
 - **ตรวจรับ:**
   1. `npm run build` ผ่าน และ `out/pa.html` มีอยู่
   2. `grep -r "/pa-dashboard" out/` ไม่พบ
-  3. `npm start` แล้วเปิด `/pa` และ `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` → หน้าตาและตัวเลขเหมือน production ปัจจุบัน แท็บเปิดถูก · ตัวเลขและข้อความตรวจด้วย `npm run pa:snapshot -- prod` (production) กับ `PA_URL=http://localhost:3000/pa npm run pa:snapshot -- f13-local` แล้ว `npm run pa:compare -- prod f13-local` ต้องได้ "PA unchanged"
+  3. `npm start` แล้วเปิด `/pa` และ `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` → หน้าตาและตัวเลขเหมือน production ปัจจุบัน แท็บเปิดถูก ยกเว้นรูปตัวอักษรไทยของข้อความเนื้อหาที่เปลี่ยนตาม `<html lang="th">` (SPEC §11) · ตัวเลขและข้อความตรวจด้วย `npm run pa:snapshot -- prod` (production) กับ `PA_URL=http://localhost:3000/pa npm run pa:snapshot -- f13-local` แล้ว `npm run pa:compare -- prod f13-local` ต้องได้ "PA unchanged"
   4. `git diff --stat` ไม่มีไฟล์ใน `src/components` หรือ `src/lib` เปลี่ยน (นอกจาก rename)
   5. หลัง merge ไม่มี workflow run ของ `deploy.yml` เกิดขึ้นเอง และ `https://9gotstory.github.io/pa-dashboard/` ยังเป็น PA เวอร์ชันก่อนหน้า
 

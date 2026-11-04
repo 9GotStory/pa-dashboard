@@ -46,12 +46,12 @@ flowchart LR
 
 ## หน้าเว็บ
 
-ตอนนี้ทุก path อยู่ใต้ `/pa-dashboard/` ของ GitHub Pages
+คอลัมน์ "ตอนนี้" คือ build จาก `main` ซึ่งยังไม่ขึ้นเว็บจริง (ดูหัวข้อ Deploy)
 
 | path | ตอนนี้ | หลังเฟส 1 |
 |---|---|---|
-| `/` | PA Dashboard | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน (F18) |
-| `/pa` | — | PA Dashboard ย้ายมาที่นี่ หน้าตาและตัวเลขเหมือนเดิม (F13) |
+| `/` | หน้าชั่วคราว: ชื่อระบบและลิงก์ไป `/pa` | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน (F18) |
+| `/pa` | PA Dashboard ย้ายมาจาก `/` หน้าตาและตัวเลขเหมือนเดิม | เหมือนเดิม |
 | `/reports` | — | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา (F19) |
 | `/reports/{id}` | — | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV (F20) |
 | `/sync` | ดึงข้อมูลจาก MOPH เข้า Sheets ต้องใส่ PIN เลือกปีงบประมาณได้ และสั่ง rebuild ตอนจบ (F11) | เหมือนเดิม rebuild เริ่มทำงานเมื่อตั้ง Deploy Hook (F21) |
@@ -61,7 +61,7 @@ flowchart LR
 ```text
 src/
 ├── app/
-│   ├── page.tsx, loading.tsx    PA Dashboard (ย้ายไป app/pa/ ใน F13)
+│   ├── pa/                      PA Dashboard (ย้ายมาจาก app/ ใน F13)
 │   ├── sync/page.tsx            หน้า /sync
 │   └── (dc)/                    หน้าของ Data Center (F13–F20)
 ├── components/                  คอมโพเนนต์ของ PA ห้ามแก้ไฟล์เดิม
@@ -117,7 +117,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 |---|---|
 | `npm run dev` | dev server |
 | `npm run build` | build เป็นไฟล์ static ใน `out/` (ตั้งแต่ F14 ดึง snapshot จาก GAS ก่อน build) |
-| `npx serve@latest out` | เปิดดูผล build (`npm start` เดิมใช้กับ static export ไม่ได้ F13 เปลี่ยนให้ใช้คำสั่งนี้) |
+| `npm start` | เปิดดูผล build ที่ <http://localhost:3000> ด้วย `npx serve@latest out` (`next start` ใช้กับ static export ไม่ได้) |
 | `npm run lint` | ESLint |
 | `npm test` | เทสต์ GAS และการคำนวณ (F01, F15) |
 | `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build (F14) |
@@ -130,8 +130,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 
 ### เว็บ
 
-- ตอนนี้: push เข้า `main` แล้ว GitHub Actions (`deploy.yml`) build และขึ้น GitHub Pages ใต้ `/pa-dashboard/` โดยอ่านตัวแปร 2 ตัวข้างบนจาก GitHub secrets · PR ที่เข้า `main` จะรัน `ci.yml` (`npm run build` และตั้งแต่ F01 รัน `npm test` ด้วย)
-- F13 ปิด deploy อัตโนมัติขึ้น GitHub Pages (เหลือกดรันเองใน Actions) จนกว่าจะย้ายไป Cloudflare
+- ตอนนี้: push เข้า `main` ไม่ deploy แล้ว GitHub Pages ค้าง PA เวอร์ชันก่อน F13 ไว้ใต้ `/pa-dashboard/` เพราะ F13 ตัด `basePath` · `deploy.yml` เหลือกดรันเองใน Actions แต่ห้ามกดจนกว่า F22 เปลี่ยนเป็นหน้า stub เพราะ build ที่ไม่มี `basePath` จะทำให้ `/pa-dashboard/` พัง · PR ที่เข้า `main` จะรัน `ci.yml` (`npm run build` และตั้งแต่ F01 รัน `npm test` ด้วย)
 - หลังเฟส 1: Cloudflare Pages build จาก `main` เอง และ GAS สั่ง build ใหม่ผ่าน Deploy Hook หลัง sync ได้ไม่เกิน 5 ครั้งต่อวัน ค่าที่ต้องตั้งอยู่ใน [SPEC.md](SPEC.md) §12.5 ส่วนหน้า stub อยู่ใน §12.6
 
 ### GAS

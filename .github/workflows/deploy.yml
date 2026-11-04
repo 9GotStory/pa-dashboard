@@ -1,8 +1,8 @@
 name: Deploy to GitHub Pages
 
 on:
-  push:
-    branches: ["main"]
+  # Manual only until F22 turns this workflow into the stub (SPEC §12.6): since
+  # F13 the build has no basePath, so a run would break /pa-dashboard/.
   workflow_dispatch:
 
 permissions:
@@ -33,7 +33,6 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          NODE_ENV: production
           NEXT_PUBLIC_GAS_SCRIPT_URL: ${{ secrets.NEXT_PUBLIC_GAS_SCRIPT_URL }}
           NEXT_PUBLIC_SYNC_PIN_CODE: ${{ secrets.NEXT_PUBLIC_SYNC_PIN_CODE }}
 
