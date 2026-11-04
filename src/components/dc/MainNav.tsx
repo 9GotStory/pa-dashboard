@@ -6,7 +6,8 @@ import { usePathname } from "next/navigation";
 const LINKS = [
   { href: "/", label: "หน้าแรก" },
   { href: "/reports", label: "คลังรายงาน" },
-  { href: "/pa", label: "PA Dashboard" },
+  // PA is a heavy page outside the Data Center: no prefetch from every page.
+  { href: "/pa", label: "PA Dashboard", prefetch: false },
 ];
 
 // The main menu marks the section on show; /reports/{id} is in คลังรายงาน.
@@ -16,14 +17,13 @@ export default function MainNav() {
   const pathname = usePathname();
   return (
     <div className="flex w-full justify-between sm:w-auto sm:justify-start">
-      {LINKS.map(({ href, label }) => {
-        const inSection = href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/");
+      {LINKS.map(({ href, label, prefetch }) => {
+        const inSection = pathname === href || pathname.startsWith(href + "/");
         return (
           <Link
             key={href}
             href={href}
-            // PA is a heavy page outside the Data Center: no prefetch from every page.
-            prefetch={href === "/pa" ? false : undefined}
+            prefetch={prefetch}
             aria-current={inSection ? (pathname === href ? "page" : "true") : undefined}
             className={`flex min-h-11 items-center px-3 text-xs sm:px-5 sm:text-[13.5px] ${
               inSection

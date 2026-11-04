@@ -11,14 +11,14 @@ import { chromium } from "playwright-core";
 
 const OUT = path.resolve("out");
 const WIDTH = 360;
-// Roles a person operates; each needs a label (CODING_STANDARDS §4).
+// Roles a person operates; each needs a label (CODING_STANDARDS §4). The
+// CamelCase ones are Chrome's own roles for native date, time and colour
+// inputs and <summary>.
 const CONTROL_ROLES = new Set([
   "button", "link", "textbox", "searchbox", "combobox", "listbox", "checkbox",
-  "radio", "switch", "slider", "spinbutton", "tab", "menuitem",
+  "radio", "switch", "slider", "spinbutton", "tab", "menuitem", "menuitemcheckbox",
+  "menuitemradio", "Date", "DateTime", "InputTime", "ColorWell", "DisclosureTriangle",
 ]);
-// A name from these alone is no label: a placeholder goes once the field has
-// text, and a title shows only on mouse hover.
-const NOT_A_LABEL = new Set(["placeholder", "title"]);
 const TYPES = {
   ".html": "text/html; charset=utf-8",
   ".txt": "text/plain; charset=utf-8",
@@ -37,14 +37,15 @@ function fail(message) {
   process.exit(1);
 }
 
-// URL paths of the (dc) pages in out/: /, /reports and /reports/{id}.
+// URL paths of the (dc) pages in out/: /, /reports and /reports/{id}. A build
+// always has all three, since the prebuild fails with no active report.
 function dcPages() {
-  const files = ["index.html", "reports.html"];
   const reports = path.join(OUT, "reports");
-  if (fs.existsSync(reports)) {
-    files.push(...fs.readdirSync(reports).filter((f) => f.endsWith(".html")).sort().map((f) => `reports/${f}`));
+  const ids = fs.existsSync(reports) ? fs.readdirSync(reports).filter((f) => f.endsWith(".html")).sort() : [];
+  if (!fs.existsSync(path.join(OUT, "index.html")) || !fs.existsSync(path.join(OUT, "reports.html")) || ids.length === 0) {
+    fail("out/ lacks /, /reports or any /reports/{id} page: run npm run build first");
   }
-  return files.filter((f) => fs.existsSync(path.join(OUT, f))).map((f) => "/" + f.replace(/(index)?\.html$/, ""));
+  return ["/", "/reports", ...ids.map((f) => `/reports/${f.replace(/\.html$/, "")}`)];
 }
 
 // Serves out/ the way the static host does: /reports is reports.html.
@@ -81,11 +82,14 @@ function domRules() {
   const { scrollWidth, clientWidth } = document.documentElement;
   if (scrollWidth > clientWidth) found.push(`page scrolls sideways: ${scrollWidth}px wide at ${clientWidth}px`);
   // Every number comes from HDC (SPEC §9.1), so no wording of R6's mock data,
-  // in the text people see or in the attributes a screen reader reads.
+  // in any text of the page, shown at 360 px or not, or in the attributes a
+  // screen reader reads.
+  const body = document.body.cloneNode(true);
+  body.querySelectorAll("script, style, template, noscript").forEach((el) => el.remove());
   const attrs = ["aria-label", "alt", "title", "placeholder"];
   const text = [
     document.title,
-    document.body.innerText,
+    body.textContent,
     ...[...document.querySelectorAll(attrs.map((a) => `[${a}]`).join(","))].flatMap((el) => attrs.map((a) => el.getAttribute(a) ?? "")),
   ].join("\n");
   for (const word of ["จำลอง", "ตัวอย่าง"]) {
@@ -96,7 +100,7 @@ function domRules() {
 }
 
 // Controls whose name, as Chrome computes it for screen readers, is empty or
-// comes from a placeholder or title alone.
+// comes from a placeholder alone, which goes once the field has text.
 async function unlabelledControls(page) {
   const cdp = await page.context().newCDPSession(page);
   const { nodes } = await cdp.send("Accessibility.getFullAXTree");
@@ -104,7 +108,7 @@ async function unlabelledControls(page) {
   for (const node of nodes) {
     if (node.ignored || !CONTROL_ROLES.has(node.role?.value)) continue;
     const source = node.name?.sources?.find((s) => !s.superseded && s.value?.value);
-    if (node.name?.value?.trim() && !NOT_A_LABEL.has(source?.attribute)) continue;
+    if (node.name?.value?.trim() && source?.attribute !== "placeholder") continue;
     const { outerHTML } = await cdp.send("DOM.getOuterHTML", { backendNodeId: node.backendDOMNodeId });
     found.push(`${node.role.value} without a label: ${outerHTML.slice(0, 80)}`);
   }
@@ -134,7 +138,6 @@ async function checkPage(browser, url) {
   return problems;
 }
 
-if (!fs.existsSync(path.join(OUT, "index.html"))) fail("no out/index.html: run npm run build first");
 const urlPaths = dcPages();
 const server = await serveOut();
 const origin = `http://127.0.0.1:${server.address().port}`;
