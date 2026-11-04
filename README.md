@@ -187,5 +187,5 @@ npm run gas:sync
 ## ที่มาของข้อมูล
 
 - ตัวชี้วัดและรายงาน: [HDC Open Data](https://opendata.moph.go.th) กระทรวงสาธารณสุข
-- ขอบเขตตำบล: MOPH GIS ที่มาและวันที่ดาวน์โหลดจะบันทึกใน `public/geo/README.md` (F17)
+- ขอบเขตตำบล: MOPH GIS ที่มาและวันที่ดาวน์โหลดบันทึกใน `public/geo/README.md` (F17)
 - แผนที่พื้นหลัง: © OpenStreetMap contributors (F18)
