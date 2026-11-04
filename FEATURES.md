@@ -54,7 +54,7 @@
 | F15 | ชั้นคำนวณ `src/lib/dc/` | F01 | #122 |
 | F16 | โครงหน้าและธีม | F13, F14 | #123 |
 | F17 | ไฟล์ขอบเขตตำบล | — | #124 |
-| F18 | หน้าแรก `/` | F14, F16, F17 | #125 |
+| F18 | หน้าแรก `/` | F14, F15, F16, F17 | #125 |
 | F19 | คลังรายงาน `/reports` | F14, F16 | #126 |
 | F20 | หน้ารายงาน `/reports/[id]` | F14, F15, F16 | #127 |
 | F21 | Cloudflare Pages + Deploy Hook (คนทำ, `/wizard`) | F12, F18, F19, F20 | #128 |
@@ -239,7 +239,7 @@
 
 ### F16 โครงหน้าและธีม Data Center
 
-- **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` (อ่าน `meta.json` ตอน build) · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · route group `src/app/(dc)/layout.tsx` ห่อเฉพาะ `/`, `/reports`, `/reports/[id]` ส่วน `/pa` และ `/sync` อยู่นอก group · `src/scripts/dc-check.mjs` (`npm run dc:check`, CODING_STANDARDS §5) หลัง `npm run build` เปิดทุกหน้า HTML ของ `/`, `/reports`, `/reports/[id]` ใน `out/` ด้วย `playwright-core` ที่ความกว้าง 360px แล้ว exit 1 พร้อมชื่อหน้าและสิ่งที่ผิดเมื่อพบ: request ไป `script.google.com`, control ที่ไม่มี label, `<table>` ที่ไม่มี `<caption>`, `<svg>` ที่ไม่ได้ตั้ง `aria-hidden="true"` แต่ไม่มี `role="img"` + `aria-label`, scroll แนวนอนระดับหน้า, คำว่า "จำลอง"/"ตัวอย่าง" หรือ error ในหน้า (กฎ CODING_STANDARDS §4)
+- **ทำ:** `src/components/dc/Masthead.tsx` (masthead + เมนู หน้าแรก · คลังรายงาน · PA Dashboard) · `Footer.tsx` (อ่าน `meta.json` ตอน build) · token สีจาก R6 ใน `globals.css` ภายใต้ `@theme` (ชื่อ `--color-dc-*` ไม่ชนกับ `brand-*` ของ PA) · route group `src/app/(dc)/layout.tsx` ห่อเฉพาะ `/`, `/reports`, `/reports/[id]` ส่วน `/pa` และ `/sync` อยู่นอก group · หน้าชั่วคราว `/reports` และ `/reports/[id]` (หัวเรื่อง + ข้อความสั้น, `[id]` จาก `generateStaticParams` ของ `catalog.json` + `dynamicParams = false`) จนกว่า F19/F20 · ลิงก์ข้ามไปเนื้อหาหลัก และ focus ไปที่ `<h1>` ของหน้าใหม่หลังเปลี่ยนหน้าในเบราว์เซอร์ (`HeadingFocus.tsx`, CODING_STANDARDS §4) · `src/scripts/dc-check.mjs` (`npm run dc:check`, CODING_STANDARDS §5) หลัง `npm run build` เปิดทุกหน้า HTML ของ `/`, `/reports`, `/reports/[id]` ใน `out/` ด้วย `playwright-core` ที่ความกว้าง 360px แล้ว exit 1 พร้อมชื่อหน้าและสิ่งที่ผิดเมื่อพบ: request ไป `script.google.com`, control ที่ไม่มี label, `<table>` ที่ไม่มี `<caption>`, `<svg>` ที่ไม่ได้ตั้ง `aria-hidden="true"` แต่ไม่มี `role="img"` + `aria-label`, scroll แนวนอนระดับหน้า, คำว่า "จำลอง"/"ตัวอย่าง" หรือ error ในหน้า (กฎ CODING_STANDARDS §4)
 - **ขึ้นกับ:** F13, F14 (footer อ่าน `meta.json` ผ่าน `snapshot.ts` ของ F14)
 - **ตรวจรับ:**
   1. `/pa` และ `/sync` ไม่มี masthead ของ Data Center และ class ของ PA ไม่เปลี่ยน
@@ -257,8 +257,8 @@
 
 ### F18 หน้าแรก `/`
 
-- **ทำ:** ตาม SPEC §9.2 · หน้าเป็น server component อ่าน `catalog.json`/`meta.json` ตอน build แล้วส่ง `areas`/`hospitals` เป็น props ให้ `src/components/dc/DistrictExplorer.tsx` (`'use client'`) ซึ่งเป็นตัวเรียก `next/dynamic(() => import('./DistrictMap'), { ssr: false })` (Next.js ไม่ให้ใช้ `ssr: false` ใน server component โดยตรง) · `DistrictMap.tsx` ใช้ Leaflet อ่าน `/geo/song-tambon.geojson` · เพิ่ม `leaflet@1.9.4` เป็น dependency และ `@types/leaflet` เป็น devDependency · เลือกตำบล (คลิกแผนที่หรือปุ่ม) แสดงรายชื่อหน่วยบริการ · การ์ดหัวข้อ · วันที่ข้อมูลล่าสุด · ที่มาของข้อมูล
-- **ขึ้นกับ:** F14, F16, F17
+- **ทำ:** ตาม SPEC §9.2 · หน้าเป็น server component อ่าน `catalog.json`/`meta.json` ตอน build แล้วส่ง `areas`/`hospitals` เป็น props ให้ `src/components/dc/DistrictExplorer.tsx` (`'use client'`) ซึ่งเป็นตัวเรียก `next/dynamic(() => import('./DistrictMap'), { ssr: false })` (Next.js ไม่ให้ใช้ `ssr: false` ใน server component โดยตรง) · `DistrictMap.tsx` ใช้ Leaflet อ่าน `/geo/song-tambon.geojson` · เพิ่ม `leaflet@1.9.4` เป็น dependency และ `@types/leaflet` เป็น devDependency · เลือกตำบล (คลิกแผนที่หรือปุ่ม) แสดงรายชื่อหน่วยบริการ · การ์ดหัวข้อ · วันที่ข้อมูลล่าสุด · ที่มาของข้อมูล · footer ของ F16 เพิ่มวันที่ข้อมูลล่าสุด (`meta.latest_date_com` ผ่าน `formatThaiDate`) และวันที่ดาวน์โหลดไฟล์ขอบเขต (SCHEMA §8)
+- **ขึ้นกับ:** F14, F15 (`formatThaiDate`), F16, F17
 - **ตรวจรับ:**
   1. แผนที่แสดง 8 ตำบลเป็นสีและชื่อตรง `areas` คลิกตำบลแล้วแผงด้านข้างเปลี่ยนตาม
   2. ตำบลบ้านหนุน (`540601`) แสดงหน่วยบริการตามค่า `tambon_id` ในชีต `hospitals` ณ วันทดสอบ (ข้อมูล 29 ต.ค. 2569 คือ "บ้านหนุน" และ "สอง" — ถ้า รพ.สอง ควรอยู่ตำบลอื่น ให้แก้ที่ชีต ไม่ใช่ที่โค้ด)
@@ -267,6 +267,7 @@
   5. บล็อก `tile.openstreetmap.org` → หน้ายังใช้งานได้ เลือกตำบลด้วยปุ่มได้
   6. หน้าแรกไม่มี network request ไปที่ `script.google.com` เลย (ดูใน DevTools)
   7. Lighthouse mobile: LCP < 2.5 วินาที และ JS ของหน้า (ไม่รวม chunk ของ Leaflet) < 150 KB gzip
+  8. footer ทุกหน้าของ Data Center แสดงวันที่ข้อมูลล่าสุดตรงกับ `meta.latest_date_com` และวันที่ดาวน์โหลดไฟล์ขอบเขตตาม `public/geo/README.md`
 
 ### F19 คลังรายงาน `/reports`
 

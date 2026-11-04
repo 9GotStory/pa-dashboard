@@ -16,7 +16,8 @@
     "gas:sync": "npm run gas:push && npm run gas:deploy",
     "gas:diag": "node --env-file-if-exists=.env.local src/scripts/gas-diag.mjs",
     "pa:snapshot": "node --env-file-if-exists=.env.local src/scripts/pa-check.mjs snapshot",
-    "pa:compare": "node src/scripts/pa-check.mjs compare"
+    "pa:compare": "node src/scripts/pa-check.mjs compare",
+    "dc:check": "node src/scripts/dc-check.mjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
