@@ -28,7 +28,7 @@ export default function MainNav() {
             className={`flex min-h-11 items-center px-3 text-xs sm:px-5 sm:text-[13.5px] ${
               inSection
                 ? "bg-dc-navy-dark font-semibold text-white shadow-[inset_0_-4px_0_var(--color-dc-teal-light)]"
-                : "text-dc-green-light hover:bg-dc-navy-dark hover:text-white"
+                : "text-dc-blue-light hover:bg-dc-navy-dark hover:text-white"
             }`}
           >
             {label}

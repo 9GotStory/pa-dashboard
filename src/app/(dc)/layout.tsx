@@ -15,7 +15,7 @@ export default function DcLayout({
     <div className="dc flex min-h-screen flex-col bg-dc-canvas font-dc text-sm/[1.65] text-dc-ink wrap-break-word">
       <a
         href="#main"
-        className="absolute -top-24 left-4 z-50 rounded-md border-2 border-dc-green bg-white px-3.5 py-2.5 font-bold text-dc-navy focus:top-2"
+        className="absolute -top-24 left-4 z-50 rounded-md border-2 border-dc-blue bg-white px-3.5 py-2.5 font-bold text-dc-navy focus:top-2"
       >
         ข้ามไปยังเนื้อหาหลัก
       </a>

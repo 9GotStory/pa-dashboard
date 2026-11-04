@@ -5,7 +5,7 @@ import MainNav from "./MainNav";
 export default function Masthead() {
   return (
     <>
-      <div className="border-b border-dc-border bg-dc-green-light text-xs text-dc-ink">
+      <div className="border-b border-dc-border bg-dc-blue-light text-xs text-dc-ink">
         <p className="mx-auto max-w-7xl px-4 py-1.5 sm:px-7">
           ระบบสารสนเทศรายงานสาธารณสุขระดับพื้นที่ <strong className="font-semibold whitespace-nowrap">อำเภอสอง จังหวัดแพร่</strong>
         </p>
@@ -15,7 +15,7 @@ export default function Masthead() {
           <Link href="/" className="flex min-w-0 items-center gap-3.5">
             <span
               aria-hidden="true"
-              className="flex size-11 shrink-0 items-center justify-center rounded-[11px] bg-dc-green-dark font-prompt text-xl font-bold text-white shadow-[inset_0_-3px_0_var(--color-dc-teal-light)] sm:size-12"
+              className="flex size-11 shrink-0 items-center justify-center rounded-[11px] bg-dc-blue-dark font-prompt text-xl font-bold text-white shadow-[inset_0_-3px_0_var(--color-dc-teal-light)] sm:size-12"
             >
               S<span className="text-[15px]">+</span>
             </span>
@@ -35,7 +35,7 @@ export default function Masthead() {
       <nav aria-label="เมนูหลัก" className="bg-dc-navy">
         <div className="mx-auto flex max-w-7xl justify-between gap-4 sm:px-7">
           <MainNav />
-          <span className="hidden items-center text-xs text-dc-green-light md:flex">อำเภอสอง · จังหวัดแพร่</span>
+          <span className="hidden items-center text-xs text-dc-blue-light md:flex">อำเภอสอง · จังหวัดแพร่</span>
         </div>
       </nav>
     </>

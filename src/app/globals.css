@@ -98,11 +98,12 @@
   --color-neutral-950: #020617;
 
   /* Data Center (SPEC §9.1): R6's tokens from its last :root, the "HOME R3"
-     navy/teal palette. R6 keeps the name --green for its navy blue; dc-* keeps
-     R6's names so its CSS ports one to one. PA never uses dc-*. */
-  --color-dc-green: #155b86;
-  --color-dc-green-dark: #103b5a;
-  --color-dc-green-light: #e7f1f8;
+     navy/teal palette. R6 still calls its blues --green, --green-dark and
+     --green-light; here they are dc-blue*, and the rest keep R6's names. PA
+     never uses dc-*. */
+  --color-dc-blue: #155b86;
+  --color-dc-blue-dark: #103b5a;
+  --color-dc-blue-light: #e7f1f8;
   --color-dc-ink: #182d43;
   --color-dc-muted: #546b7b;
   --color-dc-border: #d6e1ea;
