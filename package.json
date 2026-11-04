@@ -7,7 +7,7 @@
     "prebuild": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
     "build": "next build",
     "snapshot": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
-    "start": "next start",
+    "start": "npx serve@latest out",
     "lint": "eslint && node src/scripts/check-glossary.mjs",
     "typecheck": "tsc --noEmit",
     "test": "node --test \"src/scripts/test/**/*.test.js\"",

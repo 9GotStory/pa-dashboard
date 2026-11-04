@@ -3,8 +3,8 @@ import { prompt, sarabun } from "@/lib/fonts";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "PA Dashboard - Song District Health KPIs",
-  description: "Health indicators for Song District, Phrae Province",
+  title: "Song Health Data Center",
+  description: "ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่",
 };
 
 import { Toaster } from "sonner";
@@ -15,7 +15,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="th">
       <body
         className={`${prompt.variable} ${sarabun.variable} antialiased text-slate-900 bg-slate-50 font-sans`}
       >
