@@ -596,6 +596,23 @@ export interface ReportQuery {
   by: "area" | "hosp";           // default "area" · ถ้า area ≠ "all" บังคับเป็น "hosp"
 }
 
+/** query ของ /reports — ค่าที่ยอมรับและค่าเริ่มต้น (SPEC §9.3) */
+export interface LibraryQuery {
+  main: string | null;           // main_report_id ของหมวดใน catalog.json · default null (ทุกหมวด) · เป็น null เมื่อมี cat
+  cat: string | null;            // cat_id ของหัวข้อใน catalog.json · default null · ชนะ main
+  q: string;                     // คำค้นตามที่พิมพ์ · default ""
+  page: number;                  // เริ่มที่ 1 · default 1
+  size: 10 | 20;                 // รายงานต่อหน้า · default 10
+}
+
+/** หน้าหนึ่งของคลังรายงาน */
+export interface LibraryPage {
+  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[];   // รายงานของหน้านี้ตามหัวข้อและกลุ่ม ลำดับตาม catalog.json
+  total: number;                 // รายงานที่ตรงทั้งหมดทุกหน้า
+  page: number;                  // หน้าที่แสดง: หน้าสุดท้ายถ้า page ใน query เกิน
+  pages: number;                 // อย่างน้อย 1
+}
+
 export interface Totals {
   target: number;
   result: number;

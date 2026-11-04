@@ -81,7 +81,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | Path | หน้า | ไฟล์ | ข้อมูล |
 |---|---|---|---|
 | `/` | Data Center หน้าแรก | `src/app/(dc)/page.tsx` | catalog.json ตอน build + GeoJSON |
-| `/reports` | คลังรายงาน | `src/app/(dc)/reports/page.tsx` | catalog.json ตอน build · query: `main`, `cat`, `q`, `page` กรองฝั่ง client |
+| `/reports` | คลังรายงาน | `src/app/(dc)/reports/page.tsx` | catalog.json ตอน build · query: `main`, `cat`, `q`, `page`, `size` กรองฝั่ง client |
 | `/reports/[id]` | หน้ารายงาน | `src/app/(dc)/reports/[id]/page.tsx` | `generateStaticParams` จาก catalog.json · เบราว์เซอร์โหลด `/data/reports/{id}.json` · query ตัวกรองใน §9.4 (ค่าที่ยอมรับ: SCHEMA §9 `ReportQuery`) |
 | `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` |
 | `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและสั่ง rebuild (§12.1) |
@@ -246,7 +246,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - แถบซ้าย: หมวด → หัวข้อ (ซ้อนกัน) พร้อมจำนวนรายงาน แสดงเฉพาะหัวข้อที่มีรายงานที่ใช้งาน
 - ค้นหาจาก `report_name`, `source_table`, `opendata_id`, ชื่อหัวข้อ และชื่อกลุ่ม โดยค้นภายในหมวด/หัวข้อที่เลือกอยู่ (`q` AND `main`/`cat`)
 - รายการจัดหัวแถวตาม หัวข้อ → กลุ่ม คอลัมน์: ชื่อรายงาน (+ `source_table`) · หัวข้อ/กลุ่ม · ข้อมูลล่าสุด (ปีล่าสุดที่มีข้อมูล หรือ "ยังไม่มีข้อมูล") · เปิดรายงาน
-- แบ่งหน้า 10/20 รายการตาม R6 และเก็บสถานะตัวกรองใน URL
+- แบ่งหน้า 10/20 รายการตาม R6 และเก็บสถานะตัวกรองและการแบ่งหน้าใน URL (ค่าที่ยอมรับ: SCHEMA §9 `LibraryQuery`) ทั้งจำนวนต่อหน้า (`size`) ด้วย ไม่อย่างนั้น `page` ชี้ไปคนละรายการเมื่อกลับมาที่หน้านี้
 - รายงานที่ `catalog_status = removed` ยังแสดง พร้อมป้าย "HDC ไม่แสดงรายงานนี้แล้ว"
 
 ### 9.4 หน้ารายงาน `/reports/{id}`
