@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { MAINS, PROMOTION, SERVICE_PLAN, VACCINES } from "./fixtures/catalog-20261104";
+import { MAINS, MCH, PROMOTION, SERVICE_PLAN, VACCINES } from "./fixtures/catalog-20261104";
 import { HEADERS } from "./fixtures/headers-20261104";
 import type { Cell, DcReport, DcYearBlock, Family, LibraryPage, ReportQuery } from "./types";
 import {
@@ -500,7 +500,7 @@ test("?q= searches within the หมวด or หัวข้อ picked: ร้�
     ["", "s_kpi_food"],
   ]);
   assert.equal(library("q=ร้อยละ").total, 12);
-  assert.equal(library("cat=1ed90bc32310b503b7ca9b32af425ae5&q=s_epi_complete").total, 0);
+  assert.equal(library(`cat=${MCH.cat_id}&q=s_epi_complete`).total, 0);
 });
 
 test("no query → page 1 of 3: the first 10 of the 21 reports, ending with กลุ่มอายุ 3 ปี; ?page=3 → s_kpi_dental33 alone, under its หัวข้อ again", () => {

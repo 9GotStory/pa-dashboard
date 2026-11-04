@@ -34,7 +34,7 @@ function report(
 export const PROMOTION = { main_report_id: "73daf277928bc32a1b3c8e772192543c", main_report_name: "ส่งเสริมป้องกัน" };
 export const SERVICE_PLAN = { main_report_id: "02e752187c7282ebc9315123aa1cabbe", main_report_name: "ข้อมูลตอบสนอง Service Plan" };
 
-const MCH: DcTopic = { cat_id: "1ed90bc32310b503b7ca9b32af425ae5", category_name: "อนามัยแม่และเด็ก", ...PROMOTION, order: 10 };
+export const MCH: DcTopic = { cat_id: "1ed90bc32310b503b7ca9b32af425ae5", category_name: "อนามัยแม่และเด็ก", ...PROMOTION, order: 10 };
 export const VACCINES: DcTopic = { cat_id: "4df360514655f79f13901ef1181ca1c7", category_name: "การสร้างเสริมภูมิคุ้มกันโรค", ...PROMOTION, order: 20 };
 const SURVEILLANCE: DcTopic = { cat_id: "bebf866fceaef84c4078965eaf619565", category_name: "การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม", ...PROMOTION, order: 30 };
 const SCREENING: DcTopic = { cat_id: "6966b0664b89805a484d7ac96c6edc48", category_name: "การคัดกรอง", ...PROMOTION, order: 40 };

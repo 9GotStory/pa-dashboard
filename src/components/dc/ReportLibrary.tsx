@@ -10,6 +10,16 @@ type Mains = DcCatalog["mains"];
 type Topic = Mains[number]["topics"][number];
 type Go = (next: LibraryQuery, how?: "push" | "replace") => void;
 
+/** A page button, as a link or as the end of the pages */
+const PAGE = "inline-flex min-h-10 items-center rounded-md border border-dc-border bg-white px-3 font-semibold text-dc-navy";
+
+/** A หมวด or หัวข้อ in the menu: a chip on a phone, a row marked on its left from lg */
+function menuItem(current: boolean, topic: boolean): string {
+  return `flex min-h-11 max-w-64 shrink-0 items-center justify-between gap-2 rounded-md border px-3 py-2 text-[13px] lg:max-w-none lg:rounded-l-none lg:border-0 lg:border-l-[3px] ${
+    topic ? "lg:pl-6" : "font-semibold"
+  } ${current ? "border-dc-teal bg-dc-teal/10 font-bold text-dc-navy" : "border-dc-border text-dc-ink hover:bg-dc-blue-light lg:border-white lg:hover:border-dc-blue-light"}`;
+}
+
 /** The reports of some หัวข้อ */
 function count(topics: Topic[]): number {
   return topics.reduce((n, t) => n + t.groups.reduce((m, g) => m + g.reports.length, 0), 0);
@@ -71,13 +81,11 @@ function Library({ mains }: { mains: Mains }) {
     heading.current?.focus({ preventScroll: true });
   };
   const all = !query.main && !query.cat;
-  const title =
-    (query.cat
-      ? mains.flatMap((m) => m.topics).find((t) => t.cat_id === query.cat)?.category_name
-      : mains.find((m) => m.main_report_id === query.main)?.main_report_name) ?? "รายงานทั้งหมด";
-  const everything: LibraryQuery = { main: null, cat: null, q: "", page: 1, size: query.size };
-  const first = (page - 1) * query.size + 1;
-  const shown = groups.reduce((n, g) => n + g.reports.length, 0);
+  const topic = mains.flatMap((m) => m.topics).find((t) => t.cat_id === query.cat);
+  const main = mains.find((m) => m.main_report_id === query.main);
+  const title = topic?.category_name ?? main?.main_report_name ?? "รายงานทั้งหมด";
+  // A กลุ่ม whose หัวข้อ the page has not shown above it yet
+  const opensTopic = (i: number) => i === 0 || groups[i - 1].topic !== groups[i].topic;
 
   return (
     <div className="mt-5 grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start lg:gap-5">
@@ -85,24 +93,34 @@ function Library({ mains }: { mains: Mains }) {
         <h2 id="library-nav-title" className="bg-dc-blue-light px-4 py-2.5 font-prompt text-[13px] font-semibold text-dc-navy lg:py-3.5 lg:text-sm">
           หมวดและหัวข้อ
         </h2>
-        {/* One row that scrolls sideways on a phone, as R6's categories do, its long HDC names wrapped; หัวข้อ
-            under their หมวด from lg. relative: the sr-only counts are absolute, and would widen the page from
-            outside the row. */}
+        {/* One row that scrolls sideways on a phone, as R6's catalog row does, its long HDC names wrapped;
+            หัวข้อ under their หมวด from lg. relative: the sr-only counts are absolute, and would widen the page
+            from outside the row. */}
         <ul ref={row} className="relative flex gap-1.5 overflow-x-auto overscroll-x-contain p-2 lg:block lg:space-y-0.5 lg:overflow-visible">
           <li className="shrink-0">
-            <Pick to={everything} go={go} current={all} level="main">
+            <Pick to={{ ...query, main: null, cat: null, page: 1 }} go={go} current={all} className={menuItem(all, false)}>
               รายงานทั้งหมด <Count n={count(mains.flatMap((m) => m.topics))} current={all} />
             </Pick>
           </li>
           {mains.map((m) => (
             <li key={m.main_report_id} className="contents lg:block">
-              <Pick to={{ ...query, main: m.main_report_id, cat: null, page: 1 }} go={go} current={query.main === m.main_report_id} level="main">
+              <Pick
+                to={{ ...query, main: m.main_report_id, cat: null, page: 1 }}
+                go={go}
+                current={query.main === m.main_report_id}
+                className={menuItem(query.main === m.main_report_id, false)}
+              >
                 {m.main_report_name} <Count n={count(m.topics)} current={query.main === m.main_report_id} />
               </Pick>
               <ul className="contents lg:block lg:space-y-0.5">
                 {m.topics.map((t) => (
                   <li key={t.cat_id} className="shrink-0">
-                    <Pick to={{ ...query, main: null, cat: t.cat_id, page: 1 }} go={go} current={query.cat === t.cat_id} level="topic">
+                    <Pick
+                      to={{ ...query, main: null, cat: t.cat_id, page: 1 }}
+                      go={go}
+                      current={query.cat === t.cat_id}
+                      className={menuItem(query.cat === t.cat_id, true)}
+                    >
                       {t.category_name} <Count n={count([t])} current={query.cat === t.cat_id} />
                     </Pick>
                   </li>
@@ -162,7 +180,12 @@ function Library({ mains }: { mains: Mains }) {
           <div className="px-4 py-12 text-center sm:px-6">
             <h3 className="font-prompt text-base font-semibold text-dc-navy">ไม่พบรายงานที่ตรงกับการค้นหา</h3>
             <p className="mt-1 text-dc-muted">ลองเปลี่ยนคำค้นหาหรือเลือกหมวดอื่น</p>
-            <Pick to={everything} go={go} onPick={() => searchBox.current?.focus()} level="action">
+            <Pick
+              to={{ main: null, cat: null, q: "", page: 1, size: query.size }}
+              go={go}
+              onPick={() => searchBox.current?.focus()}
+              className="mt-4 inline-flex min-h-10 items-center rounded-md bg-dc-blue px-4 font-semibold text-white hover:bg-dc-blue-dark"
+            >
               แสดงรายงานทั้งหมด
             </Pick>
           </div>
@@ -191,7 +214,7 @@ function Library({ mains }: { mains: Mains }) {
               </thead>
               {groups.map((g, i) => (
                 <tbody key={`${g.topic.cat_id}/${g.subgroup}`}>
-                  {(i === 0 || groups[i - 1].topic !== g.topic) && (
+                  {opensTopic(i) && (
                     <tr className="border-t border-dc-border bg-dc-canvas">
                       <th scope="rowgroup" colSpan={4} className="px-6 py-2 text-xs font-bold text-dc-navy">
                         {g.topic.category_name}
@@ -227,12 +250,12 @@ function Library({ mains }: { mains: Mains }) {
             <div className="md:hidden">
               {groups.map((g, i) => (
                 <div key={`${g.topic.cat_id}/${g.subgroup}`}>
-                  {(i === 0 || groups[i - 1].topic !== g.topic) && (
-                    <h3 className={`border-b border-dc-border bg-dc-canvas px-4 py-2 text-xs font-bold text-dc-navy ${i > 0 ? "border-t" : ""}`}>
+                  {opensTopic(i) && (
+                    <h3 className={`border-b border-dc-border bg-dc-canvas px-4 py-2 font-prompt text-xs font-semibold text-dc-navy ${i > 0 ? "border-t" : ""}`}>
                       {g.topic.category_name}
                     </h3>
                   )}
-                  {g.subgroup && <h4 className="px-4 pt-2.5 text-xs font-semibold text-dc-blue">{g.subgroup}</h4>}
+                  {g.subgroup && <h4 className="px-4 pt-2.5 font-prompt text-xs font-semibold text-dc-blue">{g.subgroup}</h4>}
                   <ul>
                     {g.reports.map((r) => (
                       <li key={r.opendata_id} className="border-b border-dc-border px-4 py-3.5 last:border-b-0">
@@ -250,11 +273,11 @@ function Library({ mains }: { mains: Mains }) {
             </div>
             <nav aria-label="หน้าของรายการรายงาน" className="flex flex-wrap items-center justify-between gap-2 border-t border-dc-border px-4 py-3 text-xs text-dc-muted sm:px-6">
               <p>
-                แสดง {first}–{first + shown - 1} จาก {total} รายงาน
+                แสดง {(page - 1) * query.size + 1}–{Math.min(page * query.size, total)} จาก {total} รายงาน
               </p>
               <div className="flex items-center gap-1.5">
                 {page > 1 ? (
-                  <Pick to={{ ...query, page: page - 1 }} go={go} onPick={toList} level="page">
+                  <Pick to={{ ...query, page: page - 1 }} go={go} onPick={toList} className={PAGE}>
                     ก่อนหน้า
                   </Pick>
                 ) : (
@@ -264,7 +287,7 @@ function Library({ mains }: { mains: Mains }) {
                   หน้า {page} / {pages}
                 </span>
                 {page < pages ? (
-                  <Pick to={{ ...query, page: page + 1 }} go={go} onPick={toList} level="page">
+                  <Pick to={{ ...query, page: page + 1 }} go={go} onPick={toList} className={PAGE}>
                     ถัดไป
                   </Pick>
                 ) : (
@@ -279,23 +302,11 @@ function Library({ mains }: { mains: Mains }) {
   );
 }
 
-/** A page button, as a link or as the end of the pages */
-const PAGE = "inline-flex min-h-10 items-center rounded-md border border-dc-border bg-white px-3 font-semibold text-dc-navy";
-
-/** The look of a Pick: a หมวด or หัวข้อ in the menu (a chip on a phone), a page button, or the reset action */
-const PICK_LOOKS = {
-  main: "font-semibold",
-  topic: "lg:pl-6",
-  page: PAGE,
-  action: "mt-4 inline-flex min-h-10 items-center rounded-md bg-dc-blue px-4 font-semibold text-white hover:bg-dc-blue-dark",
-};
-
 /**
  * A link to another query of this page, which a plain click applies without
  * asking the network; a click with Ctrl or ⌘ opens it in a new tab as usual
  */
-function Pick(props: { to: LibraryQuery; go: Go; level: keyof typeof PICK_LOOKS; current?: boolean; onPick?: () => void; children: ReactNode }) {
-  const menu = props.level === "main" || props.level === "topic";
+function Pick(props: { to: LibraryQuery; go: Go; current?: boolean; onPick?: () => void; className: string; children: ReactNode }) {
   return (
     <Link
       href={`/reports${librarySearch(props.to)}`}
@@ -306,13 +317,7 @@ function Pick(props: { to: LibraryQuery; go: Go; level: keyof typeof PICK_LOOKS;
         props.go(props.to);
         props.onPick?.();
       }}
-      className={
-        menu
-          ? `flex min-h-11 max-w-64 shrink-0 items-center justify-between gap-2 rounded-md border px-3 py-2 text-[13px] lg:max-w-none lg:rounded-l-none lg:border-0 lg:border-l-[3px] ${PICK_LOOKS[props.level]} ${
-              props.current ? "border-dc-teal bg-dc-teal/10 font-bold text-dc-navy" : "border-dc-border text-dc-ink hover:bg-dc-blue-light lg:border-transparent"
-            }`
-          : PICK_LOOKS[props.level]
-      }
+      className={props.className}
     >
       {props.children}
     </Link>
