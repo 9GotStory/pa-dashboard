@@ -261,7 +261,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 
 ### 4.2 การตรวจพบ
 
-- กลุ่มคอลัมน์ถือว่า "มี" เมื่อ header มีครบทุกคอลัมน์ของกลุ่ม จึงไม่เข้าใจผิดว่า `result1–4` ของ `s_dm_screen` หรือ `result1–9` ของ `s_aged9` เป็นไตรมาส เพราะตารางเหล่านั้นไม่มี `target1–4`
+- กลุ่มคอลัมน์ถือว่า "มี" เมื่อ header มีครบทุกคอลัมน์ของกลุ่ม จึงไม่นับ `result1–9` ของ `s_aged9` (ผลรายด้าน) และ `result1–4` ของ `s_dm_screen`/`s_ht_screen` (ผลงานรายไตรมาสที่ไม่มีเป้าหมายรายไตรมาส #169) เป็นกลุ่มไตรมาส เพราะตารางเหล่านั้นไม่มี `target1–4` (§4.5)
 - ไตรมาสใช้กลุ่มแรกที่พบตามลำดับ `Q_A` → `Q_B` → `Q_C` (ลำดับเดียวกับ `getQuarterSum`)
 - รายการ (measure) ของ `M_B`: หา header ที่ตรง `^(.+)_(0[1-9]|1[0-2])$` แล้วนับ prefix ที่มีครบ 12 เดือน ไม่นับ prefix `target`/`result` และต้องมี `target{MM}` ครบ 12 เดือนด้วย
 - ชื่อรายการที่แสดง = prefix ตัวพิมพ์ใหญ่ และเปลี่ยน `_` เป็น `-` เช่น `dtp_hb3` เป็น `DTP-HB3`
@@ -293,17 +293,28 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 
 ### 4.5 คอลัมน์ที่ยังไม่แสดงในเฟส 1
 
-ยังไม่รู้ความหมายแน่ชัด รอ data dictionary ของ HDC (อาจได้จาก `report_schema` ใน §5.4)
+ความหมายมาจาก `COLUMN_COMMENT` ของ `report_schema` (§5.4 ตรวจ 6 พ.ย. 2569) คอลัมน์ที่ `COLUMN_COMMENT` ว่างยังไม่รู้ความหมาย ไม่ตั้งชื่อเอง
+
+| ตาราง | คอลัมน์ | ความหมาย |
+|---|---|---|
+| `s_kpi_food` | `r1`–`r6` | เด็กอายุครบ 6 เดือนที่แม่หรือผู้เลี้ยงดูตอบว่ากินนมแม่อย่างเดียว ช่วงอายุ 1–6 เดือนตามเลข |
+| `s_kpi_food` | `total` | "จำนวนรวม" ไม่ระบุว่ารวมอะไร |
+| `s_aged9` | `result1`–`result9` | คัดกรองรายด้าน ตามเลข: การมองเห็น · การกลั้นปัสสาวะ · การได้ยิน · การปฏิบัติกิจวัตรประจำวัน · ความคิดความจำ · ภาวะซึมเศร้า (2Q) · การเคลื่อนไหว · สุขภาพช่องปาก · ภาวะขาดสารอาหาร |
+| `s_aged9` | `result{n}_1`, `result{n}_2` | ด้าน n: `_1` ปกติ (ด้าน 7 "ไม่เสี่ยง") · `_2` เสี่ยง (ด้าน 2 "มีปัญหา", ด้าน 5 และ 6 "ผิดปกติ") |
+| `s_aged9` | `result6_3` | ภาวะซึมเศร้า "2Q+ผิดปกติ" |
+| `s_dm_screen` | `result1`–`result4` | ผลงานคัดกรองเบาหวานรายไตรมาส 1–4 ไม่สะสม (Σ = `result` ทุก block ปีใน snapshot 4 พ.ย. 2569) ไม่มีเป้าหมายรายไตรมาส (#169) |
+| `s_ht_screen` | `result1`–`result4` | ผลงานคัดกรองความดันโลหิตสูงรายไตรมาส 1–4 แบบเดียวกับ `s_dm_screen` (#169) |
+| `s_ht_screen_follow` | `r1`, `r2` | รวมทั้งปีงบประมาณ ได้รับการติดตามโดยทำ HBPM [A1] / OBPM [A2] (`result` คือ [A] ไม่นับซ้ำ) |
+| `s_ht_screen_follow` | `r1_q1`–`r1_q4`, `r2_q1`–`r2_q4` | A1 / A2 รายไตรมาส |
+
+`COLUMN_COMMENT` ว่าง:
 
 | ตาราง | คอลัมน์ |
 |---|---|
-| `s_kpi_food` | `total`, `r1`–`r6` |
-| `s_aged9` | `result1`–`result9`, `result{n}_1`, `result{n}_2`, `result6_3` |
-| `s_dm_screen` | `result1`–`result4` |
-| `s_ht_screen` | `result1`–`result4`, `yymm`, `date_fz` |
+| `s_ht_screen` | `yymm`, `date_fz` |
 | `s_ncd_screen_repleate1` | `yymm`, `date_fz`, `target_13`, `result_13`, `non_follow180_13`, `over180` |
-| `s_ht_screen_follow` | `r1`, `r2`, `r1_q1`–`r1_q4`, `r2_q1`–`r2_q4`, `target_13`, `result_13`, `r_home_bp_13`, `r_hosp_bp_13`, `non_follow90_13`, `over90` |
-| `s_dental_0_5_cavity_free` | `c` |
+| `s_ht_screen_follow` | `target_13`, `result_13`, `r_home_bp_13`, `r_hosp_bp_13`, `non_follow90_13`, `over90` |
+| `s_dental_0_5_cavity_free` | `c` (`a`, `b` ก็ว่าง ใช้ตาม `col_target`/`col_result` ของ seed §6) |
 
 ไม่ใช้เป็นตัวชี้วัดเลย: `flag_sent`, `ip`
 
@@ -314,7 +325,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 | `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริงจากเบราว์เซอร์ 29 ต.ค. 2569 · 30 ต.ค. 2569 ทดสอบจากเครื่องผู้ดูแล: เบราว์เซอร์ได้ข้อมูล, `curl` ได้ 403, `fetch` ของ node ได้ 403 → endpoint นี้กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ ดึงผ่าน snippet ใน DevTools เท่านั้น (SPEC §12.3, ADR-0010) |
 | `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีนจากเบราว์เซอร์ 29 ต.ค. 2569 · กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์เช่นเดียวกับ `categories` |
 | `POST /api/report_data` | ใช้งานอยู่แล้ว เรียกจากสคริปต์ได้ (`curl` จากเครื่องผู้ดูแลได้ 201, 30 ต.ค. 2569) · 429 ที่พบคือการจำกัดความถี่ ให้ retry และเว้นช่วงตาม SPEC §7.1 · ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
-| `GET /api/report_year/{tableName}`, `GET /api/report_schema/{tableName}` | มาจาก repo อ้างอิง ยังไม่ได้ตรวจ และยังไม่ใช้ในเฟส 1 |
+| `GET /api/report_year/{tableName}`, `GET /api/report_schema/{tableName}` | ตรวจแล้ว 6 พ.ย. 2569: `curl` จากเครื่องผู้ดูแลได้ 200 ไม่ถูกกันแบบ API แค็ตตาล็อก · ยังไม่ใช้ในเฟส 1 (§5.4) |
 
 Base URL: `https://opendata.moph.go.th`
 
@@ -362,9 +373,12 @@ Request (`Content-Type: application/json`):
 - `total` อาจเป็น string ต้องแปลงเป็นตัวเลขก่อนเทียบ
 - ส่ง `total` ไปกับ `save_kpi_data` เสมอ ถ้า `data.length < total` GAS ปฏิเสธ (SPEC §7.1) การแบ่งหน้าด้วย `offset` ยังไม่ทำในเฟส 1
 
-### 5.4 ยังไม่ใช้ในเฟส 1
+### 5.4 `report_year` และ `report_schema` (ยังไม่ใช้ในเฟส 1)
 
-`report_year/{tableName}` (ปีที่มีข้อมูล) และ `report_schema/{tableName}` (โครงสร้างตาราง) ควรตรวจว่า `report_schema` ให้คำอธิบายคอลัมน์หรือไม่ ถ้าให้ จะใช้ตั้งชื่อคอลัมน์ใน §4.5 ได้
+ตรวจ 6 พ.ย. 2569 ด้วย `curl` (GET ไม่มี body ไม่ต้องใช้ header ของเบราว์เซอร์):
+
+- `report_year/{tableName}` ตอบ array ของ `{ "b_year": string, "process_date": string }` เรียงจากปีใหม่ไปปีเก่า `process_date` เป็นเลข 12 หลักแบบ `date_com` เช่น `s_aged9` ได้ 2569 (`202611060558`) ถึง 2564
+- `report_schema/{tableName}` ตอบ array ของ `{ "COLUMN_NAME", "IS_NULLABLE", "COLUMN_TYPE", "COLUMN_COMMENT" }` ตามลำดับคอลัมน์ของตาราง `COLUMN_COMMENT` คือคำอธิบายภาษาไทยของ HDC และว่างในบางคอลัมน์ เช่น `id`, `hospcode`, `areacode`, `date_com`, `b_year` · ความหมายใน §4.5 มาจากช่องนี้
 
 ### 5.5 ไฟล์ export แค็ตตาล็อก (อินพุตของ `hdc-catalog.js --from`)
 
