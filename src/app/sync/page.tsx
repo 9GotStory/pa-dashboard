@@ -320,6 +320,7 @@ export default function SyncPage() {
 
     let successCount = 0;
     let staleCount = 0;
+    let noDataCount = 0;
     let failCount = 0;
 
     for (let i = 0; i < kpisToSync.length; i++) {
@@ -414,6 +415,15 @@ export default function SyncPage() {
         if (!Array.isArray(data))
           throw new Error("API response is not an array");
 
+        // HDC has no rows of this table for the year, e.g. a table that
+        // starts after the first year of the window: nothing to save, not a
+        // failure (SPEC §12.1, as sync-moph-to-gas.js).
+        if (data.length === 0) {
+          addLog(`ไม่มีข้อมูล ${kpi.table} ปี ${year} ใน HDC`, "info");
+          noDataCount++;
+          continue;
+        }
+
         addLog(
           `Received ${data.length} rows. Uploading to Google Sheets...`,
           "upload",
@@ -493,17 +503,18 @@ export default function SyncPage() {
         console.error(error);
         addLog(`Failed ${kpi.table}: ${errorMessage(error)}`, "error");
         failCount++;
+      } finally {
+        // Random pause between 4 to 7 seconds to avoid rate limiting, after a
+        // table with no data too
+        // WAFs often block exact interval requests (bot detection)
+        const randomDelay = 4000 + Math.floor(Math.random() * 3000);
+        await new Promise((r) => setTimeout(r, randomDelay));
       }
-
-      // Random pause between 4 to 7 seconds to avoid rate limiting
-      // WAFs often block exact interval requests (bot detection)
-      const randomDelay = 4000 + Math.floor(Math.random() * 3000);
-      await new Promise((r) => setTimeout(r, randomDelay));
     }
 
     setProgress(100);
     addLog(
-      `Sync Completed. Success: ${successCount}, Stale data: ${staleCount}, Failed: ${failCount}`,
+      `Sync Completed. Success: ${successCount}, Stale data: ${staleCount}, No data: ${noDataCount}, Failed: ${failCount}`,
       "finish",
     );
 
