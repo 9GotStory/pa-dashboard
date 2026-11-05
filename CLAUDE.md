@@ -71,8 +71,8 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 ## Commands
 
 - `npm ci` · `npm run dev` (http://localhost:3000) · `npm run lint`
-- `npm run build` writes the static site to `out/`; preview it with `npx serve@latest out`. `next start` does not work with `output: 'export'`.
-- `npm test` runs the GAS tests in `src/scripts/test/` (added in F01; F15 adds the `values.ts` tests).
+- `npm run build` writes the static site to `out/`. Its prebuild reads the live GAS (GET, about 2.5 minutes); `npx next build` rebuilds from the snapshot already in `public/data/`. After a build, `npm run dc:check` and `npm run dc:budget` check the Data Center pages. Preview with `npx serve@latest out`; `next start` does not work with `output: 'export'`.
+- `npm test` runs the GAS tests in `src/scripts/test/` and the Data Center tests in `src/lib/dc/`.
 - `next build` downloads Google Fonts (Prompt, Sarabun) through `next/font/google`. If a build fails while fetching fonts, the network is blocked; it is not a code bug.
 
 ## Hard rules
