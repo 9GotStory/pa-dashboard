@@ -93,6 +93,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป · ตั้งแต่ตัด `basePath` (F13) จนถึงขึ้น stub (F22) `deploy.yml` ต้องไม่ build อัตโนมัติอีก (เหลือ `workflow_dispatch`) ไม่อย่างนั้นทุก push ไป `main` จะ deploy เว็บที่ไม่มี `basePath` ขึ้น `/pa-dashboard/` แล้วพัง ระหว่างนี้ GitHub Pages ค้างเวอร์ชันล่าสุดก่อน F13 ซึ่งยังใช้ได้
 - หน้า Data Center ทั้งสามอยู่ใน route group `src/app/(dc)/` ซึ่งมี `layout.tsx` ของตัวเอง (masthead + footer) ส่วน `/pa` และ `/sync` อยู่นอก group จึงไม่มี masthead และไม่ถูกแตะ metadata ของ root layout เปลี่ยนเป็นของ Data Center
 - `<Toaster>` ของ sonner ที่ PA ใช้แสดง toast อยู่ใน `src/app/pa/layout.tsx` และ `src/app/sync/layout.tsx` ไม่อยู่ใน root layout หน้า Data Center จึงไม่โหลด sonner (งบ JS §9.6)
+- ฟอนต์ของ PA (`src/lib/fonts.ts` ซึ่ง preload 20 ไฟล์) ก็อยู่ในสอง layout นั้น ตั้งบน `<div>` ที่เป็น `display: contents` โครงหน้า PA จึงเหมือนเดิม ส่วน layout ของ `(dc)` ใช้ `src/lib/dc/fonts.ts` ซึ่งเป็น Prompt/Sarabun น้ำหนักเดียวกันแต่ไม่ preload เพราะการ preload 20 ไฟล์ทำให้ข้อความที่เป็น LCP ของหน้า Data Center ขึ้นช้า (§9.6)
 
 ## 5. แค็ตตาล็อกรายงาน
 
@@ -224,7 +225,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - Masthead และเมนูตาม R6: **หน้าแรก · คลังรายงาน · PA Dashboard** (ตัดเมนู "เกี่ยวกับต้นแบบ")
 - Footer: แหล่งข้อมูล (HDC Open Data, ขอบเขต GIS), เวลาที่ build (`meta.json`) และวันที่ข้อมูลล่าสุด
 - สี: นำ token ชุดสุดท้ายของ R6 คือบล็อก "HOME R3" กรมท่า/teal (`--green #155b86`, เมนู `#143653` ฯลฯ) ซึ่งทับชุดแรก (`--green #17695f`) จึงเป็นสีที่ R6 แสดงจริง มาเป็น theme ของ Data Center ใน `globals.css` ชื่อ `--color-dc-*` (ตัดสิน 4 พ.ย. 2569)
-- ฟอนต์ใช้ Prompt/Sarabun ที่มีอยู่: หัวเรื่อง `font-prompt` ข้อความ `font-dc` (Sarabun) ซึ่ง layout ของ `(dc)` ตั้งไว้แล้ว ไม่ใช้ `font-sans` เพราะได้ฟอนต์ของเครื่อง (§11)
+- ฟอนต์ใช้ Prompt/Sarabun ที่มีอยู่ (ชุดของ Data Center ที่ไม่ preload §4): หัวเรื่อง `font-prompt` ข้อความ `font-dc` (Sarabun) ซึ่ง layout ของ `(dc)` ตั้งไว้แล้ว ไม่ใช้ `font-sans` เพราะได้ฟอนต์ของเครื่อง (§11)
 - ไม่มีคำว่า "ข้อมูลจำลอง" หรือ "ข้อมูลตัวอย่าง" อีก เพราะทุกตัวเลขมาจาก HDC
 - รูปแบบการเข้าถึงตาม R6: จัดการ focus, ตารางเลื่อนแนวนอน, รายการแบบมือถือ
 - กราฟวาดด้วย SVG แบบ R6 ไม่เพิ่มไลบรารีกราฟ
@@ -295,6 +296,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `src/lib/dc/client.ts` | `fetch('/data/reports/{id}.json')` + cache ในหน่วยความจำของหน้า | เบราว์เซอร์ |
 | `src/lib/dc/values.ts` | ฟังก์ชันคำนวณล้วนตาม SCHEMA §4 (ไม่ import React, ไม่แตะ DOM) | เบราว์เซอร์ + เทสต์ |
 | `src/lib/dc/format.ts` | `formatPct` (สำเนาจาก PA) และ `formatThaiDate` (แปลง `date_com` 12–14 หลักเป็นวันที่ไทย ผลเหมือน PA) ไม่ import ไฟล์ PA | เบราว์เซอร์ + เทสต์ |
+| `src/lib/dc/fonts.ts` | Prompt/Sarabun น้ำหนักเดียวกับ `src/lib/fonts.ts` ของ PA แต่ไม่ preload (§4) | build |
 | `src/lib/dc/values.test.ts`, `format.test.ts` | เทสต์ด้วย `node:test` ผ่าน `tsx` | เทสต์ |
 | `src/components/dc/*` | masthead, footer, แผนที่ (dynamic import), ตัวกรอง, กราฟ SVG, ตาราง | เบราว์เซอร์ |
 | `src/scripts/build-snapshot.mjs` | prebuild script (§6.2) ไม่ import จาก `src/lib` เพื่อให้รันด้วย node ตรง ๆ ได้ | build |
@@ -323,7 +325,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 ## 11. PA Dashboard: สิ่งที่ต้องคงเดิม
 
-- หน้าตา พฤติกรรม และตัวเลขที่ `/pa` เหมือน `/` ในปัจจุบัน ยกเว้นรูปตัวอักษรไทยของข้อความเนื้อหา ซึ่งเปลี่ยนตาม `<html lang="th">` (§9.1) เพราะข้อความเนื้อหาของ PA ใช้ฟอนต์ไทยของเครื่อง ไม่ใช่ Sarabun (`--font-sans` อ้าง `--font-sarabun` ที่ `:root` แต่ next/font ตั้งตัวแปรนี้ที่ `<body>`) · ตรวจ 4 พ.ย. 2569: build ของ F13 ที่เปลี่ยน `lang` ใน HTML กลับเป็น `en` ได้ภาพตรงกับ production ทุก pixel
+- หน้าตา พฤติกรรม และตัวเลขที่ `/pa` เหมือน `/` ในปัจจุบัน ยกเว้นรูปตัวอักษรไทยของข้อความเนื้อหา ซึ่งเปลี่ยนตาม `<html lang="th">` (§9.1) เพราะข้อความเนื้อหาของ PA ใช้ฟอนต์ไทยของเครื่อง ไม่ใช่ Sarabun (`--font-sans` อ้าง `--font-sarabun` ที่ `:root` แต่ next/font ตั้งตัวแปรนี้ที่ `<div>` ห่อหน้าใน layout ของ `/pa` §4) · ตรวจ 4 พ.ย. 2569: build ของ F13 ที่เปลี่ยน `lang` ใน HTML กลับเป็น `en` ได้ภาพตรงกับ production ทุก pixel
 - `BATCH_ALL` คงรูปแบบและการคำนวณเดิม เพิ่มแค่ `meta.years` และรายการ DC ใน `meta.kpi_config` (PA ไม่อ่านสองอย่างนี้)
 - ชีตปีปัจจุบันชื่อเดิม โครงเดิม ต่างแค่เหลือเฉพาะแถวของอำเภอ ซึ่ง PA กรองเองอยู่แล้ว
 - ไม่แก้ `kpi_registry`, `kpi_master`, `kpi_epi` และไม่เปลี่ยนคีย์ cache `PA_DASHBOARD_CACHE_V4`
