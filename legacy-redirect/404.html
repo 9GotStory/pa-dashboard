@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<!-- The stub (SPEC §12.6): sends old GitHub Pages links to the new site.
+     <base href> is ORIGIN, the only place to edit when the domain moves.
+     404.html is a byte-for-byte copy of this file. -->
+<base href="https://songhealth-dc.pages.dev/">
+<title>PA Dashboard ย้ายแล้ว</title>
+<script>
+  (function () {
+    var path = location.pathname.replace(/^\/pa-dashboard/, "");
+    var to = /^\/(index\.html)?$/.test(path) ? "pa" + location.search
+      : /^\/sync(\/|\.html)?$/.test(path) ? "sync"
+      : "";
+    location.replace(new URL(to, document.baseURI).href);
+  })();
+</script>
+<!-- Inside <noscript> so it cannot race location.replace when JavaScript runs. -->
+<noscript><meta http-equiv="refresh" content="0; url=./"></noscript>
+<style>
+  body { margin: 0; padding: 48px 16px; font-family: system-ui, sans-serif; line-height: 1.6; text-align: center; }
+</style>
+</head>
+<body>
+<p>PA Dashboard ย้ายไปอยู่ในเว็บไซต์ใหม่แล้ว</p>
+<p><a href="./">ไปที่เว็บไซต์ใหม่</a></p>
+</body>
+</html>
