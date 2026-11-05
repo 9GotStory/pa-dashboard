@@ -504,9 +504,9 @@ export default function SyncPage() {
         addLog(`Failed ${kpi.table}: ${errorMessage(error)}`, "error");
         failCount++;
       } finally {
-        // Random pause between 4 to 7 seconds to avoid rate limiting
-        // WAFs often block exact interval requests (bot detection), after a
+        // Random pause between 4 to 7 seconds to avoid rate limiting, after a
         // table with no data too
+        // WAFs often block exact interval requests (bot detection)
         const randomDelay = 4000 + Math.floor(Math.random() * 3000);
         await new Promise((r) => setTimeout(r, randomDelay));
       }
