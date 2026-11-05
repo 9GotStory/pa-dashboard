@@ -70,6 +70,11 @@ export interface SnapshotMeta {
   latest_date_com: string; // "" if there is no data yet
 }
 
+/** The properties of a ตำบล in public/geo/song-tambon.geojson that the home page map reads (§8) */
+export interface AreaBoundary {
+  ADMIN_ID3: string; // 6-digit ตำบล code = areas[].id
+}
+
 export type Cell = string | number;
 
 /** GAS's ?action=report answer and the content of reports/{id}.json (same shape) */

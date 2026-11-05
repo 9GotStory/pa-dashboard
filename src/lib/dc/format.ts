@@ -2,7 +2,8 @@ import type { Cell, DcReport } from "./types";
 
 // What PA prints for a percentage and for date_com, written again here
 // because Data Center code does not import PA files (CODING_STANDARDS §4),
-// and the CSV download of the report page.
+// the CSV download of the report page, and the build time that the footer
+// and the home page show.
 
 /**
  * A percentage with 2 decimals (a copy of PA's formatPct). toFixed rounds
@@ -37,6 +38,23 @@ export function formatThaiDate(dateCom: string): string {
       minute: "2-digit",
     }) + " น."
   );
+}
+
+const thaiTime = new Intl.DateTimeFormat("th-TH", {
+  timeZone: "Asia/Bangkok",
+  day: "numeric",
+  month: "long",
+  year: "numeric",
+  hour: "2-digit",
+  minute: "2-digit",
+});
+
+/**
+ * meta.built_at (ISO) in Thai time whatever the build machine's time zone,
+ * e.g. "4 พฤศจิกายน 2569 เวลา 15:29 น."
+ */
+export function formatBuildTime(iso: string): string {
+  return thaiTime.format(new Date(iso)) + " น.";
 }
 
 /**

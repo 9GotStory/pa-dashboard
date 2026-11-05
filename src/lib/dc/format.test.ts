@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { csvFileName, formatCount, formatPct, formatThaiDate, toCsv } from "./format";
+import { csvFileName, formatBuildTime, formatCount, formatPct, formatThaiDate, toCsv } from "./format";
 
 // FEATURES F15: the display helpers that must print what PA prints, checked
 // against PA's own output (CODING_STANDARDS §5).
@@ -43,4 +43,14 @@ test("CSV file name → SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv 
 test("เป้าหมาย and ผลงาน → Thai grouping with commas: 1234567 → \"1,234,567\", 0 → \"0\"", () => {
   assert.equal(formatCount(1234567), "1,234,567");
   assert.equal(formatCount(0), "0");
+});
+
+// FEATURES F18: the build time that the footer and the home page show (SPEC §9.1–9.2).
+
+test("built_at 2026-11-04T08:29:28.802Z → \"4 พฤศจิกายน 2569 เวลา 15:29 น.\", what the footer showed for the snapshot of 4 Nov 2569", () => {
+  assert.equal(formatBuildTime("2026-11-04T08:29:28.802Z"), "4 พฤศจิกายน 2569 เวลา 15:29 น.");
+});
+
+test("built_at 18:05 UTC → the next day in Thai time (UTC+7) whatever the build machine's time zone", () => {
+  assert.equal(formatBuildTime("2026-11-04T18:05:00.000Z"), "5 พฤศจิกายน 2569 เวลา 01:05 น.");
 });

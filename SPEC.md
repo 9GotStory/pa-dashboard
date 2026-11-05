@@ -305,12 +305,15 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 | ตัวชี้วัด | เป้าหมาย |
 |---|---|
-| หน้าแรก LCP บนมือถือ 4G (Lighthouse mobile) | < 2.5 วินาที |
+| หน้าแรก LCP บนมือถือ 4G (Lighthouse mobile โดยบล็อก tile ของแผนที่) | < 2.5 วินาที |
 | JavaScript ของหน้าแรกและคลังรายงาน (gzip) | < 150 KB ไม่รวม Leaflet ซึ่งโหลดทีหลังแบบ dynamic import เฉพาะหน้าแรก |
 | `catalog.json` | < 100 KB |
 | `reports/{id}.json` | < 500 KB ก่อน gzip |
 | เวลาคำนวณหน้ารายงานหลังโหลด JSON (เปลี่ยนตัวกรอง) | < 100 ms บนมือถือระดับกลาง (คำนวณใน memo ไม่เรียกเครือข่ายซ้ำ) |
 | เวลา build บน Cloudflare | < 5 นาที (prebuild ราว 1–2 นาที) |
+
+- tile ของแผนที่มาจาก `tile.openstreetmap.org` ซึ่งเว็บนี้ควบคุมไม่ได้ และเป็น LCP ของหน้าแรกบนมือถือที่ราว 3.4–4.0 วินาที จึงวัด LCP โดยบล็อก tile (`--blocked-url-patterns="*tile.openstreetmap.org*"` ของ Lighthouse CLI หรือ network request blocking ใน DevTools) แล้ว LCP จะเป็นหัวเรื่องของหน้า (ตัดสิน 5 พ.ย. 2569)
+- วัดผ่าน HTTP/2 แบบที่ Cloudflare Pages ให้บริการ: ที่ `https://<project>.pages.dev` ตั้งแต่ขั้น 11 ใน §13 หรือเซิร์ฟเวอร์ HTTP/2 บนเครื่องก่อนหน้านั้น ไม่ใช่ `npx serve` ซึ่งเป็น HTTP/1.1 · วัด 5 พ.ย. 2569 หน้าแรกได้ราว 2.0 วินาทีผ่าน HTTP/2 แต่แกว่ง 2.0–4.3 วินาทีผ่าน `npx serve`
 
 ## 10. การคำนวณค่า coverage
 
@@ -413,8 +416,8 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | 7 | `sync-moph-to-gas.js --backfill --no-rebuild` | `sync_status` มีครบ 18 ตาราง × ทุกปีที่ HDC มีข้อมูล และมีชีต `_y` ตามนั้น |
 | 8 | sync ปีปัจจุบัน แล้วรัน `src/scripts/verify-all.js` ในวันเดียวกัน (สคริปต์นี้ใช้ปี `2569` คงที่ ถ้า `current_year` ไม่ใช่ 2569 ต้องแก้ค่าในสคริปต์ก่อน) | KPI แบบรายปีและ EPI ตรงกับ `/pa` · KPI รายไตรมาส (`childdev4/2`, `ncd_screen_repleate1`, `ht_screen_follow`) ไม่ต้องตรง เพราะสคริปต์รวม 4 ไตรมาสเสมอ ไม่ดู `effective_quarter` |
 | 9 | `npm run build` บนเครื่อง (รัน prebuild ให้เอง) | ไฟล์ใน `public/data/` ครบ 21 รายงาน ขนาดไม่เกิน §6.1 · ทุกรายงานมี block ปีปัจจุบันที่ `rows.length > 0` และตารางที่มีรายงานเดียวมี `rows.length = expected_rows` (ยืนยันว่า `id` ในข้อมูลดิบตรงกับแค็ตตาล็อกครบทั้ง 21 รายงาน) · `out/reports/{id}.html` มีครบ 21 ไฟล์ |
-| 10 | ตรวจ Data Center บนเครื่อง (`npx serve out`) | ค่าทั้งปีระดับอำเภอของ KPI ที่ PA คิดแบบรายปีตรงกับ PA ถ้าไม่ตรง ให้ตรวจแถวที่ `result` ว่าง (PA มี fallback ไปใช้ผลรวมรายไตรมาส) และเทียบรายงานอื่น 1–2 รายงานกับหน้า HDC ระดับอำเภอ · Lighthouse ผ่าน §9.6 |
-| 11 | สร้างโปรเจกต์ Cloudflare Pages + Deploy Hook + ใส่ `deploy_hook_url` | `https://<project>.pages.dev/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/{id}` เปิดได้โดยตรง, id ปลอมได้ 404 |
+| 10 | ตรวจ Data Center บนเครื่อง (`npx serve out`) | ค่าทั้งปีระดับอำเภอของ KPI ที่ PA คิดแบบรายปีตรงกับ PA ถ้าไม่ตรง ให้ตรวจแถวที่ `result` ว่าง (PA มี fallback ไปใช้ผลรวมรายไตรมาส) และเทียบรายงานอื่น 1–2 รายงานกับหน้า HDC ระดับอำเภอ |
+| 11 | สร้างโปรเจกต์ Cloudflare Pages + Deploy Hook + ใส่ `deploy_hook_url` | `https://<project>.pages.dev/` เป็น Data Center, `/pa` เป็น PA, `/pa?cat=…` เปิดแท็บถูก, `/reports/{id}` เปิดได้โดยตรง, id ปลอมได้ 404 · Lighthouse ผ่าน §9.6 |
 | 12 | POST `rebuild` จากเครื่อง | Cloudflare เริ่ม build ใหม่ภายใน 1 นาที และครั้งที่ 6 ในวันเดียวกันถูกปฏิเสธ |
 | 13 | Deploy stub บน GitHub Pages | `…/pa-dashboard/?cat=X` ไปที่ `https://<project>.pages.dev/pa?cat=X` และ `…/pa-dashboard/sync` ไปที่ `/sync` |
 
