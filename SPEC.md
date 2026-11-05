@@ -92,6 +92,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ไม่มี `basePath` อีก: ลบ `basePath` และ `isProd` ออกจาก `next.config.ts` ส่วน `output: 'export'` และ `images.unoptimized` คงไว้
 - ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป · ตั้งแต่ตัด `basePath` (F13) จนถึงขึ้น stub (F22) `deploy.yml` ต้องไม่ build อัตโนมัติอีก (เหลือ `workflow_dispatch`) ไม่อย่างนั้นทุก push ไป `main` จะ deploy เว็บที่ไม่มี `basePath` ขึ้น `/pa-dashboard/` แล้วพัง ระหว่างนี้ GitHub Pages ค้างเวอร์ชันล่าสุดก่อน F13 ซึ่งยังใช้ได้
 - หน้า Data Center ทั้งสามอยู่ใน route group `src/app/(dc)/` ซึ่งมี `layout.tsx` ของตัวเอง (masthead + footer) ส่วน `/pa` และ `/sync` อยู่นอก group จึงไม่มี masthead และไม่ถูกแตะ metadata ของ root layout เปลี่ยนเป็นของ Data Center
+- `<Toaster>` ของ sonner ที่ PA ใช้แสดง toast อยู่ใน `src/app/pa/layout.tsx` และ `src/app/sync/layout.tsx` ไม่อยู่ใน root layout หน้า Data Center จึงไม่โหลด sonner (งบ JS §9.6)
 
 ## 5. แค็ตตาล็อกรายงาน
 

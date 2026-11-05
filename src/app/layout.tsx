@@ -7,8 +7,8 @@ export const metadata: Metadata = {
   description: "ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่",
 };
 
-import { Toaster } from "sonner";
-
+// PA's <Toaster> is in the /pa and /sync layouts, not here, so the Data Center
+// pages do not load sonner (SPEC §9.6).
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -20,7 +20,6 @@ export default function RootLayout({
         className={`${prompt.variable} ${sarabun.variable} antialiased text-slate-900 bg-slate-50 font-sans`}
       >
         {children}
-        <Toaster position="top-center" richColors />
       </body>
     </html>
   );
