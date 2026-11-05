@@ -12,7 +12,7 @@
 | | ตอนนี้ | หลังเฟส 1 |
 |---|---|---|
 | เว็บ | PA Dashboard ที่ <https://9gotstory.github.io/pa-dashboard/> บน GitHub Pages | Data Center ที่ `https://<project>.pages.dev/` และ PA ที่ `/pa` บน Cloudflare Pages (F21) |
-| ข้อมูลที่หน้าเว็บอ่าน | PA เรียก GAS ทุกครั้งที่เปิดหน้า | Data Center อ่านไฟล์ JSON ที่สร้างตอน build (F14) ส่วน PA ยังเรียก GAS เหมือนเดิม |
+| ข้อมูลที่หน้าเว็บอ่าน | PA เรียก GAS ทุกครั้งที่เปิดหน้า | Data Center อ่านไฟล์ JSON ที่สร้างตอน build ส่วน PA ยังเรียก GAS เหมือนเดิม |
 | ลิงก์ GitHub Pages เดิม | ใช้งานปกติ | เหลือหน้า stub ส่งต่อไปโดเมนใหม่ (F22) |
 
 - งานเฟส 1 แบ่งเป็น ticket F01–F22 ใน [FEATURES.md](FEATURES.md) เมื่อสร้าง issue แล้วติดตามสถานะได้ใน GitHub Issues
@@ -21,7 +21,7 @@
 
 ## ภาพรวมระบบ
 
-เส้นประคือส่วนที่จะมีในเฟส 1
+เส้นประคือส่วนที่จะมีเมื่อขึ้น Cloudflare Pages (F21)
 
 ```mermaid
 flowchart LR
@@ -39,8 +39,8 @@ flowchart LR
   PAGE & NODE -->|"POST save_kpi_data"| GAS
   GAS <--> SHEETS
   PA -->|"GET BATCH_ALL"| GAS
-  GAS -.->|"Deploy Hook หลัง sync (F07)"| BUILD
-  BUILD -.->|"GET catalog, report (F14)"| GAS
+  GAS -.->|"Deploy Hook หลัง sync"| BUILD
+  BUILD -.->|"GET catalog, report"| GAS
   BUILD -.-> DC
 ```
 
@@ -50,32 +50,32 @@ flowchart LR
 
 | path | ตอนนี้ | หลังเฟส 1 |
 |---|---|---|
-| `/` | หน้าชั่วคราว: ชื่อระบบและลิงก์ไป `/pa` | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน (F18) |
+| `/` | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน | เหมือนเดิม |
 | `/pa` | PA Dashboard ย้ายมาจาก `/` หน้าตาและตัวเลขเหมือนเดิม | เหมือนเดิม |
-| `/reports` | — | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา (F19) |
-| `/reports/{id}` | — | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV (F20) |
-| `/sync` | ดึงข้อมูลจาก MOPH เข้า Sheets ต้องใส่ PIN เลือกปีงบประมาณได้ และสั่ง rebuild ตอนจบ (F11) | เหมือนเดิม rebuild เริ่มทำงานเมื่อตั้ง Deploy Hook (F21) |
+| `/reports` | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา | เหมือนเดิม |
+| `/reports/{id}` | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV | เหมือนเดิม |
+| `/sync` | ดึงข้อมูลจาก MOPH เข้า Sheets ต้องใส่ PIN เลือกปีงบประมาณได้ และสั่ง rebuild ตอนจบ | เหมือนเดิม rebuild เริ่มทำงานเมื่อตั้ง Deploy Hook (F21) |
 
 ## โครงสร้าง repo
 
 ```text
 src/
 ├── app/
-│   ├── pa/                      PA Dashboard (ย้ายมาจาก app/ ใน F13)
+│   ├── pa/                      PA Dashboard (ย้ายมาจาก app/)
 │   ├── sync/page.tsx            หน้า /sync
-│   └── (dc)/                    หน้าของ Data Center (F13–F20)
+│   └── (dc)/                    หน้าของ Data Center
 ├── components/                  คอมโพเนนต์ของ PA ห้ามแก้ไฟล์เดิม
 │   └── dc/                      คอมโพเนนต์ของ Data Center
 ├── lib/                         โค้ดของ PA ห้ามแก้ไฟล์เดิม
-│   └── dc/                      type, การอ่าน snapshot และการคำนวณของ Data Center (F14–F15)
+│   └── dc/                      type, การอ่าน snapshot, การคำนวณ และฟอนต์ของ Data Center
 └── scripts/
     ├── รหัส.js, appsscript.json   โค้ด GAS (clasp push จากโฟลเดอร์นี้)
-    ├── dc-*.js                     โค้ด GAS ส่วน Data Center (F01–F08)
-    ├── test/                       เทสต์ GAS ด้วย node:vm (F01)
+    ├── dc-*.js                     โค้ด GAS ส่วน Data Center
+    ├── test/                       เทสต์ GAS ด้วย node:vm
     └── สคริปต์ node อื่น            อยู่ใน .claspignore จึงไม่ถูก push ขึ้น GAS
 public/
-├── geo/                         ขอบเขตตำบล GeoJSON (F17)
-└── data/                        snapshot ที่สร้างตอน build ไม่ commit (F14)
+├── geo/                         ขอบเขตตำบล GeoJSON
+└── data/                        snapshot ที่สร้างตอน build ไม่ commit
 docs/
 ├── adr/                         บันทึกการตัดสินใจ
 └── reference/                   ต้นแบบหน้าจอ R6 (ตัวเลขเป็นข้อมูลจำลอง)
@@ -104,7 +104,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 
 | ตัวแปร | ใช้ที่ |
 |---|---|
-| `NEXT_PUBLIC_GAS_SCRIPT_URL` | หน้า `/sync`, สคริปต์ node และ prebuild snapshot (F14 บังคับต้องมี) ส่วน PA ใช้ URL ที่เขียนไว้ใน `src/lib/useKPIData.ts` ไม่ได้อ่านจากตัวแปรนี้ |
+| `NEXT_PUBLIC_GAS_SCRIPT_URL` | หน้า `/sync`, สคริปต์ node และ prebuild snapshot (บังคับต้องมี) ส่วน PA ใช้ URL ที่เขียนไว้ใน `src/lib/useKPIData.ts` ไม่ได้อ่านจากตัวแปรนี้ |
 | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` |
 
 ตัวแปรที่ขึ้นต้นด้วย `NEXT_PUBLIC_` ถูกฝังในไฟล์ JavaScript ที่ส่งให้เบราว์เซอร์ จึงไม่ใช่ความลับ ([ADR-0005](docs/adr/0005-no-server-side-auth-phase1.md))
@@ -116,21 +116,23 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | คำสั่ง | ทำอะไร |
 |---|---|
 | `npm run dev` | dev server |
-| `npm run build` | build เป็นไฟล์ static ใน `out/` (ตั้งแต่ F14 ดึง snapshot จาก GAS ก่อน build) |
+| `npm run build` | ดึง snapshot จาก GAS จริงก่อน (prebuild ราว 2.5 นาที) แล้ว build เป็นไฟล์ static ใน `out/` · `npx next build` build ใหม่จาก `public/data/` ที่มีอยู่โดยไม่ดึงซ้ำ |
 | `npm start` | เปิดดูผล build ที่ <http://localhost:3000> ด้วย `npx serve@latest out` (`next start` ใช้กับ static export ไม่ได้) |
-| `npm run lint` | ESLint |
-| `npm test` | เทสต์ GAS และการคำนวณ (F01, F15) |
-| `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build (F14) |
+| `npm run lint` | ESLint (รวมกฎ import ของ Data Center) และวลีที่ GLOSSARY ให้เลี่ยง |
+| `npm test` | เทสต์ GAS และเทสต์ของ Data Center |
+| `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 |
+| `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center (CI รันทุก PR) |
+| `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build |
 | `npm run gas:push` · `gas:deploy` · `gas:sync` | push โค้ด GAS · deploy ทับ deployment เดิม · ทำทั้งสองอย่าง (ดูหัวข้อ Deploy) |
-| `node src/scripts/sync-moph-to-gas.js [--only <table> ...] [--year <YYYY> ... \| --backfill] [--force] [--no-rebuild]` | sync จาก MOPH เข้า GAS โดยไม่ต้องเปิดเบราว์เซอร์ · ไม่ใส่ `--year` คือปีปัจจุบัน · ตอนจบสั่ง rebuild ถ้ามีตารางบันทึกสำเร็จ (F09) |
+| `node src/scripts/sync-moph-to-gas.js [--only <table> ...] [--year <YYYY> ... \| --backfill] [--force] [--no-rebuild]` | sync จาก MOPH เข้า GAS โดยไม่ต้องเปิดเบราว์เซอร์ · ไม่ใส่ `--year` คือปีปัจจุบัน · ตอนจบสั่ง rebuild ถ้ามีตารางบันทึกสำเร็จ |
 | `node src/scripts/verify-all.js` | ดึงจาก MOPH แล้วพิมพ์เป้าหมาย ผลงาน และร้อยละระดับอำเภอของแต่ละ KPI ไว้เทียบกับ PA |
-| `node src/scripts/hdc-catalog.js find\|refresh --from <ไฟล์>` | ค้นว่าตารางอยู่หัวข้อไหนของ HDC และรีเฟรชแค็ตตาล็อก จากไฟล์ที่ snippet `tools/hdc-catalog-export.js` บันทึกจากเบราว์เซอร์ เพราะ API แค็ตตาล็อกไม่รับสคริปต์ (F10, ADR-0010) |
+| `node src/scripts/hdc-catalog.js find\|refresh --from <ไฟล์>` | ค้นว่าตารางอยู่หัวข้อไหนของ HDC และรีเฟรชแค็ตตาล็อก จากไฟล์ที่ snippet `tools/hdc-catalog-export.js` บันทึกจากเบราว์เซอร์ เพราะ API แค็ตตาล็อกไม่รับสคริปต์ (ADR-0010) |
 
 ## Deploy
 
 ### เว็บ
 
-- ตอนนี้: push เข้า `main` ไม่ deploy แล้ว GitHub Pages ค้าง PA เวอร์ชันก่อน F13 ไว้ใต้ `/pa-dashboard/` เพราะ F13 ตัด `basePath` · `deploy.yml` เหลือกดรันเองใน Actions แต่ห้ามกดจนกว่า F22 เปลี่ยนเป็นหน้า stub เพราะ build ที่ไม่มี `basePath` จะทำให้ `/pa-dashboard/` พัง · PR ที่เข้า `main` จะรัน `ci.yml` (`npm run build` และตั้งแต่ F01 รัน `npm test` ด้วย)
+- ตอนนี้: push เข้า `main` ไม่ deploy แล้ว GitHub Pages ค้าง PA เวอร์ชันก่อน F13 ไว้ใต้ `/pa-dashboard/` เพราะ F13 ตัด `basePath` · `deploy.yml` เหลือกดรันเองใน Actions แต่ห้ามกดจนกว่า F22 เปลี่ยนเป็นหน้า stub เพราะ build ที่ไม่มี `basePath` จะทำให้ `/pa-dashboard/` พัง · PR ที่เข้า `main` จะรัน `ci.yml`: lint, test, `npm run build` (prebuild จริง) และ `npm run dc:budget`
 - หลังเฟส 1: Cloudflare Pages build จาก `main` เอง และ GAS สั่ง build ใหม่ผ่าน Deploy Hook หลัง sync ได้ไม่เกิน 5 ครั้งต่อวัน ค่าที่ต้องตั้งอยู่ใน [SPEC.md](SPEC.md) §12.5 ส่วนหน้า stub อยู่ใน §12.6
 
 ### GAS
@@ -157,7 +159,7 @@ npm run gas:sync
 
 - **trigger รายวัน:** GAS รัน `syncAllData` ทุกวันช่วง 14:00–15:00 (เวลาไทย) สร้าง trigger ครั้งเดียวด้วยฟังก์ชัน `createDailyTrigger` ใน Apps Script editor และสั่งรันเองได้จากเมนู "PA Dashboard → Sync All Data Now" ในสเปรดชีต
 - **หน้า `/sync` และสคริปต์ node:** ใช้เมื่อ trigger ดึงจาก MOPH ไม่สำเร็จ ทั้งสองทางดึงจาก MOPH แล้วส่ง `save_kpi_data` เข้า GAS
-- ชีตแยกตามปีและการเก็บ 5 ปีมีรายละเอียดใน [SPEC.md](SPEC.md) §7 (F02)
+- ชีตแยกตามปีและการเก็บ 5 ปีมีรายละเอียดใน [SPEC.md](SPEC.md) §7
 
 ## เอกสาร
 
@@ -187,5 +189,5 @@ npm run gas:sync
 ## ที่มาของข้อมูล
 
 - ตัวชี้วัดและรายงาน: [HDC Open Data](https://opendata.moph.go.th) กระทรวงสาธารณสุข
-- ขอบเขตตำบล: MOPH GIS ที่มาและวันที่ดาวน์โหลดบันทึกใน `public/geo/README.md` (F17)
-- แผนที่พื้นหลัง: © OpenStreetMap contributors (F18)
+- ขอบเขตตำบล: MOPH GIS ที่มาและวันที่ดาวน์โหลดบันทึกใน `public/geo/README.md`
+- แผนที่พื้นหลัง: © OpenStreetMap contributors

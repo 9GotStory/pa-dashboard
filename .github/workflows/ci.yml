@@ -36,3 +36,7 @@ jobs:
         env:
           # prebuild reads the snapshot from GAS (build-snapshot.mjs, SPEC §6.2)
           NEXT_PUBLIC_GAS_SCRIPT_URL: ${{ secrets.NEXT_PUBLIC_GAS_SCRIPT_URL }}
+
+      - name: Budget
+        # SPEC §9.6: the JavaScript of / and /reports, and no font preload on the Data Center pages
+        run: npm run dc:budget

@@ -306,7 +306,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | ตัวชี้วัด | เป้าหมาย |
 |---|---|
 | หน้าแรก LCP บนมือถือ 4G (Lighthouse mobile โดยบล็อก tile ของแผนที่) | < 2.5 วินาที |
-| JavaScript ของหน้าแรกและคลังรายงาน (gzip) | < 150 KB ไม่รวม Leaflet ซึ่งโหลดทีหลังแบบ dynamic import เฉพาะหน้าแรก |
+| JavaScript ของหน้าแรกและคลังรายงาน (gzip) | < 150 KB (1 KB = 1024 ไบต์) ไม่รวม Leaflet ซึ่งโหลดทีหลังแบบ dynamic import เฉพาะหน้าแรก · `npm run dc:budget` ตรวจใน CI |
 | `catalog.json` | < 100 KB |
 | `reports/{id}.json` | < 500 KB ก่อน gzip |
 | เวลาคำนวณหน้ารายงานหลังโหลด JSON (เปลี่ยนตัวกรอง) | < 100 ms บนมือถือระดับกลาง (คำนวณใน memo ไม่เรียกเครือข่ายซ้ำ) |

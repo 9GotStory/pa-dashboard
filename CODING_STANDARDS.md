@@ -32,13 +32,13 @@
 ## 4. Frontend (`src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/`)
 
 - TypeScript strict ไม่ใช้ `any` type ทั้งหมดมาจาก `src/lib/dc/types.ts` (= SCHEMA §9)
-- server component อ่านไฟล์ผ่าน `src/lib/dc/snapshot.ts` เท่านั้น client component ไม่ `import` `fs` และไม่เรียก GAS
+- server component อ่านไฟล์ผ่าน `src/lib/dc/snapshot.ts` เท่านั้น client component ไม่ `import` `fs` และไม่เรียก GAS (ESLint ตรวจ `fs` · `dc:check` ตรวจ request ไป GAS)
 - `src/lib/dc/values.ts` เป็นฟังก์ชันล้วน: ไม่ import React, ไม่แตะ DOM/`window`, ไม่ `fetch`
 - `'use client'` เฉพาะ component ที่มี state/effect/เบราว์เซอร์ API · Leaflet โหลดผ่าน `next/dynamic` ใน client wrapper เท่านั้น
 - ไม่เพิ่ม dependency นอกจาก `leaflet@1.9.4` (dependencies) กับ `tsx`, `@types/leaflet` (devDependencies) · กราฟเป็น SVG เขียนเอง
 - ข้อความบนหน้าเป็นภาษาไทย ใช้คำตาม `GLOSSARY.md` ไม่มีคำว่า "จำลอง"/"ตัวอย่าง"
 - สีใช้ token `dc-*` ใน `globals.css` กับ `white` ไม่ใช้ `brand-*` ของ PA หรือสีสำเร็จรูปของ Tailwind (`slate-*` ฯลฯ) · ข้อความใช้ `font-dc` ที่ layout ของ `(dc)` ตั้งไว้ หัวเรื่องใช้ `font-prompt` ไม่ใช้ `font-sans` (ได้ฟอนต์ของเครื่อง SPEC §11)
-- ไม่ import จากไฟล์ PA (ไฟล์ที่มีอยู่ก่อนใต้ `src/lib/` และ `src/components/`) · ฟังก์ชันที่ต้องให้ผลเหมือน PA (`formatPct`, `formatThaiDate`) อยู่ใน `src/lib/dc/format.ts` และฟอนต์อยู่ใน `src/lib/dc/fonts.ts`
+- ไม่ import จากไฟล์ PA (ไฟล์ที่มีอยู่ก่อนใต้ `src/lib/` และ `src/components/` · ESLint ตรวจ) · ฟังก์ชันที่ต้องให้ผลเหมือน PA (`formatPct`, `formatThaiDate`) อยู่ใน `src/lib/dc/format.ts` และฟอนต์อยู่ใน `src/lib/dc/fonts.ts`
 - ร้อยละแสดงผ่าน `formatPct` ของ `src/lib/dc/format.ts` (2 ตำแหน่ง) เทียบเกณฑ์ด้วยค่าก่อนปัด · เป้าหมาย 0 แสดง "—" ไม่ใช่ 0%
 - หน้าใน `(dc)` ต้องไม่มี network request ไป `script.google.com`
 - การเข้าถึง: ทุก control มี label, ตารางมี `<caption>`, กราฟ SVG มี `role="img"` + `aria-label`, focus ย้ายไปหัวข้อเมื่อเปลี่ยนหน้าแบบ R6
@@ -55,9 +55,9 @@
 | `src/scripts/build-snapshot.mjs` | รันกับ stub HTTP server ที่ตอบ `catalog`/`report` ปลอม (สำเร็จ, error, `Busy` แล้วสำเร็จ, `Busy` ตลอด, แถวไม่ครบ, ไฟล์ใหญ่) | จับการล้มดัง ๆ และโครงไฟล์ · ไม่จับ GAS จริง |
 | `src/scripts/hdc-catalog.js` (`find`, `refresh`) | รันเป็น child process แบบที่ผู้ดูแลรัน กับไฟล์ export แค็ตตาล็อกที่ทำจาก fixture · `refresh` คุยกับ HTTP server ในเครื่องที่ส่งทุกคำขอให้ `doGet`/`doPost` ของ GAS จริงใน harness `node:vm` ข้างบน | จับลำดับหัวข้อ body ของ `save_catalog` การข้ามหัวข้อ exit code และข้อความ รวมถึงสิ่งที่ GAS เขียนลงชีต · ไม่จับ redirect ของ Apps Script และเครือข่ายจริง |
 | `src/scripts/sync-moph-to-gas.js` | รันเป็น child process แบบที่ผู้ดูแลรัน คุยกับ HTTP server ในเครื่อง 2 ตัว: GAS ที่ส่งทุกคำขอให้ `doGet`/`doPost` จริงใน harness `node:vm` ข้างบน และ stub ของ `report_data` (แถว + `total`, 429/5xx) · เทสต์ตั้ง `NEXT_PUBLIC_GAS_SCRIPT_URL` และ `MOPH_URL` ทุกครั้ง จึงไม่หลุดไป GAS จริงผ่าน fallback และตั้ง `SYNC_WAIT_SCALE=0` ให้ไม่ต้องรอช่วงเว้น | จับปีที่ sync (ค่าเริ่มต้น, `--year`, `--backfill`), `limit` ที่ขอ, การหยุดตารางเมื่อได้แถวน้อยกว่า `total`, retry, `--force` กับ `Stale data`, ผลของ `rebuild` ในบรรทัดสุดท้าย, exit code และสิ่งที่ GAS เขียนลงชีต (`sync_status`, ชีตปีย้อนหลัง) · ไม่จับ MOPH จริง (`limit = 5000` ได้ครบ `total` หรือไม่), การเว้นช่วงกับ WAF จริง และ redirect ของ Apps Script |
-| หน้าเว็บ | หน้าใน `(dc)`: `npm run dc:check` (F16) หลัง `npm run build` เปิดทุกหน้าของ `out/` ที่กว้าง 360px ด้วย `playwright-core` · หน้า PA: `pa:snapshot` แล้ว `pa:compare` (docs/agents/gas-deploy.md) · เกณฑ์อื่นใน FEATURES ตรวจด้วยมือ (`npx serve out`, DevTools, Lighthouse) | `dc:check` จับกฎ §4 ที่เห็นได้บนหน้าที่ render แล้ว: request ไป `script.google.com`, control ที่ไม่มี label, ตารางที่ไม่มี `<caption>`, กราฟ SVG ที่ไม่มี `role="img"` + `aria-label`, scroll แนวนอนระดับหน้า, คำว่า "จำลอง"/"ตัวอย่าง" และ error ในหน้า · ไม่จับความถูกต้องของตัวเลขและความเร็ว · ไม่มี e2e ใน CI ในเฟส 1 |
+| หน้าเว็บ | หน้าใน `(dc)`: `npm run dc:check` (F16) หลัง `npm run build` เปิดทุกหน้าของ `out/` ที่กว้าง 360px ด้วย `playwright-core` · `npm run dc:budget` (CI) อ่านไฟล์ใน `out/` · หน้า PA: `pa:snapshot` แล้ว `pa:compare` (docs/agents/gas-deploy.md) · เกณฑ์อื่นใน FEATURES ตรวจด้วยมือ (`npx serve out`, DevTools, Lighthouse) | `dc:check` จับกฎ §4 ที่เห็นได้บนหน้าที่ render แล้ว: request ไป `script.google.com`, control ที่ไม่มี label, ตารางที่ไม่มี `<caption>`, กราฟ SVG ที่ไม่มี `role="img"` + `aria-label`, scroll แนวนอนระดับหน้า, คำว่า "จำลอง"/"ตัวอย่าง" และ error ในหน้า · `dc:budget` จับ JavaScript ของ `/` และ `/reports` ที่เกินงบ SPEC §9.6 และ font preload บนหน้า Data Center · ไม่จับความถูกต้องของตัวเลขและความเร็ว · ไม่มี e2e ใน CI ในเฟส 1 |
 
-- CI รัน `npm test` แล้ว `npm run build` บน Node 24 ทุก PR ต้องผ่านทั้งสอง
+- CI รัน `npm run lint`, `npm test`, `npm run build` แล้ว `npm run dc:budget` บน Node 24 ทุก PR ต้องผ่านทั้งหมด
 - ไม่ mock ภายในโมดูลของตัวเอง (anti-pattern ของ `/tdd`) mock เฉพาะขอบเขตภายนอก (GAS services, HTTP)
 
 ## 6. Git และ PR
