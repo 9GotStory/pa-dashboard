@@ -304,7 +304,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 | `s_aged9` | `result6_3` | ภาวะซึมเศร้า "2Q+ผิดปกติ" |
 | `s_dm_screen` | `result1`–`result4` | ผลงานคัดกรองเบาหวานรายไตรมาส 1–4 ไม่สะสม (Σ = `result` ทุก block ปีใน snapshot 4 พ.ย. 2569) ไม่มีเป้าหมายรายไตรมาส (#169) |
 | `s_ht_screen` | `result1`–`result4` | ผลงานคัดกรองความดันโลหิตสูงรายไตรมาส 1–4 แบบเดียวกับ `s_dm_screen` (#169) |
-| `s_ht_screen_follow` | `r1`, `r2` | รวมทั้งปีงบประมาณ ได้รับการติดตามโดยทำ HBPM [A1] / OBPM [A2] (`result` คือ [A] ไม่นับซ้ำ) |
+| `s_ht_screen_follow` | `r1`, `r2` | รวมทั้งปีงบประมาณ ได้รับการติดตามโดยทำ HBPM [A1] / OBPM [A2] (`target` คือ [B] และ `result` คือ [A] ไม่นับซ้ำ) |
 | `s_ht_screen_follow` | `r1_q1`–`r1_q4`, `r2_q1`–`r2_q4` | A1 / A2 รายไตรมาส |
 
 `COLUMN_COMMENT` ว่าง:
@@ -377,8 +377,8 @@ Request (`Content-Type: application/json`):
 
 ตรวจ 6 พ.ย. 2569 ด้วย `curl` (GET ไม่มี body ไม่ต้องใช้ header ของเบราว์เซอร์):
 
-- `report_year/{tableName}` ตอบ array ของ `{ "b_year": string, "process_date": string }` เรียงจากปีใหม่ไปปีเก่า `process_date` เป็นเลข 12 หลักแบบ `date_com` เช่น `s_aged9` ได้ 2569 (`202611060558`) ถึง 2564
-- `report_schema/{tableName}` ตอบ array ของ `{ "COLUMN_NAME", "IS_NULLABLE", "COLUMN_TYPE", "COLUMN_COMMENT" }` ตามลำดับคอลัมน์ของตาราง `COLUMN_COMMENT` คือคำอธิบายภาษาไทยของ HDC และว่างในบางคอลัมน์ เช่น `id`, `hospcode`, `areacode`, `date_com`, `b_year` · ความหมายใน §4.5 มาจากช่องนี้
+- `report_year/{tableName}` ตอบ array ของ `{ "b_year": string, "process_date": string }` เรียงจากปีใหม่ไปปีเก่า `process_date` เป็นเลข 12–14 หลักแบบ `date_com` เช่น `s_aged9` ได้ 2569 (`202611060558`) ถึง 2564 และ `s_epi1` ปี 2569 ได้ `20261106045726`
+- `report_schema/{tableName}` ตอบ array ของ `{ "COLUMN_NAME", "IS_NULLABLE", "COLUMN_TYPE", "COLUMN_COMMENT" }` ตามลำดับคอลัมน์ของตาราง แต่ไม่มี `flag_sent` และ `ip` ซึ่งมีในแถวของ `report_data` (6 ใน 7 ตารางของ §4.5 ยกเว้น `s_dental_0_5_cavity_free`) · `COLUMN_COMMENT` คือคำอธิบายภาษาไทยของ HDC บางตารางปล่อยว่างแม้แต่คอลัมน์ key เช่น `id`, `hospcode`, `areacode`, `date_com`, `b_year` ของ `s_aged9` ว่าง แต่ของ `s_dm_screen` มี
 
 ### 5.5 ไฟล์ export แค็ตตาล็อก (อินพุตของ `hdc-catalog.js --from`)
 
