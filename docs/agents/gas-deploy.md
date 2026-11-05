@@ -9,7 +9,7 @@ GAS and the PA-Data spreadsheet are production for PA too (CLAUDE.md). Use this 
 ```
 NEXT_PUBLIC_GAS_SCRIPT_URL=<the web app URL in src/lib/useKPIData.ts>
 DIAG_PIN=<CONFIG.DIAG_PIN in src/scripts/รหัส.js; public, ADR-0005>
-PA_URL=https://9gotstory.github.io/pa-dashboard/
+PA_URL=https://songhealth-dc.pages.dev/pa
 ```
 
 `pa:snapshot` opens the PA page with Playwright in the installed Google Chrome (`channel: "chrome"`), so the machine needs Google Chrome.

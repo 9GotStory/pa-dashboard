@@ -3,25 +3,20 @@
 เว็บข้อมูลสุขภาพของอำเภอสอง จังหวัดแพร่ มี 2 ส่วน
 
 - **PA Dashboard** หน้าตัวชี้วัด (KPI) ของ คปสอ.สอง ใช้งานอยู่ตอนนี้
-- **Song Health Data Center** ศูนย์ข้อมูลสุขภาพของ สสอ.สอง จัดรายงานตาม หมวด → หัวข้อ → กลุ่ม → รายงาน ของ HDC เก็บข้อมูลย้อนหลัง 5 ปีงบประมาณ เฉพาะอำเภอสอง (กำลังพัฒนาในเฟส 1)
+- **Song Health Data Center** ศูนย์ข้อมูลสุขภาพของ สสอ.สอง จัดรายงานตาม หมวด → หัวข้อ → กลุ่ม → รายงาน ของ HDC เก็บข้อมูลย้อนหลัง 5 ปีงบประมาณ เฉพาะอำเภอสอง
 
 ข้อมูลทั้งหมดมาจาก [HDC Open Data](https://opendata.moph.go.th) ของกระทรวงสาธารณสุข เก็บใน Google Sheets ผ่าน Google Apps Script (GAS) และแสดงผลด้วย Next.js แบบ static export
 
 ## สถานะ
 
-| | ตอนนี้ | หลังเฟส 1 |
-|---|---|---|
-| เว็บ | PA Dashboard ที่ <https://9gotstory.github.io/pa-dashboard/> บน GitHub Pages | Data Center ที่ `https://<project>.pages.dev/` และ PA ที่ `/pa` บน Cloudflare Pages (F21) |
-| ข้อมูลที่หน้าเว็บอ่าน | PA เรียก GAS ทุกครั้งที่เปิดหน้า | Data Center อ่านไฟล์ JSON ที่สร้างตอน build ส่วน PA ยังเรียก GAS เหมือนเดิม |
-| ลิงก์ GitHub Pages เดิม | ใช้งานปกติ | เหลือหน้า stub ส่งต่อไปโดเมนใหม่ (F22) |
+เฟส 1 (ticket F01–F22 ใน [FEATURES.md](FEATURES.md)) ขึ้นใช้งานแล้ว
 
-- งานเฟส 1 แบ่งเป็น ticket F01–F22 ใน [FEATURES.md](FEATURES.md) เมื่อสร้าง issue แล้วติดตามสถานะได้ใน GitHub Issues
-- ข้อความ "(F##)" ในไฟล์นี้หมายถึงสิ่งที่จะมีหลัง ticket นั้น merge ส่วนที่ไม่มีป้ายคือของที่ใช้ได้แล้ว
+- เว็บ: <https://songhealth-dc.pages.dev> บน Cloudflare Pages มี Data Center ที่ `/` และ PA Dashboard ที่ `/pa`
+- ข้อมูลที่หน้าเว็บอ่าน: Data Center อ่านไฟล์ JSON ที่สร้างตอน build ส่วน PA เรียก GAS ทุกครั้งที่เปิดหน้า
+- ลิงก์ GitHub Pages เดิม: <https://9gotstory.github.io/pa-dashboard/> เป็นหน้า stub ที่ส่งต่อไปเว็บใหม่ ลิงก์ที่มี `?cat=` และ `/sync` ไปถึงหน้าเดิม
 - branch `develop` (Backend v2: Fastify + PostgreSQL) ไม่ใช้แล้ว ดู [ADR-0001](docs/adr/0001-keep-gas-sheets-static-stack.md)
 
 ## ภาพรวมระบบ
-
-เส้นประคือส่วนที่จะมีเมื่อขึ้น Cloudflare Pages (F21)
 
 ```mermaid
 flowchart LR
@@ -39,22 +34,20 @@ flowchart LR
   PAGE & NODE -->|"POST save_kpi_data"| GAS
   GAS <--> SHEETS
   PA -->|"GET BATCH_ALL"| GAS
-  GAS -.->|"Deploy Hook หลัง sync"| BUILD
-  BUILD -.->|"GET catalog, report"| GAS
-  BUILD -.-> DC
+  GAS -->|"Deploy Hook หลัง sync"| BUILD
+  BUILD -->|"GET catalog, report"| GAS
+  BUILD --> DC
 ```
 
 ## หน้าเว็บ
 
-คอลัมน์ "ตอนนี้" คือ build จาก `main` ซึ่งยังไม่ขึ้นเว็บจริง (ดูหัวข้อ Deploy)
-
-| path | ตอนนี้ | หลังเฟส 1 |
-|---|---|---|
-| `/` | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน | เหมือนเดิม |
-| `/pa` | PA Dashboard ย้ายมาจาก `/` หน้าตาและตัวเลขเหมือนเดิม | เหมือนเดิม |
-| `/reports` | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา | เหมือนเดิม |
-| `/reports/{id}` | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV | เหมือนเดิม |
-| `/sync` | ดึงข้อมูลจาก MOPH เข้า Sheets ต้องใส่ PIN เลือกปีงบประมาณได้ และสั่ง rebuild ตอนจบ | เหมือนเดิม rebuild เริ่มทำงานเมื่อตั้ง Deploy Hook (F21) |
+| path | หน้า |
+|---|---|
+| `/` | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน |
+| `/pa` | PA Dashboard ย้ายมาจาก `/` หน้าตาและตัวเลขเหมือนเดิม |
+| `/reports` | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา |
+| `/reports/{id}` | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV |
+| `/sync` | ดึงข้อมูลจาก MOPH เข้า Sheets ต้องใส่ PIN เลือกปีงบประมาณได้ และสั่ง rebuild ผ่าน Deploy Hook ตอนจบ |
 
 ## โครงสร้าง repo
 
@@ -132,8 +125,9 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 
 ### เว็บ
 
-- ตอนนี้: push เข้า `main` ไม่ deploy แล้ว GitHub Pages ค้าง PA เวอร์ชันก่อน F13 ไว้ใต้ `/pa-dashboard/` เพราะ F13 ตัด `basePath` · `deploy.yml` เหลือกดรันเองใน Actions แต่ห้ามกดจนกว่า F22 เปลี่ยนเป็นหน้า stub เพราะ build ที่ไม่มี `basePath` จะทำให้ `/pa-dashboard/` พัง · PR ที่เข้า `main` จะรัน `ci.yml`: lint, test, `npm run build` (prebuild จริง) และ `npm run dc:budget`
-- หลังเฟส 1: Cloudflare Pages build จาก `main` เอง และ GAS สั่ง build ใหม่ผ่าน Deploy Hook หลัง sync ได้ไม่เกิน 5 ครั้งต่อวัน ค่าที่ต้องตั้งอยู่ใน [SPEC.md](SPEC.md) §12.5 ส่วนหน้า stub อยู่ใน §12.6
+- Cloudflare Pages build จาก `main` เองทุกครั้งที่ push และ GAS สั่ง build ใหม่ผ่าน Deploy Hook หลัง sync ได้ไม่เกิน 5 ครั้งต่อวัน branch อื่นไม่ deploy ค่าที่ตั้งไว้อยู่ใน [SPEC.md](SPEC.md) §12.5
+- `deploy.yml` อัปโหลดหน้า stub ใน `legacy-redirect/` ขึ้น GitHub Pages ทุกครั้งที่ push เข้า `main` โดยไม่ build (SPEC §12.6)
+- PR ที่เข้า `main` จะรัน `ci.yml`: lint, test, ตรวจว่า `legacy-redirect/index.html` กับ `404.html` เหมือนกันทุกไบต์, `npm run build` (prebuild จริง) และ `npm run dc:budget`
 
 ### GAS
 

@@ -313,7 +313,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | เวลา build บน Cloudflare | < 5 นาที (prebuild ราว 1–2 นาที) |
 
 - tile ของแผนที่มาจาก `tile.openstreetmap.org` ซึ่งเว็บนี้ควบคุมไม่ได้ และเป็น LCP ของหน้าแรกบนมือถือที่ราว 3.4–4.0 วินาที จึงวัด LCP โดยบล็อก tile (`--blocked-url-patterns="*tile.openstreetmap.org*"` ของ Lighthouse CLI หรือ network request blocking ใน DevTools) แล้ว LCP จะเป็นหัวเรื่องของหน้า (ตัดสิน 5 พ.ย. 2569)
-- วัดผ่าน HTTP/2 แบบที่ Cloudflare Pages ให้บริการ: ที่ `https://<project>.pages.dev` ตั้งแต่ขั้น 11 ใน §13 หรือเซิร์ฟเวอร์ HTTP/2 บนเครื่องก่อนหน้านั้น ไม่ใช่ `npx serve` ซึ่งเป็น HTTP/1.1 · วัด 5 พ.ย. 2569 หน้าแรกได้ราว 2.0 วินาทีผ่าน HTTP/2 แต่แกว่ง 2.0–4.3 วินาทีผ่าน `npx serve`
+- วัดบน `https://songhealth-dc.pages.dev` โดยให้ Lighthouse หน่วงเครือข่ายและ CPU จริงระหว่างโหลด 3 รอบแล้วใช้ค่ากลาง: `npx lighthouse@13.5.0 https://songhealth-dc.pages.dev/ --only-categories=performance --throttling-method=devtools --blocked-url-patterns='*tile.openstreetmap.org*' --chrome-flags='--headless=new'` · ห้ามใช้โหมดปกติ (simulate) เพราะ Chrome ต่อ pages.dev ผ่าน HTTP/3 แต่ Lighthouse 13.5.0 คำนวณว่าเฉพาะ `protocol === 'h2'` โหลดหลายไฟล์พร้อมกันได้ (`ConnectionPool.js` ใน `@paulirish/trace_engine`) จึงได้ 4.6–5.5 วินาทีซึ่งผิดจากของจริง · วัด 5 พ.ย. 2569 หน้าแรกได้ 1.9–2.0 วินาที
 
 ## 10. การคำนวณค่า coverage
 

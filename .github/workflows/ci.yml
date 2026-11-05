@@ -31,6 +31,10 @@ jobs:
       - name: Test
         run: npm test
 
+      - name: Stub files identical
+        # SPEC §12.6: GitHub Pages serves the same stub as index.html and 404.html
+        run: cmp legacy-redirect/index.html legacy-redirect/404.html
+
       - name: Build Test
         run: npm run build
         env:
