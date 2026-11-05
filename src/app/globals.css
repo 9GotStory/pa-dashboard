@@ -118,7 +118,7 @@
 }
 
 /* Data Center text in Sarabun. inline puts var(--font-sarabun) in the font-dc
-   utility itself, so it resolves on the element, inside the <body> class where
+   utility itself, so it resolves on the element, inside the layout wrapper where
    next/font sets the variable. font-sans resolves it at :root, where it has no
    value, so PA's text falls back to a system font (SPEC §11). */
 @theme inline {
