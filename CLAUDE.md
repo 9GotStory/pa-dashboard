@@ -66,7 +66,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project
 
-Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.สอง): a Next.js 16 static export on top of a Google Apps Script (GAS) web app and Google Sheets, fed by HDC Open Data. Production today is PA on GitHub Pages; phase 1 (Data Center at `/`, PA at `/pa`, Cloudflare Pages) is planned as tickets F01–F22 in FEATURES.md. Read README.md for the overview.
+Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.สอง): a Next.js 16 static export on top of a Google Apps Script (GAS) web app and Google Sheets, fed by HDC Open Data. Production is Cloudflare Pages at `https://songhealth-dc.pages.dev`: the Data Center at `/`, PA at `/pa`. GitHub Pages serves only the stub in `legacy-redirect/`, which forwards old PA links. Phase 1 was built as tickets F01–F22 in FEATURES.md. Read README.md for the overview.
 
 ## Commands
 

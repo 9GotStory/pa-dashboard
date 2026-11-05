@@ -48,5 +48,8 @@ catalog-exports/
 # PA snapshots from src/scripts/pa-check.mjs (docs/agents/gas-deploy.md)
 .pa-check/
 
+# Wizard scripts and their logs (the wizard skill); /tmp is wiped on reboot
+.wizard/
+
 # Data Center snapshot from src/scripts/build-snapshot.mjs (SPEC §6.1)
 public/data/

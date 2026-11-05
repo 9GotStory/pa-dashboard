@@ -266,7 +266,7 @@
   4. ไม่มีคำว่า "จำลอง" หรือ "ตัวอย่าง" ในหน้า
   5. บล็อก `tile.openstreetmap.org` → หน้ายังใช้งานได้ เลือกตำบลด้วยปุ่มได้
   6. หน้าแรกไม่มี network request ไปที่ `script.google.com` เลย (ดูใน DevTools)
-  7. Lighthouse mobile ตามวิธีวัดใน SPEC §9.6 (บล็อก tile ของแผนที่ ผ่าน HTTP/2): LCP < 2.5 วินาที และ JS ของหน้า (ไม่รวม chunk ของ Leaflet) < 150 KB gzip
+  7. Lighthouse mobile ตามวิธีวัดใน SPEC §9.6 (บล็อก tile ของแผนที่): LCP < 2.5 วินาที และ JS ของหน้า (ไม่รวม chunk ของ Leaflet) < 150 KB gzip
   8. footer ทุกหน้าของ Data Center แสดงวันที่ข้อมูลล่าสุดตรงกับ `meta.latest_date_com` และวันที่ดาวน์โหลดไฟล์ขอบเขตตาม `public/geo/README.md`
 
 ### F19 คลังรายงาน `/reports`
