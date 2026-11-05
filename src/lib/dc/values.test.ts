@@ -224,7 +224,7 @@ for (const [table, used, query, cells] of PERIOD_CASES) {
   });
 }
 
-test("q1 on s_dm_screen and s_aged9 (result1–4 or result1–9 without target1–4) → null: they are not quarterly", () => {
+test("q1 on s_dm_screen and s_aged9 → null: without target1–4, result1–4 (quarterly results) and result1–9 (the 9 dimensions) form no quarter family (SCHEMA §4.2)", () => {
   for (const table of ["s_dm_screen", "s_aged9"]) {
     const b = block(HEADERS[table], [{ hospcode: "06413", areacode: "54060101", target: 4, result: 3, result1: 2 }]);
     assert.equal(totals(b, DM_SCREEN, { area: "all", period: "q1", measure: null }), null, table);
