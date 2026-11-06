@@ -6,10 +6,12 @@ import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
 import { HOSPITALS, TAMBON_MASTER } from "./fixtures/master-sheets-20261030.js";
+import { ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
 
-// FEATURES F14: build-snapshot.mjs run as a child process, the way npm runs
-// prebuild, against a local stub of the GAS web app that answers
-// ?action=catalog and ?action=report (CODING_STANDARDS §5).
+// FEATURES F14 and F26: build-snapshot.mjs run as a child process, the way npm
+// runs prebuild, against a local stub of the GAS web app that answers
+// ?action=catalog, ?action=report and ?action=registry_population
+// (CODING_STANDARDS §5).
 
 const SCRIPT = path.resolve(import.meta.dirname, "../build-snapshot.mjs");
 
@@ -135,11 +137,13 @@ function reportAnswer(report) {
   };
 }
 
-// GAS answering ?action=catalog with catalog and ?action=report with
-// answer(report) for each report of it.
-function gasOf(catalog, answer = (r) => ({ body: reportAnswer(r) })) {
+// GAS answering ?action=catalog with catalog, ?action=report with
+// answer(report) for each report of it, and each ?action=registry_population
+// with registry(), by default the answer before any upload (SCHEMA §3.9).
+function gasOf(catalog, answer = (r) => ({ body: reportAnswer(r) }), registry = () => ({ body: { years: [] } })) {
   return (params) => {
     if (params.action === "catalog") return { body: catalog };
+    if (params.action === "registry_population") return registry();
     const r = catalog.reports.find((x) => x.opendata_id === params.id);
     return r ? answer(r) : { body: { status: "error", message: "Unknown report" } };
   };
@@ -195,14 +199,14 @@ function snapshot(cwd) {
   return { files, read: (file) => JSON.parse(fs.readFileSync(path.join(dir, file), "utf8")) };
 }
 
-test("catalog and every report answered → meta.json, catalog.json and one reports/{id}.json per active report; the vaccine topic runs กลุ่มอายุ 1 → 2 → 3 → 5 ปี with s_epi1 before fully immunized", async (t) => {
+test("catalog and every report answered → meta.json, catalog.json, population.json and one reports/{id}.json per active report; the vaccine topic runs กลุ่มอายุ 1 → 2 → 3 → 5 ปี with s_epi1 before fully immunized", async (t) => {
   const gas = await startStub(t, gasOf(seedCatalog()));
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
   const snap = snapshot(res.cwd);
-  assert.deepEqual(snap.files, ["catalog.json", "meta.json", ...SEED_IDS.map((id) => `reports/${id}.json`).sort()]);
+  assert.deepEqual(snap.files, ["catalog.json", "meta.json", "population.json", ...SEED_IDS.map((id) => `reports/${id}.json`).sort()]);
   const vaccine = snap.read("catalog.json").mains.flatMap((m) => m.topics).find((tp) => tp.cat_id === EPI);
   assert.deepEqual(
     vaccine.groups.map((g) => [g.subgroup, g.reports.map((r) => `${r.source_table} ${r.opendata_id}`)]),
@@ -621,5 +625,171 @@ test("an earlier snapshot with the file of a report no longer active → replace
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, cwd);
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(snapshot(cwd).files, ["catalog.json", "meta.json", ...SEED_IDS.map((id) => `reports/${id}.json`).sort()]);
+  assert.deepEqual(snapshot(cwd).files, ["catalog.json", "meta.json", "population.json", ...SEED_IDS.map((id) => `reports/${id}.json`).sort()]);
+});
+
+// The counts of a registry_population_age row (SCHEMA §2.7): m0, f0 … m101,
+// f101, then each group the age file does not count by age, as _m, _f, _t.
+const AGE_COUNTS = [
+  ...Array.from({ length: 102 }, (_, age) => [`m${age}`, `f${age}`]).flat(),
+  ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [`${group}_m`, `${group}_f`, `${group}_t`]),
+];
+
+// The registry_population_age row of a ตำบล's population row, with every
+// column as GAS answers it (SCHEMA §3.9): all its people aged 40.
+function ageRow(row) {
+  return {
+    yymm: row.yymm,
+    rcode: row.rcode,
+    tt: row.tt,
+    tt_name: row.tt_name,
+    ...Object.fromEntries(AGE_COUNTS.map((column) => [column, 0])),
+    m40: row.male,
+    f40: row.female,
+    total_m: row.male,
+    total_f: row.female,
+    total_t: row.total,
+  };
+}
+
+// GAS answering the seed, and each ?action=registry_population with registry().
+const seedGasWithRegistry = (registry) => gasOf(seedCatalog(), undefined, registry);
+
+test("registry_population of 2567 and 2568, both with age rows → population.json has both years' population rows as GAS sent them, and the age rows of 2568 only (SCHEMA §7)", async (t) => {
+  const answer = {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: ROWS_6712.map(ageRow) },
+      { yymm: "6812", population: ROWS_6812, age: ROWS_6812.map(ageRow) },
+    ],
+  };
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: [] },
+      { yymm: "6812", population: ROWS_6812, age: ROWS_6812.map(ageRow) },
+    ],
+  });
+});
+
+test("2568 with population rows but no age rows yet, 2567 with both → age [] in both years: the age rows are the latest year's or none", async (t) => {
+  const answer = {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: ROWS_6712.map(ageRow) },
+      { yymm: "6812", population: ROWS_6812, age: [] },
+    ],
+  };
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: [] },
+      { yymm: "6812", population: ROWS_6812, age: [] },
+    ],
+  });
+});
+
+test("6812's population rows deleted by hand, its age rows left → 6812 is no year of population.json, and 2567, now the latest year with population rows, keeps its age rows", async (t) => {
+  const answer = {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: ROWS_6712.map(ageRow) },
+      { yymm: "6812", population: [], age: ROWS_6812.map(ageRow) },
+    ],
+  };
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
+    years: [{ yymm: "6712", population: ROWS_6712, age: ROWS_6712.map(ageRow) }],
+  });
+});
+
+test("no registry sheet yet (years: []) → population.json is { years: [] } and the build goes on, exit 0", async (t) => {
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: { years: [] } })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), { years: [] });
+  assert.match(res.stdout, /\nbuild-snapshot: \?action=registry_population has no population rows yet/);
+});
+
+test("GAS answers Busy twice to registry_population, then its rows → asked again after each Busy and written, exit 0", async (t) => {
+  let busyLeft = 2;
+  const answer = { years: [{ yymm: "6812", population: ROWS_6812, age: [] }] };
+  const gas = await startStub(t, seedGasWithRegistry(() => (busyLeft-- > 0 ? BUSY : { body: answer })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.equal(gas.requests.filter((q) => q.action === "registry_population").length, 3);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), answer);
+});
+
+test("registry_population answered with an error every time → asked 4 times (3 retries), then exit 1 naming it; an earlier snapshot is left as it was", async (t) => {
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: { status: "error", message: "Exception: Service Spreadsheets timed out" } })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(
+    res.stderr,
+    /^build-snapshot: cannot get the registry population \(\?action=registry_population\): GAS answered: Exception: Service Spreadsheets timed out \(after 3 retries\)/,
+  );
+  assert.equal(gas.requests.filter((q) => q.action === "registry_population").length, 4);
+  assertOldSnapshot(res.cwd);
+});
+
+test("a population.json over its 100 KB limit (SPEC §6.1) → exit 1 naming it and its size; an earlier snapshot is left as it was", async (t) => {
+  // One cell of 110 KB: rows are copied as GAS sends them.
+  const bulky = [{ ...ROWS_6812[0], cc_name: "x".repeat(110 * 1024) }, ...ROWS_6812.slice(1)];
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: { years: [{ yymm: "6812", population: bulky, age: [] }] } })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /\n {2}population\.json is 112\.\d KB, over its 100 KB limit/);
+  assertOldSnapshot(res.cwd);
+});
+
+test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 naming what is wrong; an earlier snapshot is left as it was", async (t) => {
+  const year = (fields) => ({ yymm: "6812", population: ROWS_6812, age: ROWS_6812.map(ageRow), ...fields });
+  // A row without one column: GAS leaves out a column the sheet lacks and a
+  // count that is blank or no number (SCHEMA §3.9).
+  const without = (row, column) => Object.fromEntries(Object.entries(row).filter(([key]) => key !== column));
+  const cases = [
+    ["no years (another web app)", { status: "success" }, /^build-snapshot: \?action=registry_population answered without years; check that NEXT_PUBLIC_GAS_SCRIPT_URL/],
+    ["a yymm not of December", { years: [year({ yymm: "6811" })] }, /^build-snapshot: \?action=registry_population answered a year with yymm "6811"/],
+    ["the same yymm twice", { years: [year(), year()] }, /^build-snapshot: \?action=registry_population answered yymm 6812 twice/],
+    ["age rows that are not a list", { years: [year({ age: {} })] }, /^build-snapshot: \?action=registry_population answered 6812 without a list of age rows/],
+    [
+      "a population row without house",
+      { years: [year({ population: ROWS_6812.map((row, i) => (i === 3 ? without(row, "house") : row)) })] },
+      /^build-snapshot: \?action=registry_population answered row 4 of 6812 in registry_population without house/,
+    ],
+    [
+      "an age row without f101",
+      { years: [year({ age: ROWS_6812.map((row, i) => (i === 0 ? without(ageRow(row), "f101") : ageRow(row))) })] },
+      /^build-snapshot: \?action=registry_population answered row 1 of 6812 in registry_population_age without f101/,
+    ],
+  ];
+  for (const [name, answer, message] of cases) {
+    await t.test(name, async (t) => {
+      const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+      const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+      assert.equal(res.code, 1);
+      assert.match(res.stderr, message);
+      assertOldSnapshot(res.cwd);
+    });
+  }
 });

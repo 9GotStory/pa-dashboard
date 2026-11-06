@@ -1,13 +1,26 @@
 import { formatCount } from "./format";
-import type { PopulationTotals, RegistryFileRead, RegistryPopulationRow } from "./types";
+import type {
+  DcCatalog,
+  HomePopulation,
+  PopulationSnapshot,
+  PopulationTotals,
+  RegistryFileRead,
+  RegistryPopulationRow,
+} from "./types";
 
 // ประชากรทะเบียนราษฎร (SCHEMA §11, ADR-0011): reading and checking the files
-// the admin downloads from stat.bora, in the /sync upload (SCHEMA §11.2).
+// the admin downloads from stat.bora, in the /sync upload (SCHEMA §11.2), and
+// the population part of the home page, at build time (SCHEMA §11.3).
 // Pure functions: no React, no DOM, no fetch (CODING_STANDARDS §4).
 
 /** The พ.ศ. year whose 31 Dec a yymm counts: "6812" → "2568" */
 export function registryYear(yymm: string): string {
   return `25${yymm.slice(0, 2)}`;
+}
+
+/** The day a yymm's figures count to, as the home page shows it: "6812" → "ณ 31 ธ.ค. 2568" */
+export function registryAsOf(yymm: string): string {
+  return `ณ 31 ธ.ค. ${registryYear(yymm)}`;
 }
 
 /** ชาย หญิง รวม and บ้าน of rows added up */
@@ -16,6 +29,33 @@ export function populationTotals(rows: RegistryPopulationRow[]): PopulationTotal
     (sum, r) => ({ male: sum.male + r.male, female: sum.female + r.female, total: sum.total + r.total, house: sum.house + r.house }),
     { male: 0, female: 0, total: 0, house: 0 },
   );
+}
+
+/**
+ * The population part of the home page (SCHEMA §11.3), or null when
+ * population.json has no year: the latest year, which every part of the page
+ * shows, by ตำบล in code order and for the whole อำเภอ. A ตำบล is named from
+ * areas, or by its tt_name if areas lacks it.
+ */
+export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["areas"]): HomePopulation | null {
+  const shown = snapshot.years.at(-1);
+  if (!shown) return null;
+  // A ตำบล is the first 6 digits of tt, across every สำนักทะเบียน: 5489, the
+  // เทศบาล, covers part of 5406's บ้านหนุน and บ้านกลาง.
+  const byTambon = new Map<string, RegistryPopulationRow[]>();
+  for (const row of shown.population) {
+    const key = row.tt.slice(0, 6);
+    byTambon.set(key, [...(byTambon.get(key) ?? []), row]);
+  }
+  const names = new Map(areas.map((a) => [a.id, a.name_th]));
+  return {
+    yymm: shown.yymm,
+    district: { key: "all", name: "อำเภอสอง", totals: populationTotals(shown.population) },
+    areas: [...byTambon.keys()].sort().map((key) => {
+      const rows = byTambon.get(key)!;
+      return { key, name: names.get(key) ?? rows[0].tt_name, totals: populationTotals(rows) };
+    }),
+  };
 }
 
 // stat_t{yy}.txt, also as a browser names a second download: stat_t68 (1).txt

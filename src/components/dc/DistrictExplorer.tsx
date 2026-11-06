@@ -1,9 +1,11 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useState } from "react";
-import { preconnect } from "react-dom";
-import type { DcCatalog } from "@/lib/dc/types";
+import { useRef, useState } from "react";
+import { flushSync, preconnect } from "react-dom";
+import { formatCount } from "@/lib/dc/format";
+import type { DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
+import PopulationTable from "./PopulationTable";
 
 type Area = DcCatalog["areas"][number];
 type Hospital = DcCatalog["hospitals"][number];
@@ -19,17 +21,43 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * The map and ตำบล picker of the home page (SPEC §9.2): pick a ตำบล on the
  * map or with its button to see its หน่วยบริการ, from hospitals.tambon_id
  * in catalog.json, and ดูภาพรวมอำเภอ for the whole อำเภอ. The buttons work
- * without the map, as when its tiles or boundaries cannot load.
+ * without the map, as when its tiles or boundaries cannot load. With
+ * population, the panel shows the population of what is picked, and the
+ * ประชากรรายตำบล table below, as of asOf ("ณ 31 ธ.ค. 2568"), picks a ตำบล
+ * too; without, the page is as in phase 1.
  */
-export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; hospitals: Hospital[] }) {
+export default function DistrictExplorer({
+  areas,
+  hospitals,
+  population,
+  asOf,
+}: {
+  areas: Area[];
+  hospitals: Hospital[];
+  population: HomePopulation | null;
+  asOf: string;
+}) {
   // A map tile is the largest paint on a phone (LCP, SPEC §9.6): the page's
   // <head> opens the tile server's connection before Leaflet has loaded.
   preconnect(TILE_SERVER);
   const [selected, setSelected] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "failed">("loading");
+  const heading = useRef<HTMLHeadingElement>(null);
   const area = areas.find((a) => a.id === selected);
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
+  // The population of what the panel shows: the ตำบล picked, or the อำเภอ.
+  const shown = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
+
+  // ดูข้อมูล in the table, far below the panel: pick the ตำบล, then bring the
+  // panel's heading into view and focus it, as R6 does. The panel is drawn
+  // first, so the scroll lands where it ends up.
+  function view(id: string) {
+    flushSync(() => setSelected(id));
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    heading.current?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    heading.current?.focus({ preventScroll: true });
+  }
 
   return (
     <div className="grid gap-4 md:grid-cols-[minmax(0,1fr)_320px] lg:grid-cols-[minmax(0,1.48fr)_minmax(300px,0.83fr)] lg:gap-5">
@@ -102,12 +130,15 @@ export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; 
         </div>
         <div className="m-3.5 mt-auto rounded-[7px] border border-t-[3px] border-dc-border border-t-dc-teal bg-dc-blue-light/60 px-4 py-3.5">
           <p className="text-[11px] font-bold text-dc-teal">ข้อมูลพื้นที่ที่เลือก</p>
-          <h3 className="font-prompt text-lg font-semibold text-dc-navy">{title}</h3>
+          <h3 ref={heading} tabIndex={-1} className="font-prompt text-lg font-semibold text-dc-navy">
+            {title}
+          </h3>
           {area ? (
             <>
               <p className="text-xs text-dc-muted">
                 รหัสตำบล {area.id} · หน่วยบริการ {areaHospitals.length} แห่ง
               </p>
+              {shown && <PopulationRows totals={shown.totals} />}
               {areaHospitals.length > 0 ? (
                 <ul className="mt-2.5">
                   {areaHospitals.map((h) => (
@@ -126,14 +157,42 @@ export default function DistrictExplorer({ areas, hospitals }: { areas: Area[]; 
               <p className="text-xs text-dc-muted">
                 {areas.length} ตำบล · หน่วยบริการ {hospitals.length} แห่ง
               </p>
+              {shown && <PopulationRows totals={shown.totals} />}
               <p className="mt-2.5 border-t border-dc-border pt-2 text-xs text-dc-muted">เลือกตำบลเพื่อดูรายชื่อหน่วยบริการ</p>
             </>
           )}
           <p role="status" className="sr-only">
-            {area ? `เลือก${title} หน่วยบริการ ${areaHospitals.length} แห่ง` : title}
+            {area ? `เลือก${title}` : title}
+            {shown && ` ประชากร ${formatCount(shown.totals.total)} คน`}
+            {area && ` หน่วยบริการ ${areaHospitals.length} แห่ง`}
           </p>
         </div>
       </aside>
+
+      {population && (
+        <div className="md:col-span-2">
+          <PopulationTable population={population} asOf={asOf} selected={selected} onView={view} />
+        </div>
+      )}
     </div>
+  );
+}
+
+// ประชากรทั้งหมด, ชาย / หญิง and จำนวนบ้าน of the area the panel shows, as R6's panel has them.
+function PopulationRows({ totals }: { totals: PopulationTotals }) {
+  const rows = [
+    ["ประชากรทั้งหมด", `${formatCount(totals.total)} คน`],
+    ["ชาย / หญิง", `${formatCount(totals.male)} / ${formatCount(totals.female)}`],
+    ["จำนวนบ้าน", `${formatCount(totals.house)} บ้าน`],
+  ];
+  return (
+    <dl className="mt-2.5">
+      {rows.map(([label, value]) => (
+        <div key={label} className="flex items-baseline justify-between gap-2.5 border-t border-dc-border py-1.5 text-xs text-dc-muted">
+          <dt>{label}</dt>
+          <dd className="font-prompt text-[15px] font-semibold whitespace-nowrap text-dc-navy tabular-nums">{value}</dd>
+        </div>
+      ))}
+    </dl>
   );
 }

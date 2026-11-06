@@ -1,15 +1,21 @@
 import Link from "next/link";
 import DistrictExplorer from "@/components/dc/DistrictExplorer";
-import { formatBuildTime, formatThaiDate } from "@/lib/dc/format";
-import { readCatalog, readMeta } from "@/lib/dc/snapshot";
+import { formatBuildTime, formatCount, formatThaiDate } from "@/lib/dc/format";
+import { homePopulation, registryAsOf } from "@/lib/dc/population";
+import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
 
-// The Data Center home page (SPEC §9.2), built from catalog.json and meta.json
-// at build time: the latest data date, the ตำบล of the อำเภอ on a map with
-// their หน่วยบริการ, a card per หัวข้อ into the report library, and the
-// sources. The population blocks of R6 wait for phase 2.
+// The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
+// and population.json at build time: the latest data date, the ประชากร
+// ทะเบียนราษฎร of the อำเภอ, the ตำบล on a map with their หน่วยบริการ and
+// population, a card per หัวข้อ into the report library, and the sources. The
+// client gets the population as computed (HomePopulation), never the rows;
+// without population data the page is as in phase 1.
 export default function Home() {
   const { areas, hospitals, mains } = readCatalog();
   const { built_at, latest_date_com } = readMeta();
+  const population = homePopulation(readPopulation(), areas);
+  // Here, not in the client: population.ts holds the /sync file reader too.
+  const asOf = population ? registryAsOf(population.yymm) : "";
   const topics = mains.flatMap((main) =>
     main.topics.map((topic) => ({ topic, count: topic.groups.reduce((n, g) => n + g.reports.length, 0) })),
   );
@@ -25,16 +31,57 @@ export default function Home() {
             วันที่ข้อมูลล่าสุด {formatThaiDate(latest_date_com) || "—"}
           </p>
         </div>
-        <dl className="rounded-[10px] border border-l-4 border-dc-border border-l-dc-blue bg-dc-blue-light px-5 py-4 md:min-w-56">
-          <dt className="text-xs font-semibold text-dc-muted">เขตการปกครอง</dt>
-          <dd className="mt-1 font-prompt text-[28px] leading-none font-bold text-dc-navy">
-            {areas.length} <small className="text-sm font-semibold">ตำบล</small>
-          </dd>
-          <dd className="mt-1.5 text-xs text-dc-muted">อำเภอสอง · จังหวัดแพร่</dd>
-        </dl>
+        {!population && (
+          <dl className="rounded-[10px] border border-l-4 border-dc-border border-l-dc-blue bg-dc-blue-light px-5 py-4 md:min-w-56">
+            <dt className="text-xs font-semibold text-dc-muted">เขตการปกครอง</dt>
+            <dd className="mt-1 font-prompt text-[28px] leading-none font-bold text-dc-navy">
+              {areas.length} <small className="text-sm font-semibold">ตำบล</small>
+            </dd>
+            <dd className="mt-1.5 text-xs text-dc-muted">อำเภอสอง · จังหวัดแพร่</dd>
+          </dl>
+        )}
       </div>
 
-      <DistrictExplorer areas={areas} hospitals={hospitals} />
+      {/* R6's 4 blocks: the อำเภอ's population, then the เขตการปกครอง block that phase 1 shows on its own */}
+      {population && (
+        <section aria-label="สรุปประชากรและการปกครอง" className="mb-5">
+          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-dc-border bg-dc-border md:grid-cols-[1.3fr_1fr_1fr_1fr]">
+            <div className="min-w-0 border-l-4 border-l-dc-blue bg-dc-blue-light px-4 py-3.5 sm:px-6 sm:py-5">
+              <dt className="text-xs font-semibold text-dc-muted">ประชากรทั้งหมด</dt>
+              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy tabular-nums lg:text-[29px]">
+                {formatCount(population.district.totals.total)}
+              </dd>
+              <dd className="text-xs text-dc-muted">คน</dd>
+              <dd className="mt-1 text-xs text-dc-muted">
+                ทะเบียนราษฎร {asOf} · <span className="whitespace-nowrap">กรมการปกครอง</span>
+              </dd>
+            </div>
+            <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
+              <dt className="text-xs font-semibold text-dc-muted">ประชากรชาย</dt>
+              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy tabular-nums lg:text-[29px]">
+                {formatCount(population.district.totals.male)}
+              </dd>
+              <dd className="text-xs text-dc-muted">คน</dd>
+            </div>
+            <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
+              <dt className="text-xs font-semibold text-dc-muted">ประชากรหญิง</dt>
+              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy tabular-nums lg:text-[29px]">
+                {formatCount(population.district.totals.female)}
+              </dd>
+              <dd className="text-xs text-dc-muted">คน</dd>
+            </div>
+            <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
+              <dt className="text-xs font-semibold text-dc-muted">เขตการปกครอง</dt>
+              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy lg:text-[29px]">
+                {areas.length} <small className="text-sm font-semibold">ตำบล</small>
+              </dd>
+              <dd className="text-xs text-dc-muted">อำเภอสอง · จังหวัดแพร่</dd>
+            </div>
+          </dl>
+        </section>
+      )}
+
+      <DistrictExplorer areas={areas} hospitals={hospitals} population={population} asOf={asOf} />
 
       <section aria-labelledby="topics-title" className="mt-7">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
@@ -90,7 +137,17 @@ export default function Home() {
           <a href="https://opendata.moph.go.th" className="text-dc-blue underline underline-offset-2">
             HDC Open Data
           </a>{" "}
-          กระทรวงสาธารณสุข · ขอบเขตตำบล:{" "}
+          กระทรวงสาธารณสุข ·{" "}
+          {population && (
+            <>
+              ประชากร:{" "}
+              <a href="https://stat.bora.dopa.go.th/" className="text-dc-blue underline underline-offset-2">
+                stat.bora
+              </a>{" "}
+              กรมการปกครอง ·{" "}
+            </>
+          )}
+          ขอบเขตตำบล:{" "}
           <a
             href="https://pherportal.moph.go.th/arcgis/rest/services/MOPH_DATA/tambon/MapServer/0"
             className="text-dc-blue underline underline-offset-2"

@@ -3,7 +3,7 @@
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
-import type { DcCatalog, SnapshotMeta } from "./types";
+import type { DcCatalog, PopulationSnapshot, SnapshotMeta } from "./types";
 
 // The snapshot that build-snapshot.mjs writes before next build (SCHEMA §7),
 // for server components to read at build time.
@@ -21,4 +21,8 @@ export function readMeta(): SnapshotMeta {
 
 export function readCatalog(): DcCatalog {
   return read<DcCatalog>("catalog.json");
+}
+
+export function readPopulation(): PopulationSnapshot {
+  return read<PopulationSnapshot>("population.json");
 }
