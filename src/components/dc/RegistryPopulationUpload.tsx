@@ -2,8 +2,8 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { formatCount } from "@/lib/dc/format";
-import { populationTotals, readRegistryFiles, registryYear, type RegistryFileRead } from "@/lib/dc/population";
-import type { DcCatalog, GasRegistryPopulation } from "@/lib/dc/types";
+import { populationTotals, readRegistryFiles, registryYear } from "@/lib/dc/population";
+import type { DcCatalog, GasRegistryPopulation, RegistryFileRead } from "@/lib/dc/types";
 
 // The ประชากรทะเบียนราษฎร upload of /sync, shown after the PIN (SPEC §12.1,
 // ADR-0011): stat_t files from stat.bora are read and checked here by
@@ -13,23 +13,23 @@ import type { DcCatalog, GasRegistryPopulation } from "@/lib/dc/types";
 
 const GAS_URL = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL ?? "";
 
-/** What this section reads of GAS's POST answers (SCHEMA §3.7, §3.8) */
-interface GasAnswer {
-  status?: string;
-  message?: string;
-  count?: number;
-  remaining_today?: number;
+type GasError = { status: "error"; message: string };
+/** GAS's POST answers, as far as this section reads them (SCHEMA §3.7, §3.8) */
+type GasAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
+
+async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.json() as Promise<T>;
 }
 
-async function postGas(body: object): Promise<GasAnswer> {
+function postGas(body: object): Promise<GasAnswer> {
   // text/plain keeps it a simple request: a GAS web app answers no CORS preflight.
-  const res = await fetch(GAS_URL, {
+  return fetchJson<GasAnswer>(GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error(`GAS HTTP ${res.status}`);
-  return res.json() as Promise<GasAnswer>;
 }
 
 function errorText(err: unknown): string {
@@ -43,21 +43,48 @@ function summary(read: RegistryFileRead): string {
   return `ปี ${registryYear(read.yymm)} · ${read.rows.length} แถว · รวม ${formatCount(t.total)} คน (ชาย ${formatCount(t.male)} หญิง ${formatCount(t.female)}) · บ้าน ${formatCount(t.house)} หลัง`;
 }
 
-type Loaded<T> = T | { error: string } | "loading";
-
 /** How a step of the save went: a file saved or not, the rebuild requested or not */
 interface Outcome {
   ok: boolean;
   text: string;
 }
 
+/** POST save_registry_population of one checked file (SCHEMA §3.8) */
+async function saveYear(read: Extract<RegistryFileRead, { ok: true }>): Promise<Outcome> {
+  try {
+    const answer = await postGas({ action: "save_registry_population", kind: "population", yymm: read.yymm, rows: read.rows });
+    return answer.status === "success"
+      ? { ok: true, text: `บันทึกปี ${registryYear(read.yymm)} แล้ว ${answer.count} แถว` }
+      : { ok: false, text: `GAS ไม่บันทึก: ${answer.message}` };
+  } catch (err) {
+    return { ok: false, text: `ส่งไม่สำเร็จ: ${errorText(err)}` };
+  }
+}
+
+/** POST rebuild (SCHEMA §3.7), its result worded as the sync section words it */
+async function rebuildSite(): Promise<Outcome> {
+  try {
+    const answer = await postGas({ action: "rebuild", reason: "/sync registry_population" });
+    if (answer.status !== "success") throw new Error(answer.message || "Unknown GAS Error");
+    return { ok: true, text: `สั่ง rebuild แล้ว วันนี้สั่งได้อีก ${answer.remaining_today} ครั้ง` };
+  } catch (err) {
+    return { ok: false, text: `ไม่ได้สั่ง rebuild: ${errorText(err)}` };
+  }
+}
+
+type Loaded<T> = { state: "loading" } | { state: "ready"; value: T } | { state: "failed"; error: string };
+
+/** A picked file: how it read, and once the save reached it, how that went */
+interface Picked {
+  read: RegistryFileRead;
+  outcome?: Outcome;
+}
+
 export default function RegistryPopulationUpload() {
-  const [district, setDistrict] = useState<Loaded<string>>("loading");
-  const [sheetYears, setSheetYears] = useState<Loaded<string[]>>("loading");
+  const [district, setDistrict] = useState<Loaded<string>>({ state: "loading" });
+  const [sheetYears, setSheetYears] = useState<Loaded<string[]>>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
-  const [reads, setReads] = useState<RegistryFileRead[]>([]);
-  // One per read, in the same order, filled in as the save goes.
-  const [results, setResults] = useState<Outcome[]>([]);
+  const [picked, setPicked] = useState<Picked[]>([]);
   const [rebuild, setRebuild] = useState<Outcome | null>(null);
   const [saving, setSaving] = useState(false);
   const input = useRef<HTMLInputElement>(null);
@@ -66,19 +93,14 @@ export default function RegistryPopulationUpload() {
   // without asking GAS (SCHEMA §11.2).
   useEffect(() => {
     let ignore = false;
-    fetch("/data/catalog.json")
-      .then((res) => {
-        if (!res.ok) throw new Error(`/data/catalog.json: HTTP ${res.status}`);
-        return res.json() as Promise<Pick<DcCatalog, "meta">>;
-      })
-      .then(
-        (catalog) => {
-          if (!ignore) setDistrict(catalog.meta.district_code);
-        },
-        (err) => {
-          if (!ignore) setDistrict({ error: errorText(err) });
-        },
-      );
+    fetchJson<Pick<DcCatalog, "meta">>("/data/catalog.json").then(
+      (catalog) => {
+        if (!ignore) setDistrict({ state: "ready", value: catalog.meta.district_code });
+      },
+      (err) => {
+        if (!ignore) setDistrict({ state: "failed", error: errorText(err) });
+      },
+    );
     return () => {
       ignore = true;
     };
@@ -89,22 +111,18 @@ export default function RegistryPopulationUpload() {
   useEffect(() => {
     if (!GAS_URL) return;
     let ignore = false;
-    fetch(`${GAS_URL}?action=registry_population`)
-      .then((res) => {
-        if (!res.ok) throw new Error(`GAS HTTP ${res.status}`);
-        return res.json() as Promise<GasRegistryPopulation & GasAnswer>;
-      })
+    fetchJson<GasRegistryPopulation | GasError>(`${GAS_URL}?action=registry_population`)
       .then((answer) => {
-        if (answer.status === "error") throw new Error(answer.message);
+        if ("status" in answer) throw new Error(answer.message);
         if (!Array.isArray(answer.years)) throw new Error("คำตอบของ GAS ไม่มี years");
         return answer.years.filter((y) => y.population.length > 0).map((y) => registryYear(y.yymm));
       })
       .then(
         (years) => {
-          if (!ignore) setSheetYears(years);
+          if (!ignore) setSheetYears({ state: "ready", value: years });
         },
         (err) => {
-          if (!ignore) setSheetYears({ error: errorText(err) });
+          if (!ignore) setSheetYears({ state: "failed", error: errorText(err) });
         },
       );
     return () => {
@@ -113,49 +131,30 @@ export default function RegistryPopulationUpload() {
   }, [attempt]);
 
   function reloadYears() {
-    setSheetYears("loading");
+    setSheetYears({ state: "loading" });
     setAttempt((n) => n + 1);
   }
 
   async function pick(e: ChangeEvent<HTMLInputElement>) {
-    if (typeof district !== "string") return;
+    if (district.state !== "ready") return;
     const files = Array.from(e.target.files ?? []);
     const texts = await Promise.all(files.map(async (file) => ({ name: file.name, text: await file.text() })));
-    setResults([]);
     setRebuild(null);
-    setReads(readRegistryFiles(texts, district));
+    setPicked(readRegistryFiles(texts, district.value).map((read) => ({ read })));
   }
 
   async function save() {
     setSaving(true);
-    const done: Outcome[] = [];
-    for (const read of reads) {
-      if (!read.ok) {
-        done.push({ ok: false, text: `ไม่ส่ง: ${read.reason}` });
-      } else {
-        try {
-          const answer = await postGas({ action: "save_registry_population", kind: "population", yymm: read.yymm, rows: read.rows });
-          done.push(
-            answer.status === "success"
-              ? { ok: true, text: `บันทึกปี ${registryYear(read.yymm)} แล้ว ${answer.count} แถว` }
-              : { ok: false, text: `GAS ไม่บันทึก: ${answer.message}` },
-          );
-        } catch (err) {
-          done.push({ ok: false, text: `ส่งไม่สำเร็จ: ${errorText(err)}` });
-        }
-      }
-      setResults([...done]);
+    let anySaved = false;
+    for (const [i, { read }] of picked.entries()) {
+      const outcome = read.ok ? await saveYear(read) : { ok: false, text: `ไม่ส่ง: ${read.reason}` };
+      anySaved ||= outcome.ok;
+      setPicked((prev) => prev.map((p, j) => (j === i ? { ...p, outcome } : p)));
     }
-    // One rebuild of the website when any year was saved (SPEC §12.1), its
-    // result shown as the sync section shows it: the years are saved either way.
-    if (done.some((r) => r.ok)) {
-      try {
-        const answer = await postGas({ action: "rebuild", reason: "/sync registry_population" });
-        if (answer.status !== "success") throw new Error(answer.message || "Unknown GAS Error");
-        setRebuild({ ok: true, text: `สั่ง rebuild แล้ว วันนี้สั่งได้อีก ${answer.remaining_today} ครั้ง` });
-      } catch (err) {
-        setRebuild({ ok: false, text: `ไม่ได้สั่ง rebuild: ${errorText(err)}` });
-      }
+    // One rebuild of the website when any year was saved (SPEC §12.1): the
+    // years are saved either way.
+    if (anySaved) {
+      setRebuild(await rebuildSite());
       reloadYears();
     }
     // Cleared so that picking the same files again, to retry, is a change.
@@ -163,8 +162,8 @@ export default function RegistryPopulationUpload() {
     setSaving(false);
   }
 
-  const toSave = reads.filter((r) => r.ok).length;
-  const finished = results.length > 0 && !saving;
+  const toSave = picked.filter((p) => p.read.ok).length;
+  const finished = !saving && picked.some((p) => p.outcome);
 
   return (
     <section aria-labelledby="registry-population" className="dc mt-6 rounded-xl border border-dc-border bg-white p-6 font-dc text-sm text-dc-ink">
@@ -183,9 +182,9 @@ export default function RegistryPopulationUpload() {
       <div className="mt-3 rounded-lg bg-dc-canvas px-3 py-2">
         {!GAS_URL ? (
           <p>ไม่ได้ตั้ง NEXT_PUBLIC_GAS_SCRIPT_URL จึงอ่านและบันทึกกับ GAS ไม่ได้</p>
-        ) : sheetYears === "loading" ? (
+        ) : sheetYears.state === "loading" ? (
           <p>กำลังอ่านปีที่มีในชีต…</p>
-        ) : "error" in sheetYears ? (
+        ) : sheetYears.state === "failed" ? (
           <p>
             อ่านปีที่มีในชีตไม่ได้: {sheetYears.error}{" "}
             <button type="button" onClick={reloadYears} className="font-semibold text-dc-blue underline underline-offset-2">
@@ -193,11 +192,11 @@ export default function RegistryPopulationUpload() {
             </button>
           </p>
         ) : (
-          <p>ปีที่มีในชีตแล้ว: {sheetYears.length > 0 ? sheetYears.join(" · ") : "ยังไม่มี"}</p>
+          <p>ปีที่มีในชีตแล้ว: {sheetYears.value.length > 0 ? sheetYears.value.join(" · ") : "ยังไม่มี"}</p>
         )}
       </div>
 
-      {typeof district === "object" ? (
+      {district.state === "failed" ? (
         <p className="mt-4">อ่าน district_code จาก catalog.json ไม่ได้ ({district.error}) จึงตรวจไฟล์ไม่ได้</p>
       ) : (
         <div className="mt-4">
@@ -211,24 +210,23 @@ export default function RegistryPopulationUpload() {
             accept=".txt"
             multiple
             onChange={pick}
-            disabled={district === "loading" || saving}
+            disabled={district.state !== "ready" || saving}
             className="mt-2 block w-full text-dc-ink file:mr-3 file:rounded-md file:border-0 file:bg-dc-blue-light file:px-3 file:py-2 file:font-semibold file:text-dc-blue-dark disabled:opacity-50"
           />
         </div>
       )}
 
-      {reads.length > 0 && (
+      {picked.length > 0 && (
         <ul aria-live="polite" className="mt-4 space-y-2">
-          {reads.map((read, i) => {
-            const result = results[i];
-            const ok = result ? result.ok : read.ok;
+          {picked.map(({ read, outcome }, i) => {
+            const ok = outcome ? outcome.ok : read.ok;
             return (
               <li key={i} className="rounded-lg border border-dc-border px-3 py-2">
                 <span className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-navy ${ok ? "bg-dc-teal/20" : "bg-dc-gold/30"}`}>
-                  {result ? (result.ok ? "บันทึกแล้ว" : "ไม่บันทึก") : read.ok ? "ผ่านการตรวจ" : "ไม่รับไฟล์"}
+                  {outcome ? (outcome.ok ? "บันทึกแล้ว" : "ไม่บันทึก") : read.ok ? "ผ่านการตรวจ" : "ไม่รับไฟล์"}
                 </span>
                 <span className="font-semibold break-all">{read.name}</span>
-                <p className="mt-1">{result ? result.text : summary(read)}</p>
+                <p className="mt-1">{outcome ? outcome.text : summary(read)}</p>
               </li>
             );
           })}
@@ -241,7 +239,7 @@ export default function RegistryPopulationUpload() {
         </p>
       )}
 
-      {reads.length > 0 && !finished && (
+      {picked.length > 0 && !finished && (
         <button
           type="button"
           onClick={save}

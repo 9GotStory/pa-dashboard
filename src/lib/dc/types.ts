@@ -185,6 +185,12 @@ export interface PopulationSnapshot {
 /** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of both sheets and the age rows of every year */
 export type GasRegistryPopulation = PopulationSnapshot;
 
+/** A file the admin picked in the /sync upload, read and checked (SCHEMA §11.2): the district's rows, or why it is refused */
+export type RegistryFileRead = { name: string } & (
+  | { ok: true; yymm: string; rows: RegistryPopulationRow[] }
+  | { ok: false; reason: string }
+);
+
 /** ชาย หญิง รวม and บ้าน of one area (SCHEMA §11.3) */
 export interface PopulationTotals {
   male: number;

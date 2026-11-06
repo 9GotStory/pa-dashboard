@@ -30,4 +30,4 @@ export const STAT_T68_LINES = [
 ];
 
 /** The cut file as the browser would read it from disk, BOM first. */
-export const STAT_T68 = "﻿" + STAT_T68_LINES.join("\n") + "\n";
+export const STAT_T68 = "\uFEFF" + STAT_T68_LINES.join("\n") + "\n";

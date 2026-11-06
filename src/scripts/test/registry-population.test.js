@@ -133,6 +133,7 @@ const REJECTED = [
   ["male below 0", { rows: withRow(0, { male: -1, total: 2399 }) }, "Invalid value"],
   ["female not a whole number", { rows: withRow(0, { female: 2400.5, total: 4536.5 }) }, "Invalid value"],
   ["house as a string", { rows: withRow(0, { house: "2163" }) }, "Invalid value"],
+  ["a tt_name that setValues would write as a formula (=1+1)", { rows: withRow(0, { tt_name: "=1+1" }) }, "Invalid value"],
   ["ตำบลน้ำชำ of อำเภอเมืองแพร่ (54010300)", { rows: withRow(4, { tt: "54010300" }) }, "Row outside district"],
   ["tt of 7 digits", { rows: withRow(4, { tt: "5406050" }) }, "Row outside district"],
   ["a หมู่บ้าน row (mm 1)", { rows: withRow(5, { mm: "1" }) }, "Not a tambon row"],

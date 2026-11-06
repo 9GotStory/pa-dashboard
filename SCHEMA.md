@@ -313,7 +313,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 | 3 | `rows` เป็น array ที่มีอย่างน้อย 1 แถว | `Empty rows` |
 | 4 | ทุกแถวเป็น object ที่มี key ครบตามคอลัมน์ของชีตตาม `kind` ยกเว้น `uploaded_at` ไม่ขาดและไม่เกิน | `Row keys do not match the header` |
 | 5 | `yymm` ของทุกแถวเท่ากับ `yymm` ของ body | `Row of another yymm` |
-| 6 | ทุกค่าตรงกับคอลัมน์ "ชนิด" ของ §2.6/§2.7: คอลัมน์ string เป็น string ตามรูปแบบที่ระบุ (`cc` ตัวเลข 2 หลัก, `rcode` ตัวเลข 4 หลัก) และคอลัมน์จำนวนเป็นจำนวนเต็ม ≥ 0 | `Invalid value` |
+| 6 | ทุกค่าตรงกับคอลัมน์ "ชนิด" ของ §2.6/§2.7: คอลัมน์ string เป็น string ตามรูปแบบที่ระบุ (`cc` ตัวเลข 2 หลัก, `rcode` ตัวเลข 4 หลัก) ที่ไม่ขึ้นต้นด้วย `=` (`setValues` เขียนค่าแบบนั้นเป็นสูตร) และคอลัมน์จำนวนเป็นจำนวนเต็ม ≥ 0 | `Invalid value` |
 | 7 | `tt` เป็นตัวเลข 8 หลักที่ขึ้นต้นด้วย `district_code` | `Row outside district` |
 | 8 | (`population`) `mm` เป็น `"0"` | `Not a tambon row` |
 | 9 | (`rcode`, `tt`) ไม่ซ้ำกันในคำขอ | `Duplicate tambon row` |
@@ -801,6 +801,12 @@ export interface PopulationSnapshot {
 }
 /** response ของ GAS ?action=registry_population (§3.9): รูปเดียวกัน แต่มีทุก yymm ของสองชีตและแถวอายุของทุกปี */
 export type GasRegistryPopulation = PopulationSnapshot;
+
+/** ไฟล์หนึ่งที่ผู้ดูแลเลือกในส่วนอัปโหลดของหน้า /sync หลังอ่านและตรวจ (§11.2): แถวของอำเภอ หรือเหตุที่ปฏิเสธ */
+export type RegistryFileRead = { name: string } & (
+  | { ok: true; yymm: string; rows: RegistryPopulationRow[] }
+  | { ok: false; reason: string }
+);
 
 /** ชาย หญิง รวม และบ้านของพื้นที่หนึ่ง (§11.3) */
 export interface PopulationTotals {

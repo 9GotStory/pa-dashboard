@@ -19,13 +19,13 @@ const DC_REGISTRY_POPULATION_TEXT_COLUMNS = ["yymm", "cc", "rcode", "tt", "mm"];
 const DC_REGISTRY_POPULATION_COUNT_COLUMNS = ["male", "female", "total", "house"];
 // The string columns with a format of their own (SCHEMA §3.8 rule 6). tt's is
 // rule 7.
-const DC_REGISTRY_CODE_PATTERNS = { cc: /^\d{2}$/, rcode: /^\d{4}$/ };
+const DC_REGISTRY_POPULATION_CODE_PATTERNS = { cc: /^\d{2}$/, rcode: /^\d{4}$/ };
 
 // The age sheet (SCHEMA §2.7), which the GET already reads; F27 writes it.
 const DC_REGISTRY_POPULATION_AGE_SHEET = "registry_population_age";
 // Its counts: m0, f0 … m100, f100, m101, f101 (over 100 years), then each
 // group of people the file does not count by age as _m, _f, _t.
-const DC_REGISTRY_AGE_COUNT_COLUMNS = (function () {
+const DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS = (function () {
   const columns = [];
   for (let age = 0; age <= 101; age++) columns.push("m" + age, "f" + age);
   ["lunar", "central", "nonthai", "moving", "total"].forEach(function (group) {
@@ -33,7 +33,7 @@ const DC_REGISTRY_AGE_COUNT_COLUMNS = (function () {
   });
   return columns;
 })();
-const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].concat(DC_REGISTRY_AGE_COUNT_COLUMNS);
+const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].concat(DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS);
 
 /**
  * POST save_registry_population (SCHEMA §3.8): check the request by rules
@@ -108,7 +108,7 @@ function dcGetRegistryPopulation() {
   };
   dcRegistryRows(DC_REGISTRY_POPULATION_SHEET, DC_REGISTRY_POPULATION_COLUMNS, DC_REGISTRY_POPULATION_COUNT_COLUMNS)
     .forEach(add("population"));
-  dcRegistryRows(DC_REGISTRY_POPULATION_AGE_SHEET, DC_REGISTRY_POPULATION_AGE_COLUMNS, DC_REGISTRY_AGE_COUNT_COLUMNS)
+  dcRegistryRows(DC_REGISTRY_POPULATION_AGE_SHEET, DC_REGISTRY_POPULATION_AGE_COLUMNS, DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS)
     .forEach(add("age"));
   return {
     years: Object.keys(years).sort().map(function (yymm) {
@@ -124,14 +124,10 @@ function dcGetRegistryPopulation() {
  * number. A row without a yymm is no row. [] if the sheet does not exist.
  */
 function dcRegistryRows(sheetName, columns, countColumns) {
-  const isCount = Object.create(null);
-  countColumns.forEach(function (column) {
-    isCount[column] = true;
-  });
   return dcSheetRecords(sheetName, columns).map(function (record) {
     const row = {};
     columns.forEach(function (column) {
-      row[column] = isCount[column] ? Number(record[column]) : String(record[column]).trim();
+      row[column] = countColumns.indexOf(column) > -1 ? Number(record[column]) : String(record[column]).trim();
     });
     return row;
   }).filter(function (row) {
@@ -178,13 +174,17 @@ function dcRegistryRowsError(rows, yymm, districtCode) {
   return null;
 }
 
-/** Rule 6 of SCHEMA §3.8: counts are whole numbers ≥ 0, the rest strings in their format. */
+/**
+ * Rule 6 of SCHEMA §3.8: counts are whole numbers ≥ 0, the rest strings in
+ * their format. No string may begin with "=", which setValues writes as a
+ * formula (Apps Script Range.setValues).
+ */
 function dcRegistryValuesValid(row) {
   return DC_REGISTRY_POPULATION_COLUMNS.every(function (column) {
     const v = row[column];
     if (DC_REGISTRY_POPULATION_COUNT_COLUMNS.indexOf(column) > -1) return Number.isInteger(v) && v >= 0;
-    const pattern = DC_REGISTRY_CODE_PATTERNS[column];
-    return typeof v === "string" && (!pattern || pattern.test(v));
+    const pattern = DC_REGISTRY_POPULATION_CODE_PATTERNS[column];
+    return typeof v === "string" && v.charAt(0) !== "=" && (!pattern || pattern.test(v));
   });
 }
 

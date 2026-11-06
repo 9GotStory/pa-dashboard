@@ -36,7 +36,7 @@ test("the rows are the district's ตำบล lines as SCHEMA §2.6 keeps them:
 
 // The cut file with changed lines, BOM first as stat.bora writes it.
 function fileOf(lines: string[]): string {
-  return "﻿" + lines.join("\n") + "\n";
+  return "\uFEFF" + lines.join("\n") + "\n";
 }
 
 // STAT_T68_LINES with the line of (RCODE, CCAATT) changed by f, or dropped if f returns null.
@@ -101,7 +101,7 @@ test("a stat_t without the total line of 5406 → refused", () => {
 test("a download cut off mid-way through its last line (11 values, no line end) → refused, naming the line", () => {
   const lines = [...STAT_T68_LINES.slice(0, -1), "6812|54|จังหวัดแพร่ |5492|ท้องถิ่นเทศบาลตำบลสูงเม่น|54040100|ตำบลสูงเม่น |0| |1,626|1,8"];
 
-  assert.equal(refusal("﻿" + lines.join("\n")), "บรรทัดที่ 20 มี 11 ค่า ไฟล์ stat_t มีบรรทัดละ 13 ค่า");
+  assert.equal(refusal("\uFEFF" + lines.join("\n")), "บรรทัดที่ 20 มี 11 ค่า ไฟล์ stat_t มีบรรทัดละ 13 ค่า");
 });
 
 test("a count that is no number (\"2,1x6\") → refused, naming the line", () => {
