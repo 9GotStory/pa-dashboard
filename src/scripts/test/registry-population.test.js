@@ -268,6 +268,41 @@ test("GET reads registry_population by header name (trim + lower case) in any co
   assert.deepEqual(res, { years: [{ yymm: "6812", population: [ROWS_6812[0]], age: [] }] });
 });
 
+// The admin typing value into (row, column by header name) of registry_population.
+function setPopulationCell(h, row, column, value) {
+  const col = h.sheet("registry_population")[0].indexOf(column) + 1;
+  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("registry_population").getRange(row, col).setValues([[value]]);
+}
+
+// A row without the given keys.
+function omit(row, ...keys) {
+  const out = { ...row };
+  keys.forEach((key) => delete out[key]);
+  return out;
+}
+
+test("GET after the admin renames the house column (บ้าน) → every row leaves house out, so the prebuild fails loudly (SCHEMA §7) instead of showing 0 บ้าน", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  setPopulationCell(h, 1, "house", "บ้าน");
+
+  const res = getRegistryPopulation(h);
+
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: ROWS_6812.map((r) => omit(r, "house")), age: [] }] });
+});
+
+test("GET after the admin blanks one count and types text into another → each is left out of its row, not read as 0 or null", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  setPopulationCell(h, 3, "male", "");
+  setPopulationCell(h, 4, "female", "สองพัน");
+
+  const res = getRegistryPopulation(h);
+
+  const expected = ROWS_6812.map((r, i) => (i === 1 ? omit(r, "male") : i === 2 ? omit(r, "female") : r));
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, age: [] }] });
+});
+
 // registry_population_age's columns (SCHEMA §2.7) without uploaded_at.
 const AGE_COLUMNS = [
   "yymm", "rcode", "tt", "tt_name",

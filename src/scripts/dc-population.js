@@ -121,13 +121,32 @@ function dcGetRegistryPopulation() {
  * A registry sheet's rows as SCHEMA §3.9 returns them, read by header name:
  * the given columns (uploaded_at left out), counts as numbers and every other
  * column as a trimmed string, even where an edit by hand turned a code into a
- * number. A row without a yymm is no row. [] if the sheet does not exist.
+ * number. A column the sheet lacks, and a count cell that is blank or no
+ * number, are left out of the row: the prebuild then fails loudly on a sheet
+ * broken by hand (SCHEMA §7) instead of publishing 0. A row whose yymm cell
+ * is blank is no row. [] if the sheet does not exist.
  */
 function dcRegistryRows(sheetName, columns, countColumns) {
-  return dcSheetRecords(sheetName, columns).map(function (record) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
+  if (!sheet) return [];
+  const values = sheet.getDataRange().getValues();
+  const header = values[0].map(dcHeaderName);
+  const at = columns.map(function (column) {
+    return header.indexOf(column);
+  });
+  const isCount = columns.map(function (column) {
+    return countColumns.indexOf(column) > -1;
+  });
+  return values.slice(1).map(function (cells) {
     const row = {};
-    columns.forEach(function (column) {
-      row[column] = countColumns.indexOf(column) > -1 ? Number(record[column]) : String(record[column]).trim();
+    columns.forEach(function (column, k) {
+      if (at[k] === -1) return;
+      const v = cells[at[k]];
+      if (!isCount[k]) {
+        row[column] = String(v).trim();
+      } else if (String(v).trim() !== "" && Number.isFinite(Number(v))) {
+        row[column] = Number(v);
+      }
     });
     return row;
   }).filter(function (row) {
