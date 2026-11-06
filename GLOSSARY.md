@@ -11,6 +11,7 @@
 | **GAS** | Google Apps Script web app ใน `src/scripts/` เป็น API และตัว sync | "backend" |
 | **PA-Data** | สเปรดชีต Google Sheets ที่ GAS ใช้เป็นฐานข้อมูล | |
 | **HDC Open Data** / **MOPH** | แหล่งข้อมูลต้นทาง `opendata.moph.go.th` ทั้ง `report_data` และ API แค็ตตาล็อก | |
+| **stat.bora** | เว็บสถิติประชากรทางการทะเบียนราษฎรของกรมการปกครอง `stat.bora.dopa.go.th` แหล่งข้อมูลเดียวที่ไม่ใช่ HDC | "DOPA API" |
 | **R6** | ไฟล์ต้นแบบหน้าจอ `docs/reference/…-r6.html` ตัวเลขในนั้นเป็นข้อมูลจำลอง | |
 | **stub** | หน้า GitHub Pages ที่ส่งต่อลิงก์เก่าไปโดเมนใหม่ | "redirect page" |
 
@@ -54,12 +55,12 @@
 
 | คำ | ความหมาย | เลี่ยง |
 |---|---|---|
-| **snapshot** | ไฟล์ใน `public/data/` (`meta.json`, `catalog.json`, `reports/{id}.json`) ที่สร้างตอน build | "cache" |
+| **snapshot** | ไฟล์ใน `public/data/` (`meta.json`, `catalog.json`, `reports/{id}.json`, `population.json`) ที่สร้างตอน build | "cache" |
 | **prebuild** | `src/scripts/build-snapshot.mjs` ที่ npm รันก่อน `next build` | "fetch script" |
 | **rebuild** | การสั่ง Cloudflare build ใหม่ผ่าน Deploy Hook ด้วย POST `rebuild` ของ GAS (5 ครั้ง/วัน) | "redeploy", "trigger build" |
 | **Deploy Hook** | URL ของ Cloudflare Pages ที่เก็บใน `settings.deploy_hook_url` | |
 | **ล้มดัง ๆ** (fail loudly) | prebuild exit 1 เมื่อข้อมูลไม่ครบ ไม่ publish ข้อมูลบางส่วน | |
-| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
+| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`/`registry_population`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
 
 ## ขั้นตอนทำงาน
 
@@ -83,3 +84,12 @@
 | **เกณฑ์** (goal) | ร้อยละที่ถือว่าผ่าน `hdc_reports.goal` หรือ `measure_goals[measure]` ผ่านเมื่อ `pct ≥ goal` | "target %" (ชนกับ `target`) |
 | **เปรียบเทียบตาม** (by) | `area` (รายตำบล) หรือ `hosp` (รายหน่วยบริการ) | |
 | **วันที่ข้อมูล** | `date_com` สูงสุดของ block ที่แสดง | "last updated" (คำของ PA) |
+
+## ประชากร
+
+| คำ | ความหมาย | เลี่ยง |
+|---|---|---|
+| **ประชากรทะเบียนราษฎร** | จำนวนคนที่มีชื่อในทะเบียนบ้าน ตามยอดรายปีที่กรมการปกครองประกาศ (ไฟล์จาก stat.bora) ตัดยอด ณ 31 ธ.ค. ปีของข้อมูลจึงเป็นปีปฏิทิน ไม่ใช่ปีงบประมาณ ไม่ใช้ยอดรายเดือน เป็นนิยามเดียวของประชากรบนหน้าแรก · สะกด "ทะเบียนราษฎร" ไม่มีการันต์ ตามกรมการปกครอง | "ประชากรจริง", "ประชากร DOPA", "ทะเบียนราษฎร์" (สะกดผิด) |
+| **บ้าน** | จำนวนบ้านตามทะเบียนบ้าน จากสถิติชุดเดียวกับประชากรทะเบียนราษฎร | "ครัวเรือน", "หลังคาเรือน" |
+| **ช่วงอายุ** | ช่วงห้าปีของอายุบนพีระมิดประชากร เช่น 0–4 ปี และ 80 ปีขึ้นไป | "กลุ่มอายุ" (ชนกับ **กลุ่ม**) |
+| **ประชากรที่ไม่แยกอายุ** | คนในยอดรวมที่ไฟล์อายุของกรมการปกครองไม่ได้นับไว้ในจำนวนรายปีอายุ เช่น ผู้ไม่ใช่สัญชาติไทย ผู้มีชื่อในทะเบียนบ้านกลาง และผู้อยู่ระหว่างการย้าย | "ไม่ทราบอายุ" |
