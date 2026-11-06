@@ -930,11 +930,12 @@ function doGet(e) {
     return handleDiag(e);
   }
 
-  // Data Center catalog and report (SCHEMA §3.1, §3.2), for the prebuild
-  // script and hdc-catalog.js. Read under the script lock, so a build never
-  // reads a sheet that saveTableYear is clearing and rewriting.
+  // Data Center catalog, report and registry_population (SCHEMA §3.1, §3.2,
+  // §3.9), for the prebuild script, hdc-catalog.js and the /sync upload. Read
+  // under the script lock, so a build never reads a sheet that saveTableYear
+  // or save_registry_population is clearing and rewriting.
   const action = e.parameter.action;
-  if (action === "catalog" || action === "report") {
+  if (action === "catalog" || action === "report" || action === "registry_population") {
     // readSettings takes and releases the lock itself on a cache miss: read
     // it before taking the lock (SCHEMA §3, same as doPost).
     const settings = readSettings();
@@ -948,7 +949,9 @@ function doGet(e) {
     // The prebuild script retries on Busy (SPEC §6.2).
     if (!hasLock) return createJsonError("Busy");
     try {
-      return createJsonOutput(action === "catalog" ? dcGetCatalog(settings) : dcGetReport(e.parameter.id, settings));
+      return createJsonOutput(action === "catalog" ? dcGetCatalog(settings)
+        : action === "report" ? dcGetReport(e.parameter.id, settings)
+          : dcGetRegistryPopulation());
     } catch (err) {
       // Every error is a JSON answer (SCHEMA §3), not the Apps Script error page.
       Logger.log("doGet " + action + " failed: " + err);
@@ -1686,6 +1689,11 @@ function doPost(e) {
       }
       if (json.action === "rebuild") {
         return createJsonOutput(requestRebuild(json.reason));
+      }
+      if (json.action === "save_registry_population") {
+        // The sheet comes from kind alone: no sheet name is taken from the
+        // request (SCHEMA §3.8).
+        return createJsonOutput(dcSaveRegistryPopulation(json.kind, json.yymm, json.rows));
       }
       return createJsonError("Unknown action: " + json.action);
     } finally {
