@@ -23,19 +23,19 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * in catalog.json, and ดูภาพรวมอำเภอ for the whole อำเภอ. The buttons work
  * without the map, as when its tiles or boundaries cannot load. With
  * population, the panel shows the population of what is picked, and the
- * ประชากรรายตำบล table below, as of asOf ("ณ 31 ธ.ค. 2568"), picks a ตำบล
- * too; without, the page is as in phase 1.
+ * ประชากรรายตำบล table below, labelled with source, picks a ตำบล too;
+ * without, the page is as in phase 1.
  */
 export default function DistrictExplorer({
   areas,
   hospitals,
   population,
-  asOf,
+  source,
 }: {
   areas: Area[];
   hospitals: Hospital[];
   population: HomePopulation | null;
-  asOf: string;
+  source: string;
 }) {
   // A map tile is the largest paint on a phone (LCP, SPEC §9.6): the page's
   // <head> opens the tile server's connection before Leaflet has loaded.
@@ -47,15 +47,15 @@ export default function DistrictExplorer({
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
   // The population of what the panel shows: the ตำบล picked, or the อำเภอ.
-  const shown = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
+  const panelPopulation = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
 
   // ดูข้อมูล in the table, far below the panel: pick the ตำบล, then bring the
   // panel's heading into view and focus it, as R6 does. The panel is drawn
   // first, so the scroll lands where it ends up.
-  function view(id: string) {
+  function showInPanel(id: string) {
     flushSync(() => setSelected(id));
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    heading.current?.scrollIntoView({ block: "center", behavior: reduce ? "auto" : "smooth" });
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    heading.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
     heading.current?.focus({ preventScroll: true });
   }
 
@@ -138,7 +138,7 @@ export default function DistrictExplorer({
               <p className="text-xs text-dc-muted">
                 รหัสตำบล {area.id} · หน่วยบริการ {areaHospitals.length} แห่ง
               </p>
-              {shown && <PopulationRows totals={shown.totals} />}
+              {panelPopulation && <PopulationRows totals={panelPopulation.totals} />}
               {areaHospitals.length > 0 ? (
                 <ul className="mt-2.5">
                   {areaHospitals.map((h) => (
@@ -157,13 +157,13 @@ export default function DistrictExplorer({
               <p className="text-xs text-dc-muted">
                 {areas.length} ตำบล · หน่วยบริการ {hospitals.length} แห่ง
               </p>
-              {shown && <PopulationRows totals={shown.totals} />}
+              {panelPopulation && <PopulationRows totals={panelPopulation.totals} />}
               <p className="mt-2.5 border-t border-dc-border pt-2 text-xs text-dc-muted">เลือกตำบลเพื่อดูรายชื่อหน่วยบริการ</p>
             </>
           )}
           <p role="status" className="sr-only">
             {area ? `เลือก${title}` : title}
-            {shown && ` ประชากร ${formatCount(shown.totals.total)} คน`}
+            {panelPopulation && ` ประชากร ${formatCount(panelPopulation.totals.total)} คน`}
             {area && ` หน่วยบริการ ${areaHospitals.length} แห่ง`}
           </p>
         </div>
@@ -171,7 +171,13 @@ export default function DistrictExplorer({
 
       {population && (
         <div className="md:col-span-2">
-          <PopulationTable population={population} asOf={asOf} selected={selected} onView={view} />
+          <PopulationTable
+            population={population}
+            source={source}
+            selected={selected}
+            pickable={(id) => areas.some((a) => a.id === id)}
+            onView={showInPanel}
+          />
         </div>
       )}
     </div>

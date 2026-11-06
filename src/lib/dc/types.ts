@@ -199,7 +199,7 @@ export interface PopulationTotals {
   house: number;
 }
 
-/** The อำเภอ or one ตำบล in the population part of the home page */
+/** The อำเภอ or one ตำบล in the population part of the home page · SCHEMA §9's age comes with F28, which computes it */
 export interface AreaPopulation {
   key: string; // "all" = the whole อำเภอ, or a 6-digit ตำบล code (= areas[].id)
   name: string;

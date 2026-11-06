@@ -283,8 +283,8 @@ try {
 } catch (err) {
   fail(`cannot get the registry population (?action=registry_population): ${err.message}`);
 }
-const registryWrong = registryProblem(registry);
-if (registryWrong) fail(`?action=registry_population ${registryWrong}`);
+const wrongShape = registryProblem(registry);
+if (wrongShape) fail(`?action=registry_population ${wrongShape}`);
 // population.json (PopulationSnapshot, SCHEMA §7): the years with population
 // rows, oldest first, and the age rows of the latest of them only, so the file
 // grows by a year's population rows alone.

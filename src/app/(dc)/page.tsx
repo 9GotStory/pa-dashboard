@@ -14,8 +14,10 @@ export default function Home() {
   const { areas, hospitals, mains } = readCatalog();
   const { built_at, latest_date_com } = readMeta();
   const population = homePopulation(readPopulation(), areas);
-  // Here, not in the client: population.ts holds the /sync file reader too.
-  const asOf = population ? registryAsOf(population.yymm) : "";
+  // The label of the summary and of the ตำบล table, one text so the two match
+  // (SPEC §9.2). Made here, not in the client: population.ts holds the /sync
+  // file reader too.
+  const source = population ? `ทะเบียนราษฎร ${registryAsOf(population.yymm)} · กรมการปกครอง` : "";
   const topics = mains.flatMap((main) =>
     main.topics.map((topic) => ({ topic, count: topic.groups.reduce((n, g) => n + g.reports.length, 0) })),
   );
@@ -52,9 +54,7 @@ export default function Home() {
                 {formatCount(population.district.totals.total)}
               </dd>
               <dd className="text-xs text-dc-muted">คน</dd>
-              <dd className="mt-1 text-xs text-dc-muted">
-                ทะเบียนราษฎร {asOf} · <span className="whitespace-nowrap">กรมการปกครอง</span>
-              </dd>
+              <dd className="mt-1 text-xs text-dc-muted">{source}</dd>
             </div>
             <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
               <dt className="text-xs font-semibold text-dc-muted">ประชากรชาย</dt>
@@ -81,7 +81,7 @@ export default function Home() {
         </section>
       )}
 
-      <DistrictExplorer areas={areas} hospitals={hospitals} population={population} asOf={asOf} />
+      <DistrictExplorer areas={areas} hospitals={hospitals} population={population} source={source} />
 
       <section aria-labelledby="topics-title" className="mt-7">
         <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">

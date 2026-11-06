@@ -3,21 +3,25 @@ import type { HomePopulation } from "@/lib/dc/types";
 
 /**
  * The ประชากรรายตำบล table of the home page (SPEC §9.2): ชาย หญิง รวม and
- * บ้าน of each ตำบล, every สำนักทะเบียน added up, and the อำเภอ's total, as
- * of asOf ("ณ 31 ธ.ค. 2568"). Its ดูข้อมูล button picks a ตำบล for the map
- * and the area panel through onView; selected marks the ตำบล picked
- * anywhere. A phone gets a list of cards to open instead, as in R6.
- * DistrictExplorer renders it, holding the ตำบล picked.
+ * บ้าน of each ตำบล, every สำนักทะเบียน added up, and the อำเภอ's total,
+ * labelled with source as the summary is. Its ดูข้อมูล button picks a ตำบล
+ * for the map and the area panel through onView, on the rows of the ตำบล
+ * that are pickable: one that catalog.json's areas lacks has no map area or
+ * button to pick. selected marks the ตำบล picked anywhere. A phone gets a
+ * list of cards to open instead, as in R6, the card of the ตำบล picked
+ * opened. DistrictExplorer renders it, holding the ตำบล picked.
  */
 export default function PopulationTable({
   population,
-  asOf,
+  source,
   selected,
+  pickable,
   onView,
 }: {
   population: HomePopulation;
-  asOf: string;
+  source: string;
   selected: string | null;
+  pickable: (id: string) => boolean;
   onView: (id: string) => void;
 }) {
   const { district, areas } = population;
@@ -32,13 +36,13 @@ export default function PopulationTable({
           <p className="text-xs text-dc-muted">ชาย หญิง และจำนวนบ้าน รวมส่วนที่อยู่ในเขตเทศบาลแล้ว</p>
         </div>
         <p className="self-start rounded border border-dc-border bg-dc-canvas px-2.5 py-1.5 text-[11px] font-bold text-dc-muted">
-          ทะเบียนราษฎร {asOf} · กรมการปกครอง
+          {source}
         </p>
       </div>
 
       {/* A table from md; a phone gets cards to open, as R6 does, not a table restyled */}
       <table className="hidden w-full border-collapse text-[13px] tabular-nums md:table">
-        <caption className="sr-only">ประชากรทะเบียนราษฎรรายตำบล {asOf} ชาย หญิง รวม และบ้าน</caption>
+        <caption className="sr-only">ประชากรรายตำบล ชาย หญิง รวม และบ้าน · {source}</caption>
         <thead className="bg-dc-blue-light/60 text-xs text-dc-navy">
           <tr>
             <th scope="col" className="w-16 py-2.5 pr-3 pl-5 text-left">
@@ -76,13 +80,15 @@ export default function PopulationTable({
               <td className="px-3 py-2 text-right font-bold text-dc-blue-dark">{formatCount(a.totals.total)}</td>
               <td className="px-3 py-2 text-right">{formatCount(a.totals.house)}</td>
               <td className="py-1 pr-5 pl-3 text-center">
-                <button
-                  type="button"
-                  onClick={() => onView(a.key)}
-                  className="min-h-9 rounded px-2 text-xs font-semibold text-dc-blue underline underline-offset-2 hover:text-dc-blue-dark"
-                >
-                  ดูข้อมูล<span className="sr-only"> ตำบล{a.name}</span>
-                </button>
+                {pickable(a.key) && (
+                  <button
+                    type="button"
+                    onClick={() => onView(a.key)}
+                    className="min-h-9 rounded px-2 text-xs font-semibold text-dc-blue underline underline-offset-2 hover:text-dc-blue-dark"
+                  >
+                    ดูข้อมูล<span className="sr-only"> ตำบล{a.name}</span>
+                  </button>
+                )}
               </td>
             </tr>
           ))}
@@ -107,6 +113,7 @@ export default function PopulationTable({
         {areas.map((a) => (
           <details
             key={a.key}
+            open={a.key === selected}
             className={`group mb-2 overflow-hidden rounded-[7px] border ${
               a.key === selected ? "border-dc-teal bg-dc-teal/5" : "border-dc-border open:border-dc-blue/40"
             }`}
@@ -134,13 +141,15 @@ export default function PopulationTable({
                 <dt className="text-dc-muted">บ้าน</dt>
                 <dd className="text-right font-semibold text-dc-ink">{formatCount(a.totals.house)} บ้าน</dd>
               </dl>
-              <button
-                type="button"
-                onClick={() => onView(a.key)}
-                className="mt-2.5 min-h-10 w-full rounded-[5px] border border-dc-blue/40 bg-dc-blue-light/50 px-3 text-xs font-bold text-dc-blue hover:bg-dc-blue-light"
-              >
-                ดูข้อมูล<span className="sr-only"> ตำบล{a.name}</span>
-              </button>
+              {pickable(a.key) && (
+                <button
+                  type="button"
+                  onClick={() => onView(a.key)}
+                  className="mt-2.5 min-h-10 w-full rounded-[5px] border border-dc-blue/40 bg-dc-blue-light/50 px-3 text-xs font-bold text-dc-blue hover:bg-dc-blue-light"
+                >
+                  ดูข้อมูล<span className="sr-only"> ตำบล{a.name}</span>
+                </button>
+              )}
             </div>
           </details>
         ))}
