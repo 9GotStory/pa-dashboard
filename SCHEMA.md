@@ -1,7 +1,7 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.7 · 30 ต.ค. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
-> ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569 และโค้ด `src/scripts/รหัส.js`
+> สถานะ: ร่าง v0.8 · 6 พ.ย. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
+> ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569, โค้ด `src/scripts/รหัส.js` และไฟล์ของ stat.bora ปี 2564–2568 (ดาวน์โหลด 6 พ.ย. 2569, §11)
 
 ---
 
@@ -19,8 +19,10 @@
 | `hdc_topics` | ใหม่ | ผู้ดูแล + GAS | GAS |
 | `hdc_reports` | ใหม่ | GAS (คอลัมน์จาก API) + ผู้ดูแล | GAS |
 | `sync_status` | ใหม่ | GAS | GAS, ผู้ดูแล |
+| `registry_population` | ใหม่ (เฟส 2) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
+| `registry_population_age` | ใหม่ (เฟส 2) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
 
-- แถว 1 เป็น header · ตัวอ่านใหม่ทั้งหมด (`hdc_topics`, `hdc_reports`, `sync_status`, และการอ่าน `hospitals`/`tambon_master` ใน `?action=catalog`) อ่านคอลัมน์ตามชื่อ header (trim + ตัวพิมพ์เล็ก) แบบเดียวกับตัวอ่านแท็บ registry ของเดิม ลำดับคอลัมน์ไม่มีผล · ตัวอ่านเดิม (`settings` = trim อย่างเดียว, ชีตข้อมูล = header ตรง ๆ) ไม่แก้
+- แถว 1 เป็น header · ตัวอ่านใหม่ทั้งหมด (`hdc_topics`, `hdc_reports`, `sync_status`, `registry_population`, `registry_population_age` และการอ่าน `hospitals`/`tambon_master` ใน `?action=catalog`) อ่านคอลัมน์ตามชื่อ header (trim + ตัวพิมพ์เล็ก) แบบเดียวกับตัวอ่านแท็บ registry ของเดิม ลำดับคอลัมน์ไม่มีผล · ตัวอ่านเดิม (`settings` = trim อย่างเดียว, ชีตข้อมูล = header ตรง ๆ) ไม่แก้
 - ค่าติ๊กอ่านด้วย `parseBool` เดิม
 - header จริงที่ตรวจจากชีต 29 ต.ค. 2569: `hospitals` = `hospcode, hospname, tambon_id` (17 แถว) · `tambon_master` = `id, name_th, district_id, zip_code` (8 แถวของ `5406`) · PA อ่านสองชีตนี้ตามตำแหน่งคอลัมน์ ส่วนตัวอ่านใหม่อ่านตามชื่อ · ตารางข้อมูลทั้ง 18 ตารางตรวจ header แล้วตาม §4.1 รวม `s_kpi_dental28`/`s_kpi_dental33` ซึ่งมี `target`/`result` และมีค่า `target` จริง (comment ใน `verify-all.js` ที่ว่า dental33 ไม่มี target เป็นข้อมูลเก่า)
 
@@ -118,16 +120,63 @@
 
 คอลัมน์ทั่วไปของแถว HDC: `id` (บางตารางไม่มี เช่น `s_dental_0_5_cavity_free`), `hospcode` 5 หลัก, `areacode` 8 หลัก (จังหวัด 2 + อำเภอ 2 + ตำบล 2 + หมู่ 2), `flag_sent`, `date_com` (`YYYYMMDDHHmm` และ `s_epi1` มีวินาทีต่อท้าย), `b_year` (ปีงบประมาณ พ.ศ.), `ip`
 
+### 2.6 `registry_population` — ประชากรและบ้านรายตำบล (เฟส 2)
+
+หนึ่งแถวต่อแถวระดับตำบลของไฟล์ `stat_t` (§11.1) ที่ `tt` ขึ้นต้นด้วย `district_code` และ `mm` เป็น `0` รวมแถวของสำนักทะเบียนเทศบาล: อำเภอสองได้ปีละ 10 แถว (8 ตำบลของสำนักทะเบียน `5406` และ 2 ตำบลของ `5489`) · คอลัมน์ตามลำดับในไฟล์ แล้วต่อด้วย `uploaded_at`
+
+| คอลัมน์ | ชนิด | ความหมาย (ฟิลด์ของ stat.bora) |
+|---|---|---|
+| `yymm` | string `^\d{2}12$` | ปีเดือนข้อมูล (`YYMM`) เช่น `6812` = ณ 31 ธ.ค. 2568 |
+| `cc` | string 2 หลัก | รหัสจังหวัด (`CC-CODE`) |
+| `cc_name` | string | ชื่อจังหวัด (`CC-DESC`) |
+| `rcode` | string 4 หลัก | รหัสสำนักทะเบียน (`RCODE-CODE`) เช่น `5406` อำเภอสอง, `5489` เทศบาลตำบลสอง |
+| `rcode_name` | string | ชื่อสำนักทะเบียน (`RCODE-DESC`) เช่น "อำเภอสอง", "ท้องถิ่นเทศบาลตำบลสอง" |
+| `tt` | string 8 หลัก | รหัสตำบล (`CCAATT-CODE`) 6 หลักแรก = `tambon_master.id` |
+| `tt_name` | string | ชื่อตำบล (`CCAATT-DESC`) เช่น "ตำบลบ้านหนุน" |
+| `mm` | string | รหัสหมู่บ้าน (`CCAATTMM-CODE`) แถวระดับตำบลเป็น `0` |
+| `mm_name` | string | ชื่อหมู่บ้าน (`CCAATTMM-DESC`) แถวระดับตำบลเป็น `""` |
+| `male`, `female`, `total` | int ≥ 0 | ประชากรชาย หญิง และทั้งหมด (`MALE`, `FEMALE`, `TOTAL`) |
+| `house` | int ≥ 0 | จำนวนบ้าน (`HOUSE`) |
+| `uploaded_at` | datetime | เวลาที่ GAS บันทึก ไม่ได้มาจากไฟล์ และ GET ไม่คืน (§3.9) |
+
+- key = (`yymm`, `rcode`, `tt`) · ข้อความ trim แล้วและตัวเลขเป็น number แล้วตาม §11.1 ค่าที่เหลือตรงกับไฟล์ ผู้ดูแลเปิดชีตเทียบกับไฟล์ต้นทางได้ทีละแถว
+- คอลัมน์รหัส (`yymm`, `cc`, `rcode`, `tt`, `mm`) ตั้งรูปแบบเป็นข้อความ (`@`) และเก็บเป็น string แบบคอลัมน์ข้อความของ §2.5
+- **แทนที่ตาม `yymm`:** บันทึก `yymm` ใดแทนที่เฉพาะแถวของ `yymm` นั้น แถวของปีอื่นคงเดิม เก็บทุกปี ไม่มี window และไม่ลบปีเก่าเอง · แถวในชีตเรียงตาม `yymm` และภายในปีตามลำดับที่ส่งมา
+- GAS สร้างชีตพร้อม header ตอนบันทึกครั้งแรก ไม่ต้องรัน setup · หลังเขียนตัดแถวว่างท้ายชีตแบบ §2.5
+- ไม่อยู่ใน PA units, sync units หรือ `BATCH_ALL` และชื่อไม่ขึ้นต้นด้วย `s_` จึงไม่ชนกติกาชีตที่ `save_kpi_data` เขียนได้ (§2.3) · `save_registry_population` เขียนได้เฉพาะชีตนี้และ §2.7 (§3.8)
+
+### 2.7 `registry_population_age` — จำนวนรายปีอายุรายตำบล (เฟส 2)
+
+หนึ่งแถวต่อแถวตำบลของไฟล์อายุ (§11.1) ที่จับคู่กับแถวของ `registry_population` ใน `yymm` เดียวกันได้ (§11.2) อำเภอสองได้ปีละ 10 แถว · 224 คอลัมน์ตามลำดับนี้ ตั้งแต่ `tt_name` ถึง `total_t` เป็นลำดับในไฟล์
+
+| คอลัมน์ | ชนิด | ความหมาย (ฟิลด์ของ stat.bora) |
+|---|---|---|
+| `yymm` | string `^\d{2}12$` | ปีเดือนข้อมูล จากชื่อไฟล์ (§11.1) |
+| `rcode` | string 4 หลัก | สำนักทะเบียน จากการจับคู่บล็อก (§11.2) |
+| `tt` | string 8 หลัก | รหัสตำบล จากการจับคู่ชื่อตำบล (§11.2) |
+| `tt_name` | string | ชื่อตำบลตามไฟล์ (`DESC-CCAATT`) |
+| `m0`, `f0`, `m1`, `f1`, … `m100`, `f100` | int ≥ 0 | ชายและหญิงอายุ 0 ถึง 100 ปี สลับกันทีละอายุ (`MALE_AGE(n)`, `FEMALE_AGE(n)`) |
+| `m101`, `f101` | int ≥ 0 | อายุมากกว่า 100 ปี (`MALE_AGE(101)`, `FEMALE_AGE(101)`) |
+| `lunar_m`, `lunar_f`, `lunar_t` | int ≥ 0 | เกิดปีจันทรคติ ชาย หญิง รวม (`*_TDOB`) |
+| `central_m`, `central_f`, `central_t` | int ≥ 0 | มีชื่อในทะเบียนบ้านกลาง (`*_XHOUSE`) |
+| `nonthai_m`, `nonthai_f`, `nonthai_t` | int ≥ 0 | ไม่ใช่สัญชาติไทย (`*_OTHER_NAT`) |
+| `moving_m`, `moving_f`, `moving_t` | int ≥ 0 | อยู่ระหว่างการย้าย (`*_MOVE`) |
+| `total_m`, `total_f`, `total_t` | int ≥ 0 | ยอดรวมทั้งหมด (`*_TOT`) |
+| `uploaded_at` | datetime | เวลาที่ GAS บันทึก ไม่ได้มาจากไฟล์ และ GET ไม่คืน (§3.9) |
+
+- key, รูปแบบข้อความของคอลัมน์รหัส (`yymm`, `rcode`, `tt`), การแทนที่ตาม `yymm`, การสร้างชีต และการไม่อยู่ใน units เหมือน §2.6
+- แถวของ `yymm` หนึ่งต้องสอดคล้องกับ §2.6 ของ `yymm` เดียวกันเสมอ: ชุด (`rcode`, `tt`) เท่ากัน และ `total_m`, `total_f`, `total_t` เท่ากับ `male`, `female`, `total` ของแถวคู่กัน GAS ตรวจทั้งตอนบันทึกชีตนี้และตอนบันทึก §2.6 ซ้ำ (§3.8 ข้อ 12–14)
+
 ## 3. GAS Web App
 
 - GET ส่งค่าทาง query เท่านั้น และ POST ใช้ `Content-Type: text/plain` โดย body เป็น JSON
 - ทุก response เป็น HTTP 200 กรณีผิดพลาดตอบ `{ "status": "error", "message": "…" }` (`createJsonError` เดิม)
-- `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`
+- `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` → `registry_population` (เฟส 2) ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`, `save_registry_population` (เฟส 2)
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + `^[A-Za-z0-9_-]{8,64}$` ไม่แปลงตัวพิมพ์ ใช้กับ `cat_id` และ `opendata_id` · รหัสใช้ตัวพิมพ์ตามจริงทุกที่ (ชีต, `?action=report&id=`, URL `/reports/{id}`, ลิงก์ HDC/Open Data, ชื่อไฟล์ CSV) เพราะรหัสสั้นของ HDC มีตัวพิมพ์ใหญ่ และคอลัมน์ `id` ในข้อมูลดิบเก็บตามนั้น (§5.2) ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
 - ฟังก์ชันใหม่ `dcCleanName(v)` = ตัดแท็ก HTML → แทนช่องว่างทุกชนิดที่ติดกัน (รวม tab และขึ้นบรรทัด) ด้วยช่องว่างเดียว → trim ใช้กับ `report_name`, `category_name`, `main_report_name` ตอน `save_catalog` (§3.4) ไม่แปลง HTML entity เพราะไม่พบในแค็ตตาล็อก (§5.2)
 - ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
-- `catalog` และ `report` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
-- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่ handler จึงเรียกสองฟังก์ชันนี้ก่อนถือ lock (เติมแคช) และ `syncAllData` ซึ่งรันนานกว่าอายุแคช 60 วินาที อ่านครั้งเดียวก่อนถือ lock แล้วส่งค่าต่อให้ `saveTableYear` (`options.settings`, `options.kpiCfg`) และ `requestRebuild(reason, settings)` ฟังก์ชันภายในอ่านเองเฉพาะเมื่อไม่ได้รับค่า (#136)
+- `catalog`, `report` และ `registry_population` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` หรือ `save_registry_population` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
+- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`/`registry_population`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่ handler จึงเรียกสองฟังก์ชันนี้ก่อนถือ lock (เติมแคช) และ `syncAllData` ซึ่งรันนานกว่าอายุแคช 60 วินาที อ่านครั้งเดียวก่อนถือ lock แล้วส่งค่าต่อให้ `saveTableYear` (`options.settings`, `options.kpiCfg`) และ `requestRebuild(reason, settings)` ฟังก์ชันภายในอ่านเองเฉพาะเมื่อไม่ได้รับค่า (#136)
 
 ### 3.1 `GET ?action=catalog`
 
@@ -240,6 +289,56 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 2. นับครั้งต่อวันใน `PropertiesService.getScriptProperties()` คีย์ `rebuild_count_{YYYY-MM-DD}` (วันตามเขตเวลา `Asia/Bangkok`) ถ้า ≥ 5 ตอบ error `Rebuild quota exceeded for today (5/5)` ไม่เรียก hook · ลบคีย์ของวันก่อน ๆ ทิ้ง (ผู้เรียกถือ script lock อยู่แล้ว ซึ่งกันสองคำขอพร้อมกันผ่านที่ 4/5 ทั้งคู่)
 3. `UrlFetchApp.fetch(hook, { method: "post", muteHttpExceptions: true })` ถ้าได้ 2xx เพิ่มตัวนับ บันทึก INFO `Rebuild requested ({reason})` และตอบ `{ status: "success", remaining_today: n }` ไม่อย่างนั้นตอบ error พร้อม status code
 4. ฟังก์ชันภายใน `requestRebuild(reason, settings?)` (`settings` ไม่ส่ง = `readSettings()` §3) ใช้โดย `syncAllData` และเมนู "Rebuild Website" ใน `onOpen` (ผ่าน `rebuildWebsiteMenu()` ที่ไม่รับ argument เพราะ menu handler ของ Apps Script ส่งค่าให้ไม่ได้ แล้วแสดงผลด้วย `toast`) โดยไม่ผ่าน HTTP · `requestRebuild` ไม่ถือ lock เอง `rebuildWebsiteMenu` ถือให้
+
+### 3.8 `POST save_registry_population` (ใหม่ เฟส 2)
+
+```ts
+{ action: "save_registry_population"; kind: "population" | "age"; yymm: string; rows: RegistryPopulationRow[] | RegistryPopulationAgeRow[] }
+```
+
+| ฟิลด์ | ความหมาย |
+|---|---|
+| `kind` | `population` = แถวของ `stat_t` เขียน `registry_population` (§2.6) · `age` = แถวของไฟล์อายุ เขียน `registry_population_age` (§2.7) |
+| `yymm` | ปีของข้อมูล เดือน 12 เสมอ |
+| `rows` | แถวตาม `kind`: object ที่มี key ตรงกับคอลัมน์ของชีตนั้นทุกคอลัมน์ยกเว้น `uploaded_at` (type ใน §9) |
+
+ชีตที่เขียนมาจาก `kind` เท่านั้น ไม่รับชื่อชีตจากคำขอ ฟิลด์อื่นใน body (เช่น `sheet`, `tableName`) ไม่มีผล · โค้ดอยู่ใน `src/scripts/dc-population.js` (SPEC §12.4)
+
+ขั้นตอน (`doPost` ถือ script lock ไว้แล้ว ตัวบันทึกไม่ถือเอง และอ่าน `district_code` จาก `readSettings()` ที่ `doPost` เติมแคชไว้ก่อนถือ lock §3): ตรวจตามลำดับในตาราง ข้อแรกที่ไม่ผ่านตอบ `{ status: "error", message }` ตามคอลัมน์ขวา บันทึก ERROR ใน `system_logs` (เฉพาะข้อความ error และค่าที่ผ่านการตรวจแล้ว ไม่ใส่ค่าดิบจากคำขอ) และไม่เขียนชีตใดเลย
+
+| # | ตรวจ | `message` |
+|---|---|---|
+| 1 | `kind` เป็น `population` หรือ `age` | `Unknown kind` |
+| 2 | `yymm` เป็น string ที่ตรง `^\d{2}12$` | `Invalid yymm` |
+| 3 | `rows` เป็น array ที่มีอย่างน้อย 1 แถว | `Empty rows` |
+| 4 | ทุกแถวเป็น object ที่มี key ครบตามคอลัมน์ของชีตตาม `kind` ยกเว้น `uploaded_at` ไม่ขาดและไม่เกิน | `Row keys do not match the header` |
+| 5 | `yymm` ของทุกแถวเท่ากับ `yymm` ของ body | `Row of another yymm` |
+| 6 | คอลัมน์ที่ชนิดเป็น string ใน §2.6/§2.7 เป็น string และคอลัมน์จำนวนเป็นจำนวนเต็ม ≥ 0 | `Invalid value` |
+| 7 | `tt` เป็นตัวเลข 8 หลักที่ขึ้นต้นด้วย `district_code` | `Row outside district` |
+| 8 | (`population`) `mm` เป็น `"0"` | `Not a tambon row` |
+| 9 | (`rcode`, `tt`) ไม่ซ้ำกันในคำขอ | `Duplicate tambon row` |
+| 10 | ชาย + หญิง = รวม: (`population`) `male + female = total` · (`age`) `{x}_m + {x}_f = {x}_t` ทั้ง 5 ชุด (`lunar`, `central`, `nonthai`, `moving`, `total`) | `Male + female does not equal total` |
+| 11 | (`age`) Σ `m0…m101` + `lunar_m` + `central_m` + `nonthai_m` + `moving_m` = `total_m` และแบบเดียวกันของหญิง (สูตรของ stat.bora §11.1) | `Ages do not add up to total` |
+| 12 | (`age`) `registry_population` มีแถวของ `yymm` นี้แล้ว | `No registry_population rows for this yymm` |
+| 13 | (`age`) ชุด (`rcode`, `tt`) เท่ากับของแถว `registry_population` ใน `yymm` นี้ และทุกแถว `total_m`, `total_f`, `total_t` เท่ากับ `male`, `female`, `total` ของแถวคู่กัน | `Does not match registry_population` |
+| 14 | (`population`) ถ้า `registry_population_age` มีแถวของ `yymm` นี้อยู่แล้ว ต้องตรงกับแถวที่ส่งมาตามเงื่อนไขของข้อ 13 | `Does not match registry_population_age` |
+
+ผ่านทุกข้อ: แทนที่แถวของ `yymm` นี้ในชีตตาม `kind` ด้วยแถวที่ส่งมา โดยสร้างชีตพร้อม header ถ้ายังไม่มี (§2.6) เติม `uploaded_at` = เวลาปัจจุบันทุกแถว แล้วบันทึก SUCCESS `Saved {ชีต} {yymm}` พร้อมจำนวนแถว
+
+Response: `{ status: "success"; kind: "population" | "age"; yymm: string; count: number }` · `count` = จำนวนแถวที่เขียน
+
+- ข้อ 12–14 ทำให้ตัวเลขของสองชีตตรงกันเสมอ แต่ก็ทำให้แก้ปีที่มีแถวอายุแล้วด้วย `stat_t` ที่ตัวเลขต่างจากเดิมไม่ได้ ถ้ากรมการปกครองแก้ไฟล์ของปีนั้น ผู้ดูแลลบแถวของปีนั้นใน `registry_population_age` ด้วยมือก่อน แล้วอัปโหลดทั้งสองไฟล์ใหม่ในชุดเดียวกัน
+- ไม่มีการยืนยันตัวตนฝั่ง server เช่นเดียวกับ `save_kpi_data` (ADR-0005, SPEC §14)
+
+### 3.9 `GET ?action=registry_population` (ใหม่ เฟส 2)
+
+1. ถือ script lock แบบ `catalog`/`report` (§3) ถ้าไม่ได้ตอบ error `Busy` (prebuild script จะ retry เอง ส่วนอัปโหลดในหน้า `/sync` แสดงให้ผู้ดูแลลองใหม่)
+2. อ่านสองชีตตามชื่อ header (§1) ชีตที่ยังไม่มีถือว่าไม่มีแถว · ทุกแถวคืนเป็น object ตามคอลัมน์ของ §2.6/§2.7 ยกเว้น `uploaded_at` (รูปเดียวกับ `rows` ของ §3.8) คอลัมน์ที่ชนิดเป็น string คืนเป็น string แม้คนแก้ชีตจนกลายเป็นตัวเลข คอลัมน์จำนวนคืนเป็น number
+3. ตอบ `GasRegistryPopulation` (§9): `{ district_code, province_code, years }`
+   - `district_code`, `province_code` จาก `settings` ส่วนอัปโหลดใช้ตัดแถวและตรวจไฟล์ (§11.2) เพราะหน้า `/sync` ไม่มี `district_code` จาก `BATCH_ALL`
+   - `years` = ทุก `yymm` ที่มีแถวในชีตใดชีตหนึ่ง เรียงน้อยไปมาก แต่ละปีเป็น `{ yymm, population, age }` คือแถวของปีนั้นจากแต่ละชีตตามลำดับในชีต (`[]` ถ้าชีตนั้นไม่มีแถวของปีนั้น)
+4. ยังไม่มีทั้งสองชีต → `years: []` ไม่ใช่ error
+5. ไม่แคช
 
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
 
@@ -479,13 +578,14 @@ Request (`Content-Type: application/json`):
 
 ## 7. ไฟล์ snapshot (`public/data/`)
 
-สร้างโดย `src/scripts/build-snapshot.mjs` จาก `?action=catalog` และ `?action=report` เท่านั้น ไม่มีการคำนวณค่า KPI ในขั้นนี้
+สร้างโดย `src/scripts/build-snapshot.mjs` จาก `?action=catalog`, `?action=report` และ `?action=registry_population` (เฟส 2) เท่านั้น ไม่มีการคำนวณค่า KPI หรือยอดประชากรในขั้นนี้
 
 | ไฟล์ | รูปแบบ (type ใน §9) |
 |---|---|
 | `meta.json` | `SnapshotMeta` |
 | `catalog.json` | `DcCatalog` |
 | `reports/{opendata_id}.json` | `DcReportData` |
+| `population.json` (เฟส 2) | `PopulationSnapshot` |
 
 สิ่งที่ prebuild script ทำเพิ่มจาก response ของ GAS:
 - เรียงหมวด/หัวข้อ/กลุ่ม/รายงานตาม SPEC §5.4 แล้วเก็บเป็นโครงซ้อน (`DcCatalog.mains[].topics[].groups[].reports[]`) เพื่อให้หน้าเว็บวนลูปได้เลย
@@ -494,6 +594,12 @@ Request (`Content-Type: application/json`):
 - ตัดกลุ่ม หัวข้อ และหมวดที่ไม่มีรายงานที่ใช้งานออก
 - ตรวจความครบ: ทุก block ปีต้อง `sheet_rows = expected_rows`, ทุกปีใน `report.years` ต้องมี block ใน `years` (§3.2 ข้ามปีที่ชีตหาย), รายงานที่ใช้งานทุกตัวที่มีปีปัจจุบันใน `years` ต้องได้ `rows.length > 0` และต้องมีรายงานที่ใช้งานอย่างน้อยหนึ่งตัวที่มีแถวในปีปัจจุบัน ไม่อย่างนั้น exit 1 (รายงานที่ยังไม่มีปีปัจจุบันผ่านได้ หน้าเว็บแสดงปีล่าสุดที่มีข้อมูล หรือ "ยังไม่มีข้อมูล" ถ้าไม่มีสักปี SPEC §9.3)
 - ตรวจขนาดไฟล์ตาม SPEC §6.1: เกินเป้าหมาย = exit 1, ถึง 80% = เตือน
+
+`population.json` (เฟส 2) จากคำตอบของ `?action=registry_population` (§3.9):
+- `years` = ปีของคำตอบที่มีแถว `population` อย่างน้อย 1 แถว เรียงน้อยไปมาก ทุกปีมีแถว `population` ครบ ส่วน `age` มีเฉพาะปีสุดท้าย (ปีล่าสุดที่มีแถว `population`) ปีอื่นเป็น `[]` และถ้าปีสุดท้ายไม่มีแถวอายุก็เป็น `[]` · แถวคัดลอกจากคำตอบโดยไม่แก้ · ไม่เขียน `district_code`, `province_code`
+- ไฟล์จึงโตตามจำนวนปีแค่ปีละ 10 แถวประชากร (ราว 3 KB) ส่วนแถวอายุมีปีเดียวเสมอ (ราว 21 KB): ปี 2564–2568 ราว 36 KB เป้าหมาย < 100 KB (SPEC §6.1)
+- ไม่มีปีใดมีแถว `population` (รวมกรณียังไม่มีชีต) → เขียน `{ "years": [] }` ไม่ล้ม
+- ล้มดัง ๆ (exit 1 ไม่เขียนไฟล์ใด) เมื่อ GET ล้มหลัง retry (SPEC §6.2) หรือคำตอบผิดรูป: `years` ไม่ใช่ array, ปีใดมี `yymm` ไม่ตรง `^\d{2}12$` หรือซ้ำ, `population`/`age` ไม่ใช่ array หรือแถวใดขาดคอลัมน์ของ §2.6/§2.7 (ไม่นับ `uploaded_at`)
 
 ## 8. ขอบเขตตำบล (GeoJSON)
 
@@ -653,6 +759,94 @@ export interface TrendPoint {
   b_year: string;
   totals: Totals | null;         // null = ปีนั้นไม่มีคอลัมน์ที่ใช้ได้ แสดง "—"
 }
+
+/* ---------- ประชากรทะเบียนราษฎร์ (เฟส 2, §2.6–2.7, §3.8–3.9, §11) ---------- */
+
+/** แถวของ registry_population ไม่รวม uploaded_at: rows ของ POST, GET และ population.json */
+export interface RegistryPopulationRow {
+  yymm: string;                  // `^\d{2}12$`
+  cc: string;
+  cc_name: string;
+  rcode: string;                 // สำนักทะเบียน 4 หลัก
+  rcode_name: string;
+  tt: string;                    // 8 หลัก · 6 หลักแรก = areas[].id
+  tt_name: string;
+  mm: string;                    // "0"
+  mm_name: string;               // ""
+  male: number;
+  female: number;
+  total: number;
+  house: number;
+}
+
+/** ประเภทของประชากรที่ไม่แยกอายุ ตามคอลัมน์ท้ายของไฟล์อายุ (§2.7) */
+export type UnsplitGroup = "lunar" | "central" | "nonthai" | "moving";
+
+/** แถวของ registry_population_age ไม่รวม uploaded_at · m0 … m101 และ f0 … f101 = ชายและหญิงรายปีอายุ (101 = มากกว่า 100 ปี) */
+export type RegistryPopulationAgeRow = {
+  yymm: string;
+  rcode: string;
+  tt: string;
+  tt_name: string;
+} & { [age: `m${number}` | `f${number}`]: number }
+  & { [column in `${UnsplitGroup | "total"}_${"m" | "f" | "t"}`]: number };
+
+export interface RegistryPopulationYear {
+  yymm: string;
+  population: RegistryPopulationRow[];
+  age: RegistryPopulationAgeRow[];
+}
+
+/** response ของ GAS ?action=registry_population (§3.9) */
+export interface GasRegistryPopulation {
+  district_code: string;
+  province_code: string;
+  years: RegistryPopulationYear[];   // ทุก yymm ที่มีแถวในชีตใดชีตหนึ่ง เรียงน้อยไปมาก
+}
+
+/** population.json (§7) */
+export interface PopulationSnapshot {
+  years: RegistryPopulationYear[];   // ปีที่มีแถว population เรียงน้อยไปมาก · [] = ยังไม่มีข้อมูล · age มีเฉพาะปีสุดท้าย ปีอื่น []
+}
+
+/** ชาย หญิง รวม และบ้านของพื้นที่หนึ่ง (§11.3) */
+export interface PopulationTotals {
+  male: number;
+  female: number;
+  total: number;
+  house: number;
+}
+
+/** ช่วงอายุหนึ่งของพีระมิด (§11.3) */
+export interface AgeBand {
+  label: string;                 // "0–4" … "75–79", "80+"
+  male: number;
+  female: number;
+}
+
+/** โครงสร้างอายุของพื้นที่หนึ่ง (§11.3) */
+export interface AgeProfile {
+  bands: AgeBand[];              // 17 ช่วง จากอายุน้อยไปมาก
+  age_total: number;             // ผลรวมจำนวนรายปีอายุ ชายและหญิง (m0…m101 + f0…f101)
+  aged60: number;                // อายุ 60 ปีขึ้นไป ชายและหญิง
+  aged60_pct: number;            // aged60 ÷ age_total × 100 ไม่ปัด
+  unsplit: Record<UnsplitGroup, number>;   // ประชากรที่ไม่แยกอายุตามประเภท ผลรวม = totals.total − age_total
+}
+
+/** อำเภอหรือตำบลหนึ่งในส่วนประชากรของหน้าแรก */
+export interface AreaPopulation {
+  key: string;                   // "all" = ทั้งอำเภอ หรือรหัสตำบล 6 หลัก (= areas[].id)
+  name: string;
+  totals: PopulationTotals;
+  age: AgeProfile | null;        // null = ปีที่แสดงไม่มีแถวอายุ (ซ่อนพีระมิด)
+}
+
+/** ส่วนประชากรของหน้าแรกที่ server component ส่งให้ client (SPEC §9.2) · null = ไม่มีข้อมูลประชากร */
+export interface HomePopulation {
+  yymm: string;                  // ปีที่แสดง (§11.3)
+  district: AreaPopulation;      // key "all"
+  areas: AreaPopulation[];       // ตำบล เรียงตามรหัส
+}
 ```
 
 ## 10. ตัวแปรแวดล้อมและค่าตั้งนอกโค้ด
@@ -671,3 +865,79 @@ export interface TrendPoint {
 | GAS (`CONFIG`) | `DIAG_PIN` | เดิม |
 | `.gitignore` | `public/data/` | ไฟล์ snapshot ไม่ commit |
 | `.gitignore` | `catalog-exports/` | ไฟล์ export แค็ตตาล็อก ไม่ commit (เพิ่มแล้ว 30 ต.ค. 2569) |
+
+## 11. ประชากรทะเบียนราษฎร์ (เฟส 2)
+
+นิยามและเหตุผลใน ADR-0011 · ชีตใน §2.6–2.7 · สัญญา GAS ใน §3.8–3.9 · `population.json` ใน §7 · type ใน §9
+
+### 11.1 ไฟล์ของ stat.bora
+
+ผู้ดูแลดาวน์โหลดจาก `https://stat.bora.dopa.go.th/` เมนู "ดาวน์โหลดสถิติ" · รูปแบบข้างล่างตรวจ 6 พ.ย. 2569 กับไฟล์ปี 2564–2568 และหน้า "โครงสร้างข้อมูลสถิติ" ของ stat.bora · ทั้งสองไฟล์เป็น UTF-8 มี BOM ขึ้นบรรทัดด้วย LF คั่นค่าด้วย `|` และมี `|` ปิดท้ายทุกบรรทัด (แยกด้วย `|` แล้วช่องสุดท้ายว่าง)
+
+| | `stat_t{yy}.txt` | `{yy}12cc{จังหวัด}.txt` (ไฟล์อายุ) |
+|---|---|---|
+| เมนู | "จำนวนประชากร" → ปี → ระดับตำบล Text File | "จำนวนประชากรแยกรายอายุ" → ปี → จังหวัด |
+| ขอบเขต | ทั้งประเทศ ราว 11,400 บรรทัด 2 MB | ทั้งจังหวัด แพร่มี 118 บรรทัด ราว 76 KB |
+| ค่าต่อบรรทัด | 13 ค่า `YYMM`, `CC-CODE`, `CC-DESC`, `RCODE-CODE`, `RCODE-DESC`, `CCAATT-CODE`, `CCAATT-DESC`, `CCAATTMM-CODE`, `CCAATTMM-DESC`, `MALE`, `FEMALE`, `TOTAL`, `HOUSE` = คอลัมน์ของ §2.6 ตามลำดับ | 220 ค่า: ชื่อพื้นที่ (`DESC-CCAATT`) แล้ว `MALE_AGE(0)`, `FEMALE_AGE(0)` … `MALE_AGE(101)`, `FEMALE_AGE(101)` (101 = มากกว่า 100 ปี) แล้ว `TDOB`, `XHOUSE`, `OTHER_NAT`, `MOVE`, `TOT` ชุดละ ชาย หญิง รวม = คอลัมน์ของ §2.7 ตั้งแต่ `tt_name` |
+| ตัวเลข | มีจุลภาค เช่น `40,389` | ไม่มีจุลภาค |
+| ปีและพื้นที่ | `YYMM` ทุกบรรทัด เช่น `6812` · บรรทัดที่ `CCAATT-CODE` เป็น `0` คือยอดรวมของสำนักทะเบียน (บรรทัดแรกเป็นยอดทั้งประเทศ และบรรทัดที่ `RCODE-CODE` เป็น `0` เป็นยอดจังหวัด) | ไม่มีรหัสและปีในเนื้อไฟล์ อ่านปีและจังหวัดจากชื่อไฟล์ส่วน `{yymm}cc{จังหวัด}` ด้วย `/(\d{2})(\d{2})cc(\d{2})/` ซึ่งต้องอ่านได้แม้เบราว์เซอร์เติมเลขต่อท้ายชื่อ เช่น `6812cc54 (1).txt` |
+| ลำดับบรรทัด | ประเทศ → จังหวัด → สำนักทะเบียน → ตำบล | บรรทัดจังหวัด แล้วเป็นบล็อก: บรรทัด "อำเภอ…" หรือ "เทศบาล…" ขึ้นบล็อกใหม่ ตามด้วยบรรทัด "ตำบล…" ของบล็อกนั้น ชื่อตำบลซ้ำข้ามบล็อกได้ เช่น "ตำบลน้ำชำ" มีทั้งในอำเภอเมืองแพร่และอำเภอสูงเม่น |
+| ข้อความ | ชื่อมีช่องว่างท้าย เช่น `ตำบลบ้านหนุน ` และช่องที่ไม่มีค่าเป็น `" "` | ชื่อบล็อกเทศบาลมีช่องว่างท้าย เช่น `เทศบาลตำบลสอง ` |
+
+- ก่อนเก็บ ตัดช่องว่างหัวท้ายของข้อความ (ช่องที่ไม่มีค่าจึงเป็น `""`) และแปลงตัวเลขเป็น number
+- สูตรของ stat.bora ที่ทุกบรรทัดของไฟล์อายุเป็นไปตาม: `MALE_TOT` = Σ `MALE_AGE(0…101)` + `MALE_TDOB` + `MALE_XHOUSE` + `MALE_OTHER_NAT` + `MALE_MOVE` และแบบเดียวกันของหญิง ส่วนทุกชุด ชาย + หญิง = รวม · ทุกบรรทัดของ `stat_t` ชาย + หญิง = รวม (ตรวจครบทุกบรรทัดของ `stat_t` ปี 2564–2568 และไฟล์อายุปี 2564, 2567, 2568)
+- สำนักทะเบียนของอำเภอหาจากบรรทัดที่ `CCAATT-CODE` ขึ้นต้นด้วย `district_code` ไม่ใช่จาก `RCODE-CODE` เพราะสำนักทะเบียนอำเภอสอง (`5406`) ไม่รวมเขตเทศบาลตำบลสอง ซึ่งเป็นสำนักทะเบียนแยก (`5489`) คลุมบางส่วนของบ้านหนุนและบ้านกลาง
+- ไฟล์ทั้งสองของ ธ.ค. 2568 ตรงกันทุกตัวเลขในทั้ง 10 แถวของอำเภอสอง และตรงกับไฟล์รายเดือนของ ธ.ค. 2568 (ADR-0011) · `stat_t68` แก้ไขล่าสุด 24 มี.ค. 2569 ใกล้วันที่กรมการปกครองประกาศ
+
+### 11.2 การตรวจในเบราว์เซอร์ (ส่วนอัปโหลดในหน้า `/sync`)
+
+ฟังก์ชันล้วนใน `src/lib/dc/population.ts` (SPEC §9.5, §12.1) · ไฟล์ที่ไม่ผ่านแม้ข้อเดียวถูกปฏิเสธทั้งไฟล์พร้อมเหตุผลภาษาไทยและไม่ถูกส่ง · `district_code` และ `province_code` มาจาก GET `?action=registry_population` (§3.9) · ชนิดไฟล์แยกจากชื่อไฟล์ (`stat_t{yy}` หรือ `{yymm}cc{จังหวัด}`) และจำนวนค่าต่อบรรทัด
+
+`stat_t`:
+
+1. ทุกบรรทัดมี 13 ค่าตาม §11.1 และตัวเลขอ่านได้
+2. `YYMM` เท่ากันทุกบรรทัดและเป็นเดือน 12
+3. มีบรรทัดระดับตำบลที่ `CCAATT-CODE` ขึ้นต้นด้วย `district_code`
+4. ทุกสำนักทะเบียนที่มีบรรทัดตำบลของอำเภอ (อำเภอสองคือ `5406` และ `5489`): ผลรวม ชาย หญิง รวม และบ้าน ของบรรทัดตำบลทุกบรรทัดของสำนักทะเบียนนั้นในทั้งไฟล์ (ตรวจก่อนตัด) เท่ากับบรรทัดยอดรวมของสำนักทะเบียน
+5. ผ่านแล้วเก็บเฉพาะบรรทัดตำบล (`CCAATTMM-CODE` เป็น `0`) ที่ `CCAATT-CODE` ขึ้นต้นด้วย `district_code` เป็นแถวของ §2.6 ตัวอย่างก่อนบันทึกแสดงปี จำนวนแถว และยอดรวม
+
+ไฟล์อายุ:
+
+1. ชื่อไฟล์มี `{yymm}cc{จังหวัด}` เดือนเป็น 12 และจังหวัดเท่ากับ `province_code`
+2. ทุกบรรทัดมี 220 ค่าตาม §11.1 และตัวเลขเป็นจำนวนเต็ม
+3. ในชุดที่เลือกมี `stat_t` ของ `yymm` เดียวกันที่ผ่านการตรวจ
+4. จับคู่บล็อกกับสำนักทะเบียนของบรรทัดอำเภอใน `stat_t` ด้วยชื่อหลังตัดช่องว่าง: บล็อก "อำเภอ…" กับ `rcode_name` และบล็อก "เทศบาล…" กับ `rcode_name` ที่ตัดคำนำหน้า "ท้องถิ่น" (เช่น "เทศบาลตำบลสอง" ↔ "ท้องถิ่นเทศบาลตำบลสอง") สำนักทะเบียนละหนึ่งบล็อกพอดี
+5. ภายในบล็อกนั้น จับคู่บรรทัดตำบลด้วยชื่อ (`tt_name` = ชื่อบรรทัด) ทุกแถวของ `stat_t` ที่เก็บต้องจับคู่ได้บรรทัดเดียว ชื่อที่ซ้ำในบล็อกอื่นจึงไม่ปนกัน
+6. ยอดตรงกันสองระดับ: ตำบล `total_m`, `total_f`, `total_t` เท่ากับ `male`, `female`, `total` ของแถวคู่ · บล็อก ยอดของบรรทัดบล็อกเท่ากับบรรทัดยอดรวมของสำนักทะเบียนนั้นใน `stat_t`
+7. ทุกบรรทัดที่จับคู่ได้เป็นไปตามสูตรของ §11.1
+8. ผ่านแล้วได้แถวของ §2.7: `yymm` จากชื่อไฟล์ `rcode` และ `tt` จากการจับคู่ `tt_name` ตามไฟล์ ตัวอย่างก่อนบันทึกแสดงปี จำนวนแถวที่จับคู่ได้ และยอดรวม
+
+GAS ตรวจแถวที่ส่งไปซ้ำเองตาม §3.8 ไม่เชื่อเบราว์เซอร์
+
+### 11.3 การคำนวณ (ตอน build)
+
+ฟังก์ชันล้วนใน `src/lib/dc/population.ts` รับ `PopulationSnapshot` กับ `areas` ของ `catalog.json` แล้วคืน `HomePopulation` (§9) หรือ `null` ถ้า `years` ว่าง:
+
+- **ปีที่แสดง:** ปีสุดท้ายของ `years` คือ `yymm` ล่าสุดที่มีแถว `population` แสดงเป็น "ณ 31 ธ.ค. 25{yy}" เช่น `6812` → "ณ 31 ธ.ค. 2568" ทุกส่วนของหน้าแรกใช้ปีนี้
+- **รายตำบล:** รวมแถว `population` ของปีที่แสดงตาม 6 หลักแรกของ `tt` (= `areas[].id`) ข้ามทุกสำนักทะเบียน ทั้ง `male`, `female`, `total`, `house` · ชื่อจาก `areas` ถ้าไม่พบใช้ `tt_name` · เรียงตามรหัสตำบล
+- **ทั้งอำเภอ:** ผลรวมของทุกตำบล
+- **อายุ** (เมื่อปีที่แสดงมีแถว `age`) ของอำเภอและของแต่ละตำบล รวมข้ามสำนักทะเบียนแบบเดียวกัน:
+  - 17 ช่วงอายุแยกชายหญิง: `0–4`, `5–9` … `75–79` (ผลรวม `m{a}`/`f{a}` ของอายุในช่วง) และ `80+` (อายุ 80 ถึง 101 จึงรวมมากกว่า 100 ปี)
+  - `age_total` = Σ `m0…m101` + Σ `f0…f101` · `aged60` = ผลรวมของอายุ 60 ถึง 101 ทั้งสองเพศ · `aged60_pct` = `aged60 ÷ age_total × 100` แสดงทศนิยม 1 ตำแหน่ง
+  - ประชากรที่ไม่แยกอายุ = `total_t − age_total` แยกตามประเภทเป็น `lunar_t`, `central_t`, `nonthai_t`, `moving_t` (ผลรวมเท่ากันตามสูตรของ §11.1)
+- ปีที่แสดงไม่มีแถว `age` → `age = null` ทุกพื้นที่ (ซ่อนเฉพาะพีระมิด)
+
+### 11.4 ตัวเลขอ้างอิง ธ.ค. 2568 (ค่าคาดหวังของเทสต์)
+
+จาก `stat_t68.txt` และ `6812cc54.txt` (ตรวจ 6 พ.ย. 2569) · ค่าคาดหวังของเทสต์ใช้ตัวเลขที่มาจากแหล่งอิสระ ไม่คำนวณซ้ำด้วยสูตรเดียวกับโค้ด (CODING_STANDARDS §5) จึงระบุที่มาไว้
+
+| เรื่อง | ค่า | ที่มา |
+|---|---|---|
+| อำเภอสองทั้งอำเภอ | 46,527 คน (ชาย 22,475 หญิง 24,052) บ้าน 20,101 | ยอดที่จังหวัดประกาศ = บรรทัดยอดรวมของ `5406` + `5489` |
+| บรรทัดยอดรวมของสำนักทะเบียน | `5406` อำเภอสอง 40,389 คน (ชาย 19,692 หญิง 20,697) บ้าน 16,904 · `5489` ท้องถิ่นเทศบาลตำบลสอง 6,138 คน (ชาย 2,783 หญิง 3,355) บ้าน 3,197 | บรรทัดที่ `CCAATT-CODE` = `0` |
+| แถวต่อปีในชีต | 10 แถว: `5406` 8 ตำบล และ `5489` 2 ตำบล (บ้านหนุน บ้านกลาง) | บรรทัดตำบลในไฟล์ |
+| ตำบลที่มีสองสำนักทะเบียน | บ้านหนุน 7,399 คน (4,536 + 2,863) 3,499 บ้าน (2,163 + 1,336) · บ้านกลาง 6,686 คน (3,411 + 3,275) 3,335 บ้าน (1,474 + 1,861) | บรรทัดตำบลของ `5406` + `5489` |
+| ผลรวมจำนวนรายปีอายุ (อำเภอ) | 46,362 คน (ชาย 22,363 หญิง 23,999) | เท่ากับประชากรทะเบียนราษฎร์ระดับอำเภอบนหน้าเว็บ HDC (ADR-0011) |
+| อายุ 60 ปีขึ้นไป (อำเภอ) | 13,487 คน (ชาย 5,896 หญิง 7,591) ร้อยละ 29.1 ของ 46,362 | ผลรวมคอลัมน์ `m60…m101`, `f60…f101` ของไฟล์ |
+| ประชากรที่ไม่แยกอายุ (อำเภอ) | 165 คน: ไม่ใช่สัญชาติไทย 81 · ทะเบียนบ้านกลาง 75 · ระหว่างการย้าย 9 · เกิดปีจันทรคติ 0 | คอลัมน์ `*_t` ท้ายแถวของไฟล์อายุ และ 46,527 − 46,362 |
+| ยอดรวมรายปี | 2564 = 48,645 · 2565 = 48,175 · 2566 = 47,636 · 2567 = 47,053 · 2568 = 46,527 | บรรทัดยอดรวมของ `5406` + `5489` ใน `stat_t` แต่ละปี |

@@ -1,6 +1,6 @@
 # SPEC — Song Health Data Center
 
-> สถานะ: ร่าง v0.7 · 30 ต.ค. 2569 · ขอบเขต: เฟส 1 · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
+> สถานะ: ร่าง v0.8 · 6 พ.ย. 2569 · ขอบเขต: เฟส 1 และเฟส 2 ส่วนประชากรทะเบียนราษฎร์ (§2.3) · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
 > เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, ไฟล์ snapshot, กติกาคำนวณ, seed), [FEATURES.md](FEATURES.md) (รายการงาน), [GLOSSARY.md](GLOSSARY.md) (คำศัพท์ที่ใช้ในเอกสารและโค้ด), [CODING_STANDARDS.md](CODING_STANDARDS.md) (มาตรฐานโค้ดที่ใช้ตรวจ PR)
 > ต้นแบบหน้าจอ: `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html` (R6) ใช้เป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขทุกตัวในไฟล์เป็นข้อมูลจำลอง
 
@@ -30,7 +30,7 @@
 
 | เรื่อง | เหตุผล |
 |---|---|
-| ข้อมูลประชากรบนหน้าแรก (หัวข้อ "ประชากร" `ac4eed1bddb23d6130746d62d2538fd0`) | ยังไม่ได้เลือกตารางประชากร ทำในเฟส 2 |
+| ข้อมูลประชากรบนหน้าแรก | ทำในเฟส 2 (§2.3) จากประชากรทะเบียนราษฎร์ของกรมการปกครอง ไม่ใช้หัวข้อ "ประชากร" ของ HDC (`ac4eed1bddb23d6130746d62d2538fd0`) เพราะคนละนิยาม (ADR-0011) |
 | รายงานชนิด `workload` (นับจำนวนครั้ง) | 18 ตารางในเฟส 1 เป็นชนิด `coverage` ทั้งหมด |
 | แสดงคอลัมน์ผลแยกย่อย เช่น 9 ด้านของ `s_aged9` | ความหมายได้จาก `report_schema` แล้ว (SCHEMA §4.5) แต่ยังไม่ได้ออกแบบการแสดงผล ทำในเฟส 2 |
 | ปุ่มรีเฟรชแค็ตตาล็อกบนหน้า `/sync` | เฟส 1 ใช้ snippet ในเบราว์เซอร์ + สคริปต์ node (§12.3, ADR-0010) |
@@ -40,6 +40,19 @@
 
 **ตัดออกจาก R6 ถาวร:** ส่วนนำเข้า JSON ของรายงานวัคซีน EPI-01 ได้แก่ textarea, ปุ่มอัปโหลดไฟล์, `epiImport`, แผงจับคู่รหัสกลุ่มอายุ และแถบสถานะ coverage ของไฟล์ที่นำเข้า ทุกรายงานรับข้อมูลจาก snapshot เท่านั้น
 
+### 2.3 เฟส 2: ประชากรทะเบียนราษฎร์บนหน้าแรก
+
+spec issue [#172](https://github.com/9GotStory/pa-dashboard/issues/172) (6 พ.ย. 2569) · ticket F23–F29 ใน FEATURES ส่วนเฟส 2 · เหตุผลใน ADR-0011
+
+หน้าแรกแสดงประชากรทะเบียนราษฎร์ ณ 31 ธ.ค. ของปีล่าสุดที่อัปโหลด เป็นนิยามเดียวของประชากรทั้งหน้า และเป็นแหล่งข้อมูลเดียวที่ไม่ใช่ HDC
+
+- **ข้อมูลเข้า:** ผู้ดูแลดาวน์โหลดไฟล์รายปีสองไฟล์จาก stat.bora คือ `stat_t{yy}.txt` (ประชากรและบ้านรายตำบล) และ `{yy}12cc{จังหวัด}.txt` (ไฟล์อายุ: จำนวนรายปีอายุแยกเพศรายตำบล) แล้วอัปโหลดในส่วนใหม่ของหน้า `/sync` (§12.1) เบราว์เซอร์ตรวจไฟล์ก่อนส่ง GAS ตรวจซ้ำแล้วเก็บแถวของอำเภอตามรูปแบบไฟล์ต้นทางในสองชีตใหม่ของ PA-Data (SCHEMA §2.6–2.7, §3.8, §11) แล้วสั่ง rebuild ครั้งเดียว
+- **snapshot:** prebuild ดึง `?action=registry_population` เป็น `population.json` (§6) หน้าแรกคำนวณตอน build
+- **หน้าแรก:** ช่องสรุป แผงพื้นที่ที่เลือก ตารางประชากรรายตำบล และพีระมิดประชากร (§9.2)
+- **รอบอัปเดต:** อัปโหลดย้อนหลัง 2564–2568 ครั้งเดียว แล้วปีละครั้งหลังกรมการปกครองประกาศ (ราวปลาย มี.ค.) ช่วง ม.ค.–มี.ค. หน้าเว็บจึงยังแสดงยอดของปีก่อน
+- **งานถัดไปของเฟส 2 (ไม่อยู่ในส่วนนี้):** รายชื่อหมู่บ้าน แนวโน้มประชากรหลายปี และความเคลื่อนไหวประชากร (FEATURES "งานที่รอเฟส 2")
+- **ไม่ทำ:** ข้อมูลรายเดือนและการดึงอัตโนมัติจาก stat.bora · ประชากรของ HDC และหน้ารายงานประชากรในคลังรายงาน (POP-01 ของ R6) · ตัวเลือกปีบนหน้าแรก (แสดงปีล่าสุดเท่านั้น) · เทียบกับอำเภออื่นหรือทั้งจังหวัด · การยืนยันตัวตนฝั่ง server (ADR-0005) และการแก้ไฟล์หรือพฤติกรรมของ PA
+
 ## 3. ภาพรวมระบบ
 
 ```
@@ -48,6 +61,7 @@ HDC Open Data (opendata.moph.go.th)
    ▼
 ตัวดึงข้อมูล: หน้า /sync (เบราว์เซอร์) · sync-moph-to-gas.js (node) · syncAllData (trigger ใน GAS)
 แค็ตตาล็อก: snippet ใน DevTools (เบราว์เซอร์) → ไฟล์ export → hdc-catalog.js (node)
+ประชากร (เฟส 2): ไฟล์รายปีจาก stat.bora → ผู้ดูแลอัปโหลดในหน้า /sync (เบราว์เซอร์)
    │  POST (Content-Type: text/plain)
    ▼
 GAS Web App (src/scripts/*.js) ──► Google Sheets "PA-Data"
@@ -55,10 +69,10 @@ GAS Web App (src/scripts/*.js) ──► Google Sheets "PA-Data"
    │ POST rebuild         │ GET ?sheet=BATCH_ALL ฯลฯ (PA เรียกสดเหมือนเดิม)
    ▼                      │
 Cloudflare Deploy Hook ──► Cloudflare Pages build
-                             prebuild: build-snapshot.mjs → GET ?action=catalog / ?action=report → public/data/*.json
+                             prebuild: build-snapshot.mjs → GET ?action=catalog / ?action=report / ?action=registry_population → public/data/*.json
                              next build (static export) → CDN
    https://<project>.pages.dev
-   /                     Data Center หน้าแรก       ← public/data/catalog.json
+   /                     Data Center หน้าแรก       ← public/data/catalog.json, population.json
    /reports              คลังรายงาน              ← public/data/catalog.json
    /reports/{id}         หน้ารายงาน              ← public/data/reports/{id}.json
    /pa                   PA Dashboard (ย้ายมา)    ← GAS สด (เดิม)
@@ -69,7 +83,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 หลักการ:
 
-- **เว็บสาธารณะไม่เรียก GAS** หน้า Data Center อ่านไฟล์ใน `public/data/` ที่สร้างตอน build ทำให้เปิดได้ทันที ไม่ล้มตาม GAS และ GAS รับโหลดเฉพาะตอน build (ราว 1 + จำนวนรายงาน คำขอต่อ build) PA และ `/sync` ยังเรียก GAS สดเหมือนเดิม
+- **เว็บสาธารณะไม่เรียก GAS** หน้า Data Center อ่านไฟล์ใน `public/data/` ที่สร้างตอน build ทำให้เปิดได้ทันที ไม่ล้มตาม GAS และ GAS รับโหลดเฉพาะตอน build (ราว 2 + จำนวนรายงาน คำขอต่อ build) PA และ `/sync` ยังเรียก GAS สดเหมือนเดิม
 - ข้อมูลบนเว็บสดเท่ากับ build ล่าสุด GAS สั่ง rebuild เองหลัง sync เสร็จ (ผ่าน Deploy Hook) จึงตามรอบ sync รายวัน
 - ช่องทางหลักของการดึงข้อมูลยังเป็นฝั่ง client แล้วส่งเข้า GAS เหมือนเดิม เพราะ daily trigger ของ GAS ดึงจาก MOPH ได้ไม่เสถียร
 - GAS เป็นจุดเดียวที่ whitelist ตาราง กรองพื้นที่ จัดการชีตหลายปี และสั่ง rebuild
@@ -80,11 +94,11 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 | Path | หน้า | ไฟล์ | ข้อมูล |
 |---|---|---|---|
-| `/` | Data Center หน้าแรก | `src/app/(dc)/page.tsx` | catalog.json ตอน build + GeoJSON |
+| `/` | Data Center หน้าแรก | `src/app/(dc)/page.tsx` | catalog.json และ population.json (เฟส 2) ตอน build + GeoJSON |
 | `/reports` | คลังรายงาน | `src/app/(dc)/reports/page.tsx` | catalog.json ตอน build · query: `main`, `cat`, `q`, `page`, `size` กรองฝั่ง client |
 | `/reports/[id]` | หน้ารายงาน | `src/app/(dc)/reports/[id]/page.tsx` | `generateStaticParams` จาก catalog.json · เบราว์เซอร์โหลด `/data/reports/{id}.json` · query ตัวกรองใน §9.4 (ค่าที่ยอมรับ: SCHEMA §9 `ReportQuery`) |
 | `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` |
-| `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและสั่ง rebuild (§12.1) |
+| `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและสั่ง rebuild · เฟส 2 เพิ่มส่วนอัปโหลดประชากร (§12.1) |
 
 - `/reports/[id]` เป็น route จริงได้ เพราะรายการรายงานรู้ตอน build (catalog.json) ตั้ง `dynamicParams = false` ให้ id ที่ไม่มีเป็น 404 รายงานที่เปิดใหม่ในชีตจะปรากฏหลัง rebuild
 - หน้าที่อ่าน query ด้วย `useSearchParams` ต้องห่อด้วย `<Suspense>` ตามข้อกำหนดของ static export
@@ -149,6 +163,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `public/data/meta.json` | เวลาที่ build, window ปี, จำนวนรายงาน, วันที่ข้อมูลล่าสุดรวม | < 1 KB |
 | `public/data/catalog.json` | หมวด/หัวข้อ/กลุ่ม/รายงาน เรียงแล้ว + `areas` + `hospitals` + ปีที่มีข้อมูลของแต่ละรายงาน | < 100 KB |
 | `public/data/reports/{opendata_id}.json` | แถวดิบของอำเภอ แยกเป็น block ต่อปี (SCHEMA §7) | < 500 KB ต่อไฟล์ (ก่อน gzip) |
+| `public/data/population.json` (เฟส 2) | แถวประชากร (`registry_population`) ของทุกปี และแถวอายุ (`registry_population_age`) เฉพาะปีล่าสุดที่มีแถวประชากร (SCHEMA §7) ไฟล์จึงโตปีละราว 3 KB ไม่โตตามแถวอายุ: ปี 2564–2568 ราว 36 KB | < 100 KB |
 
 - โฟลเดอร์ `public/data/` อยู่ใน `.gitignore` ไม่ commit ข้อมูลลง git
 - โครงสร้างเต็ม: SCHEMA §7
@@ -156,10 +171,10 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 ### 6.2 prebuild script (`src/scripts/build-snapshot.mjs`)
 
 - รันอัตโนมัติผ่าน npm lifecycle `prebuild` ก่อน `next build` และสั่งเองได้ด้วย `npm run snapshot` (สำหรับ dev)
-- ขั้นตอน: GET `?action=catalog` → สำหรับรายงานที่ใช้งานทุกตัว GET `?action=report&id=` → เขียนไฟล์ → พิมพ์สรุป (จำนวนรายงาน, ขนาดไฟล์ใหญ่สุด, เวลา)
+- ขั้นตอน: GET `?action=catalog` → สำหรับรายงานที่ใช้งานทุกตัว GET `?action=report&id=` → GET `?action=registry_population` (เฟส 2) → เขียนไฟล์ → พิมพ์สรุป (จำนวนรายงาน, ขนาดไฟล์ใหญ่สุด, เวลา)
 - เรียก GAS ทีละคำขอ ไม่มี concurrency เพราะ GAS ถือ script lock ตอนอ่านอยู่แล้ว คำขอที่ยิงพร้อมกันแค่ต่อคิวรอ · retry สองแบบ: ได้ error `Busy` (lock ถูกถือ เช่น `syncAllData` กำลังรันซึ่งกินเวลา 1–3 นาที) ลองใหม่ทุก 20 วินาทีได้นานสุด 5 นาที · error อื่น (เครือข่าย, HTTP ไม่ใช่ 200, JSON ผิด หรือ GAS ตอบ error อื่นที่ไม่ใช่ `Busy` เพราะ `doGet` ส่ง exception ชั่วคราวกลับมาเป็น JSON ที่ HTTP 200) retry 3 ครั้ง รอ 2, 4, 8 วินาที
 - GAS ถือ script lock ระหว่างอ่านทั้ง `catalog` และ `report` (SCHEMA §3.1–3.2) จึงไม่อ่านชีตที่กำลังถูกเขียนครึ่ง ๆ กลาง ๆ และทุก block ปีมี `sheet_rows` (จำนวนแถวที่อ่านได้จากชีตก่อนกรอง `id`) กับ `expected_rows` (จาก `sync_status`) ให้ script เทียบ
-- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, ปีใดใน `report.years` ไม่มี block ใน `years` (ชีตหาย SCHEMA §3.2), รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, ไม่มีรายงานที่ใช้งานตัวใดมีแถวในปีปัจจุบันเลย (ยังไม่ได้ sync ปีปัจจุบัน หรือ `current_year` ผิด), หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย)
+- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, ปีใดใน `report.years` ไม่มี block ใน `years` (ชีตหาย SCHEMA §3.2), รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, ไม่มีรายงานที่ใช้งานตัวใดมีแถวในปีปัจจุบันเลย (ยังไม่ได้ sync ปีปัจจุบัน หรือ `current_year` ผิด), `?action=registry_population` ดึงไม่ได้หลัง retry หรือตอบผิดรูป (SCHEMA §7), หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย) · ยังไม่มีข้อมูลประชากรไม่ล้ม: เขียน `population.json` ที่ไม่มีปี แล้วหน้าแรกแสดงแบบเฟส 1
 - ไม่ใช้ข้อมูลเก่าหรือข้อมูลบางส่วนแทนที่ของจริงเด็ดขาด
 - อ่าน URL ของ GAS จาก env `NEXT_PUBLIC_GAS_SCRIPT_URL` เท่านั้น ถ้าไม่ตั้ง → exit 1 (ไม่มี URL สำรองในโค้ด เพื่อให้ build ที่ลืมตั้ง env ล้มชัด ๆ ไม่ใช่ไปดึงจาก deployment ผิดตัว)
 
@@ -167,7 +182,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 - Cloudflare Pages → Deploy Hook หนึ่งตัว URL เก็บในชีต `settings` คอลัมน์ `deploy_hook_url` (ว่าง = ปิดการ rebuild อัตโนมัติ)
 - GAS มี POST `rebuild` (SCHEMA §3.7): เรียก hook แล้วตอบผล จำกัด **5 ครั้งต่อวัน** นับใน `PropertiesService` ต่อวัน เกินแล้วตอบ error โดยไม่เรียก hook เพราะไม่มีการยืนยันตัวตน (D5) การจำกัดนี้กันไม่ให้ใครยิงจนโควตา build ของ Cloudflare (500 ครั้ง/เดือน) หมด ผลร้ายสุดคือ deploy ไม่ได้ชั่วคราว ไม่ใช่ข้อมูลเสีย
-- ใครเรียก `rebuild`: `syncAllData` ตอนจบถ้ามีตารางใดบันทึกสำเร็จ · `sync-moph-to-gas.js` ตอนจบ · หน้า `/sync` ตอนจบ · ผู้ดูแลเรียกเองหลังแก้ `hdc_reports` (เมนู "Rebuild Website" ในสเปรดชีต)
+- ใครเรียก `rebuild`: `syncAllData` ตอนจบถ้ามีตารางใดบันทึกสำเร็จ · `sync-moph-to-gas.js` ตอนจบ · หน้า `/sync` ตอนจบ · ส่วนอัปโหลดประชากรในหน้า `/sync` ตอนจบถ้ามีไฟล์ใดบันทึกสำเร็จ (เฟส 2) · ผู้ดูแลเรียกเองหลังแก้ `hdc_reports` (เมนู "Rebuild Website" ในสเปรดชีต)
 - push โค้ดไป `main` ก็ build ตามปกติของ Cloudflare (นับโควตาเดียวกัน)
 
 ## 7. ข้อมูลย้อนหลัง 5 ปี
@@ -208,15 +223,17 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 |---|---|---|---|
 | GET | `?action=catalog` | prebuild script, `hdc-catalog.js` | ใหม่ |
 | GET | `?action=report&id={opendata_id}` | prebuild script | ใหม่ |
+| GET | `?action=registry_population` | prebuild script, ส่วนอัปโหลดประชากรในหน้า `/sync` | ใหม่ (เฟส 2) |
 | GET | `?sheet=BATCH_ALL` | PA, `/sync`, node | แก้เล็กน้อย: เพิ่ม `meta.years` และรายการ DC ใน `meta.kpi_config` การคำนวณไม่แก้ |
 | GET | `?sheet=hospitals` ฯลฯ | PA | เดิม |
 | GET | `?action=diag&pin=…` | ผู้ดูแล | เพิ่ม `setup=datacenter` และ `setup=dc_seed` |
 | POST | `save_kpi_data` | `/sync`, node, `syncAllData` | แก้: รับ `year`, `total`, `force` และบันทึกลงชีตตามปี |
 | POST | `save_catalog` | `hdc-catalog.js` | ใหม่ |
 | POST | `rebuild` | `/sync`, node, `syncAllData`, ผู้ดูแล | ใหม่ |
+| POST | `save_registry_population` | ส่วนอัปโหลดประชากรในหน้า `/sync` | ใหม่ (เฟส 2) |
 
 - ไม่มีการยืนยันตัวตนฝั่ง server เหมือนเดิม (D5, §14)
-- เว็บสาธารณะไม่เรียก endpoint ใดเลย `catalog`/`report` จึงไม่ต้องแคช · ยกเว้นรายชื่อ DC units (ชื่อตารางจาก `hdc_reports`) ซึ่ง `getSyncUnits` ต้องใช้ทุกครั้งที่ PA เรียก `BATCH_ALL` ให้แคช 60 วินาทีแบบเดียวกับ `kpi_master` (SCHEMA §3.5) ไม่อย่างนั้น PA จะช้าลงเพราะอ่านชีตเพิ่ม 2 ชีตทุกครั้ง
+- เว็บสาธารณะไม่เรียก endpoint ใดเลย `catalog`/`report`/`registry_population` จึงไม่ต้องแคช · ยกเว้นรายชื่อ DC units (ชื่อตารางจาก `hdc_reports`) ซึ่ง `getSyncUnits` ต้องใช้ทุกครั้งที่ PA เรียก `BATCH_ALL` ให้แคช 60 วินาทีแบบเดียวกับ `kpi_master` (SCHEMA §3.5) ไม่อย่างนั้น PA จะช้าลงเพราะอ่านชีตเพิ่ม 2 ชีตทุกครั้ง
 
 ## 9. หน้าจอ
 
@@ -226,22 +243,30 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - Footer: แหล่งข้อมูล (HDC Open Data, ขอบเขต GIS), เวลาที่ build (`meta.json`) และวันที่ข้อมูลล่าสุด
 - สี: นำ token ชุดสุดท้ายของ R6 คือบล็อก "HOME R3" กรมท่า/teal (`--green #155b86`, เมนู `#143653` ฯลฯ) ซึ่งทับชุดแรก (`--green #17695f`) จึงเป็นสีที่ R6 แสดงจริง มาเป็น theme ของ Data Center ใน `globals.css` ชื่อ `--color-dc-*` (ตัดสิน 4 พ.ย. 2569)
 - ฟอนต์ใช้ Prompt/Sarabun ที่มีอยู่ (ชุดของ Data Center ที่ไม่ preload §4): หัวเรื่อง `font-prompt` ข้อความ `font-dc` (Sarabun) ซึ่ง layout ของ `(dc)` ตั้งไว้แล้ว ไม่ใช้ `font-sans` เพราะได้ฟอนต์ของเครื่อง (§11)
-- ไม่มีคำว่า "ข้อมูลจำลอง" หรือ "ข้อมูลตัวอย่าง" อีก เพราะทุกตัวเลขมาจาก HDC
+- ไม่มีคำว่า "ข้อมูลจำลอง" หรือ "ข้อมูลตัวอย่าง" อีก เพราะทุกตัวเลขมาจากแหล่งทางการ: รายงานมาจาก HDC และประชากรบนหน้าแรก (เฟส 2) มาจากกรมการปกครองผ่าน stat.bora (ADR-0011)
 - รูปแบบการเข้าถึงตาม R6: จัดการ focus, ตารางเลื่อนแนวนอน, รายการแบบมือถือ
 - กราฟวาดด้วย SVG แบบ R6 ไม่เพิ่มไลบรารีกราฟ
 - root layout ตั้ง `<html lang="th">` (เดิม `en`) ตั้งแต่ F13 เพราะทุกหน้าเป็นภาษาไทย
 
 ### 9.2 หน้าแรก `/`
 
-| ส่วนใน R6 | เฟส 1 |
+| ส่วนใน R6 | ที่แสดง |
 |---|---|
-| หัวเรื่อง "ข้อมูลพื้นฐานอำเภอสอง" + ป้ายสถานะ | ป้ายแสดงวันที่ข้อมูลล่าสุด (จาก `meta.json`) แทน "ข้อมูลประชากรจำลอง" |
-| สรุปประชากร 4 ช่อง | แสดงเฉพาะช่อง "เขตการปกครอง 8 ตำบล" ช่องประชากรรอเฟส 2 |
-| แผนที่และเลือกตำบล | Leaflet + OpenStreetMap tiles + GeoJSON ไฟล์คงที่ (SCHEMA §8, D4) รายชื่อตำบลจาก `catalog.json.areas` |
-| แผงข้อมูลพื้นที่ที่เลือก | ชื่อตำบลและรายชื่อหน่วยบริการในตำบล (จาก `catalog.json.hospitals`) ช่องประชากรรอเฟส 2 |
-| ตารางประชากรรายตำบล | ซ่อนไว้จนถึงเฟส 2 |
+| หัวเรื่อง "ข้อมูลพื้นฐานอำเภอสอง" + ป้ายสถานะ | ป้ายแสดงวันที่ข้อมูลล่าสุด (จาก `meta.json`) แทน "ข้อมูลประชากรจำลอง" เฟส 2 คงป้ายนี้ไว้ |
+| สรุปประชากร 4 ช่อง | เฟส 1 แสดงเฉพาะช่อง "เขตการปกครอง 8 ตำบล" · เฟส 2 แสดงครบ 4 ช่องตาม R6: ประชากรทั้งหมด ชาย หญิง ของทั้งอำเภอ และเขตการปกครอง พร้อมป้าย "ทะเบียนราษฎร์ ณ 31 ธ.ค. {ปี} · กรมการปกครอง" |
+| แผนที่และเลือกตำบล | Leaflet + OpenStreetMap tiles + GeoJSON ไฟล์คงที่ (SCHEMA §8, D4) รายชื่อตำบลจาก `catalog.json.areas` · เฟส 2: แผนที่ ปุ่มตำบล ปุ่ม "ดูข้อมูล" ของตาราง และพีระมิดใช้พื้นที่ที่เลือกร่วมกัน |
+| แผงข้อมูลพื้นที่ที่เลือก | ชื่อตำบลและรายชื่อหน่วยบริการในตำบล (จาก `catalog.json.hospitals`) · เฟส 2 เพิ่มแถว ประชากรทั้งหมด, ชาย / หญิง และจำนวนบ้าน ทั้งตอนดูภาพรวมอำเภอและตอนเลือกตำบล |
+| ตารางประชากรรายตำบล | เฟส 2: คอลัมน์ ลำดับ ตำบล ชาย หญิง รวม บ้าน และปุ่ม "ดูข้อมูล" ที่เลือกตำบลนั้น มีแถวรวมทั้งอำเภอ และ `<caption>` · จอกว้างเป็นตาราง มือถือเป็นรายการแบบกดขยายตาม R6 · ยอดรายตำบลรวมทุกสำนักทะเบียนแล้ว บ้านหนุนและบ้านกลางจึงรวมส่วนที่อยู่ในเขตเทศบาลตำบลสอง (SCHEMA §11.3) · ป้ายของตารางเหมือนช่องสรุป · ตารางและแผงใช้คำว่า "บ้าน" ตามกรมการปกครอง แทนคำที่ R6 ใช้ (GLOSSARY, ADR-0011) |
+| พีระมิดประชากร (R6 วางไว้ในรายงาน POP-01) | เฟส 2 วางบนหน้าแรกใต้ตารางรายตำบล เป็นของพื้นที่ที่เลือก (ไม่เลือก = ทั้งอำเภอ): 17 ช่วงอายุ 0–4 … 75–79 และ 80+ ตาม R6 ชายซ้าย หญิงขวา · หัวพีระมิดบอกพื้นที่ ปี และจำนวนกับร้อยละของคนอายุ 60 ปีขึ้นไป (ทศนิยม 1 ตำแหน่ง ตาม SCHEMA §11.3) · ใต้พีระมิดบอกจำนวนประชากรที่ไม่แยกอายุของพื้นที่นั้นแยกตามประเภท ไม่แสดงประเภทที่เป็น 0 · วาดด้วย SVG ไม่เพิ่มไลบรารี (§9.1) มี `role="img"` และ `aria-label` ที่บอกพื้นที่ ปี และสาระสำคัญ |
 | เข้าสู่หมวดรายงาน | การ์ดละหนึ่งหัวข้อที่มีรายงานที่ใช้งาน แสดงชื่อหมวด ชื่อหัวข้อ และจำนวนรายงาน ลิงก์ไป `/reports?cat={cat_id}` |
-| ที่มาของข้อมูล | HDC Open Data, แหล่ง GIS และเวลาที่ build |
+| ที่มาของข้อมูล | HDC Open Data, แหล่ง GIS และเวลาที่ build · เฟส 2 เพิ่มประชากร: กรมการปกครอง พร้อมลิงก์ stat.bora |
+
+**ส่วนประชากร (เฟส 2, ADR-0011):**
+
+- ทุกส่วนเป็นยอดของปีเดียวกัน คือปีล่าสุดใน `population.json` (SCHEMA §11.3) ตัวเลขบนหน้าจึงไม่ขัดกันเอง ปีนี้เป็นปีปฏิทิน ไม่ใช่ปีงบประมาณของรายงาน HDC
+- server component อ่าน `population.json` ตอน build แล้วส่งให้ client เฉพาะค่าที่คำนวณแล้ว (`HomePopulation`, SCHEMA §9) ไม่ส่งแถวดิบ
+- ไม่มีข้อมูลประชากร (`years` ว่าง) → หน้าแรกเหมือนเฟส 1: ไม่มีช่องประชากร แถวประชากรในแผง ตาราง และพีระมิด ไม่แสดงเป็นช่องว่างหรือศูนย์ · ปีล่าสุดไม่มีแถวอายุ → ซ่อนเฉพาะพีระมิด
+- JavaScript ของหน้าแรกต้องอยู่ในงบเดิม (§9.6)
 
 ### 9.3 คลังรายงาน `/reports`
 
@@ -297,8 +322,10 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `src/lib/dc/values.ts` | ฟังก์ชันคำนวณล้วนตาม SCHEMA §4 (ไม่ import React, ไม่แตะ DOM) | เบราว์เซอร์ + เทสต์ |
 | `src/lib/dc/format.ts` | `formatPct` (สำเนาจาก PA) และ `formatThaiDate` (แปลง `date_com` 12–14 หลักเป็นวันที่ไทย ผลเหมือน PA) ไม่ import ไฟล์ PA | เบราว์เซอร์ + เทสต์ |
 | `src/lib/dc/fonts.ts` | Prompt/Sarabun น้ำหนักเดียวกับ `src/lib/fonts.ts` ของ PA แต่ไม่ preload (§4) | build |
-| `src/lib/dc/values.test.ts`, `format.test.ts` | เทสต์ด้วย `node:test` ผ่าน `tsx` | เทสต์ |
+| `src/lib/dc/population.ts` (เฟส 2) | ฟังก์ชันล้วนของประชากรทะเบียนราษฎร์: อ่านและตรวจไฟล์ของ stat.bora (SCHEMA §11.1–11.2) และคำนวณส่วนประชากรของหน้าแรก (SCHEMA §11.3) ไม่ import React ไม่แตะ DOM ไม่ `fetch` | เบราว์เซอร์ของ `/sync` + build + เทสต์ |
+| `src/lib/dc/values.test.ts`, `format.test.ts`, `population.test.ts` | เทสต์ด้วย `node:test` ผ่าน `tsx` | เทสต์ |
 | `src/components/dc/*` | masthead, footer, แผนที่ (dynamic import), ตัวกรอง, กราฟ SVG, ตาราง | เบราว์เซอร์ |
+| `src/components/dc/RegistryPopulationUpload.tsx` (เฟส 2) | ส่วนอัปโหลดประชากรในหน้า `/sync` (§12.1) ตัวเดียวใน `src/components/dc/` ที่เรียก GAS ได้ เพราะไม่ได้อยู่ในหน้าของ `(dc)` | เบราว์เซอร์ |
 | `src/scripts/build-snapshot.mjs` | prebuild script (§6.2) ไม่ import จาก `src/lib` เพื่อให้รันด้วย node ตรง ๆ ได้ | build |
 
 ### 9.6 งบประมาณประสิทธิภาพ (วัดตอนตรวจรับ)
@@ -345,6 +372,13 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ถ้า GAS ตอบ `Stale data` แสดงเป็น warning ไม่นับเป็นตารางที่ล้ม หน้านี้ไม่ส่ง `force` การบันทึกทับใช้ `sync-moph-to-gas.js --force` (§12.2)
 - ถ้า MOPH ตอบ 0 แถว (HDC ยังไม่มีข้อมูลของตารางนั้นในปีที่เลือก) ไม่ส่งไป GAS แสดงเป็นบรรทัด info `ไม่มีข้อมูล <ตาราง> ปี <ปี> ใน HDC` และนับเป็น `No data` ไม่นับเป็นตารางที่ล้ม แบบเดียวกับ `sync-moph-to-gas.js`
 - ตอนจบ ถ้ามีตารางใดสำเร็จ POST `rebuild` หนึ่งครั้ง และแสดงผล (สั่งแล้ว / ครบโควตาวันนี้ / ไม่ได้ตั้ง hook)
+- **ส่วนอัปโหลดประชากร (เฟส 2, ADR-0011):** หลัง login ด้วย PIN เดิม หน้านี้แสดงส่วน "ประชากรทะเบียนราษฎร์ (กรมการปกครอง)" ซึ่งเป็น component ของ Data Center `src/components/dc/RegistryPopulationUpload.tsx` · `src/app/sync/page.tsx` แก้ได้แค่ import และวาง component นี้ในส่วนที่แสดงหลัง login ไม่แก้ส่วน sync เดิม · ข้อความในส่วนนี้เป็นภาษาไทย
+  - แสดงคำแนะนำ ลิงก์ไป stat.bora พร้อมชื่อไฟล์ที่ต้องใช้ (`stat_t{yy}.txt` และ `{yy}12cc{จังหวัด}.txt`) และปีที่มีในชีตแล้ว จาก GET `?action=registry_population` (SCHEMA §3.9) ซึ่งให้ `district_code` กับ `province_code` ที่ใช้ตรวจไฟล์ด้วย
+  - ผู้ดูแลเลือกได้หลายไฟล์หลายปีพร้อมกัน เบราว์เซอร์แยกชนิดไฟล์จากชื่อและเนื้อหา แล้วอ่านและตรวจทีละไฟล์ด้วย `src/lib/dc/population.ts` ตาม SCHEMA §11.2 ไฟล์ที่ไม่ผ่านแม้ข้อเดียวถูกปฏิเสธทั้งไฟล์พร้อมเหตุผล และไม่ถูกส่ง
+  - ก่อนบันทึกแสดงตัวอย่างต่อปี: ปี จำนวนแถว และยอดรวม
+  - เมื่อยืนยัน POST `save_registry_population` (SCHEMA §3.8) ทีละคำขอ `population` ก่อน `age` ของปีเดียวกัน ถ้า `population` ของปีใดไม่สำเร็จ ไม่ส่ง `age` ของปีนั้น
+  - ตอนจบ ถ้ามีไฟล์ใดสำเร็จ POST `rebuild` หนึ่งครั้ง แล้วแสดงผลรายไฟล์ (บันทึกแล้ว หรือปฏิเสธพร้อมเหตุผล) และผลของ `rebuild` แบบเดียวกับส่วน sync
+  - ไม่มีเทสต์อัตโนมัติของ component นี้ เพราะ logic อยู่ใน `population.ts` ซึ่งมีเทสต์ (CODING_STANDARDS §5) ตรวจด้วยมือตอนตรวจรับ
 
 ### 12.2 `src/scripts/sync-moph-to-gas.js`
 
@@ -369,10 +403,10 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 
 ### 12.4 GAS
 
-- ไฟล์ใหม่ใต้ `src/scripts/`: `dc-storage.js` (`getYearWindow`, `sheetNameFor`, `getSyncUnits` ใหม่, บันทึกหลายปี, sync_status, กรองอำเภอ), `dc-catalog.js` (hdc_topics/hdc_reports, save_catalog, catalog), `dc-report.js` (report), `dc-rebuild.js` (rebuild) ฟังก์ชันทั้งหมดอยู่ใน global scope เดียวกับ `รหัส.js` ตามธรรมชาติของ Apps Script
-- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`) และ `SETTINGS_CACHE_KEY` → `settings_v3`, `CONFIG` เพิ่ม `DISTRICT = "5406"` และ `HISTORY_YEARS = 5`, `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่, เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` อ่าน `settings`/`kpi_master` ก่อนถือ lock (SCHEMA §3) เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
+- ไฟล์ใหม่ใต้ `src/scripts/`: `dc-storage.js` (`getYearWindow`, `sheetNameFor`, `getSyncUnits` ใหม่, บันทึกหลายปี, sync_status, กรองอำเภอ), `dc-catalog.js` (hdc_topics/hdc_reports, save_catalog, catalog), `dc-report.js` (report), `dc-rebuild.js` (rebuild), `dc-population.js` (เฟส 2: save_registry_population, registry_population) ฟังก์ชันทั้งหมดอยู่ใน global scope เดียวกับ `รหัส.js` ตามธรรมชาติของ Apps Script
+- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`) และ `SETTINGS_CACHE_KEY` → `settings_v3`, `CONFIG` เพิ่ม `DISTRICT = "5406"` และ `HISTORY_YEARS = 5`, `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่ (`doGet`: `catalog`, `report` และ `registry_population` ของเฟส 2 ซึ่งถือ script lock แบบเดียวกัน · `doPost`: `save_catalog`, `rebuild` และ `save_registry_population` ของเฟส 2), เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` อ่าน `settings`/`kpi_master` ก่อนถือ lock (SCHEMA §3) เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
 - `syncAllData` (trigger รายวัน): ดึง `current_year` ส่ง `limit = 5000` ทุกตาราง ปฏิเสธเมื่อได้แถวน้อยกว่า `total` คงช่วงเว้น 1.5–2.5 วินาทีของเดิม บันทึกผ่านทางเดียวกับ `save_kpi_data` (`year = current_year`, `force = true` เพราะข้อมูลจาก MOPH สดคือของจริง ADR-0005) และเรียก `requestRebuild` ตอนจบถ้ามีตารางใดสำเร็จ
-- script lock: handler เป็นผู้ถือเท่านั้น (`doPost` ครั้งเดียวก่อนแยก action, `doGet` สำหรับ `catalog`/`report`, `syncAllData`, `rebuildWebsiteMenu`) ส่วน `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `requestRebuild` ไม่เรียก `LockService` เอง (SCHEMA §3)
+- script lock: handler เป็นผู้ถือเท่านั้น (`doPost` ครั้งเดียวก่อนแยก action, `doGet` สำหรับ `catalog`/`report`/`registry_population`, `syncAllData`, `rebuildWebsiteMenu`) ส่วน `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` เอง (SCHEMA §3)
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"
 - ทดสอบ logic ของ GAS ก่อน deploy ด้วย harness ใน `src/scripts/test/` (โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` ฯลฯ) รันด้วย `npm test`
@@ -437,6 +471,9 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | แค็ตตาล็อกมีรายการซ้ำและรายการขยะ (เช่น "dasf") | ปนในคลังรายงาน | กรองซ้ำ และใช้ opt-in |
 | ช่องว่างกับเลข 0 แยกกันไม่ได้ (การบันทึกเดิมเก็บ 0 เป็นค่าว่าง) | "ไม่มีข้อมูล" กับ "ศูนย์" ในระดับแถวดูเหมือนกัน | ยอมรับในเฟส 1 การไม่มีข้อมูลตัดสินที่ระดับ (ตาราง, ปี) จาก `sync_status` |
 | จำนวนชีตเพิ่มเป็นราว 18 + 18 × 4 ชีต | สเปรดชีตใหญ่ขึ้น แต่แต่ละชีตมีแค่แถวของอำเภอ | ตั้งขนาดชีตตามจำนวนแถวจริง (ไม่ปล่อยแถวว่าง 1,000 แถว) รวม cell ที่ใช้อยู่ห่างจากเพดาน 10 ล้าน cell ของ Google Sheets มาก |
+| `save_registry_population` (เฟส 2) ไม่มีการยืนยันตัวตนฝั่ง server | ใครมี URL ของ GAS เขียนตัวเลขประชากรที่ผ่านการตรวจลงชีตได้ แล้วขึ้นเว็บใน rebuild ถัดไป | ยอมรับตาม D5 · GAS เขียนได้เฉพาะสองชีตประชากรและตรวจแถวเอง (SCHEMA §3.8) · ถ้าพบ อัปโหลดไฟล์จาก stat.bora ของปีนั้นซ้ำ ซึ่งแทนที่ทั้งปี |
+| กรมการปกครองเปลี่ยนรูปแบบไฟล์ (เฟส 2) | การตรวจตอนอัปโหลดปฏิเสธไฟล์ใหม่ | build ไม่ล้ม เว็บยังแสดงปีเดิม แก้ตัวอ่านใน `src/lib/dc/population.ts` แล้วอัปโหลดใหม่ |
+| ปีและจังหวัดของไฟล์อายุมาจากชื่อไฟล์ (เฟส 2) | ไฟล์ที่ชื่อผิดอาจถูกอ่านเป็นปีอื่น | ไฟล์อายุต้องมาคู่กับ `stat_t` ของปีเดียวกันและยอดรายตำบลต้องตรงกัน (SCHEMA §11.2) ไฟล์ผิดปีจึงถูกปฏิเสธ |
 
 ## 15. ข้อตัดสินใจ
 
@@ -453,5 +490,6 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | D7 | เว็บสาธารณะอ่านข้อมูลจากไหน | ไฟล์ JSON ที่สร้างตอน build (§6) ไม่เรียก GAS สด เพราะประสิทธิภาพ ความทนทาน และข้อจำกัดการทำงานพร้อมกันของ GAS | [0006](docs/adr/0006-build-time-snapshot.md) |
 | D8 | โครงชีตหลายปี | ชีตปีปัจจุบันชื่อเดิม + ชีต `_y{YYYY}` ต่อปี (§7) เพื่อไม่แตะ PA/`BATCH_ALL` และให้ย้ายปีอัตโนมัติ | [0007](docs/adr/0007-per-year-sheets.md) |
 | D9 | การดึงแค็ตตาล็อก HDC | ผู้ดูแลรัน snippet ในเบราว์เซอร์ export เป็นไฟล์ แล้ว `hdc-catalog.js` อ่านไฟล์ (§12.3) ไม่ให้สคริปต์ปลอม header และไม่ใช้ GAS ดึง | [0010](docs/adr/0010-catalog-export-from-browser.md) |
+| D10 | ประชากรบนหน้าแรก (เฟส 2) | ประชากรทะเบียนราษฎร์ ณ 31 ธ.ค. จากไฟล์ของ stat.bora ที่ผู้ดูแลอัปโหลดปีละครั้งในหน้า `/sync` ไม่ใช่ประชากรของ HDC (§2.3, ตัดสิน 6 พ.ย. 2569) | [0011](docs/adr/0011-registry-population-from-dopa-upload.md) |
 
 ข้อตัดสินใจที่ตกลงกันตั้งแต่ต้นและไม่มีเลข D: คง stack เดิม ไม่ใช้ branch `develop` ([0001](docs/adr/0001-keep-gas-sheets-static-stack.md)), แค็ตตาล็อกตาม HDC แบบ opt-in + กลุ่มกำหนดเอง ([0008](docs/adr/0008-hdc-catalog-opt-in.md)), คำนวณรายงานในเบราว์เซอร์จากข้อมูลดิบ ([0009](docs/adr/0009-client-side-coverage-calculation.md))

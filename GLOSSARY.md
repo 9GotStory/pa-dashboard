@@ -60,7 +60,7 @@
 | **rebuild** | การสั่ง Cloudflare build ใหม่ผ่าน Deploy Hook ด้วย POST `rebuild` ของ GAS (5 ครั้ง/วัน) | "redeploy", "trigger build" |
 | **Deploy Hook** | URL ของ Cloudflare Pages ที่เก็บใน `settings.deploy_hook_url` | |
 | **ล้มดัง ๆ** (fail loudly) | prebuild exit 1 เมื่อข้อมูลไม่ครบ ไม่ publish ข้อมูลบางส่วน | |
-| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
+| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`/`registry_population`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
 
 ## ขั้นตอนทำงาน
 
