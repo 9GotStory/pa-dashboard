@@ -55,7 +55,7 @@
 
 | คำ | ความหมาย | เลี่ยง |
 |---|---|---|
-| **snapshot** | ไฟล์ใน `public/data/` (`meta.json`, `catalog.json`, `reports/{id}.json`) ที่สร้างตอน build | "cache" |
+| **snapshot** | ไฟล์ใน `public/data/` (`meta.json`, `catalog.json`, `reports/{id}.json`, `population.json`) ที่สร้างตอน build | "cache" |
 | **prebuild** | `src/scripts/build-snapshot.mjs` ที่ npm รันก่อน `next build` | "fetch script" |
 | **rebuild** | การสั่ง Cloudflare build ใหม่ผ่าน Deploy Hook ด้วย POST `rebuild` ของ GAS (5 ครั้ง/วัน) | "redeploy", "trigger build" |
 | **Deploy Hook** | URL ของ Cloudflare Pages ที่เก็บใน `settings.deploy_hook_url` | |
