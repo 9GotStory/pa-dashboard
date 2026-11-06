@@ -140,3 +140,61 @@ export interface TrendPoint {
   b_year: string;
   totals: Totals | null; // null = no usable columns that year, shown as "—"
 }
+
+/* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.7, §3.8–3.9, §11) ---------- */
+
+/** A registry_population row without uploaded_at: the rows of the POST, the GET and population.json */
+export interface RegistryPopulationRow {
+  yymm: string; // `^\d{2}12$`
+  cc: string;
+  cc_name: string;
+  rcode: string; // 4-digit สำนักทะเบียน
+  rcode_name: string;
+  tt: string; // 8 digits · the first 6 = areas[].id
+  tt_name: string;
+  mm: string; // "0"
+  mm_name: string; // ""
+  male: number;
+  female: number;
+  total: number;
+  house: number;
+}
+
+/** The kinds of ประชากรที่ไม่แยกอายุ, by the age file's last columns (SCHEMA §2.7) */
+export type UnsplitGroup = "lunar" | "central" | "nonthai" | "moving";
+
+/** A registry_population_age row without uploaded_at · m0 … m101 and f0 … f101 = men and women by year of age (101 = over 100) */
+export type RegistryPopulationAgeRow = {
+  yymm: string;
+  rcode: string;
+  tt: string;
+  tt_name: string;
+} & { [age: `m${number}` | `f${number}`]: number }
+  & { [column in `${UnsplitGroup | "total"}_${"m" | "f" | "t"}`]: number };
+
+export interface RegistryPopulationYear {
+  yymm: string;
+  population: RegistryPopulationRow[];
+  age: RegistryPopulationAgeRow[];
+}
+
+/** population.json (SCHEMA §7) */
+export interface PopulationSnapshot {
+  years: RegistryPopulationYear[]; // years with population rows, oldest first · [] = no data yet · age only in the last year, [] in the others
+}
+/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of both sheets and the age rows of every year */
+export type GasRegistryPopulation = PopulationSnapshot;
+
+/** A file the admin picked in the /sync upload, read and checked (SCHEMA §11.2): the district's rows, or why it is refused */
+export type RegistryFileRead = { name: string } & (
+  | { ok: true; yymm: string; rows: RegistryPopulationRow[] }
+  | { ok: false; reason: string }
+);
+
+/** ชาย หญิง รวม and บ้าน of one area (SCHEMA §11.3) */
+export interface PopulationTotals {
+  male: number;
+  female: number;
+  total: number;
+  house: number;
+}

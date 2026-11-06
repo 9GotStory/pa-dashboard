@@ -313,7 +313,7 @@ Response: `{ status: "success"; added: number; updated: number; removed: number;
 | 3 | `rows` เป็น array ที่มีอย่างน้อย 1 แถว | `Empty rows` |
 | 4 | ทุกแถวเป็น object ที่มี key ครบตามคอลัมน์ของชีตตาม `kind` ยกเว้น `uploaded_at` ไม่ขาดและไม่เกิน | `Row keys do not match the header` |
 | 5 | `yymm` ของทุกแถวเท่ากับ `yymm` ของ body | `Row of another yymm` |
-| 6 | ทุกค่าตรงกับคอลัมน์ "ชนิด" ของ §2.6/§2.7: คอลัมน์ string เป็น string ตามรูปแบบที่ระบุ (`cc` ตัวเลข 2 หลัก, `rcode` ตัวเลข 4 หลัก) และคอลัมน์จำนวนเป็นจำนวนเต็ม ≥ 0 | `Invalid value` |
+| 6 | ทุกค่าตรงกับคอลัมน์ "ชนิด" ของ §2.6/§2.7: คอลัมน์ string เป็น string ตามรูปแบบที่ระบุ (`cc` ตัวเลข 2 หลัก, `rcode` ตัวเลข 4 หลัก) ที่ไม่ขึ้นต้นด้วย `=` (`setValues` เขียนค่าแบบนั้นเป็นสูตร) และคอลัมน์จำนวนเป็นจำนวนเต็ม ≥ 0 | `Invalid value` |
 | 7 | `tt` เป็นตัวเลข 8 หลักที่ขึ้นต้นด้วย `district_code` | `Row outside district` |
 | 8 | (`population`) `mm` เป็น `"0"` | `Not a tambon row` |
 | 9 | (`rcode`, `tt`) ไม่ซ้ำกันในคำขอ | `Duplicate tambon row` |
@@ -333,7 +333,7 @@ Response: `{ status: "success"; kind: "population" | "age"; yymm: string; count:
 ### 3.9 `GET ?action=registry_population` (ใหม่ เฟส 2)
 
 1. ถือ script lock แบบ `catalog`/`report` (§3) ถ้าไม่ได้ตอบ error `Busy` (prebuild script จะ retry เอง ส่วนอัปโหลดในหน้า `/sync` แสดงให้ผู้ดูแลลองใหม่)
-2. อ่านสองชีตตามชื่อ header (§1) ชีตที่ยังไม่มีถือว่าไม่มีแถว · ทุกแถวคืนเป็น object ตามคอลัมน์ของ §2.6/§2.7 ยกเว้น `uploaded_at` (รูปเดียวกับ `rows` ของ §3.8) คอลัมน์ที่ชนิดเป็น string คืนเป็น string แม้คนแก้ชีตจนกลายเป็นตัวเลข คอลัมน์จำนวนคืนเป็น number
+2. อ่านสองชีตตามชื่อ header (§1) ชีตที่ยังไม่มีถือว่าไม่มีแถว · ทุกแถวคืนเป็น object ตามคอลัมน์ของ §2.6/§2.7 ยกเว้น `uploaded_at` (รูปเดียวกับ `rows` ของ §3.8) คอลัมน์ที่ชนิดเป็น string คืนเป็น string แม้คนแก้ชีตจนกลายเป็นตัวเลข คอลัมน์จำนวนคืนเป็น number · คอลัมน์ที่ชีตไม่มี (คนเปลี่ยนชื่อหรือลบ) และช่องจำนวนที่ว่างหรือไม่ใช่ตัวเลข ไม่อยู่ในแถวนั้น prebuild จึงล้มดัง ๆ ตาม §7 ไม่ใช่แสดง 0 บนเว็บ
 3. ตอบ `GasRegistryPopulation` (§9): `{ years }` คือทุก `yymm` ที่มีแถวในชีตใดชีตหนึ่ง เรียงน้อยไปมาก แต่ละปีเป็น `{ yymm, population, age }` คือแถวของปีนั้นจากแต่ละชีตตามลำดับในชีต (`[]` ถ้าชีตนั้นไม่มีแถวของปีนั้น)
 4. ยังไม่มีทั้งสองชีต → `years: []` ไม่ใช่ error
 5. ไม่แคช
@@ -802,6 +802,12 @@ export interface PopulationSnapshot {
 /** response ของ GAS ?action=registry_population (§3.9): รูปเดียวกัน แต่มีทุก yymm ของสองชีตและแถวอายุของทุกปี */
 export type GasRegistryPopulation = PopulationSnapshot;
 
+/** ไฟล์หนึ่งที่ผู้ดูแลเลือกในส่วนอัปโหลดของหน้า /sync หลังอ่านและตรวจ (§11.2): แถวของอำเภอ หรือเหตุที่ปฏิเสธ */
+export type RegistryFileRead = { name: string } & (
+  | { ok: true; yymm: string; rows: RegistryPopulationRow[] }
+  | { ok: false; reason: string }
+);
+
 /** ชาย หญิง รวม และบ้านของพื้นที่หนึ่ง (§11.3) */
 export interface PopulationTotals {
   male: number;
@@ -884,7 +890,7 @@ export interface HomePopulation {
 
 ### 11.2 การตรวจในเบราว์เซอร์ (ส่วนอัปโหลดในหน้า `/sync`)
 
-ฟังก์ชันล้วนใน `src/lib/dc/population.ts` (SPEC §9.5, §12.1) · ไฟล์ที่ไม่ผ่านแม้ข้อเดียวถูกปฏิเสธทั้งไฟล์พร้อมเหตุผลภาษาไทยและไม่ถูกส่ง · `district_code` อ่านจาก `meta.district_code` ของ `/data/catalog.json` (`DcCatalog` §9) ซึ่งหน้า `/sync` โหลดจากเว็บเดียวกัน การตรวจจึงไม่ต้องเรียก GAS · จังหวัดคือ 2 หลักแรกของ `district_code` (= `province_code` เพราะรหัสอำเภอขึ้นต้นด้วยรหัสจังหวัด) · ชนิดไฟล์แยกจากชื่อไฟล์ (`stat_t{yy}` หรือ `{yymm}cc{จังหวัด}`) และจำนวนค่าต่อบรรทัด
+ฟังก์ชันล้วนใน `src/lib/dc/population.ts` (SPEC §9.5, §12.1) · ไฟล์ที่ไม่ผ่านแม้ข้อเดียวถูกปฏิเสธทั้งไฟล์พร้อมเหตุผลภาษาไทยและไม่ถูกส่ง · `district_code` อ่านจาก `meta.district_code` ของ `/data/catalog.json` (`DcCatalog` §9) ซึ่งหน้า `/sync` โหลดจากเว็บเดียวกัน การตรวจจึงไม่ต้องเรียก GAS · จังหวัดคือ 2 หลักแรกของ `district_code` (= `province_code` เพราะรหัสอำเภอขึ้นต้นด้วยรหัสจังหวัด) · ชนิดไฟล์แยกจากชื่อไฟล์ (`stat_t{yy}` หรือ `{yymm}cc{จังหวัด}`) และจำนวนค่าต่อบรรทัด · ในชุดที่เลือก ไฟล์ที่ได้ `yymm` ซ้ำกับไฟล์ชนิดเดียวกันที่ผ่านการตรวจก่อนหน้าถูกปฏิเสธ แต่ละปีจึงถูกบันทึกครั้งเดียวต่อการอัปโหลด
 
 `stat_t`:
 

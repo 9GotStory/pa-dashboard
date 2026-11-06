@@ -15,6 +15,7 @@ import {
   CalendarClock,
   TriangleAlert,
 } from "lucide-react";
+import RegistryPopulationUpload from "@/components/dc/RegistryPopulationUpload";
 
 // --- CONFIGURATION ---
 // Only static, non-configurable values live here. Year, province, and the
@@ -868,6 +869,8 @@ export default function SyncPage() {
             <div ref={logsEndRef} />
           </div>
         </div>
+
+        <RegistryPopulationUpload />
 
         <div className="mt-8 text-center text-xs text-gray-400">
           Secure Sync Manager • Protected Node • PA Dashboard
