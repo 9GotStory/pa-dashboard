@@ -29,21 +29,23 @@ export const ROWS_6812 = [
   { yymm: "6812", cc: "54", cc_name: "จังหวัดแพร่", rcode: "5489", rcode_name: "ท้องถิ่นเทศบาลตำบลสอง", tt: "54060200", tt_name: "ตำบลบ้านกลาง", mm: "0", mm_name: "", male: 1477, female: 1798, total: 3275, house: 1861 },
 ];
 
+// registry_population_age's columns (SCHEMA §2.7) without uploaded_at.
+export const AGE_COLUMNS = [
+  "yymm", "rcode", "tt", "tt_name",
+  ...Array.from({ length: 102 }, (_, age) => [`m${age}`, `f${age}`]).flat(),
+  ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [`${group}_m`, `${group}_f`, `${group}_t`]),
+];
+
 // The ตำบล lines of อำเภอสอง and เทศบาลตำบลสอง in 6712cc54.txt and
 // 6812cc54.txt from stat.bora (downloaded 6 Nov 2569) as the /sync upload
 // sends them in save_registry_population (SCHEMA §2.7, §3.8): rcode and tt of
 // the stat_t row each is paired with, then the line's name and its 219 counts
 // in file order: ชาย and หญิง by year of age 0 … 101 (101 = over 100), then
 // lunar, central, nonthai, moving and total, each as ชาย หญิง รวม.
-const AGE_COUNT_COLUMNS = [
-  ...Array.from({ length: 102 }, (_, age) => [`m${age}`, `f${age}`]).flat(),
-  ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [`${group}_m`, `${group}_f`, `${group}_t`]),
-];
-
 function ageRows(yymm, lines) {
   return lines.map(([rcode, tt, line]) => {
     const [tt_name, ...counts] = line.split("|");
-    return { yymm, rcode, tt, tt_name, ...Object.fromEntries(AGE_COUNT_COLUMNS.map((column, i) => [column, Number(counts[i])])) };
+    return { yymm, rcode, tt, tt_name, ...Object.fromEntries(AGE_COLUMNS.slice(4).map((column, i) => [column, Number(counts[i])])) };
   });
 }
 

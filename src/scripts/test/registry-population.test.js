@@ -3,7 +3,7 @@ import fs from "node:fs";
 import test from "node:test";
 import { loadGas } from "./gas-harness.js";
 import { PA_SHEETS } from "./fixtures/batch-all-sheets.js";
-import { AGE_ROWS_6712, AGE_ROWS_6812, ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
+import { AGE_COLUMNS, AGE_ROWS_6712, AGE_ROWS_6812, ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
 
 // FEATURES F24, F27 / SCHEMA §2.6, §2.7, §3.8, §3.9.
 
@@ -305,13 +305,6 @@ test("GET after the admin blanks one count and types text into another → each 
   assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, age: [] }] });
 });
 
-// registry_population_age's columns (SCHEMA §2.7) without uploaded_at.
-const AGE_COLUMNS = [
-  "yymm", "rcode", "tt", "tt_name",
-  ...Array.from({ length: 102 }, (_, a) => [`m${a}`, `f${a}`]).flat(),
-  ...["lunar", "central", "nonthai", "moving", "total"].flatMap((g) => [`${g}_m`, `${g}_f`, `${g}_t`]),
-];
-
 test("GET returns registry_population_age rows too, typed as SCHEMA §2.7 says; years are every yymm of either sheet", () => {
   // An age row of ตำบลบ้านหนุน (5489) in 6812, and one of 6712, a year with
   // no registry_population rows, written by hand after the population of 6812
@@ -451,6 +444,9 @@ const [BAN_NUN, , HUAI_MAI] = AGE_ROWS_6812;
 // has its registry_population rows: [what, changes to a valid body for 6812,
 // the error message].
 const REJECTED_AGE = [
+  ["yymm of November", { yymm: "6811" }, "Invalid yymm"],
+  ["yymm of 2569, which has not ended on 6 Nov 2569", { yymm: "6912" }, "Invalid yymm"],
+  ["no rows", { rows: [] }, "Empty rows"],
   ["a row without m57", { rows: withAgeRow(3, { m57: undefined }) }, "Row keys do not match the header"],
   ["a row with uploaded_at", { rows: withAgeRow(3, { uploaded_at: "2026-11-06" }) }, "Row keys do not match the header"],
   ["a row of 6712", { rows: withAgeRow(9, { yymm: "6712" }) }, "Row of another yymm"],
@@ -485,7 +481,8 @@ for (const [what, change, message] of REJECTED_AGE) {
     assert.deepEqual(res, { status: "error", message });
     assert.deepEqual(sheetsExceptLogs(h), before);
     const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
-    assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [["Save rejected registry_population_age 6812", message]]);
+    assert.deepEqual(errors.map((r) => r.Details), [message]);
+    assert.match(errors[0].Message, /^Save rejected registry_population_age /);
   });
 }
 

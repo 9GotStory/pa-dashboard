@@ -214,10 +214,10 @@ function readStatT(name: string, text: string, districtCode: string): CheckedSta
 // and the total, each as ชาย หญิง รวม.
 type AgeCount = Exclude<keyof RegistryPopulationAgeRow, "yymm" | "rcode" | "tt" | "tt_name">;
 const UNSPLIT_GROUPS: UnsplitGroup[] = ["lunar", "central", "nonthai", "moving"];
-const AGE_GROUPS: (UnsplitGroup | "total")[] = [...UNSPLIT_GROUPS, "total"];
+const UNSPLIT_AND_TOTAL: (UnsplitGroup | "total")[] = [...UNSPLIT_GROUPS, "total"];
 const AGE_COUNTS: AgeCount[] = [
   ...Array.from({ length: 102 }, (_, age): AgeCount[] => [`m${age}`, `f${age}`]).flat(),
-  ...AGE_GROUPS.flatMap((group): AgeCount[] => [`${group}_m`, `${group}_f`, `${group}_t`]),
+  ...UNSPLIT_AND_TOTAL.flatMap((group): AgeCount[] => [`${group}_m`, `${group}_f`, `${group}_t`]),
 ];
 // The groups as the refusals name them (SCHEMA §11.4).
 const GROUP_LABELS: Record<UnsplitGroup | "total", string> = {
@@ -334,7 +334,7 @@ function readAgeFile(name: string, text: string, districtCode: string, statTs: M
   // รวม in each group, then for ชาย and for หญิง, the counts by year of age
   // and the ประชากรที่ไม่แยกอายุ add up to the total.
   for (const { block, line } of pairs) {
-    for (const group of AGE_GROUPS) {
+    for (const group of UNSPLIT_AND_TOTAL) {
       const [m, f, t] = [line[`${group}_m`], line[`${group}_f`], line[`${group}_t`]];
       if (m + f !== t) {
         return refuse(

@@ -25,23 +25,23 @@ const DC_REGISTRY_POPULATION_CODE_PATTERNS = { cc: /^\d{2}$/, rcode: /^\d{4}$/ }
 const DC_REGISTRY_POPULATION_AGE_SHEET = "registry_population_age";
 // The groups of people the age file does not count by age, then the total.
 const DC_REGISTRY_POPULATION_UNSPLIT_GROUPS = ["lunar", "central", "nonthai", "moving"];
-const DC_REGISTRY_POPULATION_AGE_GROUPS = DC_REGISTRY_POPULATION_UNSPLIT_GROUPS.concat(["total"]);
+const DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL = DC_REGISTRY_POPULATION_UNSPLIT_GROUPS.concat(["total"]);
 // Its counts: m0, f0 … m100, f100, m101, f101 (over 100 years), then each
 // group as _m, _f, _t.
 const DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS = (function () {
   const columns = [];
   for (let age = 0; age <= 101; age++) columns.push("m" + age, "f" + age);
-  DC_REGISTRY_POPULATION_AGE_GROUPS.forEach(function (group) {
+  DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.forEach(function (group) {
     columns.push(group + "_m", group + "_f", group + "_t");
   });
   return columns;
 })();
 const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].concat(DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS);
 
-// The sheet each kind of save_registry_population writes (SCHEMA §3.8): its
-// columns in sheet order without uploaded_at, which of them hold counts, and
-// the codes written as plain text.
-const DC_REGISTRY_SHEETS = {
+// The layout of the sheet each kind of save_registry_population writes
+// (SCHEMA §3.8): its name, its columns in sheet order without uploaded_at,
+// which of them hold counts, and the codes written as plain text.
+const DC_REGISTRY_LAYOUTS = {
   population: {
     name: DC_REGISTRY_POPULATION_SHEET,
     columns: DC_REGISTRY_POPULATION_COLUMNS,
@@ -72,7 +72,7 @@ const DC_REGISTRY_SHEETS = {
 function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
   if (kindRaw !== "population" && kindRaw !== "age") return dcRejectRegistryPopulation(null, null, "Unknown kind");
   const kind = kindRaw;
-  const target = DC_REGISTRY_SHEETS[kind];
+  const layout = DC_REGISTRY_LAYOUTS[kind];
   // Figures at 31 Dec exist only once that year is over, so a yymm of this
   // year or later is refused: a made-up future year must not become the year
   // the home page shows.
@@ -85,9 +85,9 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
     dcRegistryOtherSheetError(kind, rows, yymm);
   if (error) return dcRejectRegistryPopulation(kind, yymm, error);
 
-  const header = target.columns.concat(["uploaded_at"]);
+  const header = layout.columns.concat(["uploaded_at"]);
   const now = new Date();
-  const kept = dcSheetRecords(target.name, header).filter(function (row) {
+  const kept = dcSheetRecords(layout.name, header).filter(function (row) {
     return String(row.yymm).trim() !== yymm;
   });
   const added = rows.map(function (row) {
@@ -99,12 +99,12 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
     const y = String(b.yymm).trim();
     return x < y ? -1 : x > y ? 1 : 0;
   });
-  dcWriteSheet(target.name, header, all.map(function (row) {
+  dcWriteSheet(layout.name, header, all.map(function (row) {
     return header.map(function (column) {
       return row[column];
     });
-  }), target.text);
-  logToSheet("SUCCESS", "Saved " + target.name + " " + yymm, rows.length + " rows");
+  }), layout.text);
+  logToSheet("SUCCESS", "Saved " + layout.name + " " + yymm, rows.length + " rows");
   return { status: "success", kind: kind, yymm: yymm, count: rows.length };
 }
 
@@ -183,8 +183,8 @@ function dcRegistryRows(sheetName, columns, countColumns) {
  */
 function dcRegistryRowsError(kind, rows, yymm, districtCode) {
   if (!Array.isArray(rows) || rows.length === 0) return "Empty rows";
-  const sheet = DC_REGISTRY_SHEETS[kind];
-  const columns = sheet.columns;
+  const layout = DC_REGISTRY_LAYOUTS[kind];
+  const columns = layout.columns;
   const keysMatch = rows.every(function (row) {
     return row !== null && typeof row === "object" && !Array.isArray(row) &&
       Object.keys(row).length === columns.length && columns.every(function (column) {
@@ -196,7 +196,7 @@ function dcRegistryRowsError(kind, rows, yymm, districtCode) {
     return row.yymm === yymm;
   })) return "Row of another yymm";
   if (!rows.every(function (row) {
-    return dcRegistryValuesValid(row, sheet);
+    return dcRegistryValuesValid(row, layout);
   })) return "Invalid value";
   if (!rows.every(function (row) {
     return /^\d{8}$/.test(row.tt) && row.tt.indexOf(districtCode) === 0;
@@ -216,7 +216,7 @@ function dcRegistryRowsError(kind, rows, yymm, districtCode) {
   if (!rows.every(kind === "population" ? function (row) {
     return row.male + row.female === row.total;
   } : function (row) {
-    return DC_REGISTRY_POPULATION_AGE_GROUPS.every(function (group) {
+    return DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.every(function (group) {
       return row[group + "_m"] + row[group + "_f"] === row[group + "_t"];
     });
   })) return "Male + female does not equal total";
@@ -247,8 +247,8 @@ function dcAgesAddUp(row) {
  * message of the first rule that fails, or null.
  */
 function dcRegistryOtherSheetError(kind, rows, yymm) {
-  const other = DC_REGISTRY_SHEETS[kind === "age" ? "population" : "age"];
-  const saved = dcRegistryRows(other.name, other.columns, other.counts).filter(function (row) {
+  const otherLayout = DC_REGISTRY_LAYOUTS[kind === "age" ? "population" : "age"];
+  const saved = dcRegistryRows(otherLayout.name, otherLayout.columns, otherLayout.counts).filter(function (row) {
     return row.yymm === yymm;
   });
   if (kind === "age") {
@@ -279,15 +279,15 @@ function dcRegistryRowsAgree(population, age) {
 }
 
 /**
- * Rule 6 of SCHEMA §3.8 for a row of sheet (DC_REGISTRY_SHEETS): counts are
- * whole numbers ≥ 0, the rest strings in their format. No string may begin
- * with "=", which setValues writes as a formula (Apps Script
+ * Rule 6 of SCHEMA §3.8 for a row of layout (DC_REGISTRY_LAYOUTS): counts
+ * are whole numbers ≥ 0, the rest strings in their format. No string may
+ * begin with "=", which setValues writes as a formula (Apps Script
  * Range.setValues).
  */
-function dcRegistryValuesValid(row, sheet) {
-  return sheet.columns.every(function (column) {
+function dcRegistryValuesValid(row, layout) {
+  return layout.columns.every(function (column) {
     const v = row[column];
-    if (sheet.counts.indexOf(column) > -1) return Number.isInteger(v) && v >= 0;
+    if (layout.counts.indexOf(column) > -1) return Number.isInteger(v) && v >= 0;
     const pattern = DC_REGISTRY_POPULATION_CODE_PATTERNS[column];
     return typeof v === "string" && v.charAt(0) !== "=" && (!pattern || pattern.test(v));
   });
@@ -299,7 +299,7 @@ function dcRegistryValuesValid(row, sheet) {
  * they have passed their rule, so no raw request text reaches the sheet.
  */
 function dcRejectRegistryPopulation(kind, yymm, message) {
-  const what = kind ? DC_REGISTRY_SHEETS[kind].name + " " + (yymm || "(invalid yymm)") : "(unknown kind)";
+  const what = kind ? DC_REGISTRY_LAYOUTS[kind].name + " " + (yymm || "(invalid yymm)") : "(unknown kind)";
   logToSheet("ERROR", "Save rejected " + what, message);
   return { status: "error", message: message };
 }

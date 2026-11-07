@@ -330,12 +330,15 @@ test("two age files of 6812 with stat_t68.txt in one pick → the first is read,
 // ตำบลบ้านหนุน.
 const SONG = 17;
 const SONG_BAN_NUN = 18;
+const SONG_BAN_KLANG = 19;
 const SONG_TOWN = 26;
 const SONG_TOWN_BAN_NUN = 27;
 // Where a count sits in a line's values (SCHEMA §11.1): the name, then m0, f0
 // … m101, f101, then lunar, central, nonthai, moving and total, each as m f t.
 const M0 = 1;
+const CENTRAL_T = 210;
 const TOTAL_M = 217;
+const TOTAL_T = 219;
 
 // AGE_6812_LINES with line n changed by f, which gets its values (the name
 // first, the | that closes it dropped); f returning null drops the line.
@@ -378,7 +381,7 @@ test("the block of เทศบาลตำบลสอง without its ตำบ
 });
 
 test("ตำบลบ้านหนุน twice in the block of อำเภอสอง (its ตำบลบ้านกลาง renamed) → refused: one line for each ตำบล", () => {
-  const changed = changeAgeLine(SONG_BAN_NUN + 1, (v) => ["ตำบลบ้านหนุน", ...v.slice(1)]);
+  const changed = changeAgeLine(SONG_BAN_KLANG, (v) => ["ตำบลบ้านหนุน", ...v.slice(1)]);
 
   assert.equal(ageRefusal(fileOf(changed)), "มีบรรทัด ตำบลบ้านหนุน มากกว่าหนึ่งบรรทัดในบล็อก อำเภอสอง");
 });
@@ -387,7 +390,6 @@ test("ตำบลบ้านหนุน twice in the block of อำเภอ
 function plusOne(values: string[], ...at: number[]): string[] {
   return values.map((value, i) => (at.includes(i) ? String(Number(value) + 1) : value));
 }
-const TOTAL_T = 219;
 
 test("ตำบลบ้านหนุน of อำเภอสอง with one more boy aged 0, ชาย 2,137 รวม 4,537 → refused: not the 2,136 of stat_t68.txt", () => {
   const changed = changeAgeLine(SONG_BAN_NUN, (v) => plusOne(v, M0, TOTAL_M, TOTAL_T));
@@ -405,8 +407,7 @@ test("the line of อำเภอสอง with รวม 40,390 → refused: no
 });
 
 test("ทะเบียนบ้านกลาง of ตำบลบ้านกลาง (อำเภอสอง) with รวม 63 for ชาย 50 + หญิง 12 → refused: ชาย + หญิง = รวม in each group of stat.bora's file", () => {
-  const CENTRAL_T = 210;
-  const changed = changeAgeLine(SONG_BAN_NUN + 1, (v) => plusOne(v, CENTRAL_T));
+  const changed = changeAgeLine(SONG_BAN_KLANG, (v) => plusOne(v, CENTRAL_T));
 
   assert.equal(ageRefusal(fileOf(changed)), "ตำบลบ้านกลาง ในบล็อก อำเภอสอง: ทะเบียนบ้านกลาง ชาย 50 + หญิง 12 ไม่เท่ารวม 63");
 });
