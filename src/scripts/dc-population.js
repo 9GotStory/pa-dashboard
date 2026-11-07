@@ -21,26 +21,47 @@ const DC_REGISTRY_POPULATION_COUNT_COLUMNS = ["male", "female", "total", "house"
 // rule 7.
 const DC_REGISTRY_POPULATION_CODE_PATTERNS = { cc: /^\d{2}$/, rcode: /^\d{4}$/ };
 
-// The age sheet (SCHEMA §2.7), which the GET already reads; F27 writes it.
+// The age sheet (SCHEMA §2.7), from the age file of stat.bora.
 const DC_REGISTRY_POPULATION_AGE_SHEET = "registry_population_age";
+// The groups of people the age file does not count by age, then the total.
+const DC_REGISTRY_POPULATION_UNSPLIT_GROUPS = ["lunar", "central", "nonthai", "moving"];
+const DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL = DC_REGISTRY_POPULATION_UNSPLIT_GROUPS.concat(["total"]);
 // Its counts: m0, f0 … m100, f100, m101, f101 (over 100 years), then each
-// group of people the file does not count by age as _m, _f, _t.
+// group as _m, _f, _t.
 const DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS = (function () {
   const columns = [];
   for (let age = 0; age <= 101; age++) columns.push("m" + age, "f" + age);
-  ["lunar", "central", "nonthai", "moving", "total"].forEach(function (group) {
+  DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.forEach(function (group) {
     columns.push(group + "_m", group + "_f", group + "_t");
   });
   return columns;
 })();
 const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].concat(DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS);
 
+// The layout of the sheet each kind of save_registry_population writes
+// (SCHEMA §3.8): its name, its columns in sheet order without uploaded_at,
+// which of them hold counts, and the codes written as plain text.
+const DC_REGISTRY_LAYOUTS = {
+  population: {
+    name: DC_REGISTRY_POPULATION_SHEET,
+    columns: DC_REGISTRY_POPULATION_COLUMNS,
+    counts: DC_REGISTRY_POPULATION_COUNT_COLUMNS,
+    text: DC_REGISTRY_POPULATION_TEXT_COLUMNS,
+  },
+  age: {
+    name: DC_REGISTRY_POPULATION_AGE_SHEET,
+    columns: DC_REGISTRY_POPULATION_AGE_COLUMNS,
+    counts: DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS,
+    text: ["yymm", "rcode", "tt"],
+  },
+};
+
 /**
- * POST save_registry_population (SCHEMA §3.8): check the request by rules
- * 1–10 in order, then replace the rows of its yymm, every other year's rows
- * kept as they are. The sheet is rewritten whole in yymm order, each year's
- * rows in the order they were sent, and created with its header on the first
- * save (SCHEMA §2.6). Only kind population is taken; age comes with F27.
+ * POST save_registry_population (SCHEMA §3.8): check the request by its rules
+ * in order, then replace the rows of its yymm in the sheet of its kind, every
+ * other year's rows kept as they are. The sheet is rewritten whole in yymm
+ * order, each year's rows in the order they were sent, and created with its
+ * header on the first save (SCHEMA §2.6, §2.7).
  *
  * The caller must hold the script lock (doPost): this function never calls
  * LockService (SCHEMA §3). district_code comes from readSettings(), which
@@ -49,8 +70,9 @@ const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].co
  * Returns { status: "success", kind, yymm, count } or { status: "error", message }.
  */
 function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
-  if (kindRaw !== "population") return dcRejectRegistryPopulation(null, null, "Unknown kind");
+  if (kindRaw !== "population" && kindRaw !== "age") return dcRejectRegistryPopulation(null, null, "Unknown kind");
   const kind = kindRaw;
+  const layout = DC_REGISTRY_LAYOUTS[kind];
   // Figures at 31 Dec exist only once that year is over, so a yymm of this
   // year or later is refused: a made-up future year must not become the year
   // the home page shows.
@@ -59,12 +81,13 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
     return dcRejectRegistryPopulation(kind, null, "Invalid yymm");
   }
   const yymm = yymmRaw;
-  const error = dcRegistryRowsError(rows, yymm, readSettings().district_code);
+  const error = dcRegistryRowsError(kind, rows, yymm, readSettings().district_code) ||
+    dcRegistryOtherSheetError(kind, rows, yymm);
   if (error) return dcRejectRegistryPopulation(kind, yymm, error);
 
-  const header = DC_REGISTRY_POPULATION_COLUMNS.concat(["uploaded_at"]);
+  const header = layout.columns.concat(["uploaded_at"]);
   const now = new Date();
-  const kept = dcSheetRecords(DC_REGISTRY_POPULATION_SHEET, header).filter(function (row) {
+  const kept = dcSheetRecords(layout.name, header).filter(function (row) {
     return String(row.yymm).trim() !== yymm;
   });
   const added = rows.map(function (row) {
@@ -76,12 +99,12 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
     const y = String(b.yymm).trim();
     return x < y ? -1 : x > y ? 1 : 0;
   });
-  dcWriteSheet(DC_REGISTRY_POPULATION_SHEET, header, all.map(function (row) {
+  dcWriteSheet(layout.name, header, all.map(function (row) {
     return header.map(function (column) {
       return row[column];
     });
-  }), DC_REGISTRY_POPULATION_TEXT_COLUMNS);
-  logToSheet("SUCCESS", "Saved " + DC_REGISTRY_POPULATION_SHEET + " " + yymm, rows.length + " rows");
+  }), layout.text);
+  logToSheet("SUCCESS", "Saved " + layout.name + " " + yymm, rows.length + " rows");
   return { status: "success", kind: kind, yymm: yymm, count: rows.length };
 }
 
@@ -155,12 +178,13 @@ function dcRegistryRows(sheetName, columns, countColumns) {
 }
 
 /**
- * Rules 3–10 of SCHEMA §3.8 for kind population, each over every row before
+ * Rules 3–11 of SCHEMA §3.8 for rows of kind, each over every row before
  * the next: the message of the first rule that fails, or null.
  */
-function dcRegistryRowsError(rows, yymm, districtCode) {
+function dcRegistryRowsError(kind, rows, yymm, districtCode) {
   if (!Array.isArray(rows) || rows.length === 0) return "Empty rows";
-  const columns = DC_REGISTRY_POPULATION_COLUMNS;
+  const layout = DC_REGISTRY_LAYOUTS[kind];
+  const columns = layout.columns;
   const keysMatch = rows.every(function (row) {
     return row !== null && typeof row === "object" && !Array.isArray(row) &&
       Object.keys(row).length === columns.length && columns.every(function (column) {
@@ -171,11 +195,13 @@ function dcRegistryRowsError(rows, yymm, districtCode) {
   if (!rows.every(function (row) {
     return row.yymm === yymm;
   })) return "Row of another yymm";
-  if (!rows.every(dcRegistryValuesValid)) return "Invalid value";
+  if (!rows.every(function (row) {
+    return dcRegistryValuesValid(row, layout);
+  })) return "Invalid value";
   if (!rows.every(function (row) {
     return /^\d{8}$/.test(row.tt) && row.tt.indexOf(districtCode) === 0;
   })) return "Row outside district";
-  if (!rows.every(function (row) {
+  if (kind === "population" && !rows.every(function (row) {
     return row.mm === "0";
   })) return "Not a tambon row";
   // Null prototype: a key such as "constructor" must not hit Object.prototype.
@@ -187,21 +213,81 @@ function dcRegistryRowsError(rows, yymm, districtCode) {
     return true;
   });
   if (!unique) return "Duplicate tambon row";
-  if (!rows.every(function (row) {
+  if (!rows.every(kind === "population" ? function (row) {
     return row.male + row.female === row.total;
+  } : function (row) {
+    return DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.every(function (group) {
+      return row[group + "_m"] + row[group + "_f"] === row[group + "_t"];
+    });
   })) return "Male + female does not equal total";
+  if (kind === "age" && !rows.every(dcAgesAddUp)) return "Ages do not add up to total";
   return null;
 }
 
 /**
- * Rule 6 of SCHEMA §3.8: counts are whole numbers ≥ 0, the rest strings in
- * their format. No string may begin with "=", which setValues writes as a
- * formula (Apps Script Range.setValues).
+ * Rule 11 of SCHEMA §3.8, stat.bora's formula (SCHEMA §11.1): for ชาย and
+ * for หญิง, the counts by year of age and the groups the file does not count
+ * by age add up to the total.
  */
-function dcRegistryValuesValid(row) {
-  return DC_REGISTRY_POPULATION_COLUMNS.every(function (column) {
+function dcAgesAddUp(row) {
+  return ["m", "f"].every(function (sex) {
+    let sum = 0;
+    for (let age = 0; age <= 101; age++) sum += row[sex + age];
+    DC_REGISTRY_POPULATION_UNSPLIT_GROUPS.forEach(function (group) {
+      sum += row[group + "_" + sex];
+    });
+    return sum === row["total_" + sex];
+  });
+}
+
+/**
+ * Rules 12–14 of SCHEMA §3.8, so that the two sheets always agree on a yymm:
+ * age rows need the registry_population rows of their yymm, and population
+ * rows are checked once registry_population_age has rows of their yymm. The
+ * message of the first rule that fails, or null.
+ */
+function dcRegistryOtherSheetError(kind, rows, yymm) {
+  const otherLayout = DC_REGISTRY_LAYOUTS[kind === "age" ? "population" : "age"];
+  const saved = dcRegistryRows(otherLayout.name, otherLayout.columns, otherLayout.counts).filter(function (row) {
+    return row.yymm === yymm;
+  });
+  if (kind === "age") {
+    if (saved.length === 0) return "No registry_population rows for this yymm";
+    return dcRegistryRowsAgree(saved, rows) ? null : "Does not match registry_population";
+  }
+  return saved.length === 0 || dcRegistryRowsAgree(rows, saved) ? null : "Does not match registry_population_age";
+}
+
+/**
+ * The match that rules 13 and 14 of SCHEMA §3.8 ask for: population rows and
+ * age rows of one yymm are the same ตำบล (rcode, tt), and each age row's
+ * total_m, total_f, total_t are male, female, total of its population row.
+ */
+function dcRegistryRowsAgree(population, age) {
+  // Null prototype: a key such as "constructor" must not hit Object.prototype.
+  const byTambon = Object.create(null);
+  population.forEach(function (row) {
+    byTambon[row.rcode + "/" + row.tt] = row;
+  });
+  const paired = Object.create(null);
+  return age.every(function (row) {
+    const key = row.rcode + "/" + row.tt;
+    const pair = byTambon[key];
+    paired[key] = true;
+    return pair !== undefined && row.total_m === pair.male && row.total_f === pair.female && row.total_t === pair.total;
+  }) && Object.keys(paired).length === Object.keys(byTambon).length;
+}
+
+/**
+ * Rule 6 of SCHEMA §3.8 for a row of layout (DC_REGISTRY_LAYOUTS): counts
+ * are whole numbers ≥ 0, the rest strings in their format. No string may
+ * begin with "=", which setValues writes as a formula (Apps Script
+ * Range.setValues).
+ */
+function dcRegistryValuesValid(row, layout) {
+  return layout.columns.every(function (column) {
     const v = row[column];
-    if (DC_REGISTRY_POPULATION_COUNT_COLUMNS.indexOf(column) > -1) return Number.isInteger(v) && v >= 0;
+    if (layout.counts.indexOf(column) > -1) return Number.isInteger(v) && v >= 0;
     const pattern = DC_REGISTRY_POPULATION_CODE_PATTERNS[column];
     return typeof v === "string" && v.charAt(0) !== "=" && (!pattern || pattern.test(v));
   });
@@ -213,7 +299,7 @@ function dcRegistryValuesValid(row) {
  * they have passed their rule, so no raw request text reaches the sheet.
  */
 function dcRejectRegistryPopulation(kind, yymm, message) {
-  const what = kind ? DC_REGISTRY_POPULATION_SHEET + " " + (yymm || "(invalid yymm)") : "(unknown kind)";
+  const what = kind ? DC_REGISTRY_LAYOUTS[kind].name + " " + (yymm || "(invalid yymm)") : "(unknown kind)";
   logToSheet("ERROR", "Save rejected " + what, message);
   return { status: "error", message: message };
 }
