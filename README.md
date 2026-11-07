@@ -5,7 +5,7 @@
 - **PA Dashboard** หน้าตัวชี้วัด (KPI) ของ คปสอ.สอง ใช้งานอยู่ตอนนี้
 - **Song Health Data Center** ศูนย์ข้อมูลสุขภาพของ สสอ.สอง จัดรายงานตาม หมวด → หัวข้อ → กลุ่ม → รายงาน ของ HDC เก็บข้อมูลย้อนหลัง 5 ปีงบประมาณ เฉพาะอำเภอสอง
 
-ข้อมูลทั้งหมดมาจาก [HDC Open Data](https://opendata.moph.go.th) ของกระทรวงสาธารณสุข เก็บใน Google Sheets ผ่าน Google Apps Script (GAS) และแสดงผลด้วย Next.js แบบ static export
+รายงานมาจาก [HDC Open Data](https://opendata.moph.go.th) ของกระทรวงสาธารณสุข ส่วนประชากรบนหน้าแรกเป็นประชากรทะเบียนราษฎรของกรมการปกครองจาก [stat.bora](https://stat.bora.dopa.go.th/) ([ADR-0011](docs/adr/0011-registry-population-from-dopa-upload.md)) เก็บใน Google Sheets ผ่าน Google Apps Script (GAS) และแสดงผลด้วย Next.js แบบ static export
 
 ## สถานะ
 
@@ -35,7 +35,7 @@ flowchart LR
   GAS <--> SHEETS
   PA -->|"GET BATCH_ALL"| GAS
   GAS -->|"Deploy Hook หลัง sync"| BUILD
-  BUILD -->|"GET catalog, report"| GAS
+  BUILD -->|"GET catalog, report, registry_population"| GAS
   BUILD --> DC
 ```
 
@@ -43,7 +43,7 @@ flowchart LR
 
 | path | หน้า |
 |---|---|
-| `/` | หน้าแรก Data Center: แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน |
+| `/` | หน้าแรก Data Center: ประชากรทะเบียนราษฎรรายตำบล แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน |
 | `/pa` | PA Dashboard ย้ายมาจาก `/` หน้าตาและตัวเลขเหมือนเดิม |
 | `/reports` | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา |
 | `/reports/{id}` | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV |

@@ -198,3 +198,17 @@ export interface PopulationTotals {
   total: number;
   house: number;
 }
+
+/** The อำเภอ or one ตำบล in the population part of the home page · SCHEMA §9's age comes with F28, which computes it */
+export interface AreaPopulation {
+  key: string; // "all" = the whole อำเภอ, or a 6-digit ตำบล code (= areas[].id)
+  name: string;
+  totals: PopulationTotals;
+}
+
+/** The population part of the home page that the server component hands the client (SPEC §9.2) · null = no population data */
+export interface HomePopulation {
+  yymm: string; // the year shown (SCHEMA §11.3)
+  district: AreaPopulation; // key "all"
+  areas: AreaPopulation[]; // the ตำบล, by code
+}

@@ -1,7 +1,8 @@
 // prebuild (SPEC §6.2): the snapshot the Data Center pages read (SCHEMA §7),
-// from GAS ?action=catalog and ?action=report, one request at a time. When
-// anything is missing it fails loudly (exit 1) and writes nothing, so the
-// build stops and the site keeps its last deployment (ADR-0006).
+// from GAS ?action=catalog, ?action=report and ?action=registry_population,
+// one request at a time. When anything is missing it fails loudly (exit 1)
+// and writes nothing, so the build stops and the site keeps its last
+// deployment (ADR-0006).
 //
 //   npm run snapshot   (npm run build runs it first, as prebuild)
 // Env: NEXT_PUBLIC_GAS_SCRIPT_URL, with no fallback.
@@ -230,6 +231,81 @@ if (problems.length > 0) {
   fail(`the snapshot would be incomplete, so nothing is written (SPEC §6.2):\n  ${problems.join("\n  ")}`);
 }
 
+// The columns of each registry sheet that every row of
+// ?action=registry_population has (SCHEMA §2.6–2.7, §3.9), uploaded_at left
+// out.
+const REGISTRY_COLUMNS = {
+  population: ["yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name", "male", "female", "total", "house"],
+  age: [
+    "yymm", "rcode", "tt", "tt_name",
+    // m0, f0 … m101, f101 (101 = over 100 years)
+    ...Array.from({ length: 102 }, (_, age) => [`m${age}`, `f${age}`]).flat(),
+    ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [`${group}_m`, `${group}_f`, `${group}_t`]),
+  ],
+};
+const REGISTRY_SHEETS = { population: "registry_population", age: "registry_population_age" };
+
+// Why GAS's ?action=registry_population answer has the wrong shape (SCHEMA
+// §7), or "" when it is right.
+function registryProblem(answer) {
+  if (!Array.isArray(answer.years)) return `answered without years; ${CHECK_URL}`;
+  const seen = new Set();
+  for (const year of answer.years) {
+    const yymm = year?.yymm;
+    if (typeof yymm !== "string" || !/^\d{2}12$/.test(yymm)) {
+      return (
+        `answered a year with yymm ${JSON.stringify(yymm)}, not the figures at 31 Dec (YY12); ` +
+        `fix the yymm column of ${REGISTRY_SHEETS.population} and ${REGISTRY_SHEETS.age} in PA-Data (SCHEMA §2.6)`
+      );
+    }
+    if (seen.has(yymm)) return `answered yymm ${yymm} twice; ${CHECK_URL}`;
+    seen.add(yymm);
+    for (const [kind, columns] of Object.entries(REGISTRY_COLUMNS)) {
+      if (!Array.isArray(year[kind])) return `answered ${yymm} without a list of ${kind} rows; ${CHECK_URL}`;
+      for (const [i, row] of year[kind].entries()) {
+        const missing = columns.find((column) => !Object.hasOwn(Object(row), column));
+        if (missing !== undefined) {
+          return (
+            `answered row ${i + 1} of ${yymm} in ${REGISTRY_SHEETS[kind]} without ${missing}: GAS leaves out a column ` +
+            "the sheet lacks and a count that is blank or no number (SCHEMA §3.9), so check that sheet's header and " +
+            "that row in PA-Data"
+          );
+        }
+      }
+    }
+  }
+  return "";
+}
+
+let registry;
+try {
+  registry = await callGasWithRetry("action=registry_population");
+} catch (err) {
+  fail(`cannot get the registry population (?action=registry_population): ${err.message}`);
+}
+const wrongShape = registryProblem(registry);
+if (wrongShape) fail(`?action=registry_population ${wrongShape}`);
+// population.json (PopulationSnapshot, SCHEMA §7): the years with population
+// rows, oldest first, and the age rows of the latest of them only, so the file
+// grows by a year's population rows alone.
+const populationYears = registry.years
+  .filter((year) => year.population.length > 0)
+  .sort((a, b) => (a.yymm < b.yymm ? -1 : 1));
+const population = {
+  years: populationYears.map((year, i) => ({
+    yymm: year.yymm,
+    population: year.population,
+    age: i === populationYears.length - 1 ? year.age : [],
+  })),
+};
+const latest = population.years.at(-1);
+console.log(
+  latest
+    ? `build-snapshot: ?action=registry_population has population rows for ${population.years.length} years, ` +
+        `the latest ${latest.yymm} with ${latest.age.length} age rows`
+    : "build-snapshot: ?action=registry_population has no population rows yet, so the home page shows no population (SPEC §9.2)",
+);
+
 // SnapshotMeta (SCHEMA §9). Every date_com starts YYYYMMDDHHmm, so the
 // largest string is the latest, with or without seconds.
 const meta = {
@@ -246,6 +322,7 @@ const files = [
   ["meta.json", meta, 1 * KB],
   ["catalog.json", nest(catalog, fetched.map((data) => data.report)), 100 * KB],
   ...[...answers].map(([id, data]) => [`reports/${id}.json`, data, 500 * KB]),
+  ["population.json", population, 100 * KB],
 ].map(([file, content, maxBytes]) => {
   const json = JSON.stringify(content);
   return { file, json, bytes: Buffer.byteLength(json), maxBytes };

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { STAT_T68, STAT_T68_LINES } from "./fixtures/stat-t68-20261106";
-import { populationTotals, readRegistryFiles, registryYear } from "./population";
+import { homePopulation, populationTotals, readRegistryFiles, registryAsOf, registryYear } from "./population";
+import type { PopulationSnapshot, RegistryPopulationRow } from "./types";
 
 // FEATURES F24: reading and checking stat_t files in the /sync upload
 // (SCHEMA §11.1–11.2), on lines cut from the real stat_t68.txt. Expected
@@ -130,4 +131,83 @@ test("two files of 6812 in one pick → the first is read, the second refused, s
 
   assert.deepEqual(reads.map((r) => r.ok), [true, false]);
   assert.equal(!reads[1].ok && reads[1].reason, "ปี 2568 ซ้ำกับไฟล์ stat_t68.txt ที่เลือกไว้");
+});
+
+// FEATURES F26: the population of the home page (SCHEMA §11.3), on the real
+// rows of 2568 as the upload reads them from the cut stat_t68.txt. Expected
+// values come from the file's ตำบล and total lines and the figures the
+// province announced (SCHEMA §11.4).
+
+// catalog.json's areas: the 8 ตำบล of tambon_master.
+const AREAS = [
+  { id: "540601", name_th: "บ้านหนุน" },
+  { id: "540602", name_th: "บ้านกลาง" },
+  { id: "540603", name_th: "ห้วยหม้าย" },
+  { id: "540604", name_th: "เตาปูน" },
+  { id: "540605", name_th: "หัวเมือง" },
+  { id: "540606", name_th: "สะเอียบ" },
+  { id: "540607", name_th: "แดนชุมพล" },
+  { id: "540608", name_th: "ทุ่งน้าว" },
+];
+
+// The 10 rows of 2568 (SCHEMA §2.6): 8 of สำนักทะเบียน 5406 and 2 of 5489.
+const [read68] = readRegistryFiles([{ name: "stat_t68.txt", text: STAT_T68 }], "5406");
+if (!read68.ok) throw new Error(read68.reason);
+const ROWS_6812 = read68.rows;
+
+// population.json as the prebuild writes it (SCHEMA §7): one year per list of
+// rows, oldest first, without age rows.
+function snapshotOf(...years: RegistryPopulationRow[][]): PopulationSnapshot {
+  return { years: years.map((population) => ({ yymm: population[0].yymm, population, age: [] })) };
+}
+
+test("population.json of 2567 and 2568 → the home page shows 2568, the latest: ณ 31 ธ.ค. 2568 and its 46,527 people", () => {
+  // stat_t67.txt's line of ตำบลบ้านหนุน in สำนักทะเบียน 5406
+  const row6712 = { ...ROWS_6812[0], yymm: "6712", male: 2174, female: 2445, total: 4619, house: 2148 };
+
+  const home = homePopulation(snapshotOf([row6712], ROWS_6812), AREAS);
+
+  assert.ok(home);
+  assert.equal(registryAsOf(home.yymm), "ณ 31 ธ.ค. 2568");
+  assert.equal(home.district.totals.total, 46527);
+});
+
+test("ตำบล of 2568 → the 8 of areas by code, each adding up every สำนักทะเบียน: บ้านหนุน 7,399 คน 3,499 บ้าน (4,536 + 2,863 คน of 5406 and 5489), บ้านกลาง 6,686 คน 3,335 บ้าน (3,411 + 3,275)", () => {
+  // The rows last to first: the order of the ตำบล comes from their codes.
+  const home = homePopulation(snapshotOf([...ROWS_6812].reverse()), AREAS);
+
+  assert.ok(home);
+  // The file's ตำบล lines; บ้านหนุน and บ้านกลาง add the line of 5406 and the line of 5489.
+  assert.deepEqual(home.areas, [
+    { key: "540601", name: "บ้านหนุน", totals: { male: 3442, female: 3957, total: 7399, house: 3499 } },
+    { key: "540602", name: "บ้านกลาง", totals: { male: 3152, female: 3534, total: 6686, house: 3335 } },
+    { key: "540603", name: "ห้วยหม้าย", totals: { male: 3564, female: 3903, total: 7467, house: 3096 } },
+    { key: "540604", name: "เตาปูน", totals: { male: 3903, female: 4089, total: 7992, house: 2954 } },
+    { key: "540605", name: "หัวเมือง", totals: { male: 2975, female: 3062, total: 6037, house: 2297 } },
+    { key: "540606", name: "สะเอียบ", totals: { male: 2692, female: 2643, total: 5335, house: 2555 } },
+    { key: "540607", name: "แดนชุมพล", totals: { male: 1181, female: 1230, total: 2411, house: 957 } },
+    { key: "540608", name: "ทุ่งน้าว", totals: { male: 1566, female: 1634, total: 3200, house: 1408 } },
+  ]);
+});
+
+test("the อำเภอ of 2568 → 46,527 คน (ชาย 22,475 หญิง 24,052) and 20,101 บ้าน, the figures the province announced", () => {
+  const home = homePopulation(snapshotOf(ROWS_6812), AREAS);
+
+  assert.deepEqual(home?.district, {
+    key: "all",
+    name: "อำเภอสอง",
+    totals: { male: 22475, female: 24052, total: 46527, house: 20101 },
+  });
+});
+
+test("population.json without a year (nothing uploaded yet) → null: the home page stays as in phase 1", () => {
+  assert.equal(homePopulation({ years: [] }, AREAS), null);
+});
+
+test("a ตำบล that areas lacks → named by its tt_name, its people still in the อำเภอ's 46,527", () => {
+  const home = homePopulation(snapshotOf(ROWS_6812), AREAS.filter((a) => a.id !== "540602"));
+
+  assert.ok(home);
+  assert.equal(home.areas.find((a) => a.key === "540602")?.name, "ตำบลบ้านกลาง");
+  assert.equal(home.district.totals.total, 46527);
 });
