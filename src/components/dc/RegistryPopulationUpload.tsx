@@ -2,14 +2,15 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { formatCount } from "@/lib/dc/format";
-import { populationTotals, readRegistryFiles, registryYear } from "@/lib/dc/population";
+import { ageRowsTotals, populationTotals, readRegistryFiles, registryYear } from "@/lib/dc/population";
 import type { DcCatalog, GasRegistryPopulation, RegistryFileRead } from "@/lib/dc/types";
 
 // The ประชากรทะเบียนราษฎร upload of /sync, shown after the PIN (SPEC §12.1,
-// ADR-0011): stat_t files from stat.bora are read and checked here by
-// population.ts, saved one year at a time with save_registry_population, then
-// one rebuild. The only Data Center component that calls GAS, since /sync is
-// not a page of (dc) (CODING_STANDARDS §4).
+// ADR-0011): stat_t files and age files from stat.bora are read and checked
+// here by population.ts, saved one file at a time with
+// save_registry_population, each year's stat_t before its age file, then one
+// rebuild. The only Data Center component that calls GAS, since /sync is not
+// a page of (dc) (CODING_STANDARDS §4).
 
 const GAS_URL = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL ?? "";
 
@@ -39,6 +40,10 @@ function errorText(err: unknown): string {
 /** A checked file before the save: its year, rows and totals, or why it is refused */
 function summary(read: RegistryFileRead): string {
   if (!read.ok) return read.reason;
+  if (read.kind === "age") {
+    const t = ageRowsTotals(read.rows);
+    return `ปี ${registryYear(read.yymm)} · แถวอายุ ${read.rows.length} แถว จับคู่กับ stat_t ได้ครบ · รวม ${formatCount(t.total)} คน (ชาย ${formatCount(t.male)} หญิง ${formatCount(t.female)}) ตรงกับ stat_t`;
+  }
   const t = populationTotals(read.rows);
   return `ปี ${registryYear(read.yymm)} · ${read.rows.length} แถว · รวม ${formatCount(t.total)} คน (ชาย ${formatCount(t.male)} หญิง ${formatCount(t.female)}) · บ้าน ${formatCount(t.house)} หลัง`;
 }
@@ -49,12 +54,13 @@ interface Outcome {
   text: string;
 }
 
-/** POST save_registry_population of one checked file (SCHEMA §3.8) */
-async function saveYear(read: Extract<RegistryFileRead, { ok: true }>): Promise<Outcome> {
+/** POST save_registry_population of one checked file, of the kind it was read as (SCHEMA §3.8) */
+async function saveFile(read: Extract<RegistryFileRead, { ok: true }>): Promise<Outcome> {
   try {
-    const answer = await postGas({ action: "save_registry_population", kind: "population", yymm: read.yymm, rows: read.rows });
+    const answer = await postGas({ action: "save_registry_population", kind: read.kind, yymm: read.yymm, rows: read.rows });
+    const what = read.kind === "age" ? "แถวอายุปี" : "ปี";
     return answer.status === "success"
-      ? { ok: true, text: `บันทึกปี ${registryYear(read.yymm)} แล้ว ${answer.count} แถว` }
+      ? { ok: true, text: `บันทึก${what} ${registryYear(read.yymm)} แล้ว ${answer.count} แถว` }
       : { ok: false, text: `GAS ไม่บันทึก: ${answer.message}` };
   } catch (err) {
     return { ok: false, text: `ส่งไม่สำเร็จ: ${errorText(err)}` };
@@ -82,7 +88,7 @@ interface Picked {
 
 export default function RegistryPopulationUpload() {
   const [district, setDistrict] = useState<Loaded<string>>({ state: "loading" });
-  const [sheetYears, setSheetYears] = useState<Loaded<string[]>>({ state: "loading" });
+  const [sheetYears, setSheetYears] = useState<Loaded<Record<"population" | "age", string[]>>>({ state: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [picked, setPicked] = useState<Picked[]>([]);
   const [rebuild, setRebuild] = useState<Outcome | null>(null);
@@ -106,7 +112,7 @@ export default function RegistryPopulationUpload() {
     };
   }, []);
 
-  // The years registry_population has (SCHEMA §3.9), read again after a save
+  // The years each sheet has rows of (SCHEMA §3.9), read again after a save
   // or a retry. Busy comes back as an error to retry (SCHEMA §3.9).
   useEffect(() => {
     if (!GAS_URL) return;
@@ -115,7 +121,8 @@ export default function RegistryPopulationUpload() {
       .then((answer) => {
         if ("status" in answer) throw new Error(answer.message);
         if (!Array.isArray(answer.years)) throw new Error("คำตอบของ GAS ไม่มี years");
-        return answer.years.filter((y) => y.population.length > 0).map((y) => registryYear(y.yymm));
+        const yearsOf = (kind: "population" | "age") => answer.years.filter((y) => y[kind].length > 0).map((y) => registryYear(y.yymm));
+        return { population: yearsOf("population"), age: yearsOf("age") };
       })
       .then(
         (years) => {
@@ -146,8 +153,19 @@ export default function RegistryPopulationUpload() {
   async function save() {
     setSaving(true);
     let anySaved = false;
-    for (const [i, { read }] of picked.entries()) {
-      const outcome = read.ok ? await saveYear(read) : { ok: false, text: `ไม่ส่ง: ${read.reason}` };
+    // Every stat_t before the age files (SPEC §12.1): GAS checks age rows
+    // against the registry_population rows of their year (SCHEMA §3.8), so an
+    // age file is not sent unless the stat_t of its year was saved.
+    const isAge = ({ read }: Picked) => read.ok && read.kind === "age";
+    const statTFirst = [...picked.entries()].sort(([, a], [, b]) => Number(isAge(a)) - Number(isAge(b)));
+    const savedYears = new Set<string>(); // the yymm of each stat_t saved
+    for (const [i, { read }] of statTFirst) {
+      const outcome = !read.ok
+        ? { ok: false, text: `ไม่ส่ง: ${read.reason}` }
+        : read.kind === "age" && !savedYears.has(read.yymm)
+          ? { ok: false, text: `ไม่ส่ง: บันทึก stat_t ของปี ${registryYear(read.yymm)} ไม่สำเร็จ` }
+          : await saveFile(read);
+      if (read.ok && read.kind === "population" && outcome.ok) savedYears.add(read.yymm);
       anySaved ||= outcome.ok;
       setPicked((prev) => prev.map((p, j) => (j === i ? { ...p, outcome } : p)));
     }
@@ -176,6 +194,8 @@ export default function RegistryPopulationUpload() {
           stat.bora
         </a>{" "}
         เมนู ดาวน์โหลดสถิติ → จำนวนประชากร → ปี → ระดับตำบล Text File เช่น <code>stat_t68.txt</code> คือยอด ณ 31 ธ.ค. 2568
+        และไฟล์อายุ <code>{"{ปี}"}12cc{"{จังหวัด}"}.txt</code> เมนู ดาวน์โหลดสถิติ → จำนวนประชากรแยกรายอายุ → ปี → จังหวัด เช่น{" "}
+        <code>6812cc54.txt</code> ซึ่งต้องเลือกพร้อม stat_t ของปีเดียวกัน
         เลือกได้หลายปีพร้อมกัน ระบบตรวจไฟล์ก่อนส่ง และบันทึกปีเดิมซ้ำจะแทนที่ของเดิม
       </p>
 
@@ -192,7 +212,10 @@ export default function RegistryPopulationUpload() {
             </button>
           </p>
         ) : (
-          <p>ปีที่มีในชีตแล้ว: {sheetYears.value.length > 0 ? sheetYears.value.join(" · ") : "ยังไม่มี"}</p>
+          <>
+            <p>ปีที่มีในชีตแล้ว: {sheetYears.value.population.length > 0 ? sheetYears.value.population.join(" · ") : "ยังไม่มี"}</p>
+            <p>ปีที่มีแถวอายุแล้ว: {sheetYears.value.age.length > 0 ? sheetYears.value.age.join(" · ") : "ยังไม่มี"}</p>
+          </>
         )}
       </div>
 
@@ -201,7 +224,7 @@ export default function RegistryPopulationUpload() {
       ) : (
         <div className="mt-4">
           <label htmlFor="registry-population-files" className="block font-semibold">
-            เลือกไฟล์ stat_t{"{ปี}"}.txt (เลือกได้หลายไฟล์)
+            เลือกไฟล์ stat_t{"{ปี}"}.txt และ {"{ปี}"}12cc{"{จังหวัด}"}.txt (เลือกได้หลายไฟล์)
           </label>
           <input
             ref={input}
@@ -246,7 +269,7 @@ export default function RegistryPopulationUpload() {
           disabled={saving || toSave === 0 || !GAS_URL}
           className="mt-4 rounded-lg bg-dc-blue px-5 py-2.5 font-semibold text-white hover:bg-dc-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
         >
-          {saving ? "กำลังบันทึก…" : `บันทึก ${toSave} ปี`}
+          {saving ? "กำลังบันทึก…" : `บันทึก ${toSave} ไฟล์`}
         </button>
       )}
     </section>

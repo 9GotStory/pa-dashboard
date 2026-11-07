@@ -802,9 +802,10 @@ export interface PopulationSnapshot {
 /** response ของ GAS ?action=registry_population (§3.9): รูปเดียวกัน แต่มีทุก yymm ของสองชีตและแถวอายุของทุกปี */
 export type GasRegistryPopulation = PopulationSnapshot;
 
-/** ไฟล์หนึ่งที่ผู้ดูแลเลือกในส่วนอัปโหลดของหน้า /sync หลังอ่านและตรวจ (§11.2): แถวของอำเภอ หรือเหตุที่ปฏิเสธ */
+/** ไฟล์หนึ่งที่ผู้ดูแลเลือกในส่วนอัปโหลดของหน้า /sync หลังอ่านและตรวจ (§11.2): แถวของอำเภอตามชนิดไฟล์ ซึ่ง save_registry_population รับไปตามนั้น (§3.8) หรือเหตุที่ปฏิเสธ */
 export type RegistryFileRead = { name: string } & (
-  | { ok: true; yymm: string; rows: RegistryPopulationRow[] }
+  | { ok: true; kind: "population"; yymm: string; rows: RegistryPopulationRow[] }   // stat_t
+  | { ok: true; kind: "age"; yymm: string; rows: RegistryPopulationAgeRow[] }       // ไฟล์อายุ
   | { ok: false; reason: string }
 );
 

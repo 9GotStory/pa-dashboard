@@ -3,9 +3,9 @@ import fs from "node:fs";
 import test from "node:test";
 import { loadGas } from "./gas-harness.js";
 import { PA_SHEETS } from "./fixtures/batch-all-sheets.js";
-import { ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
+import { AGE_ROWS_6712, AGE_ROWS_6812, ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
 
-// FEATURES F24 / SCHEMA §2.6, §3.8, §3.9.
+// FEATURES F24, F27 / SCHEMA §2.6, §2.7, §3.8, §3.9.
 
 const SETTINGS = [
   ["current_quarter", "current_year", "province_code", "district_code", "deploy_hook_url"],
@@ -111,11 +111,13 @@ function withRow(i, change) {
   return ROWS_6812.map((r, j) => (j === i ? { ...r, ...change } : r));
 }
 
-// Requests that break one rule of SCHEMA §3.8 (rules 1–10; 11–14 are F27's):
-// [what, changes to a valid body for 6812, the error message].
+// Requests of kind population that break one rule of SCHEMA §3.8 (rules
+// 1–10; rule 14 and kind age come with F27, below): [what, changes to a valid
+// body for 6812, the error message].
 const REJECTED = [
-  ["kind age (F27)", { kind: "age" }, "Unknown kind"],
+  ["kind of another name", { kind: "ages" }, "Unknown kind"],
   ["no kind", { kind: undefined }, "Unknown kind"],
+  ["the rows of stat_t sent as kind age", { kind: "age" }, "Row keys do not match the header"],
   ["yymm of November", { yymm: "6811" }, "Invalid yymm"],
   ["yymm as a number", { yymm: 6812 }, "Invalid yymm"],
   ["yymm of 2569, which has not ended on 6 Nov 2569", { yymm: "6912" }, "Invalid yymm"],
@@ -312,13 +314,17 @@ const AGE_COLUMNS = [
 
 test("GET returns registry_population_age rows too, typed as SCHEMA §2.7 says; years are every yymm of either sheet", () => {
   // An age row of ตำบลบ้านหนุน (5489) in 6812, and one of 6712, a year with
-  // no registry_population rows, as written by hand.
+  // no registry_population rows, written by hand after the population of 6812
+  // is saved (which would be refused against this row, SCHEMA §3.8 rule 14).
   const counts = Object.fromEntries(AGE_COLUMNS.slice(4).map((c, i) => [c, i % 7]));
   const row6812 = { yymm: "6812", rcode: "5489", tt: "54060100", tt_name: "ตำบลบ้านหนุน", ...counts };
   const row6712 = { ...row6812, yymm: "6712" };
   const sheetRow = (row) => [...AGE_COLUMNS.map((c) => (c === "rcode" || c === "tt" ? Number(row[c]) : row[c])), new Date()];
-  const h = load({ registry_population_age: [[...AGE_COLUMNS, "uploaded_at"], sheetRow(row6812), sheetRow(row6712)] });
+  const h = load();
   savePopulation(h, "6812", ROWS_6812);
+  const values = [[...AGE_COLUMNS, "uploaded_at"], sheetRow(row6812), sheetRow(row6712)];
+  h.gas.SpreadsheetApp.getActiveSpreadsheet().insertSheet("registry_population_age")
+    .getRange(1, 1, values.length, values[0].length).setValues(values);
 
   const res = getRegistryPopulation(h);
 
@@ -347,4 +353,181 @@ test("registry_population is no PA unit, sync unit or BATCH_ALL table: BATCH_ALL
   assert.deepEqual({ ...batch, meta }, BATCH_ALL_BEFORE_F04);
   assert.deepEqual(kpi, { status: "error", message: "Unknown table: registry_population" });
   assert.deepEqual(h.sheet("registry_population"), saved);
+});
+
+// FEATURES F27: kind age, and rule 14 of kind population (SCHEMA §2.7, §3.8).
+
+function saveAge(h, yymm, rows) {
+  return post(h, { action: "save_registry_population", kind: "age", yymm, rows });
+}
+
+test("kind: age of 6812 after its population → registry_population_age created with its header and the 10 rows as sent, uploaded_at = now, no blank rows below", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+
+  const res = saveAge(h, "6812", AGE_ROWS_6812);
+
+  assert.deepEqual(res, { status: "success", kind: "age", yymm: "6812", count: 10 });
+  const sheet = h.sheet("registry_population_age");
+  assert.deepEqual(sheet[0], [...AGE_COLUMNS, "uploaded_at"]);
+  assert.deepEqual(records(sheet).map(sent), AGE_ROWS_6812);
+  assert.ok(records(sheet).every((r) => r.uploaded_at.getTime() === h.clock.now));
+  assert.equal(h.maxRows("registry_population_age"), 11);
+});
+
+test("kind: age of 6812 saved again → only 6812's age rows are replaced; 6712's, saved in between, keep their rows and uploaded_at, and sort first", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveAge(h, "6812", AGE_ROWS_6812);
+  h.clock.now += 60_000;
+  savePopulation(h, "6712", ROWS_6712);
+  saveAge(h, "6712", AGE_ROWS_6712);
+  const saved6712 = records(h.sheet("registry_population_age")).filter((r) => r.yymm === "6712");
+  h.clock.now += 60_000;
+  // stat.bora corrects the age of one man of ตำบลทุ่งน้าว in its 6812 file: 31, not 30.
+  const corrected = AGE_ROWS_6812.map((r) => (r.rcode === "5406" && r.tt === "54060800" ? { ...r, m30: 25, m31: 26 } : r));
+
+  const res = saveAge(h, "6812", corrected);
+
+  assert.deepEqual(res, { status: "success", kind: "age", yymm: "6812", count: 10 });
+  const rows = records(h.sheet("registry_population_age"));
+  assert.deepEqual(rows.slice(0, 10), saved6712);
+  assert.deepEqual(rows.slice(10).map(sent), corrected);
+  assert.ok(rows.slice(10).every((r) => r.uploaded_at.getTime() === h.clock.now));
+  assert.equal(h.maxRows("registry_population_age"), 21);
+});
+
+test("an age save takes the script lock once and releases it", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  h.gas.readSettings();
+  h.gas.readKpiMasterConfig();
+  h.lock.tryLock = 0;
+  h.lock.releaseLock = 0;
+
+  saveAge(h, "6812", AGE_ROWS_6812);
+
+  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
+});
+
+test("sheet, sheetName and tableName in the body of kind age are ignored: only registry_population_age is written", () => {
+  const h = load({ hospitals: [["hospcode", "hospname", "tambon_id"], ["06413", "บ้านหนุน", "540601"]] });
+  savePopulation(h, "6812", ROWS_6812);
+  const before = sheetsExceptLogs(h);
+
+  const res = post(h, {
+    action: "save_registry_population", kind: "age", yymm: "6812", rows: AGE_ROWS_6812,
+    sheet: "registry_population", sheetName: "hospitals", tableName: "s_epi2",
+  });
+
+  assert.equal(res.status, "success");
+  const after = sheetsExceptLogs(h);
+  assert.deepEqual(Object.keys(after).sort(), [...Object.keys(before), "registry_population_age"].sort());
+  for (const name of Object.keys(before)) assert.deepEqual(after[name], before[name], name);
+});
+
+test("GET after the population of 6712 and both kinds of 6812 → 6712 without age rows, 6812 with its age rows as sent", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveAge(h, "6812", AGE_ROWS_6812);
+  savePopulation(h, "6712", ROWS_6712);
+
+  assert.deepEqual(getRegistryPopulation(h), {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: [] },
+      { yymm: "6812", population: ROWS_6812, age: AGE_ROWS_6812 },
+    ],
+  });
+});
+
+// AGE_ROWS_6812 with row i changed (a key set to undefined is left out, as JSON drops it).
+function withAgeRow(i, change) {
+  return AGE_ROWS_6812.map((r, j) => (j === i ? { ...r, ...change } : r));
+}
+// 5406's ตำบลบ้านหนุน, ตำบลบ้านกลาง and ตำบลห้วยหม้าย.
+const [BAN_NUN, , HUAI_MAI] = AGE_ROWS_6812;
+
+// Requests of kind age that break one rule of SCHEMA §3.8, sent once 6812
+// has its registry_population rows: [what, changes to a valid body for 6812,
+// the error message].
+const REJECTED_AGE = [
+  ["a row without m57", { rows: withAgeRow(3, { m57: undefined }) }, "Row keys do not match the header"],
+  ["a row with uploaded_at", { rows: withAgeRow(3, { uploaded_at: "2026-11-06" }) }, "Row keys do not match the header"],
+  ["a row of 6712", { rows: withAgeRow(9, { yymm: "6712" }) }, "Row of another yymm"],
+  ["rcode as a number", { rows: withAgeRow(0, { rcode: 5406 }) }, "Invalid value"],
+  ["a tt_name that setValues would write as a formula (=1+1)", { rows: withAgeRow(0, { tt_name: "=1+1" }) }, "Invalid value"],
+  ["m0 below 0", { rows: withAgeRow(0, { m0: -1 }) }, "Invalid value"],
+  ["f101 not a whole number", { rows: withAgeRow(0, { f101: 0.5 }) }, "Invalid value"],
+  ["total_t as a string", { rows: withAgeRow(0, { total_t: "4536" }) }, "Invalid value"],
+  ["ตำบลน้ำชำ of อำเภอเมืองแพร่ (54010300)", { rows: withAgeRow(4, { tt: "54010300" }) }, "Row outside district"],
+  ["5406's ตำบลบ้านหนุน twice", { rows: [...AGE_ROWS_6812, BAN_NUN] }, "Duplicate tambon row"],
+  ["เกิดปีจันทรคติ ชาย 0 + หญิง 0 with รวม 1", { rows: withAgeRow(1, { lunar_t: 1 }) }, "Male + female does not equal total"],
+  ["total_m + total_f ≠ total_t", { rows: withAgeRow(1, { total_t: 3412 }) }, "Male + female does not equal total"],
+  ["one more man aged 30 in ตำบลห้วยหม้าย, total_m as before", { rows: withAgeRow(2, { m30: HUAI_MAI.m30 + 1 }) }, "Ages do not add up to total"],
+  ["one more woman in ทะเบียนบ้านกลาง (50 + 13 = 63), total_f as before", { rows: withAgeRow(1, { central_f: 13, central_t: 63 }) }, "Ages do not add up to total"],
+  ["9 of the 10 rows", { rows: AGE_ROWS_6812.slice(0, 9) }, "Does not match registry_population"],
+  ["ตำบลห้วยหม้าย sent as 5489's", { rows: withAgeRow(2, { rcode: "5489" }) }, "Does not match registry_population"],
+  [
+    "one more boy aged 0 in ตำบลบ้านหนุน and in its totals, so the row adds up but is not stat_t's 2,136 ชาย",
+    { rows: withAgeRow(0, { m0: BAN_NUN.m0 + 1, total_m: BAN_NUN.total_m + 1, total_t: BAN_NUN.total_t + 1 }) },
+    "Does not match registry_population",
+  ],
+];
+
+for (const [what, change, message] of REJECTED_AGE) {
+  test(`kind: age, ${what} → error ${message}, no sheet written, an ERROR in system_logs`, () => {
+    const h = load();
+    savePopulation(h, "6812", ROWS_6812);
+    const before = sheetsExceptLogs(h);
+
+    const res = post(h, { action: "save_registry_population", kind: "age", yymm: "6812", rows: AGE_ROWS_6812, ...change });
+
+    assert.deepEqual(res, { status: "error", message });
+    assert.deepEqual(sheetsExceptLogs(h), before);
+    const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+    assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [["Save rejected registry_population_age 6812", message]]);
+  });
+}
+
+test("kind: age of 6812 before 6812 has registry_population rows (none saved, or only 6712's) → error No registry_population rows for this yymm, no sheet written", () => {
+  for (const saved of [[], [ROWS_6712]]) {
+    const h = load();
+    saved.forEach((rows) => savePopulation(h, rows[0].yymm, rows));
+    const before = sheetsExceptLogs(h);
+
+    const res = saveAge(h, "6812", AGE_ROWS_6812);
+
+    assert.deepEqual(res, { status: "error", message: "No registry_population rows for this yymm" });
+    assert.deepEqual(sheetsExceptLogs(h), before);
+  }
+});
+
+// stat_t68.txt with ตำบลทุ่งน้าว's ชาย one more (as if stat.bora corrected it), or cut to 9 rows.
+const REJECTED_POPULATION_AGAINST_AGE = [
+  ["ตำบลทุ่งน้าว's ชาย one more", ROWS_6812.map((r) => (r.rcode === "5406" && r.tt === "54060800" ? { ...r, male: 1567, total: 3201 } : r))],
+  ["9 of its 10 rows", ROWS_6812.slice(0, 9)],
+];
+
+for (const [what, rows] of REJECTED_POPULATION_AGAINST_AGE) {
+  test(`kind: population of 6812 again once 6812 has age rows, ${what} → error Does not match registry_population_age, neither sheet written`, () => {
+    const h = load();
+    savePopulation(h, "6812", ROWS_6812);
+    saveAge(h, "6812", AGE_ROWS_6812);
+    const before = sheetsExceptLogs(h);
+
+    const res = savePopulation(h, "6812", rows);
+
+    assert.deepEqual(res, { status: "error", message: "Does not match registry_population_age" });
+    assert.deepEqual(sheetsExceptLogs(h), before);
+  });
+}
+
+test("kind: population of 6812 again with the same figures once 6812 has age rows → saved, as when stat_t68.txt is picked again with its age file", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveAge(h, "6812", AGE_ROWS_6812);
+
+  const res = savePopulation(h, "6812", ROWS_6812);
+
+  assert.deepEqual(res, { status: "success", kind: "population", yymm: "6812", count: 10 });
 });
