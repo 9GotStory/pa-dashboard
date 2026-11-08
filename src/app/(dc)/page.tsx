@@ -6,10 +6,11 @@ import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
 
 // The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
 // and population.json at build time: the latest data date, the ประชากร
-// ทะเบียนราษฎร of the อำเภอ, the ตำบล on a map with their หน่วยบริการ and
-// population, a card per หัวข้อ into the report library, and the sources. The
-// client gets the population as computed (HomePopulation), never the rows;
-// without population data the page is as in phase 1.
+// ทะเบียนราษฎร of the อำเภอ, the ตำบล on a map with their หน่วยบริการ,
+// population and population pyramid, a card per หัวข้อ into the report
+// library, and the sources. The client gets the population as computed
+// (HomePopulation), never the rows; without population data the page is as
+// in phase 1.
 export default function Home() {
   const { areas, hospitals, mains } = readCatalog();
   const { built_at, latest_date_com } = readMeta();
