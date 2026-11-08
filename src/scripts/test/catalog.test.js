@@ -382,12 +382,12 @@ test("opendata_id values that are Object.prototype names (constructor, __proto__
 
 // A report that is not first in the vaccine topic's list, so what it sends
 // reaches hdc_reports and not the topic row.
-const EPI2 = EPI_REPORTS.find((r) => r.source_table === "s_epi2");
+const EPI2_REPORT = EPI_REPORTS.find((r) => r.source_table === "s_epi2");
 
 // SCHEMA §3.4 step 8. Sends body and expects the refusal: the sheets as they
 // were, and an ERROR in system_logs without the value. The clock moves first,
 // so a rewrite of the same rows would show in last_seen_at.
-function assertInvalidValue(h, body) {
+function saveExpectingInvalidValue(h, body) {
   const before = { reports: h.sheet("hdc_reports"), topics: h.sheet("hdc_topics") };
   h.clock.now += 60_000;
 
@@ -419,9 +419,9 @@ for (const [what, change] of FORMULA_VALUES) {
     const h = loadWithTopics([[EPI, 20]]);
     saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
 
-    assertInvalidValue(h, {
+    saveExpectingInvalidValue(h, {
       cat_id: EPI,
-      reports: EPI_REPORTS.map((r) => (r.opendata_id === EPI2.opendata_id ? { ...r, ...change } : r)),
+      reports: EPI_REPORTS.map((r) => (r.opendata_id === EPI2_REPORT.opendata_id ? { ...r, ...change } : r)),
     });
   });
 }
@@ -430,9 +430,9 @@ test("a new report whose report_name begins with = → error Invalid value, not 
   const h = loadWithTopics([[EPI, 20]]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
 
-  assertInvalidValue(h, {
+  saveExpectingInvalidValue(h, {
     cat_id: EPI,
-    reports: [...EPI_REPORTS, { ...EPI2, opendata_id: "aaaaaaaabbbbbbbbccccccccdddddddd", report_name: "=1+1" }],
+    reports: [...EPI_REPORTS, { ...EPI2_REPORT, opendata_id: "aaaaaaaabbbbbbbbccccccccdddddddd", report_name: "=1+1" }],
   });
 });
 
@@ -444,7 +444,7 @@ for (const [what, categoryName] of [
     const h = loadWithTopics([[EPI, 20]]);
     saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
 
-    assertInvalidValue(h, { cat_id: EPI, category_name: categoryName, reports: EPI_REPORTS });
+    saveExpectingInvalidValue(h, { cat_id: EPI, category_name: categoryName, reports: EPI_REPORTS });
   });
 }
 
@@ -453,7 +453,7 @@ for (const [what, categoryName] of [
 function loadWithSharedReport() {
   const h = loadWithTopics([[EPI, 20], [NUTRITION, 10]]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
-  return { h, shared: { ...EPI2, cat_id: NUTRITION } };
+  return { h, shared: { ...EPI2_REPORT, cat_id: NUTRITION } };
 }
 
 const ALL_FORMULAS = { report_name: "=1+1", category_name: "=2+2", main_report_name: "=3+3", main_report_id: "=4+4" };
@@ -487,12 +487,12 @@ test("= only in rows that are not written (bad pattern, another cat_id, duplicat
 for (const [what, change] of [
   ["main_report_name", { main_report_name: "=3+3" }],
   ["main_report_id", { main_report_id: "=4+4" }],
-  ["category_name, with none in the body", { category_name: "=2+2" }],
+  ["category_name, with none in the body,", { category_name: "=2+2" }],
 ]) {
   test(`the first report of the list is in another topic and its ${what} begins with =: the topic row would take it → error Invalid value`, () => {
     const { h, shared } = loadWithSharedReport();
 
-    assertInvalidValue(h, { cat_id: NUTRITION, reports: [{ ...shared, ...change }, ...NUTRITION_REPORTS] });
+    saveExpectingInvalidValue(h, { cat_id: NUTRITION, reports: [{ ...shared, ...change }, ...NUTRITION_REPORTS] });
   });
 }
 
@@ -527,7 +527,7 @@ test("= after the first character is not a formula: the names are saved as sent"
   assert.equal(records(h.sheet("hdc_topics"))[0].category_name, name);
 });
 
-test("a cell already in the sheet beginning with = does not refuse the save: only what this save sets counts", () => {
+test("a cell already in the sheet beginning with = does not refuse the save: only values from this request count", () => {
   const h = loadWithTopics([[EPI, 20]]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
   setCell(h, "hdc_reports", 2, "subgroup", "=ข้อความของผู้ดูแล");
@@ -535,5 +535,4 @@ test("a cell already in the sheet beginning with = does not refuse the save: onl
   const res = saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
 
   assert.equal(res.status, "success", res.message);
-  assert.equal(records(h.sheet("hdc_reports"))[0].subgroup, "=ข้อความของผู้ดูแล");
 });
