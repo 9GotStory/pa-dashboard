@@ -368,6 +368,7 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   let added = 0;
   let updated = 0;
   const inOtherTopic = [];
+  const requestValues = [];
   kept.forEach(function (report) {
     let row = rowById[report.opendata_id];
     if (row) {
@@ -390,6 +391,7 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
     }
     DC_CATALOG_API_COLUMNS.forEach(function (name) {
       row[c[name]] = report[name];
+      requestValues.push(report[name]);
     });
     row[c.catalog_status] = "active";
     row[c.last_seen_at] = now;
@@ -417,6 +419,12 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   topicRow[t.main_report_name] = first.main_report_name;
   topicRow[t.report_count] = kept.length;
   topicRow[t.last_refreshed_at] = now;
+
+  // Step 8, before the first write. Only values this request sets count: a
+  // report of another topic writes nothing to hdc_reports, yet as the first of
+  // the list it still fills the topic row (step 7).
+  requestValues.push(topicRow[t.category_name], topicRow[t.main_report_id], topicRow[t.main_report_name]);
+  if (dcHasFormulaCell([requestValues])) return dcRejectCatalog(catId, "Invalid value");
 
   dcWriteTable(reportsTable, DC_CATALOG_TEXT_COLUMNS);
   // insertCheckboxes sets every cell it covers to FALSE, so only new rows.

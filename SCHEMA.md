@@ -259,8 +259,9 @@ Response: `{ status: "success"; year: string; sheet: string; received: number; c
    - ยังไม่มี: เพิ่มแถวพร้อมคอลัมน์จาก API, `enabled = FALSE`, `catalog_status = active`, `last_seen_at = now` นับเป็น `added`
 6. แถวเดิมของหัวข้อนี้ที่ไม่อยู่ในรายการ และยังเป็น `active` ตั้งเป็น `removed` นับเป็น `removed`
 7. อัปเดตแถวใน `hdc_topics`: `category_name` (จาก body หรือรายงานแรก ผ่าน `dcCleanName`), `main_report_id`, `main_report_name` (ผ่าน `dcCleanName`), `report_count`, `last_refreshed_at`
-8. เขียน `hdc_reports` ทั้งชีตกลับ คงลำดับคอลัมน์เดิม และต่อท้ายคอลัมน์ที่ยังไม่มี
-9. บันทึก SUCCESS
+8. ถ้าค่าใดที่คำขอนี้จะเขียนขึ้นต้นด้วย `=` (ตรวจหลังทำความสะอาดในข้อ 3 และหลัง trim `main_report_id`) ตอบ error `Invalid value` ไม่เขียนชีตใดเลย และบันทึก ERROR ใน `system_logs` โดยไม่ใส่ค่าดิบจากคำขอ เพราะ `setValues` เขียนค่าแบบนั้นเป็นสูตร (กฎเดียวกับ §3.3 ข้อ 7, #188) · ค่าที่นับคือคอลัมน์จาก API ของรายงานที่ข้อ 5 เพิ่มหรืออัปเดต และค่าที่ข้อ 7 จะใส่ `hdc_topics` ซึ่งมาจากรายงานแรกแม้รายงานนั้นอยู่ในหัวข้ออื่น · แถวที่ไม่ผ่านรูปแบบ แถวซ้ำ และแถวของหัวข้ออื่น ไม่นับ เพราะค่าของแถวเหล่านั้นไม่ถูกเขียน · ค่าที่อยู่ในชีตอยู่แล้วไม่นับ เพราะไม่ได้มาจากคำขอนี้
+9. เขียน `hdc_reports` และ `hdc_topics` ทั้งชีตกลับ คงลำดับคอลัมน์เดิม และต่อท้ายคอลัมน์ที่ยังไม่มี
+10. บันทึก SUCCESS
 
 Response: `{ status: "success"; added: number; updated: number; removed: number; skipped: number }`
 
