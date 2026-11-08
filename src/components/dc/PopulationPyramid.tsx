@@ -2,20 +2,21 @@ import { formatCount, formatPct } from "@/lib/dc/format";
 import type { AgeProfile, UnsplitGroup } from "@/lib/dc/types";
 
 const ROW = 24;
-// The two halves of the chart as shares of its width: ชาย bars grow left and
-// หญิง bars right from the ช่วงอายุ in the middle. No viewBox, so the text
-// keeps its CSS size at any width.
+// The two halves of the chart as a percentage of its width: ชาย bars grow
+// left and หญิง bars right from the ช่วงอายุ in the middle. No viewBox, so the
+// text keeps its CSS size at any width.
 const HALF = 43;
 
-// The kinds of ประชากรที่ไม่แยกอายุ, in the order SCHEMA §11.4 lists them.
-// Named again here, not taken from population.ts, which holds the /sync file
-// reader too and so stays out of the page's JavaScript (SPEC §9.6).
-const UNSPLIT: [UnsplitGroup, string][] = [
-  ["nonthai", "ไม่ใช่สัญชาติไทย"],
-  ["central", "ทะเบียนบ้านกลาง"],
-  ["moving", "ระหว่างการย้าย"],
-  ["lunar", "เกิดปีจันทรคติ"],
-];
+// The name of each kind of ประชากรที่ไม่แยกอายุ, in the order SCHEMA §11.4
+// lists them. Named again here, not taken from population.ts, which holds
+// the /sync file reader too and so stays out of the page's JavaScript (SPEC
+// §9.6).
+const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
+  nonthai: "ไม่ใช่สัญชาติไทย",
+  central: "ทะเบียนบ้านกลาง",
+  moving: "ระหว่างการย้าย",
+  lunar: "เกิดปีจันทรคติ",
+};
 
 /** A ช่วงอายุ as a sentence says it: "0–4 ปี", "80 ปีขึ้นไป" (GLOSSARY) */
 function bandName(label: string): string {
@@ -25,19 +26,20 @@ function bandName(label: string): string {
 /**
  * The population pyramid of the home page (SPEC §9.2), after R6's: ชาย and
  * หญิง of each ช่วงอายุ on one scale, ชาย to the left, หญิง to the right and
- * the oldest at the top. Its header names the area as the panel does (title)
- * and the year with source, then the people aged 60 and over and their
- * ร้อยละ of those the bars count; below, the ประชากรที่ไม่แยกอายุ the bars
- * leave out, by kind. DistrictExplorer renders it under the ตำบล table for
- * the area picked.
+ * the oldest at the top. Its header names the area as the panel does
+ * (areaName) and the year with source, then the people aged 60 and over and
+ * their ร้อยละ of those the bars count; below, the ประชากรที่ไม่แยกอายุ the
+ * bars leave out, by kind. DistrictExplorer renders it under the ตำบล table
+ * for the area picked.
  */
-export default function PopulationPyramid({ title, age, source }: { title: string; age: AgeProfile; source: string }) {
+export default function PopulationPyramid({ areaName, age, source }: { areaName: string; age: AgeProfile; source: string }) {
   const top = Math.max(...age.bands.flatMap((b) => [b.male, b.female]));
-  const share = (count: number) => (count / top) * 100;
-  const unsplit = UNSPLIT.filter(([group]) => age.unsplit[group] > 0);
-  const unsplitTotal = UNSPLIT.reduce((sum, [group]) => sum + age.unsplit[group], 0);
+  // A bar's width as a percentage of its half: the area's largest count fills it.
+  const barWidth = (count: number) => (count / top) * 100;
+  const unsplit = (Object.keys(UNSPLIT_NAMES) as UnsplitGroup[]).filter((group) => age.unsplit[group] > 0);
+  const unsplitTotal = Object.values(age.unsplit).reduce((sum, count) => sum + count, 0);
   const label =
-    `พีระมิดประชากร ${title} ${source}: อายุ 60 ปีขึ้นไป ${formatCount(age.aged60)} คน ร้อยละ ${formatPct(age.aged60_pct)} · ` +
+    `พีระมิดประชากร ${areaName} ${source}: อายุ 60 ปีขึ้นไป ${formatCount(age.aged60)} คน ร้อยละ ${formatPct(age.aged60_pct)} · ` +
     age.bands.map((b) => `${bandName(b.label)} ชาย ${formatCount(b.male)} หญิง ${formatCount(b.female)}`).join(", ");
 
   return (
@@ -48,7 +50,7 @@ export default function PopulationPyramid({ title, age, source }: { title: strin
             พีระมิดประชากร
           </h2>
           <p className="text-xs text-dc-muted">
-            <span className="font-semibold text-dc-blue-dark">{title}</span> · ช่วงอายุ 5 ปี ชายและหญิง
+            <span className="font-semibold text-dc-blue-dark">{areaName}</span> · ช่วงอายุ 5 ปี ชายและหญิง
           </p>
         </div>
         <p className="self-start rounded border border-dc-border bg-dc-canvas px-2.5 py-1.5 text-[11px] font-bold text-dc-muted">
@@ -85,7 +87,7 @@ export default function PopulationPyramid({ title, age, source }: { title: strin
                 <svg y={i * ROW + 4} width={`${HALF}%`} height={ROW - 8}>
                   <title>{`ชาย ${bandName(b.label)} ${formatCount(b.male)} คน`}</title>
                   <rect width="100%" height="100%" rx="3" className="fill-dc-canvas" />
-                  <rect x={`${100 - share(b.male)}%`} width={`${share(b.male)}%`} height="100%" rx="3" className="fill-dc-teal" />
+                  <rect x={`${100 - barWidth(b.male)}%`} width={`${barWidth(b.male)}%`} height="100%" rx="3" className="fill-dc-teal" />
                 </svg>
                 <text x="50%" y={i * ROW + ROW / 2} dominantBaseline="middle" textAnchor="middle" className="fill-dc-ink tabular-nums">
                   {b.label}
@@ -93,7 +95,7 @@ export default function PopulationPyramid({ title, age, source }: { title: strin
                 <svg x={`${100 - HALF}%`} y={i * ROW + 4} width={`${HALF}%`} height={ROW - 8}>
                   <title>{`หญิง ${bandName(b.label)} ${formatCount(b.female)} คน`}</title>
                   <rect width="100%" height="100%" rx="3" className="fill-dc-canvas" />
-                  <rect width={`${share(b.female)}%`} height="100%" rx="3" className="fill-dc-gold" />
+                  <rect width={`${barWidth(b.female)}%`} height="100%" rx="3" className="fill-dc-gold" />
                 </svg>
               </g>
             ))}
@@ -111,7 +113,7 @@ export default function PopulationPyramid({ title, age, source }: { title: strin
 
         <p className="mt-3 text-xs text-dc-muted">
           ไม่รวมประชากรที่ไม่แยกอายุ {formatCount(unsplitTotal)} คน
-          {unsplit.length > 0 && ` (${unsplit.map(([group, name]) => `${name} ${formatCount(age.unsplit[group])}`).join(" · ")})`}
+          {unsplit.length > 0 && ` (${unsplit.map((group) => `${UNSPLIT_NAMES[group]} ${formatCount(age.unsplit[group])}`).join(" · ")})`}
         </p>
       </div>
     </section>

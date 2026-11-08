@@ -23,10 +23,10 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * map or with its button to see its หน่วยบริการ, from hospitals.tambon_id
  * in catalog.json, and ดูภาพรวมอำเภอ for the whole อำเภอ. The buttons work
  * without the map, as when its tiles or boundaries cannot load. With
- * population, the panel shows the population of what is picked, the
- * ประชากรรายตำบล table below, labelled with source, picks a ตำบล too, and
- * the population pyramid under it is of what is picked, when the year has
- * age rows; without population, the page is as in phase 1.
+ * population, the panel shows the population of what is picked, and the
+ * ประชากรรายตำบล table below, labelled with source, picks a ตำบล too. Under
+ * the table, the population pyramid is of what is picked, when the year has
+ * age rows. Without population, the page is as in phase 1.
  */
 export default function DistrictExplorer({
   areas,
@@ -184,7 +184,7 @@ export default function DistrictExplorer({
       )}
       {panelPopulation?.age && (
         <div className="md:col-span-2">
-          <PopulationPyramid title={title} age={panelPopulation.age} source={source} />
+          <PopulationPyramid areaName={title} age={panelPopulation.age} source={source} />
         </div>
       )}
     </div>

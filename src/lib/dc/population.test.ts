@@ -467,7 +467,7 @@ test("the 8 ตำบล of 2568 → a pyramid each, and together they hold the 
 
   assert.ok(home);
   const ages = home.areas.map((a) => a.age);
-  assert.equal(ages.length, 8);
+  assert.equal(ages.filter((age) => age !== null).length, 8);
   assert.equal(ages.reduce((sum, age) => sum + (age?.age_total ?? 0), 0), 46362);
   assert.equal(ages.reduce((sum, age) => sum + (age?.aged60 ?? 0), 0), 13487);
 });
@@ -489,6 +489,28 @@ test("บ้านหนุน and บ้านกลาง of 2568, each with a
   assert.deepEqual(bandsTotal(banKlang.bands), { male: 3079, female: 3510 });
   assert.equal(banKlang.age_total, 6589);
   assert.deepEqual(banKlang.unsplit, { nonthai: 15, central: 75, moving: 7, lunar: 0 });
+});
+
+test("ages at the edges of the ช่วงอายุ (ตำบลแดนชุมพล with its counts by year of age all 0 but ชาย 79, 80, 100, 101 and หญิง 4, 5, 59, 60) → 0–4 ends at 4, 55–59 at 59 and 75–79 at 79, 80+ takes 80 to 101, and aged 60 and over starts at 60, as SCHEMA §11.3 has them", () => {
+  const counts: Record<string, number> = { m79: 1, m80: 2, m100: 3, m101: 4, f4: 5, f5: 6, f59: 7, f60: 8 };
+  const edges = { ...ageRead68.rows.find((r) => r.tt === "54060700")! };
+  for (let age = 0; age <= 101; age++) {
+    for (const sex of ["m", "f"] as const) edges[`${sex}${age}`] = counts[`${sex}${age}`] ?? 0;
+  }
+  const population = ROWS_6812.filter((r) => r.tt === "54060700");
+
+  const age = homePopulation({ years: [{ yymm: "6812", population, age: [edges] }] }, AREAS)?.district.age;
+
+  assert.ok(age);
+  assert.deepEqual(age.bands.filter((b) => b.male + b.female > 0), [
+    { label: "0–4", male: 0, female: 5 },
+    { label: "5–9", male: 0, female: 6 },
+    { label: "55–59", male: 0, female: 7 },
+    { label: "60–64", male: 0, female: 8 },
+    { label: "75–79", male: 1, female: 0 },
+    { label: "80+", male: 2 + 3 + 4, female: 0 },
+  ]);
+  assert.equal(age.aged60, 1 + 2 + 3 + 4 + 8);
 });
 
 test("population.json whose latest year has no age rows, as before F29 uploads them → age null for the อำเภอ and all 8 ตำบล: the home page hides only the pyramid", () => {

@@ -53,10 +53,11 @@ export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["a
   const shown = snapshot.years.at(-1);
   if (!shown) return null;
   // A ตำบล is the first 6 digits of tt, across every สำนักทะเบียน: 5489, the
-  // เทศบาล, covers part of 5406's บ้านหนุน and บ้านกลาง.
+  // เทศบาล, covers part of 5406's บ้านหนุน and บ้านกลาง. So for age rows too.
+  const tambonOf = (row: { tt: string }) => row.tt.slice(0, 6);
   const byTambon = new Map<string, RegistryPopulationRow[]>();
   for (const row of shown.population) {
-    const key = row.tt.slice(0, 6);
+    const key = tambonOf(row);
     byTambon.set(key, [...(byTambon.get(key) ?? []), row]);
   }
   const names = new Map(areas.map((a) => [a.id, a.name_th]));
@@ -67,7 +68,7 @@ export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["a
     district: { key: "all", name: "อำเภอสอง", totals: populationTotals(shown.population), age: hasAge ? ageProfile(shown.age) : null },
     areas: [...byTambon.keys()].sort().map((key) => {
       const rows = byTambon.get(key)!;
-      const age = hasAge ? ageProfile(shown.age.filter((r) => r.tt.slice(0, 6) === key)) : null;
+      const age = hasAge ? ageProfile(shown.age.filter((r) => tambonOf(r) === key)) : null;
       return { key, name: names.get(key) ?? rows[0].tt_name, totals: populationTotals(rows), age };
     }),
   };
