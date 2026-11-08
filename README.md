@@ -113,7 +113,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm start` | เปิดดูผล build ที่ <http://localhost:3000> ด้วย `npx serve@latest out` (`next start` ใช้กับ static export ไม่ได้) |
 | `npm run lint` | ESLint (รวมกฎ import ของ Data Center) และวลีที่ GLOSSARY ให้เลี่ยง |
 | `npm test` | เทสต์ GAS และเทสต์ของ Data Center |
-| `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 |
+| `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 (CI รันทุก PR) |
 | `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center (CI รันทุก PR) |
 | `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build |
 | `npm run gas:push` · `gas:deploy` · `gas:sync` | push โค้ด GAS · deploy ทับ deployment เดิม · ทำทั้งสองอย่าง (ดูหัวข้อ Deploy) |
@@ -127,7 +127,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 
 - Cloudflare Pages build จาก `main` เองทุกครั้งที่ push และ GAS สั่ง build ใหม่ผ่าน Deploy Hook หลัง sync ได้ไม่เกิน 5 ครั้งต่อวัน branch อื่นไม่ deploy ค่าที่ตั้งไว้อยู่ใน [SPEC.md](SPEC.md) §12.5
 - `deploy.yml` อัปโหลดหน้า stub ใน `legacy-redirect/` ขึ้น GitHub Pages ทุกครั้งที่ push เข้า `main` โดยไม่ build (SPEC §12.6)
-- PR ที่เข้า `main` จะรัน `ci.yml`: lint, test, ตรวจว่า `legacy-redirect/index.html` กับ `404.html` เหมือนกันทุกไบต์, `npm run build` (prebuild จริง) และ `npm run dc:budget`
+- PR ที่เข้า `main` จะรัน `ci.yml`: lint, test, ตรวจว่า `legacy-redirect/index.html` กับ `404.html` เหมือนกันทุกไบต์, `npm run build` (prebuild จริง), `npm run dc:budget` และ `npm run dc:check`
 
 ### GAS
 

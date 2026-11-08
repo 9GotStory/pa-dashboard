@@ -19,6 +19,7 @@ Infer the repo from `git remote -v`; `gh` does this automatically when run insid
 - Sub-issues and native issue dependencies are enabled on `9GotStory/pa-dashboard`.
 - Phase 1 tickets F01–F22 (FEATURES.md) become one issue each, as sub-issues of the spec issue, with each ticket's "ขึ้นกับ" column as blocking edges.
 - Once the issues exist, the issue is the source of truth for status and FEATURES.md for acceptance checks. If they disagree, fix FEATURES.md first, then update the issue.
+- A spec issue (the parent of a Track's tickets) is the history of why the Track exists. The Track's docs ticket moves its content into SPEC.md, SCHEMA.md and FEATURES.md, which then go further than the issue, so implement a ticket from its own body, its FEATURES entry and the sections they name.
 - Write titles and bodies with GLOSSARY.md terms.
 
 ## Pull requests as a triage surface

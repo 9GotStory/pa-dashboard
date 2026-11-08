@@ -44,3 +44,7 @@ jobs:
       - name: Budget
         # SPEC §9.6: the JavaScript of / and /reports, and no font preload on the Data Center pages
         run: npm run dc:budget
+
+      - name: Page check
+        # CODING_STANDARDS §4–5: every Data Center page of out/ at 360 px, in the runner's Google Chrome
+        run: npm run dc:check
