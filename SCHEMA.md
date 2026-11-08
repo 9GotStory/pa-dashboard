@@ -228,10 +228,11 @@
 4. เก็บเฉพาะแถวที่ `String(areacode)` ขึ้นต้นด้วย `district_code` ถ้าเหลือ 0 แถว คงข้อมูลเดิมและบันทึก WARNING
 5. แถวที่ไม่มี `b_year` เติมเป็น `year` ส่วนแถวที่ `b_year ≠ year` ตัดทิ้งและบันทึก WARNING พร้อมจำนวน
 6. ตรวจ `Stale data`: ถ้า `force` ไม่ใช่ `true` และ `sync_status` มีแถว (`tableName`, `year`) ที่ `max_date_com` มากกว่า `date_com` สูงสุดของแถวใหม่ ตอบ error `Stale data: existing {old} > incoming {new}` ไม่บันทึก
-7. ถ้า `year = current_year`: ทำการย้ายปีอัตโนมัติตาม §2.5 ก่อน
-8. เขียนแทนที่ชีต `sheetNameFor(tableName, year)` ทั้งชีต: clear → header (key ของแถวใหม่ตามลำดับที่พบ) → ตั้งรูปแบบคอลัมน์ข้อความ → ค่า → ตัดแถวว่างท้ายชีต
-9. upsert `sync_status` (`tableName`, `year`, `sheet`, `row_count`, `max_date_com`, `synced_at`) และลบแถวของตารางนี้ที่อยู่นอก window · ถ้าชีต `sync_status` ยังไม่มี สร้างพร้อม header ตรงนี้เลย (ไม่รอ `setup=datacenter` เพราะ trigger รายวันอาจรันก่อน)
-10. บันทึก SUCCESS `Synced {table} {year}` พร้อมจำนวนแถว
+7. ถ้าชื่อคอลัมน์หรือค่าใดของแถวที่จะเขียน (แถวที่เหลือจากข้อ 4–5) อ่านเป็น string แล้วขึ้นต้นด้วย `=` ตอบ error `Invalid value` ไม่เขียนชีตใดเลย และบันทึก ERROR ใน `system_logs` โดยไม่ใส่ค่าดิบจากคำขอ เพราะ `setValues` เขียนค่าแบบนั้นเป็นสูตร (กฎเดียวกับ §3.8 ข้อ 6, #181) · แถวที่ถูกตัดทิ้งในข้อ 4–5 ไม่นับ เพราะไม่ถูกเขียน
+8. ถ้า `year = current_year`: ทำการย้ายปีอัตโนมัติตาม §2.5 ก่อน
+9. เขียนแทนที่ชีต `sheetNameFor(tableName, year)` ทั้งชีต: clear → header (key ของแถวใหม่ตามลำดับที่พบ) → ตั้งรูปแบบคอลัมน์ข้อความ → ค่า → ตัดแถวว่างท้ายชีต
+10. upsert `sync_status` (`tableName`, `year`, `sheet`, `row_count`, `max_date_com`, `synced_at`) และลบแถวของตารางนี้ที่อยู่นอก window · ถ้าชีต `sync_status` ยังไม่มี สร้างพร้อม header ตรงนี้เลย (ไม่รอ `setup=datacenter` เพราะ trigger รายวันอาจรันก่อน)
+11. บันทึก SUCCESS `Synced {table} {year}` พร้อมจำนวนแถว
 
 Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
 

@@ -501,3 +501,79 @@ test("syncAllData keeps its one lock when the 60 s config caches expire mid-sync
   assert.equal(records(h.sheet("s_x")).length, DISTRICT_ROWS);
   assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });
+
+// provinceRows with the first row of อำเภอ 5406 changed.
+function withDistrictRow(rowOptions, change) {
+  const rows = provinceRows(rowOptions);
+  const i = rows.findIndex((r) => r.areacode.startsWith("5406"));
+  rows[i] = { ...rows[i], ...change };
+  return rows;
+}
+
+// SCHEMA §3.3 step 7: each of these would reach setValues beginning with "=".
+const FORMULA_CELLS = [
+  ["a value", { flag_sent: "=1+1" }],
+  ["a value in a text column (hospcode)", { hospcode: "=1+1" }],
+  ["a date_com, which sync_status stores too,", { date_com: "=1+1" }],
+  ["a column name", { "=1+1": "x" }],
+  ["a value sent as a list", { flag_sent: ["=1+1"] }],
+];
+
+for (const [what, change] of FORMULA_CELLS) {
+  test(`${what} that setValues would write as a formula (=1+1) → error Invalid value, no sheet written, an ERROR in system_logs`, () => {
+    // s_x still holds 2569 rows: a save of 2570 moves them to s_x_y2569 first.
+    const h = load(2570, { s_x: oldPathSheet(provinceRows({ year: "2569", dateCom: "202609300930" })) });
+    const before = dataSheets(h);
+
+    const res = post(h, {
+      action: "save_kpi_data",
+      tableName: "s_x",
+      data: withDistrictRow({ year: "2570", dateCom: "202611010800" }, change),
+    });
+
+    assert.deepEqual(res, { status: "error", message: "Invalid value" });
+    assert.deepEqual(dataSheets(h), before);
+    const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+    assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [["Save rejected s_x 2570", "Invalid value"]]);
+    assert.ok(!JSON.stringify(h.sheet("system_logs")).includes("=1+1"), "the raw value must not reach system_logs");
+  });
+}
+
+test("= only in rows the save drops (another อำเภอ, another b_year) → the rows of อำเภอ 5406 are saved", () => {
+  const h = load();
+  const rows = provinceRows({ year: "2569", dateCom: "202610300930" });
+  const otherDistrict = rows.findIndex((r) => !r.areacode.startsWith("5406"));
+  const otherYear = rows.findIndex((r) => r.areacode.startsWith("5406"));
+  rows[otherDistrict] = { ...rows[otherDistrict], flag_sent: "=1+1", "=2+2": "x" };
+  rows[otherYear] = { ...rows[otherYear], flag_sent: "=1+1", b_year: "2568" };
+
+  const res = h.gas.saveTableYear("s_x", "2569", rows, {});
+
+  assert.equal(res.status, "success", res.message);
+  assert.equal(res.count, DISTRICT_ROWS - 1);
+  assert.ok(!JSON.stringify(h.sheet("s_x")).includes("="), "a dropped row must not reach the sheet");
+});
+
+test("= after the first character is not a formula: the value is saved as sent", () => {
+  const h = load();
+
+  const res = h.gas.saveTableYear(
+    "s_x", "2569", withDistrictRow({ year: "2569", dateCom: "202610300930" }, { flag_sent: "a=b" }), {},
+  );
+
+  assert.equal(res.status, "success", res.message);
+  assert.equal(records(h.sheet("s_x"))[0].flag_sent, "a=b");
+});
+
+test("syncAllData: MOPH rows with a value beginning with = are not saved, and system_logs has the ERROR", () => {
+  const rows = withDistrictRow({ year: "2569", dateCom: "202610310930" }, { flag_sent: "=1+1" });
+  const h = load(2569, {}, mophStub({ data: rows, total: "700" }));
+  h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
+  const before = dataSheets(h);
+
+  h.gas.syncAllData();
+
+  assert.deepEqual(dataSheets(h), before);
+  const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+  assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [["Save rejected s_x 2569", "Invalid value"]]);
+});

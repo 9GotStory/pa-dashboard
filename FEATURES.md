@@ -78,7 +78,7 @@
 
 ### F02 บันทึกข้อมูลตามปี เฉพาะอำเภอ (`dc-storage.js`)
 
-- **ทำ:** `saveTableYear(tableName, year, rows, { total, force })` ตาม SCHEMA §3.3 ขั้น 1–10 รวมการย้ายปีอัตโนมัติที่กรองอำเภอและไม่ทับข้อมูลใหม่กว่า (SCHEMA §2.5) และ `sync_status` (สร้างชีตเองถ้ายังไม่มี) · ไม่ถือ script lock เอง (`doPost`/`syncAllData` ถือ SCHEMA §3) · `save_kpi_data` ใน `doPost` เรียกฟังก์ชันนี้ · `syncAllData` เรียกฟังก์ชันนี้แทน `saveDataToSheet` เดิมด้วย `force: true` (`saveDataToSheet` เดิมคงไว้แต่ไม่มีใครเรียก ระบุใน comment) · `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total`
+- **ทำ:** `saveTableYear(tableName, year, rows, { total, force })` ตาม SCHEMA §3.3 ขั้น 1–11 รวมการย้ายปีอัตโนมัติที่กรองอำเภอและไม่ทับข้อมูลใหม่กว่า (SCHEMA §2.5) และ `sync_status` (สร้างชีตเองถ้ายังไม่มี) · ไม่ถือ script lock เอง (`doPost`/`syncAllData` ถือ SCHEMA §3) · `save_kpi_data` ใน `doPost` เรียกฟังก์ชันนี้ · `syncAllData` เรียกฟังก์ชันนี้แทน `saveDataToSheet` เดิมด้วย `force: true` (`saveDataToSheet` เดิมคงไว้แต่ไม่มีใครเรียก ระบุใน comment) · `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total`
 - **ตรวจรับ (เทสต์ด้วย stub ของ SpreadsheetApp ที่จำลองชีตในหน่วยความจำ):**
   1. บันทึกปี 2569 (= current_year) 700 แถวทั้งจังหวัด → ชีต `s_x` มีเฉพาะแถว `5406` · response `received = 700`, `count` = จำนวนแถวอำเภอ, `sheet = "s_x"`, `archived = []` · `sync_status` มีแถว (`s_x`, 2569, sheet `s_x`)
   2. บันทึกปี 2568 → ชีต `s_x_y2568` ถูกสร้าง ชีต `s_x` ไม่เปลี่ยน · `sync_status` มี 2 แถว
