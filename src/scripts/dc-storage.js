@@ -87,7 +87,7 @@ const DC_TEXT_COLUMNS = ["id", "hospcode", "areacode", "vhid"];
 const DC_SYNC_STATUS_TEXT_COLUMNS = ["b_year", "max_date_com"];
 
 /**
- * Save one (table, year) from MOPH rows: SCHEMA §3.3 steps 1–10.
+ * Save one (table, year) from MOPH rows: SCHEMA §3.3 steps 1–11.
  * Keeps only rows of settings.district_code, replaces the whole sheet
  * sheetNameFor(tableName, year) and upserts sync_status.
  *
@@ -171,8 +171,6 @@ function saveTableYear(tableName, year, rows, options) {
     }
   }
 
-  const archived = y === settings.current_year ? dcArchiveOldYears(tableName, y, settings) : [];
-
   const headers = [];
   kept.forEach(function (row) {
     Object.keys(row).forEach(function (key) {
@@ -188,6 +186,12 @@ function saveTableYear(tableName, year, rows, options) {
       return val || "";
     });
   });
+  // Checked before the archive below, so a rejected save writes no sheet.
+  if (dcHasFormulaCell([headers].concat(values))) {
+    return dcRejectSave("ERROR", tableName, y, "Invalid value");
+  }
+
+  const archived = y === settings.current_year ? dcArchiveOldYears(tableName, y, settings) : [];
 
   const sheetName = sheetNameFor(tableName, y, settings);
   dcWriteSheet(sheetName, headers, values, DC_TEXT_COLUMNS);
@@ -268,6 +272,19 @@ function dcArchiveOldYears(tableName, year, settings) {
 /** areacode starts with settings.district_code (SCHEMA §2.5 "แถวที่เก็บ"). */
 function dcInDistrict(areacode, settings) {
   return String(areacode).indexOf(settings.district_code) === 0;
+}
+
+/**
+ * Whether any cell of these rows begins with "=", which setValues writes as a
+ * formula (Apps Script Range.setValues). Read through String() because a value
+ * need not be a string: a request can send the list ["=1+1"].
+ */
+function dcHasFormulaCell(rows) {
+  return rows.some(function (row) {
+    return row.some(function (v) {
+      return String(v).charAt(0) === "=";
+    });
+  });
 }
 
 /**
