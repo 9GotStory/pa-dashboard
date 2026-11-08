@@ -13,17 +13,46 @@ const fileReads = {
   regex: "^(node:)?fs(/|$)",
   message: "Data Center code reads files through src/lib/dc/snapshot.ts only (CODING_STANDARDS §4).",
 };
+// population.ts holds the /sync file reader too, which stays out of the
+// pages' JavaScript (SPEC §9.6): page.tsx computes on the server and the
+// components take the result as props.
+const populationReader = {
+  regex: "^@/lib/dc/population$",
+  message: "A Data Center component does not import population.ts, which holds the /sync file reader (SPEC §9.6): take the computed values as props.",
+};
 
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
   {
     files: ["src/app/(dc)/**", "src/components/dc/**", "src/lib/dc/**"],
-    rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads] }] },
+    rules: {
+      "no-restricted-imports": ["error", { patterns: [paFiles, fileReads] }],
+      // Strings too: a BOM typed into one is invisible, so the repo writes it as an escape.
+      "no-irregular-whitespace": ["error", { skipStrings: false }],
+    },
   },
   {
     files: ["src/lib/dc/snapshot.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles] }] },
+  },
+  {
+    files: ["src/components/dc/**"],
+    ignores: ["src/components/dc/RegistryPopulationUpload.tsx"],
+    rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
+  },
+  {
+    files: ["src/lib/dc/**"],
+    ignores: ["src/lib/dc/types.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "ExportNamedDeclaration > :matches(TSTypeAliasDeclaration, TSInterfaceDeclaration)",
+          message: "Data Center types live in src/lib/dc/types.ts, which mirrors SCHEMA §9 (CODING_STANDARDS §4).",
+        },
+      ],
+    },
   },
   // Override default ignores of eslint-config-next.
   globalIgnores([
