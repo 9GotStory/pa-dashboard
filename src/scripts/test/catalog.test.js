@@ -379,3 +379,161 @@ test("opendata_id values that are Object.prototype names (constructor, __proto__
   const ids = records(h.sheet("hdc_reports")).map((r) => r.opendata_id);
   assert.ok(ids.includes("constructor") && ids.includes("__proto__"), ids.slice(0, 3).join(", "));
 });
+
+// A report that is not first in the vaccine topic's list, so what it sends
+// reaches hdc_reports and not the topic row.
+const EPI2 = EPI_REPORTS.find((r) => r.source_table === "s_epi2");
+
+// SCHEMA §3.4 step 8. Sends body and expects the refusal: the sheets as they
+// were, and an ERROR in system_logs without the value. The clock moves first,
+// so a rewrite of the same rows would show in last_seen_at.
+function assertInvalidValue(h, body) {
+  const before = { reports: h.sheet("hdc_reports"), topics: h.sheet("hdc_topics") };
+  h.clock.now += 60_000;
+
+  const res = saveCatalog(h, body);
+
+  assert.deepEqual(res, { status: "error", message: "Invalid value" });
+  assert.deepEqual(h.sheet("hdc_reports"), before.reports);
+  assert.deepEqual(h.sheet("hdc_topics"), before.topics);
+  const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+  assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [[`Catalog rejected ${body.cat_id}`, "Invalid value"]]);
+  assert.ok(!JSON.stringify(h.sheet("system_logs")).includes("="), "the raw value must not reach system_logs");
+}
+
+// Each of these would reach setValues beginning with "=", some only after
+// dcCleanName or trim.
+const FORMULA_VALUES = [
+  ["report_name", { report_name: "=1+1" }],
+  ["main_report_name", { main_report_name: "=3+3" }],
+  ["main_report_id", { main_report_id: "=4+4" }],
+  ["category_name", { category_name: "=2+2" }],
+  ["report_name inside a tag (<b>=1+1</b>)", { report_name: "<b>=1+1</b>" }],
+  ["report_name after a space", { report_name: " =1+1" }],
+  ["main_report_name after a tab and a tag", { main_report_name: "\t<font color=red>=3+3</font>" }],
+  ["main_report_id after a space", { main_report_id: " =4+4" }],
+];
+
+for (const [what, change] of FORMULA_VALUES) {
+  test(`a report's ${what} that setValues would write as a formula → error Invalid value, both sheets unchanged, an ERROR in system_logs`, () => {
+    const h = loadWithTopics([[EPI, 20]]);
+    saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+
+    assertInvalidValue(h, {
+      cat_id: EPI,
+      reports: EPI_REPORTS.map((r) => (r.opendata_id === EPI2.opendata_id ? { ...r, ...change } : r)),
+    });
+  });
+}
+
+test("a new report whose report_name begins with = → error Invalid value, not added", () => {
+  const h = loadWithTopics([[EPI, 20]]);
+  saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+
+  assertInvalidValue(h, {
+    cat_id: EPI,
+    reports: [...EPI_REPORTS, { ...EPI2, opendata_id: "aaaaaaaabbbbbbbbccccccccdddddddd", report_name: "=1+1" }],
+  });
+});
+
+for (const [what, categoryName] of [
+  ["category_name in the body", "=2+2"],
+  ["category_name in the body inside a tag", "<font color=red>=2+2</font>"],
+]) {
+  test(`${what} that setValues would write as a formula → error Invalid value, both sheets unchanged, an ERROR in system_logs`, () => {
+    const h = loadWithTopics([[EPI, 20]]);
+    saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+
+    assertInvalidValue(h, { cat_id: EPI, category_name: categoryName, reports: EPI_REPORTS });
+  });
+}
+
+// The report the vaccine topic already has, sent again by the nutrition topic:
+// the first topic keeps it (step 5).
+function loadWithSharedReport() {
+  const h = loadWithTopics([[EPI, 20], [NUTRITION, 10]]);
+  saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+  return { h, shared: { ...EPI2, cat_id: NUTRITION } };
+}
+
+const ALL_FORMULAS = { report_name: "=1+1", category_name: "=2+2", main_report_name: "=3+3", main_report_id: "=4+4" };
+
+function assertNoFormulaInSheets(h) {
+  for (const name of ["hdc_reports", "hdc_topics"]) {
+    assert.ok(!JSON.stringify(h.sheet(name)).includes("="), `${name} must not get a value with =`);
+  }
+}
+
+test("= only in rows that are not written (bad pattern, another cat_id, duplicate, a report of another topic) → the other reports are saved", () => {
+  const { h, shared } = loadWithSharedReport();
+  const [base] = NUTRITION_REPORTS;
+  const notWritten = [
+    { ...base, ...ALL_FORMULAS, opendata_id: "bad id" },
+    { ...base, ...ALL_FORMULAS, opendata_id: "aaaaaaaabbbbbbbbccccccccdddddddd", source_table: "not_s" },
+    { ...base, ...ALL_FORMULAS, opendata_id: "aaaaaaaabbbbbbbbcccccccceeeeeeee", cat_id: EPI },
+    { ...base, ...ALL_FORMULAS }, // the same opendata_id as the first row
+    { ...shared, ...ALL_FORMULAS },
+  ];
+
+  const res = saveCatalog(h, { cat_id: NUTRITION, category_name: "งานโภชนาการ", reports: [...NUTRITION_REPORTS, ...notWritten] });
+
+  assert.equal(res.status, "success", res.message);
+  assert.equal(res.skipped, 4);
+  assertNoFormulaInSheets(h);
+});
+
+// hdc_topics takes these from the first report of the list (step 7), even one
+// that hdc_reports keeps in another topic.
+for (const [what, change] of [
+  ["main_report_name", { main_report_name: "=3+3" }],
+  ["main_report_id", { main_report_id: "=4+4" }],
+  ["category_name, with none in the body", { category_name: "=2+2" }],
+]) {
+  test(`the first report of the list is in another topic and its ${what} begins with =: the topic row would take it → error Invalid value`, () => {
+    const { h, shared } = loadWithSharedReport();
+
+    assertInvalidValue(h, { cat_id: NUTRITION, reports: [{ ...shared, ...change }, ...NUTRITION_REPORTS] });
+  });
+}
+
+test("the first report of the list is in another topic, = only where the topic row does not take it → saved", () => {
+  const { h, shared } = loadWithSharedReport();
+
+  const res = saveCatalog(h, {
+    cat_id: NUTRITION,
+    category_name: "งานโภชนาการ",
+    reports: [{ ...shared, report_name: "=1+1", category_name: "=2+2" }, ...NUTRITION_REPORTS],
+  });
+
+  assert.equal(res.status, "success", res.message);
+  assert.equal(res.skipped, 1);
+  assertNoFormulaInSheets(h);
+});
+
+test("= after the first character is not a formula: the names are saved as sent", () => {
+  const h = loadWithTopics([[EPI, 20]]);
+  const name = "ผู้ป่วยที่มีค่า HbA1c <= 7";
+
+  const res = saveCatalog(h, {
+    cat_id: EPI,
+    category_name: name,
+    reports: [{ ...EPI_REPORTS[0], report_name: name, main_report_name: name }],
+  });
+
+  assert.equal(res.status, "success", res.message);
+  const [report] = records(h.sheet("hdc_reports"));
+  assert.equal(report.report_name, name);
+  assert.equal(report.main_report_name, name);
+  assert.equal(records(h.sheet("hdc_topics"))[0].category_name, name);
+});
+
+test("a cell already in the sheet beginning with = does not refuse the save: only what this save sets counts", () => {
+  const h = loadWithTopics([[EPI, 20]]);
+  saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+  setCell(h, "hdc_reports", 2, "subgroup", "=ข้อความของผู้ดูแล");
+
+  const res = saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
+
+  assert.equal(res.status, "success", res.message);
+  assert.equal(records(h.sheet("hdc_reports"))[0].subgroup, "=ข้อความของผู้ดูแล");
+});
