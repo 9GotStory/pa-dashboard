@@ -200,11 +200,28 @@ export interface PopulationTotals {
   house: number;
 }
 
-/** The อำเภอ or one ตำบล in the population part of the home page · SCHEMA §9's age comes with F28, which computes it */
+/** One ช่วงอายุ of the pyramid (SCHEMA §11.3) */
+export interface AgeBand {
+  label: string; // "0–4" … "75–79", "80+"
+  male: number;
+  female: number;
+}
+
+/** The age structure of one area (SCHEMA §11.3) */
+export interface AgeProfile {
+  bands: AgeBand[]; // 17, youngest first
+  age_total: number; // the counts by year of age, ชาย and หญิง (m0…m101 + f0…f101)
+  aged60: number; // aged 60 and over, ชาย and หญิง
+  aged60_pct: number; // aged60 ÷ age_total × 100, not rounded
+  unsplit: Record<UnsplitGroup, number>; // ประชากรที่ไม่แยกอายุ by kind, adding up to totals.total − age_total
+}
+
+/** The อำเภอ or one ตำบล in the population part of the home page */
 export interface AreaPopulation {
   key: string; // "all" = the whole อำเภอ, or a 6-digit ตำบล code (= areas[].id)
   name: string;
   totals: PopulationTotals;
+  age: AgeProfile | null; // null = the year shown has no age rows (the pyramid is hidden)
 }
 
 /** The population part of the home page that the server component hands the client (SPEC §9.2) · null = no population data */

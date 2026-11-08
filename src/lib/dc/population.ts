@@ -1,5 +1,6 @@
 import { formatCount } from "./format";
 import type {
+  AgeProfile,
   DcCatalog,
   HomePopulation,
   PopulationSnapshot,
@@ -44,28 +45,58 @@ export function ageRowsTotals(rows: RegistryPopulationAgeRow[]): Omit<Population
 /**
  * The population part of the home page (SCHEMA §11.3), or null when
  * population.json has no year: the latest year, which every part of the page
- * shows, by ตำบล in code order and for the whole อำเภอ. A ตำบล is named from
+ * shows, by ตำบล in code order and for the whole อำเภอ, each with its age
+ * structure for the pyramid when that year has age rows. A ตำบล is named from
  * areas, or by its tt_name if areas lacks it.
  */
 export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["areas"]): HomePopulation | null {
   const shown = snapshot.years.at(-1);
   if (!shown) return null;
   // A ตำบล is the first 6 digits of tt, across every สำนักทะเบียน: 5489, the
-  // เทศบาล, covers part of 5406's บ้านหนุน and บ้านกลาง.
+  // เทศบาล, covers part of 5406's บ้านหนุน and บ้านกลาง. So for age rows too.
+  const tambonOf = (row: { tt: string }) => row.tt.slice(0, 6);
   const byTambon = new Map<string, RegistryPopulationRow[]>();
   for (const row of shown.population) {
-    const key = row.tt.slice(0, 6);
+    const key = tambonOf(row);
     byTambon.set(key, [...(byTambon.get(key) ?? []), row]);
   }
   const names = new Map(areas.map((a) => [a.id, a.name_th]));
+  // No age rows in the year shown, so no pyramid anywhere.
+  const hasAge = shown.age.length > 0;
   return {
     yymm: shown.yymm,
-    district: { key: "all", name: "อำเภอสอง", totals: populationTotals(shown.population) },
+    district: { key: "all", name: "อำเภอสอง", totals: populationTotals(shown.population), age: hasAge ? ageProfile(shown.age) : null },
     areas: [...byTambon.keys()].sort().map((key) => {
       const rows = byTambon.get(key)!;
-      return { key, name: names.get(key) ?? rows[0].tt_name, totals: populationTotals(rows) };
+      const age = hasAge ? ageProfile(shown.age.filter((r) => tambonOf(r) === key)) : null;
+      return { key, name: names.get(key) ?? rows[0].tt_name, totals: populationTotals(rows), age };
     }),
   };
+}
+
+// The ช่วงอายุ of the pyramid (SCHEMA §11.3): 5 years each from 0–4 to
+// 75–79, then 80+, which takes the ages 80 to 101 and so the over-100s.
+const BAND_LABELS = [...Array.from({ length: 16 }, (_, k) => `${k * 5}–${k * 5 + 4}`), "80+"];
+
+/** The age structure of an area from its age rows (SCHEMA §11.3), every สำนักทะเบียน added up */
+function ageProfile(rows: RegistryPopulationAgeRow[]): AgeProfile {
+  const bands = BAND_LABELS.map((label) => ({ label, male: 0, female: 0 }));
+  let aged60 = 0;
+  for (const row of rows) {
+    for (let age = 0; age <= 101; age++) {
+      const band = bands[Math.min(Math.floor(age / 5), bands.length - 1)];
+      band.male += row[`m${age}`];
+      band.female += row[`f${age}`];
+      if (age >= 60) aged60 += row[`m${age}`] + row[`f${age}`];
+    }
+  }
+  const age_total = bands.reduce((sum, b) => sum + b.male + b.female, 0);
+  // The ประชากรที่ไม่แยกอายุ by the file's own columns, which stat.bora's
+  // formula (SCHEMA §11.1) makes add up to the total less age_total.
+  const unsplit = Object.fromEntries(
+    UNSPLIT_GROUPS.map((group) => [group, rows.reduce((sum, r) => sum + r[`${group}_t`], 0)]),
+  ) as Record<UnsplitGroup, number>;
+  return { bands, age_total, aged60, aged60_pct: (aged60 / age_total) * 100, unsplit };
 }
 
 // stat_t{yy}.txt, also as a browser names a second download: stat_t68 (1).txt

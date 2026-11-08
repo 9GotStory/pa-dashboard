@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AGE_6812, AGE_6812_LINES } from "./fixtures/age-6812cc54-20261106";
 import { STAT_T68, STAT_T68_LINES } from "./fixtures/stat-t68-20261106";
+import { formatPct } from "./format";
 import { ageRowsTotals, homePopulation, populationTotals, readRegistryFiles, registryAsOf, registryYear } from "./population";
-import type { PopulationSnapshot, RegistryPopulationRow } from "./types";
+import type { AgeBand, PopulationSnapshot, RegistryPopulationRow } from "./types";
 
 // FEATURES F24: reading and checking stat_t files in the /sync upload
 // (SCHEMA §11.1–11.2), on lines cut from the real stat_t68.txt. Expected
@@ -180,14 +181,14 @@ test("ตำบล of 2568 → the 8 of areas by code, each adding up every ส�
   assert.ok(home);
   // The file's ตำบล lines; บ้านหนุน and บ้านกลาง add the line of 5406 and the line of 5489.
   assert.deepEqual(home.areas, [
-    { key: "540601", name: "บ้านหนุน", totals: { male: 3442, female: 3957, total: 7399, house: 3499 } },
-    { key: "540602", name: "บ้านกลาง", totals: { male: 3152, female: 3534, total: 6686, house: 3335 } },
-    { key: "540603", name: "ห้วยหม้าย", totals: { male: 3564, female: 3903, total: 7467, house: 3096 } },
-    { key: "540604", name: "เตาปูน", totals: { male: 3903, female: 4089, total: 7992, house: 2954 } },
-    { key: "540605", name: "หัวเมือง", totals: { male: 2975, female: 3062, total: 6037, house: 2297 } },
-    { key: "540606", name: "สะเอียบ", totals: { male: 2692, female: 2643, total: 5335, house: 2555 } },
-    { key: "540607", name: "แดนชุมพล", totals: { male: 1181, female: 1230, total: 2411, house: 957 } },
-    { key: "540608", name: "ทุ่งน้าว", totals: { male: 1566, female: 1634, total: 3200, house: 1408 } },
+    { key: "540601", name: "บ้านหนุน", totals: { male: 3442, female: 3957, total: 7399, house: 3499 }, age: null },
+    { key: "540602", name: "บ้านกลาง", totals: { male: 3152, female: 3534, total: 6686, house: 3335 }, age: null },
+    { key: "540603", name: "ห้วยหม้าย", totals: { male: 3564, female: 3903, total: 7467, house: 3096 }, age: null },
+    { key: "540604", name: "เตาปูน", totals: { male: 3903, female: 4089, total: 7992, house: 2954 }, age: null },
+    { key: "540605", name: "หัวเมือง", totals: { male: 2975, female: 3062, total: 6037, house: 2297 }, age: null },
+    { key: "540606", name: "สะเอียบ", totals: { male: 2692, female: 2643, total: 5335, house: 2555 }, age: null },
+    { key: "540607", name: "แดนชุมพล", totals: { male: 1181, female: 1230, total: 2411, house: 957 }, age: null },
+    { key: "540608", name: "ทุ่งน้าว", totals: { male: 1566, female: 1634, total: 3200, house: 1408 }, age: null },
   ]);
 });
 
@@ -198,6 +199,7 @@ test("the อำเภอ of 2568 → 46,527 คน (ชาย 22,475 หญิ�
     key: "all",
     name: "อำเภอสอง",
     totals: { male: 22475, female: 24052, total: 46527, house: 20101 },
+    age: null,
   });
 });
 
@@ -419,4 +421,101 @@ test("ตำบลบ้านหนุน of อำเภอสอง with one 
     ageRefusal(fileOf(changed)),
     "ตำบลบ้านหนุน ในบล็อก อำเภอสอง: จำนวนรายปีอายุของชายรวมกับประชากรที่ไม่แยกอายุได้ 2,137 ไม่เท่ายอดรวม 2,136",
   );
+});
+
+// FEATURES F28: the population pyramid of the home page (SCHEMA §11.3), on
+// the real rows of 2568 as the upload reads them from the cut stat_t68.txt
+// and 6812cc54.txt. Expected values come from the figures of SCHEMA §11.4 and
+// the age file's last columns and totals, never from adding up its counts by
+// year of age as the code does.
+
+// The 10 age rows of 2568 (SCHEMA §2.7), one for each of ROWS_6812.
+const [ageRead68] = readRegistryFiles(PICK_6812, "5406");
+if (!ageRead68.ok || ageRead68.kind !== "age") throw new Error(ageRead68.ok ? `read as ${ageRead68.kind}` : ageRead68.reason);
+
+// population.json of 2568 with its age rows, as the prebuild writes its latest year (SCHEMA §7).
+const SNAPSHOT_6812: PopulationSnapshot = { years: [{ yymm: "6812", population: ROWS_6812, age: ageRead68.rows }] };
+
+// ชาย and หญิง of bands added up.
+function bandsTotal(bands: AgeBand[]): { male: number; female: number } {
+  return bands.reduce((sum, b) => ({ male: sum.male + b.male, female: sum.female + b.female }), { male: 0, female: 0 });
+}
+
+test("the อำเภอ of 2568 → its pyramid: 17 ช่วงอายุ 0–4 … 75–79 and 80+, youngest first, holding the 46,362 counted by year of age (ชาย 22,363 หญิง 23,999), of whom 60–64 … 80+ are the 13,487 aged 60 and over (ชาย 5,896 หญิง 7,591), ร้อยละ 29.09", () => {
+  const age = homePopulation(SNAPSHOT_6812, AREAS)?.district.age;
+
+  assert.ok(age);
+  assert.deepEqual(age.bands.map((b) => b.label), [
+    "0–4", "5–9", "10–14", "15–19", "20–24", "25–29", "30–34", "35–39", "40–44",
+    "45–49", "50–54", "55–59", "60–64", "65–69", "70–74", "75–79", "80+",
+  ]);
+  assert.deepEqual(bandsTotal(age.bands), { male: 22363, female: 23999 });
+  assert.equal(age.age_total, 46362);
+  assert.deepEqual(bandsTotal(age.bands.slice(12)), { male: 5896, female: 7591 });
+  assert.equal(age.aged60, 13487);
+  assert.equal(formatPct(age.aged60_pct), "29.09");
+});
+
+test("the อำเภอ of 2568 → its 165 ประชากรที่ไม่แยกอายุ (46,527 − 46,362) by kind: ไม่ใช่สัญชาติไทย 81, ทะเบียนบ้านกลาง 75, ระหว่างการย้าย 9 and เกิดปีจันทรคติ 0", () => {
+  const age = homePopulation(SNAPSHOT_6812, AREAS)?.district.age;
+
+  assert.deepEqual(age?.unsplit, { nonthai: 81, central: 75, moving: 9, lunar: 0 });
+});
+
+test("the 8 ตำบล of 2568 → a pyramid each, and together they hold the อำเภอ's 46,362 counted by year of age and its 13,487 aged 60 and over", () => {
+  const home = homePopulation(SNAPSHOT_6812, AREAS);
+
+  assert.ok(home);
+  const ages = home.areas.map((a) => a.age);
+  assert.equal(ages.filter((age) => age !== null).length, 8);
+  assert.equal(ages.reduce((sum, age) => sum + (age?.age_total ?? 0), 0), 46362);
+  assert.equal(ages.reduce((sum, age) => sum + (age?.aged60 ?? 0), 0), 13487);
+});
+
+test("บ้านหนุน and บ้านกลาง of 2568, each with a line of 5406 and one of 5489 → a pyramid of both lines: บ้านหนุน 7,384 counted by year of age (ชาย 3,432 หญิง 3,952) and ไม่ใช่สัญชาติไทย 15 (10 + 5); บ้านกลาง 6,589 (ชาย 3,079 หญิง 3,510), ทะเบียนบ้านกลาง 75 (62 + 13), ไม่ใช่สัญชาติไทย 15 (9 + 6) and ระหว่างการย้าย 7 (5 + 2)", () => {
+  const home = homePopulation(SNAPSHOT_6812, AREAS);
+  const ageOf = (key: string) => home?.areas.find((a) => a.key === key)?.age;
+
+  // From the last 15 values of the 4 lines: each line's ชาย and หญิง by
+  // year of age are its total less its ประชากรที่ไม่แยกอายุ, as stat.bora's
+  // formula has it (SCHEMA §11.1), e.g. บ้านหนุน of 5406: 2,136 − 8 ชาย.
+  const banNun = ageOf("540601");
+  assert.ok(banNun);
+  assert.deepEqual(bandsTotal(banNun.bands), { male: 3432, female: 3952 });
+  assert.equal(banNun.age_total, 7384);
+  assert.deepEqual(banNun.unsplit, { nonthai: 15, central: 0, moving: 0, lunar: 0 });
+  const banKlang = ageOf("540602");
+  assert.ok(banKlang);
+  assert.deepEqual(bandsTotal(banKlang.bands), { male: 3079, female: 3510 });
+  assert.equal(banKlang.age_total, 6589);
+  assert.deepEqual(banKlang.unsplit, { nonthai: 15, central: 75, moving: 7, lunar: 0 });
+});
+
+test("ages at the edges of the ช่วงอายุ (ตำบลแดนชุมพล with its counts by year of age all 0 but ชาย 79, 80, 100, 101 and หญิง 4, 5, 59, 60) → 0–4 ends at 4, 55–59 at 59 and 75–79 at 79, 80+ takes 80 to 101, and aged 60 and over starts at 60, as SCHEMA §11.3 has them", () => {
+  const counts: Record<string, number> = { m79: 1, m80: 2, m100: 3, m101: 4, f4: 5, f5: 6, f59: 7, f60: 8 };
+  const edges = { ...ageRead68.rows.find((r) => r.tt === "54060700")! };
+  for (let age = 0; age <= 101; age++) {
+    for (const sex of ["m", "f"] as const) edges[`${sex}${age}`] = counts[`${sex}${age}`] ?? 0;
+  }
+  const population = ROWS_6812.filter((r) => r.tt === "54060700");
+
+  const age = homePopulation({ years: [{ yymm: "6812", population, age: [edges] }] }, AREAS)?.district.age;
+
+  assert.ok(age);
+  assert.deepEqual(age.bands.filter((b) => b.male + b.female > 0), [
+    { label: "0–4", male: 0, female: 5 },
+    { label: "5–9", male: 0, female: 6 },
+    { label: "55–59", male: 0, female: 7 },
+    { label: "60–64", male: 0, female: 8 },
+    { label: "75–79", male: 1, female: 0 },
+    { label: "80+", male: 2 + 3 + 4, female: 0 },
+  ]);
+  assert.equal(age.aged60, 1 + 2 + 3 + 4 + 8);
+});
+
+test("population.json whose latest year has no age rows, as before F29 uploads them → age null for the อำเภอ and all 8 ตำบล: the home page hides only the pyramid", () => {
+  const home = homePopulation(snapshotOf(ROWS_6812), AREAS);
+
+  assert.ok(home);
+  assert.deepEqual([home.district, ...home.areas].map((a) => a.age), Array(9).fill(null));
 });
