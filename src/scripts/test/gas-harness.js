@@ -336,9 +336,11 @@ export function loadGas({ sheets = {}, fetch } = {}) {
 }
 
 // The GAS web app of h (a loadGas result) on a local port, closed when test t
-// ends: GET goes to doGet, POST to doPost, as Apps Script does. posts: the
-// body of every POST, parsed, in order.
-export async function startGas(t, h) {
+// ends, or with its process when t is null: GET goes to doGet, POST to doPost,
+// as Apps Script does, and every answer allows any origin, as the real web app
+// does, so a page can read it. posts: the body of every POST, parsed, in
+// order; onPost, if given, gets each one as it arrives.
+export async function startGas(t, h, onPost) {
   const posts = [];
   const server = http.createServer(async (req, res) => {
     const chunks = [];
@@ -346,16 +348,19 @@ export async function startGas(t, h) {
     let out;
     if (req.method === "POST") {
       const contents = Buffer.concat(chunks).toString("utf8");
-      posts.push(JSON.parse(contents));
+      const body = JSON.parse(contents);
+      posts.push(body);
+      onPost?.(body);
       out = h.gas.doPost({ postData: { contents } });
     } else {
       const query = new URL(req.url, "http://localhost").searchParams;
       out = h.gas.doGet({ parameter: Object.fromEntries(query) });
     }
     res.setHeader("content-type", "application/json");
+    res.setHeader("access-control-allow-origin", "*");
     res.end(out.getContent());
   });
   await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
-  t.after(() => server.close());
+  t?.after(() => server.close());
   return { url: `http://127.0.0.1:${server.address().port}/exec`, posts };
 }

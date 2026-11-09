@@ -18,7 +18,8 @@
     "pa:snapshot": "node --env-file-if-exists=.env.local src/scripts/pa-check.mjs snapshot",
     "pa:compare": "node src/scripts/pa-check.mjs compare",
     "dc:check": "node src/scripts/dc-check.mjs",
-    "dc:budget": "node src/scripts/dc-budget.mjs"
+    "dc:budget": "node src/scripts/dc-budget.mjs",
+    "dc:sync-local": "node src/scripts/dc-sync-local.mjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",
