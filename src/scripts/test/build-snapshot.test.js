@@ -768,6 +768,11 @@ test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 na
   const cases = [
     ["no years (another web app)", { status: "success" }, /^build-snapshot: \?action=registry_population answered without years; check that NEXT_PUBLIC_GAS_SCRIPT_URL/],
     ["a yymm not of December", { years: [year({ yymm: "6811" })] }, /^build-snapshot: \?action=registry_population answered a year with yymm "6811"/],
+    [
+      "a year with a blank yymm, from a row whose yymm cell was cleared (SCHEMA §3.9)",
+      { years: [year({ yymm: "", population: ROWS_6812.slice(0, 1), age: [] }), year()] },
+      /^build-snapshot: \?action=registry_population answered a year with yymm "", not the figures at 31 Dec \(YY12\); fix the yymm column of registry_population and registry_population_age in PA-Data/,
+    ],
     ["the same yymm twice", { years: [year(), year()] }, /^build-snapshot: \?action=registry_population answered yymm 6812 twice/],
     ["age rows that are not a list", { years: [year({ age: {} })] }, /^build-snapshot: \?action=registry_population answered 6812 without a list of age rows/],
     [
