@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { formatCount } from "@/lib/dc/format";
 import { ageRowsTotals, populationTotals, readRegistryFiles, registryYear } from "@/lib/dc/population";
-import type { DcCatalog, GasAnswer, GasError, GasRegistryPopulation, RegistryFileRead } from "@/lib/dc/types";
+import type { DcCatalog, GasError, GasRegistryPopulation, GasUploadAnswer, RegistryFileRead } from "@/lib/dc/types";
 
 // The ประชากรทะเบียนราษฎร upload of /sync, shown after the PIN (SPEC §12.1,
 // ADR-0011): stat_t files and age files from stat.bora are read and checked
@@ -20,9 +20,9 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
-function postGas(body: object): Promise<GasAnswer> {
+function postGas(body: object): Promise<GasUploadAnswer> {
   // text/plain keeps it a simple request: a GAS web app answers no CORS preflight.
-  return fetchJson<GasAnswer>(GAS_URL, {
+  return fetchJson<GasUploadAnswer>(GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(body),

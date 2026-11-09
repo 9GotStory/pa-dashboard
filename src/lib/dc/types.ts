@@ -192,7 +192,7 @@ export interface GasError {
 }
 
 /** GAS's POST answers, as far as the /sync upload reads them (SCHEMA §3.7, §3.8) */
-export type GasAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
+export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
 
 /** A file the admin picked in the /sync upload, read and checked (SCHEMA §11.2): the district's rows of its kind, which save_registry_population takes as is (SCHEMA §3.8), or why it is refused */
 export type RegistryFileRead = { name: string } & (

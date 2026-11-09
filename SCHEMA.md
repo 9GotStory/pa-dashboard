@@ -812,7 +812,7 @@ export interface GasError {
 }
 
 /** response ของ POST ของ GAS เฉพาะส่วนที่ส่วนอัปโหลดในหน้า /sync อ่าน (§3.7, §3.8) */
-export type GasAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
+export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
 
 /** ไฟล์หนึ่งที่ผู้ดูแลเลือกในส่วนอัปโหลดของหน้า /sync หลังอ่านและตรวจ (§11.2): แถวของอำเภอตามชนิดไฟล์ ซึ่ง save_registry_population รับไปตามนั้น (§3.8) หรือเหตุที่ปฏิเสธ */
 export type RegistryFileRead = { name: string } & (
