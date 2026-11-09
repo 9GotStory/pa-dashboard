@@ -6,7 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
 import { HOSPITALS, TAMBON_MASTER } from "./fixtures/master-sheets-20261030.js";
-import { ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
+import { AGE_ROWS_6812, ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
 
 // FEATURES F14 and F26: build-snapshot.mjs run as a child process, the way npm
 // runs prebuild, against a local stub of the GAS web app that answers
@@ -792,4 +792,87 @@ test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 na
       assertOldSnapshot(res.cwd);
     });
   }
+});
+
+test("age rows of the year the home page shows that do not match its population rows (SCHEMA §7) → exit 1 naming the year, the sheet and the row; an earlier snapshot is left as it was", async (t) => {
+  // The real age rows with the row of 54060400 changed.
+  const withAgeRow3 = (fields) => AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, ...fields } : row));
+  const cases = [
+    ["a ตำบล without its age row", { age: AGE_ROWS_6812.slice(1) }, /\n {2}registry_population_age has no row for rcode 5406 tt 54060100, which registry_population has/],
+    [
+      "an age row of a ตำบล without population rows",
+      // ตำบลห้วยหม้าย is in สำนักทะเบียน 5406 only.
+      { age: [...AGE_ROWS_6812, { ...AGE_ROWS_6812[2], rcode: "5489" }] },
+      /\n {2}registry_population_age has a row for rcode 5489 tt 54060300, which registry_population does not have/,
+    ],
+    [
+      "the same (rcode, tt) twice in the population rows, its age row once",
+      { population: [...ROWS_6812, ROWS_6812[9]] },
+      /\n {2}registry_population has 2 rows for rcode 5489 tt 54060200/,
+    ],
+    [
+      "the same (rcode, tt) twice in the age rows, its population row once",
+      { age: [...AGE_ROWS_6812, AGE_ROWS_6812[9]] },
+      /\n {2}registry_population_age has 2 rows for rcode 5489 tt 54060200/,
+    ],
+    [
+      "total_t 7993 against total 7992",
+      { age: withAgeRow3({ total_t: 7993 }) },
+      /\n {2}registry_population_age has total_t 7993 for rcode 5406 tt 54060400, but registry_population has total 7992/,
+    ],
+    [
+      "total_m 3904 against male 3903",
+      { age: withAgeRow3({ total_m: 3904 }) },
+      /\n {2}registry_population_age has total_m 3904 for rcode 5406 tt 54060400, but registry_population has male 3903/,
+    ],
+    [
+      "total_f 4090 against female 4089",
+      { age: withAgeRow3({ total_f: 4090 }) },
+      /\n {2}registry_population_age has total_f 4090 for rcode 5406 tt 54060400, but registry_population has female 4089/,
+    ],
+  ];
+  for (const [name, fields, line] of cases) {
+    await t.test(name, async (t) => {
+      const answer = { years: [{ yymm: "6812", population: ROWS_6812, age: AGE_ROWS_6812, ...fields }] };
+      const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+      const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+      assert.equal(res.code, 1);
+      assert.match(res.stderr, /^build-snapshot: the age rows of 6812, the year the home page shows, do not match its population rows/m);
+      assert.match(res.stderr, line);
+      assert.match(res.stderr, /\nFix those rows in PA-Data, or delete the 6812 rows of registry_population_age and upload both of that year's files again on \/sync \(SCHEMA §3\.8\)/);
+      assertOldSnapshot(res.cwd);
+    });
+  }
+});
+
+test("the real rows of 6812: 10 population rows and 10 age rows, 54060100 and 54060200 under both สำนักทะเบียน → they match, written as GAS sent them, exit 0", async (t) => {
+  const answer = { years: [{ yymm: "6812", population: ROWS_6812, age: AGE_ROWS_6812 }] };
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), answer);
+});
+
+test("age rows that do not match in a year before the one the home page shows → not checked, its age [] as ever, exit 0", async (t) => {
+  const answer = {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: ROWS_6712.slice(1).map(ageRow) },
+      { yymm: "6812", population: ROWS_6812, age: AGE_ROWS_6812 },
+    ],
+  };
+  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
+    years: [
+      { yymm: "6712", population: ROWS_6712, age: [] },
+      { yymm: "6812", population: ROWS_6812, age: AGE_ROWS_6812 },
+    ],
+  });
 });
