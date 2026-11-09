@@ -185,6 +185,15 @@ export interface PopulationSnapshot {
 /** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of both sheets and the age rows of every year */
 export type GasRegistryPopulation = PopulationSnapshot;
 
+/** GAS's answer to a request that failed (SCHEMA §3): message, the reason, is always there */
+export interface GasError {
+  status: "error";
+  message: string;
+}
+
+/** GAS's POST answers, as far as the /sync upload reads them (SCHEMA §3.7, §3.8) */
+export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
+
 /** A file the admin picked in the /sync upload, read and checked (SCHEMA §11.2): the district's rows of its kind, which save_registry_population takes as is (SCHEMA §3.8), or why it is refused */
 export type RegistryFileRead = { name: string } & (
   | { ok: true; kind: "population"; yymm: string; rows: RegistryPopulationRow[] }

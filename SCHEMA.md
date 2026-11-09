@@ -805,6 +805,15 @@ export interface PopulationSnapshot {
 /** response ของ GAS ?action=registry_population (§3.9): รูปเดียวกัน แต่มีทุก yymm ของสองชีตและแถวอายุของทุกปี */
 export type GasRegistryPopulation = PopulationSnapshot;
 
+/** response ของ GAS เมื่อคำขอล้มเหลว (§3): message คือเหตุผล มีเสมอ */
+export interface GasError {
+  status: "error";
+  message: string;
+}
+
+/** response ของ POST ของ GAS เฉพาะส่วนที่ส่วนอัปโหลดในหน้า /sync อ่าน (§3.7, §3.8) */
+export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
+
 /** ไฟล์หนึ่งที่ผู้ดูแลเลือกในส่วนอัปโหลดของหน้า /sync หลังอ่านและตรวจ (§11.2): แถวของอำเภอตามชนิดไฟล์ ซึ่ง save_registry_population รับไปตามนั้น (§3.8) หรือเหตุที่ปฏิเสธ */
 export type RegistryFileRead = { name: string } & (
   | { ok: true; kind: "population"; yymm: string; rows: RegistryPopulationRow[] }   // stat_t
