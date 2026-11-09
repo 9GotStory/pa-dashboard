@@ -148,10 +148,10 @@ function dcGetRegistryPopulation() {
  * number (a date or a boolean is none, numeric text is one), are left out of
  * the row: the prebuild then fails loudly on a sheet broken by hand
  * (SCHEMA §7) instead of publishing 0. A row with every column read here blank
- * is no row; one with only its yymm blank stays, as a year with a blank yymm
- * that the prebuild refuses. A sheet without a yymm column keeps every row, so
- * the prebuild refuses those too instead of seeing no rows. [] if the sheet
- * does not exist.
+ * is no row. One with only its yymm blank stays, as a year with a blank yymm,
+ * and a sheet without a yymm column keeps every row below its first: the
+ * prebuild fails loudly on those too, instead of publishing a total short of
+ * them. [] if the sheet does not exist.
  */
 function dcRegistryRows(sheetName, columns, countColumns) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);

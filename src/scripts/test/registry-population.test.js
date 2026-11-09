@@ -606,7 +606,7 @@ for (const [what, rows] of REJECTED_POPULATION_AGAINST_AGE) {
 const BLANK_YYMM_IN_THE_OTHER_SHEET = [
   ["age", 10, AGE_ROWS_6812, "rule 12: no registry_population rows of 6812", "No registry_population rows for this yymm"],
   ["age", 1, AGE_ROWS_6812, "rule 13: its 9 rows of 6812 do not match the 10 sent", "Does not match registry_population"],
-  ["population", 10, REJECTED_POPULATION_AGAINST_AGE[0][1], "rule 14: no age rows of 6812 to match, so figures unlike theirs are saved", null],
+  ["population", 10, withRow(7, { male: 1567, total: 3201 }), "rule 14: no age rows of 6812 to match, so figures unlike theirs are saved", null],
   ["population", 1, ROWS_6812, "rule 14: its 9 age rows of 6812 do not match the 10 sent", "Does not match registry_population_age"],
 ];
 
