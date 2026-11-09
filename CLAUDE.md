@@ -73,6 +73,7 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 - `npm ci` · `npm run dev` (http://localhost:3000) · `npm run lint`
 - `npm run build` writes the static site to `out/`. Its prebuild reads the live GAS (GET, about 2.5 minutes); `npx next build` rebuilds from the snapshot already in `public/data/`. After a build, `npm run dc:check` and `npm run dc:budget` check the Data Center pages. Preview with `npx serve@latest out`; `next start` does not work with `output: 'export'`.
 - `npm test` runs the GAS tests in `src/scripts/test/` and the Data Center tests in `src/lib/dc/`.
+- To try `/sync` in a browser, run `npm run dc:sync-local [-- <port>]`: `next dev` on port 3217 against the GAS of the test harness, in memory, and it prints the URL and PIN. `npm run dev` reads the production GAS URL from `.env.local`, so a save there is a POST to production.
 - `next build` downloads Google Fonts (Prompt, Sarabun) through `next/font/google`. If a build fails while fetching fonts, the network is blocked; it is not a code bug.
 
 ## Hard rules

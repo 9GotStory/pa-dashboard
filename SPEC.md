@@ -378,7 +378,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
   - ก่อนบันทึกแสดงสรุปต่อปี: ปี จำนวนแถว และยอดรวม
   - เมื่อยืนยัน POST `save_registry_population` (SCHEMA §3.8) ทีละคำขอ `population` ก่อน `age` ของปีเดียวกัน ถ้า `population` ของปีใดไม่สำเร็จ ไม่ส่ง `age` ของปีนั้น
   - ตอนจบ ถ้ามีไฟล์ใดสำเร็จ POST `rebuild` หนึ่งครั้ง แล้วแสดงผลรายไฟล์ (บันทึกแล้ว หรือปฏิเสธพร้อมเหตุผล) และผลของ `rebuild` แบบเดียวกับส่วน sync
-  - ไม่มีเทสต์อัตโนมัติของ component นี้ เพราะ logic อยู่ใน `population.ts` ซึ่งมีเทสต์ (CODING_STANDARDS §5) ตรวจด้วยมือตอนตรวจรับ
+  - ไม่มีเทสต์อัตโนมัติของ component นี้ เพราะ logic อยู่ใน `population.ts` ซึ่งมีเทสต์ (CODING_STANDARDS §5) ตรวจด้วยมือตอนตรวจรับด้วย `npm run dc:sync-local` ซึ่งเปิดหน้านี้ใน `next dev` คู่กับ GAS ใน harness จึงไม่แตะ GAS จริง
 
 ### 12.2 `src/scripts/sync-moph-to-gas.js`
 
