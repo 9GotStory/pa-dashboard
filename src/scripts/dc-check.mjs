@@ -161,12 +161,12 @@ async function checkPage(browser, url) {
 // figure the page does not have is null, a list it does not have is empty.
 // Runs inside the page, so it uses nothing from this module.
 function shownPopulation() {
-  const count = (text) => {
+  const parseCount = (text) => {
     const digits = text?.trim().match(/^[\d,]+/)?.[0];
     return digits ? Number(digits.replaceAll(",", "")) : null;
   };
-  const listed = (scope, label) =>
-    count([...document.querySelectorAll(`${scope} dt`)].find((dt) => dt.textContent.trim() === label)?.nextElementSibling?.textContent);
+  const listedCount = (scope, label) =>
+    parseCount([...document.querySelectorAll(`${scope} dt`)].find((dt) => dt.textContent.trim() === label)?.nextElementSibling?.textContent);
   const table = [...document.querySelectorAll("table")].find((t) => t.caption?.textContent.includes("ประชากรรายตำบล"));
   const columns = [...(table?.tHead?.rows[0]?.cells ?? [])].map((cell) => cell.textContent.trim());
   const tambons = [...(table?.tBodies[0]?.rows ?? [])];
@@ -178,60 +178,68 @@ function shownPopulation() {
       return {
         label,
         column,
-        summary: listed('section[aria-label="สรุปประชากรและการปกครอง"]', label),
-        district: count(districtRow?.cells[at]?.textContent),
-        tambons: tambons.map((row) => count(row.cells[at]?.textContent)),
+        summary: listedCount('section[aria-label="สรุปประชากรและการปกครอง"]', label),
+        district: parseCount(districtRow?.cells[at]?.textContent),
+        tambons: tambons.map((row) => parseCount(row.cells[at]?.textContent)),
       };
     }),
     pickable: tambons.filter((row) => row.querySelector("button")).map((row) => row.querySelector("th").textContent.trim()),
-    panel: listed('aside[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
-    bands: [...(pyramid?.getAttribute("aria-label") ?? "").matchAll(/ชาย ([\d,]+) หญิง ([\d,]+)/g)].flatMap((m) => [count(m[1]), count(m[2])]),
-    unsplit: count(pyramid?.closest("section")?.textContent.match(/ไม่รวมประชากรที่ไม่แยกอายุ ([\d,]+) คน/)?.[1]),
+    panel: listedCount('aside[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
+    bands: [...(pyramid?.getAttribute("aria-label") ?? "").matchAll(/ชาย ([\d,]+) หญิง ([\d,]+)/g)].flatMap((m) => [parseCount(m[1]), parseCount(m[2])]),
+    unsplit: parseCount(pyramid?.closest("section")?.textContent.match(/ไม่รวมประชากรที่ไม่แยกอายุ ([\d,]+) คน/)?.[1]),
   };
 }
 
 // [] when the two figures are the same number, else the problem, naming area.
-function differ(area, nameA, a, nameB, b) {
+function mismatchProblems(area, nameA, a, nameB, b) {
   if (a !== null && a === b) return [];
   const shown = (n) => (n === null ? "not on the page" : n.toLocaleString("en-US"));
   return [`${area}: ${nameA} ${shown(a)} ≠ ${nameB} ${shown(b)}`];
 }
 
-// Rule ก: the summary, the รวมทั้งอำเภอ row and the sum of the ตำบล rows.
+// The totals rule: the summary, the รวมทั้งอำเภอ row and the sum of the ตำบล rows agree.
 function totalsProblems(figures) {
   return figures.flatMap(({ label, column, summary, district, tambons }) => {
     const sum = tambons.length > 0 && !tambons.includes(null) ? tambons.reduce((a, b) => a + b) : null;
     return [
-      ...differ(DISTRICT, `summary ${label}`, summary, `รวมทั้งอำเภอ ${column}`, district),
-      ...differ(DISTRICT, `รวมทั้งอำเภอ ${column}`, district, `sum of the ตำบล rows ${column}`, sum),
+      ...mismatchProblems(DISTRICT, `summary ${label}`, summary, `รวมทั้งอำเภอ ${column}`, district),
+      ...mismatchProblems(DISTRICT, `รวมทั้งอำเภอ ${column}`, district, `sum of the ตำบล rows ${column}`, sum),
     ];
   });
 }
 
-// Rule ข: ชาย and หญิง of every ช่วงอายุ on the pyramid, plus the
+// The pyramid rule: ชาย and หญิง of every ช่วงอายุ on the pyramid, plus the
 // ประชากรที่ไม่แยกอายุ, are the area's ประชากรทั้งหมด in the panel.
 function pyramidProblems(area, { bands, unsplit, panel }) {
   if (bands.length !== AGE_BANDS * 2) return [`${area}: the pyramid shows ${bands.length / 2} of ${AGE_BANDS} ช่วงอายุ`];
   const counted = unsplit === null ? null : bands.reduce((a, b) => a + b) + unsplit;
-  return differ(area, "pyramid + ประชากรที่ไม่แยกอายุ", counted, "ประชากรทั้งหมด in the panel", panel);
+  return mismatchProblems(area, "pyramid + ประชากรที่ไม่แยกอายุ", counted, "ประชากรทั้งหมด in the panel", panel);
 }
 
 // Picks a ตำบล with its ดูข้อมูล button and waits for the pyramid to name it,
 // false if it never does. A click before the page has hydrated does nothing,
-// so this clicks until the pick shows; picking the ตำบล on show changes nothing.
+// and one that fails costs only this try, so this clicks until the pick shows;
+// picking the ตำบล on show changes nothing.
 async function pickTambon(page, area) {
   const button = page.getByRole("button", { name: `ดูข้อมูล ${area}`, exact: true });
   const pyramid = page.locator(`svg[role="img"][aria-label^="พีระมิดประชากร ${area} "]`);
   const deadline = Date.now() + PICK_TIMEOUT;
   while (Date.now() < deadline) {
-    await button.click();
-    if (await pyramid.waitFor({ timeout: 500 }).then(() => true, () => false)) return true;
+    const shown = await button
+      .click({ timeout: 1000 })
+      .then(() => pyramid.waitFor({ timeout: 500 }))
+      .then(
+        () => true,
+        () => false,
+      );
+    if (shown) return true;
   }
   return false;
 }
 
-// The population rules of the home page (SPEC §9.2), on a wide page of its
-// own: rule ก, and rule ข when the year shown has age rows.
+// The population rules of the home page (CODING_STANDARDS §5), on a wide page
+// of its own: the totals rule, and the pyramid rule when the year shown has
+// age rows.
 async function checkPopulation(browser, url, hasAge) {
   const problems = [];
   let area = DISTRICT;
@@ -290,5 +298,5 @@ if (problems.length > 0) {
   problems.forEach((problem) => console.error(`dc-check: ${problem}`));
   fail(`${problems.length} problem(s) on ${urlPaths.length} page(s) checked; the rules are in CODING_STANDARDS §4–5`);
 }
-const population = !shownYear ? "no population data, so no population rules" : hasAge ? "population rules ก and ข pass" : "population rule ก passes";
-console.log(`dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; ${population}`);
+const populationResult = !shownYear ? "no population data, so no population rules" : hasAge ? "population totals and pyramids agree" : "population totals agree";
+console.log(`dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; ${populationResult}`);
