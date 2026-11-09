@@ -36,7 +36,7 @@
 - `src/lib/dc/values.ts` และ `population.ts` เป็นฟังก์ชันล้วน: ไม่ import React, ไม่แตะ DOM/`window`, ไม่ `fetch` · component ใน `src/components/dc/` ไม่ import `population.ts` ซึ่งมีตัวอ่านไฟล์ของ `/sync` (งบ JS, SPEC §9.6) ยกเว้น `RegistryPopulationUpload.tsx` (ESLint ตรวจ)
 - `'use client'` เฉพาะ component ที่มี state/effect/เบราว์เซอร์ API · Leaflet โหลดผ่าน `next/dynamic` ใน client wrapper เท่านั้น
 - ไม่เพิ่ม dependency นอกจาก `leaflet@1.9.4` (dependencies) กับ `tsx`, `@types/leaflet` (devDependencies) · กราฟเป็น SVG เขียนเอง
-- ข้อความบนหน้าเป็นภาษาไทย ใช้คำตาม `GLOSSARY.md` ไม่มีคำว่า "จำลอง"/"ตัวอย่าง"
+- ข้อความบนหน้าเป็นภาษาไทย ยกเว้นเหตุผลจาก GAS หรือเบราว์เซอร์ที่ส่วนอัปโหลดในหน้า `/sync` แสดงต่อท้ายตามที่ได้รับ เพราะข้อความของ GAS เป็นภาษาอังกฤษตามตาราง SCHEMA §3.8 ไม่แปลในหน้าเว็บ · ใช้คำตาม `GLOSSARY.md` ไม่มีคำว่า "จำลอง"/"ตัวอย่าง"
 - สีใช้ token `dc-*` ใน `globals.css` กับ `white` ไม่ใช้ `brand-*` ของ PA หรือสีสำเร็จรูปของ Tailwind (`slate-*` ฯลฯ) · ข้อความใช้ `font-dc` ที่ layout ของ `(dc)` ตั้งไว้ หัวเรื่องใช้ `font-prompt` ไม่ใช้ `font-sans` (ได้ฟอนต์ของเครื่อง SPEC §11)
 - ไม่ import จากไฟล์ PA (ไฟล์ที่มีอยู่ก่อนใต้ `src/lib/` และ `src/components/` · ESLint ตรวจ) · ฟังก์ชันที่ต้องให้ผลเหมือน PA (`formatPct`, `formatThaiDate`) อยู่ใน `src/lib/dc/format.ts` และฟอนต์อยู่ใน `src/lib/dc/fonts.ts`
 - ร้อยละแสดงผ่าน `formatPct` ของ `src/lib/dc/format.ts` (2 ตำแหน่ง) เทียบเกณฑ์ด้วยค่าก่อนปัด · เป้าหมาย 0 แสดง "—" ไม่ใช่ 0%

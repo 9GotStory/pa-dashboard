@@ -15,7 +15,7 @@ export default function Footer() {
       <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-x-4 gap-y-1 px-4 py-4 sm:px-7">
         <p>Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</p>
         <p>
-          ข้อมูลจาก{" "}
+          รายงานจาก{" "}
           <a href="https://opendata.moph.go.th" className="underline underline-offset-2">
             HDC Open Data
           </a>{" "}

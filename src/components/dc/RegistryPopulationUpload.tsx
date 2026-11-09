@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { formatCount } from "@/lib/dc/format";
 import { ageRowsTotals, populationTotals, readRegistryFiles, registryYear } from "@/lib/dc/population";
-import type { DcCatalog, GasRegistryPopulation, RegistryFileRead } from "@/lib/dc/types";
+import type { DcCatalog, GasAnswer, GasError, GasRegistryPopulation, RegistryFileRead } from "@/lib/dc/types";
 
 // The ประชากรทะเบียนราษฎร upload of /sync, shown after the PIN (SPEC §12.1,
 // ADR-0011): stat_t files and age files from stat.bora are read and checked
@@ -13,10 +13,6 @@ import type { DcCatalog, GasRegistryPopulation, RegistryFileRead } from "@/lib/d
 // a page of (dc) (CODING_STANDARDS §4).
 
 const GAS_URL = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL ?? "";
-
-type GasError = { status: "error"; message: string };
-/** GAS's POST answers, as far as this section reads them (SCHEMA §3.7, §3.8) */
-type GasAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
@@ -71,7 +67,7 @@ async function saveFile(read: Extract<RegistryFileRead, { ok: true }>): Promise<
 async function rebuildSite(): Promise<Outcome> {
   try {
     const answer = await postGas({ action: "rebuild", reason: "/sync registry_population" });
-    if (answer.status !== "success") throw new Error(answer.message || "Unknown GAS Error");
+    if (answer.status !== "success") throw new Error(answer.message);
     return { ok: true, text: `สั่ง rebuild แล้ว วันนี้สั่งได้อีก ${answer.remaining_today} ครั้ง` };
   } catch (err) {
     return { ok: false, text: `ไม่ได้สั่ง rebuild: ${errorText(err)}` };
@@ -197,6 +193,8 @@ export default function RegistryPopulationUpload() {
         และไฟล์อายุ <code>{"{ปี}"}12cc{"{จังหวัด}"}.txt</code> เมนู ดาวน์โหลดสถิติ → จำนวนประชากรแยกรายอายุ → ปี → จังหวัด เช่น{" "}
         <code>6812cc54.txt</code> ซึ่งต้องเลือกพร้อม stat_t ของปีเดียวกัน
         เลือกได้หลายปีพร้อมกัน ระบบตรวจไฟล์ก่อนส่ง และบันทึกปีเดิมซ้ำจะแทนที่ของเดิม
+        ยกเว้นปีที่มีแถวอายุแล้วและตัวเลขเปลี่ยน ต้องลบแถวของปีนั้นในชีต <code>registry_population_age</code> ก่อน
+        แล้วเลือกทั้งสองไฟล์ใหม่พร้อมกัน
       </p>
 
       <div className="mt-3 rounded-lg bg-dc-canvas px-3 py-2">
