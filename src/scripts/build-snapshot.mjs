@@ -277,6 +277,40 @@ function registryProblem(answer) {
   return "";
 }
 
+// Why the age rows of a year do not match its population rows (SCHEMA §7), one
+// line per problem: rule 13 of SCHEMA §3.8, and no ตำบล twice in either sheet,
+// since the home page adds the rows up as they are and would count it twice.
+function ageMismatches({ population, age }) {
+  const tambon = (row) => `rcode ${row.rcode} tt ${row.tt}`;
+  const populationRows = Map.groupBy(population, tambon);
+  const ageRows = Map.groupBy(age, tambon);
+  const repeated = (sheet, byTambon) =>
+    [...byTambon]
+      .filter(([, rows]) => rows.length > 1)
+      .map(([key, rows]) => `${sheet} has ${rows.length} rows for ${key}`);
+  return [
+    ...repeated(REGISTRY_SHEETS.population, populationRows),
+    ...repeated(REGISTRY_SHEETS.age, ageRows),
+    ...[...populationRows.keys()]
+      .filter((key) => !ageRows.has(key))
+      .map((key) => `${REGISTRY_SHEETS.age} has no row for ${key}, which ${REGISTRY_SHEETS.population} has`),
+    ...[...ageRows.keys()]
+      .filter((key) => !populationRows.has(key))
+      .map((key) => `${REGISTRY_SHEETS.age} has a row for ${key}, which ${REGISTRY_SHEETS.population} does not have`),
+    ...age.flatMap((row) => {
+      const pair = populationRows.get(tambon(row))?.[0];
+      if (!pair) return [];
+      return [["total_m", "male"], ["total_f", "female"], ["total_t", "total"]]
+        .filter(([ageColumn, column]) => row[ageColumn] !== pair[column])
+        .map(
+          ([ageColumn, column]) =>
+            `${REGISTRY_SHEETS.age} has ${ageColumn} ${row[ageColumn]} for ${tambon(row)}, ` +
+            `but ${REGISTRY_SHEETS.population} has ${column} ${pair[column]}`,
+        );
+    }),
+  ];
+}
+
 let registry;
 try {
   registry = await callGasWithRetry("action=registry_population");
@@ -305,6 +339,17 @@ console.log(
         `the latest ${latest.yymm} with ${latest.age.length} age rows`
     : "build-snapshot: ?action=registry_population has no population rows yet, so the home page shows no population (SPEC §9.2)",
 );
+// Only the year the home page shows, the one year whose age rows are in the
+// snapshot. Without age rows it hides the pyramid (SCHEMA §11.3), also while
+// an admin has deleted them to upload again (SCHEMA §3.8), so that passes.
+const mismatches = latest?.age.length ? ageMismatches(latest) : [];
+if (mismatches.length > 0) {
+  fail(
+    `the age rows of ${latest.yymm}, the year the home page shows, do not match its population rows, so nothing is written (SCHEMA §7):\n  ` +
+      `${mismatches.join("\n  ")}\n` +
+      `Fix those rows in PA-Data, or delete the ${latest.yymm} rows of ${REGISTRY_SHEETS.age} and upload both of that year's files again on /sync (SCHEMA §3.8)`,
+  );
+}
 
 // SnapshotMeta (SCHEMA §9). Every date_com starts YYYYMMDDHHmm, so the
 // largest string is the latest, with or without seconds.
