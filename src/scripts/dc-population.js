@@ -145,9 +145,13 @@ function dcGetRegistryPopulation() {
  * the given columns (uploaded_at left out), counts as numbers and every other
  * column as a trimmed string, even where an edit by hand turned a code into a
  * number. A column the sheet lacks, and a count cell that is blank or no
- * number, are left out of the row: the prebuild then fails loudly on a sheet
- * broken by hand (SCHEMA §7) instead of publishing 0. A row whose yymm cell
- * is blank is no row. [] if the sheet does not exist.
+ * number (a date or a boolean is none, numeric text is one), are left out of
+ * the row: the prebuild then fails loudly on a sheet broken by hand
+ * (SCHEMA §7) instead of publishing 0. A row with every column read here blank
+ * is no row; one with only its yymm blank stays, as a year with a blank yymm
+ * that the prebuild refuses. A sheet without a yymm column keeps every row, so
+ * the prebuild refuses those too instead of seeing no rows. [] if the sheet
+ * does not exist.
  */
 function dcRegistryRows(sheetName, columns, countColumns) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName);
@@ -160,20 +164,23 @@ function dcRegistryRows(sheetName, columns, countColumns) {
   const isCount = columns.map(function (column) {
     return countColumns.indexOf(column) > -1;
   });
-  return values.slice(1).map(function (cells) {
+  const hasYymm = header.indexOf("yymm") > -1;
+  return values.slice(1).filter(function (cells) {
+    return !hasYymm || at.some(function (i) {
+      return i !== -1 && String(cells[i]).trim() !== "";
+    });
+  }).map(function (cells) {
     const row = {};
     columns.forEach(function (column, k) {
       if (at[k] === -1) return;
       const v = cells[at[k]];
       if (!isCount[k]) {
         row[column] = String(v).trim();
-      } else if (String(v).trim() !== "" && Number.isFinite(Number(v))) {
+      } else if ((typeof v === "number" || typeof v === "string") && String(v).trim() !== "" && Number.isFinite(Number(v))) {
         row[column] = Number(v);
       }
     });
     return row;
-  }).filter(function (row) {
-    return row.yymm !== "";
   });
 }
 

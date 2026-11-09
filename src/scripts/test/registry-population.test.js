@@ -270,10 +270,14 @@ test("GET reads registry_population by header name (trim + lower case) in any co
   assert.deepEqual(res, { years: [{ yymm: "6812", population: [ROWS_6812[0]], age: [] }] });
 });
 
-// The admin typing value into (row, column by header name) of registry_population.
+// The admin typing value into (row, column by header name) of a sheet.
+function setCell(h, sheetName, row, column, value) {
+  const col = h.sheet(sheetName)[0].indexOf(column) + 1;
+  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(row, col).setValues([[value]]);
+}
+
 function setPopulationCell(h, row, column, value) {
-  const col = h.sheet("registry_population")[0].indexOf(column) + 1;
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("registry_population").getRange(row, col).setValues([[value]]);
+  setCell(h, "registry_population", row, column, value);
 }
 
 // A row without the given keys.
@@ -302,6 +306,82 @@ test("GET after the admin blanks one count and types text into another → each 
   const res = getRegistryPopulation(h);
 
   const expected = ROWS_6812.map((r, i) => (i === 1 ? omit(r, "male") : i === 2 ? omit(r, "female") : r));
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, age: [] }] });
+});
+
+test("GET after the admin blanks the yymm of a row in each sheet, its other cells kept → those rows are in the answer as a year with a blank yymm, so the prebuild fails loudly (SCHEMA §7) instead of publishing a total short of them", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveAge(h, "6812", AGE_ROWS_6812);
+  setCell(h, "registry_population", 2, "yymm", "");
+  setCell(h, "registry_population_age", 5, "yymm", "");
+
+  const res = getRegistryPopulation(h);
+
+  assert.deepEqual(res, {
+    years: [
+      { yymm: "", population: [{ ...ROWS_6812[0], yymm: "" }], age: [{ ...AGE_ROWS_6812[3], yymm: "" }] },
+      { yymm: "6812", population: ROWS_6812.slice(1), age: AGE_ROWS_6812.filter((_, i) => i !== 3) },
+    ],
+  });
+});
+
+test("GET after the admin clears a row but for a count that is no number → the row stays, under a blank yymm and without that count, because a value is left in it", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  HEADER.filter((column) => column !== "uploaded_at").forEach((column) => setPopulationCell(h, 3, column, ""));
+  setPopulationCell(h, 3, "male", "สองพัน");
+
+  const res = getRegistryPopulation(h);
+
+  const blank = { yymm: "", cc: "", cc_name: "", rcode: "", rcode_name: "", tt: "", tt_name: "", mm: "", mm_name: "" };
+  assert.deepEqual(res, {
+    years: [
+      { yymm: "", population: [blank], age: [] },
+      { yymm: "6812", population: ROWS_6812.filter((_, i) => i !== 1), age: [] },
+    ],
+  });
+});
+
+test("GET after the admin clears a whole row of each sheet, and another but for its uploaded_at → those are no rows, and the other rows come back as sent", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveAge(h, "6812", AGE_ROWS_6812);
+  for (const [sheet, columns] of [["registry_population", HEADER], ["registry_population_age", [...AGE_COLUMNS, "uploaded_at"]]]) {
+    columns.forEach((column) => setCell(h, sheet, 3, column, ""));
+    columns.filter((column) => column !== "uploaded_at").forEach((column) => setCell(h, sheet, 5, column, ""));
+  }
+  // A space looks blank in the sheet, and every other column is read trimmed.
+  setCell(h, "registry_population", 3, "tt_name", " ");
+
+  const res = getRegistryPopulation(h);
+
+  const others = (rows) => rows.filter((_, i) => i !== 1 && i !== 3);
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: others(ROWS_6812), age: others(AGE_ROWS_6812) }] });
+});
+
+test("GET after the admin deletes the header row → the rows left stay in the answer without any column, so the prebuild fails loudly (SCHEMA §7) instead of publishing no population", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("registry_population").deleteRows(1, 1);
+
+  const res = getRegistryPopulation(h);
+
+  // Row 1 is now ROWS_6812[0], read as the header: the other 9 are read by it.
+  assert.deepEqual(res, { years: [{ population: ROWS_6812.slice(1).map(() => ({})), age: [] }] });
+});
+
+test("GET after the admin types a date and TRUE and FALSE into counts → each is left out of its row, not read as a number; a count typed as text is still a number", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  setPopulationCell(h, 2, "male", new Date("2026-01-02T00:00:00Z"));
+  setPopulationCell(h, 3, "house", true);
+  setPopulationCell(h, 4, "female", false);
+  setPopulationCell(h, 5, "total", "7992");
+
+  const res = getRegistryPopulation(h);
+
+  const expected = ROWS_6812.map((r, i) => (i === 0 ? omit(r, "male") : i === 1 ? omit(r, "house") : i === 2 ? omit(r, "female") : r));
   assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, age: [] }] });
 });
 
@@ -516,6 +596,31 @@ for (const [what, rows] of REJECTED_POPULATION_AGAINST_AGE) {
 
     assert.deepEqual(res, { status: "error", message: "Does not match registry_population_age" });
     assert.deepEqual(sheetsExceptLogs(h), before);
+  });
+}
+
+// Rules 12–14 of SCHEMA §3.8 read the other sheet, where a row whose yymm is
+// blank is a row of no yymm (SCHEMA §3.9): [the kind saved, how many of that
+// sheet's 10 rows of 6812 have their yymm blanked, the rows sent, what the
+// rule then says, the error or null when saved].
+const BLANK_YYMM_IN_THE_OTHER_SHEET = [
+  ["age", 10, AGE_ROWS_6812, "rule 12: no registry_population rows of 6812", "No registry_population rows for this yymm"],
+  ["age", 1, AGE_ROWS_6812, "rule 13: its 9 rows of 6812 do not match the 10 sent", "Does not match registry_population"],
+  ["population", 10, REJECTED_POPULATION_AGAINST_AGE[0][1], "rule 14: no age rows of 6812 to match, so figures unlike theirs are saved", null],
+  ["population", 1, ROWS_6812, "rule 14: its 9 age rows of 6812 do not match the 10 sent", "Does not match registry_population_age"],
+];
+
+for (const [kind, blanked, rows, what, message] of BLANK_YYMM_IN_THE_OTHER_SHEET) {
+  test(`kind: ${kind} of 6812 with the yymm of ${blanked} of the other sheet's 10 rows blanked → ${what}`, () => {
+    const h = load();
+    savePopulation(h, "6812", ROWS_6812);
+    if (kind === "population") saveAge(h, "6812", AGE_ROWS_6812);
+    const otherSheet = kind === "age" ? "registry_population" : "registry_population_age";
+    for (let row = 2; row < 2 + blanked; row++) setCell(h, otherSheet, row, "yymm", "");
+
+    const res = post(h, { action: "save_registry_population", kind, yymm: "6812", rows });
+
+    assert.deepEqual(res, message ? { status: "error", message } : { status: "success", kind, yymm: "6812", count: 10 });
   });
 }
 
