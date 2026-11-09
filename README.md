@@ -113,8 +113,9 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm start` | เปิดดูผล build ที่ <http://localhost:3000> ด้วย `npx serve@latest out` (`next start` ใช้กับ static export ไม่ได้) |
 | `npm run lint` | ESLint (รวมกฎ import ของ Data Center) และวลีที่ GLOSSARY ให้เลี่ยง |
 | `npm test` | เทสต์ GAS และเทสต์ของ Data Center |
-| `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 (CI รันทุก PR) |
+| `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 และเปิดหน้าแรกที่จอกว้างเพื่อเทียบตัวเลขประชากรบนหน้ากันเอง (§5) (CI รันทุก PR) |
 | `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center (CI รันทุก PR) |
+| `npm run dc:sync-local [-- <port>]` | เปิด `/sync` ใน `next dev` (พอร์ต 3217) คู่กับ GAS ใน harness ซึ่งเก็บข้อมูลในหน่วยความจำ ลองอัปโหลดได้โดยไม่แตะ GAS จริง พิมพ์ URL, PIN และทุก POST · Ctrl-C ปิดทั้งคู่ |
 | `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build |
 | `npm run gas:push` · `gas:deploy` · `gas:sync` | push โค้ด GAS · deploy ทับ deployment เดิม · ทำทั้งสองอย่าง (ดูหัวข้อ Deploy) |
 | `node src/scripts/sync-moph-to-gas.js [--only <table> ...] [--year <YYYY> ... \| --backfill] [--force] [--no-rebuild]` | sync จาก MOPH เข้า GAS โดยไม่ต้องเปิดเบราว์เซอร์ · ไม่ใส่ `--year` คือปีปัจจุบัน · ตอนจบสั่ง rebuild ถ้ามีตารางบันทึกสำเร็จ |
