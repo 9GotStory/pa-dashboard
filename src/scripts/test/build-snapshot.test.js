@@ -795,6 +795,8 @@ test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 na
 });
 
 test("age rows of the year the home page shows that do not match its population rows (SCHEMA §7) → exit 1 naming the year, the sheet and the row; an earlier snapshot is left as it was", async (t) => {
+  // The real age rows with the row of 54060400 changed.
+  const withAgeRow3 = (fields) => AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, ...fields } : row));
   const cases = [
     ["a ตำบล without its age row", { age: AGE_ROWS_6812.slice(1) }, /\n {2}registry_population_age has no row for rcode 5406 tt 54060100, which registry_population has/],
     [
@@ -804,28 +806,28 @@ test("age rows of the year the home page shows that do not match its population 
       /\n {2}registry_population_age has a row for rcode 5489 tt 54060300, which registry_population does not have/,
     ],
     [
-      "a ตำบล twice in the population rows, its age row once",
+      "the same (rcode, tt) twice in the population rows, its age row once",
       { population: [...ROWS_6812, ROWS_6812[9]] },
       /\n {2}registry_population has 2 rows for rcode 5489 tt 54060200/,
     ],
     [
-      "a ตำบล twice in the age rows, its population row once",
+      "the same (rcode, tt) twice in the age rows, its population row once",
       { age: [...AGE_ROWS_6812, AGE_ROWS_6812[9]] },
       /\n {2}registry_population_age has 2 rows for rcode 5489 tt 54060200/,
     ],
     [
       "total_t 7993 against total 7992",
-      { age: AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, total_t: 7993 } : row)) },
+      { age: withAgeRow3({ total_t: 7993 }) },
       /\n {2}registry_population_age has total_t 7993 for rcode 5406 tt 54060400, but registry_population has total 7992/,
     ],
     [
       "total_m 3904 against male 3903",
-      { age: AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, total_m: 3904 } : row)) },
+      { age: withAgeRow3({ total_m: 3904 }) },
       /\n {2}registry_population_age has total_m 3904 for rcode 5406 tt 54060400, but registry_population has male 3903/,
     ],
     [
       "total_f 4090 against female 4089",
-      { age: AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, total_f: 4090 } : row)) },
+      { age: withAgeRow3({ total_f: 4090 }) },
       /\n {2}registry_population_age has total_f 4090 for rcode 5406 tt 54060400, but registry_population has female 4089/,
     ],
   ];

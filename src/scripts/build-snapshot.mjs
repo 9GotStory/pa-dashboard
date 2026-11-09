@@ -278,14 +278,15 @@ function registryProblem(answer) {
 }
 
 // Why the age rows of a year do not match its population rows (SCHEMA §7), one
-// line per problem: rule 13 of SCHEMA §3.8, and no ตำบล twice in either sheet,
-// since the home page adds the rows up as they are and would count it twice.
+// line per problem: rule 13 of SCHEMA §3.8, and no (rcode, tt) twice in either
+// sheet, since the home page adds the rows up as they are and would count it
+// twice.
 function ageMismatches({ population, age }) {
-  const tambon = (row) => `rcode ${row.rcode} tt ${row.tt}`;
-  const populationRows = Map.groupBy(population, tambon);
-  const ageRows = Map.groupBy(age, tambon);
-  const repeated = (sheet, byTambon) =>
-    [...byTambon]
+  const rowKey = (row) => `rcode ${row.rcode} tt ${row.tt}`;
+  const populationRows = Map.groupBy(population, rowKey);
+  const ageRows = Map.groupBy(age, rowKey);
+  const repeated = (sheet, byKey) =>
+    [...byKey]
       .filter(([, rows]) => rows.length > 1)
       .map(([key, rows]) => `${sheet} has ${rows.length} rows for ${key}`);
   return [
@@ -298,13 +299,13 @@ function ageMismatches({ population, age }) {
       .filter((key) => !populationRows.has(key))
       .map((key) => `${REGISTRY_SHEETS.age} has a row for ${key}, which ${REGISTRY_SHEETS.population} does not have`),
     ...age.flatMap((row) => {
-      const pair = populationRows.get(tambon(row))?.[0];
+      const pair = populationRows.get(rowKey(row))?.[0];
       if (!pair) return [];
       return [["total_m", "male"], ["total_f", "female"], ["total_t", "total"]]
         .filter(([ageColumn, column]) => row[ageColumn] !== pair[column])
         .map(
           ([ageColumn, column]) =>
-            `${REGISTRY_SHEETS.age} has ${ageColumn} ${row[ageColumn]} for ${tambon(row)}, ` +
+            `${REGISTRY_SHEETS.age} has ${ageColumn} ${row[ageColumn]} for ${rowKey(row)}, ` +
             `but ${REGISTRY_SHEETS.population} has ${column} ${pair[column]}`,
         );
     }),
