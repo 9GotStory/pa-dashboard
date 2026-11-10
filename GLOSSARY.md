@@ -12,7 +12,8 @@
 | **PA-Data** | สเปรดชีต Google Sheets ที่ GAS ใช้เป็นฐานข้อมูล | |
 | **HDC Open Data** / **MOPH** | แหล่งข้อมูลต้นทาง `opendata.moph.go.th` ทั้ง `report_data` และ API แค็ตตาล็อก | |
 | **stat.bora** | เว็บสถิติประชากรทางการทะเบียนราษฎรของกรมการปกครอง `stat.bora.dopa.go.th` แหล่งข้อมูลเดียวที่ไม่ใช่ HDC | "DOPA API" |
-| **R6** | ไฟล์ต้นแบบหน้าจอ `docs/reference/…-r6.html` ตัวเลขในนั้นเป็นข้อมูลจำลอง | |
+| **R6** | ไฟล์ต้นแบบหน้าจอ `docs/reference/…-r6.html` แบบอ้างอิงของ `/reports` และ `/reports/{id}` ตัวเลขในนั้นเป็นข้อมูลจำลอง | |
+| **V7.6** | ต้นแบบหน้าแรกและกติกาดีไซน์ใน `docs/reference/v7-6/` (`design.md` กับไฟล์ HTML) แบบอ้างอิงด้านหน้าตาของหน้าแรกและสีของ Data Center ทั้งเว็บ (ADR-0012) แท่งพีระมิดรายเพศ ตำบลที่รับผิดชอบ หมู่บ้าน และรูปแผนที่ในนั้นเป็นข้อมูลจำลอง ส่วนยอดสรุปประชากรคัดลอกจากหน้าเว็บ ณ 9 พ.ย. 2569 ไม่ใช้เป็นแหล่งข้อมูล | |
 | **stub** | หน้า GitHub Pages ที่ส่งต่อลิงก์เก่าไปโดเมนใหม่ | "redirect page" |
 
 ## แค็ตตาล็อก
@@ -43,6 +44,7 @@
 | **อำเภอ** / `district_code` | `5406` ทุกชีตเก็บเฉพาะแถวที่ `areacode` ขึ้นต้นด้วยค่านี้ | |
 | **ตำบล** (area) | 6 หลักแรกของ `areacode` ชื่อจาก `tambon_master` | "subdistrict" |
 | **หน่วยบริการ** (hospital) | `hospcode` 5 หลัก ชื่อและ `tambon_id` จาก `hospitals` | "facility" (คำของ PA) |
+| **ตำบลที่ตั้ง** | ตำบลที่หน่วยบริการตั้งอยู่ (`hospitals.tambon_id`) ไม่ใช่ตำบลที่หน่วยบริการรับผิดชอบ ซึ่งระบบยังไม่มีข้อมูล | "เขตรับผิดชอบ", "พื้นที่รับผิดชอบ" |
 | **sync** | ดึงตารางจาก MOPH แล้ว POST `save_kpi_data` เข้า GAS | "import" |
 | **backfill** | sync ทุกปีใน window ครั้งเดียว | |
 | **`sync_status`** | ชีตที่บอกว่า (ตาราง, ปี) ใดมีข้อมูล กี่แถว `date_com` ล่าสุดเมื่อไร และอยู่ชีตไหน | |
@@ -69,7 +71,7 @@
 | **ticket** | GitHub issue หนึ่งใบต่อ F## ใน FEATURES มี blocking relationship ตาม "ขึ้นกับ" | "task", "card" |
 | **spec issue** | issue ใบเดียวจาก `/to-spec` ที่สรุปเป้าหมายและข้อตัดสินใจ ไม่ใส่ path ไฟล์ | |
 | **seam** | จุดที่ตกลงกันว่าจะเขียนเทสต์ (CODING_STANDARDS §5) เช่น handler ของ GAS ใน `node:vm`, `values.ts`, `build-snapshot.mjs` กับ stub server | "boundary" |
-| **expand–contract** | ลำดับงาน ขยายระบบให้รับทั้งแบบเก่าและใหม่ (Track A–C) → ย้ายผู้ใช้ (Track D) → ตัดของเก่า (Track E) | "big bang" |
+| **expand–contract** | ลำดับงาน ขยายระบบให้รับทั้งแบบเก่าและใหม่ (Track A–C) → ย้ายผู้ใช้ (Track D) → ตัดของเก่า (Track E) · สีของ Track G ใช้ลำดับเดียวกัน (SPEC §9.1) | "big bang" |
 
 ## การคำนวณรายงาน
 

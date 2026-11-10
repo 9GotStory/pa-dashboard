@@ -66,7 +66,7 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project
 
-Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.สอง): a Next.js 16 static export on top of a Google Apps Script (GAS) web app and Google Sheets, fed by HDC Open Data. Production is Cloudflare Pages at `https://songhealth-dc.pages.dev`: the Data Center at `/`, PA at `/pa`. GitHub Pages serves only the stub in `legacy-redirect/`, which forwards old PA links. Phases 1 and 2 were built as tickets F01–F29 in FEATURES.md. Read README.md for the overview.
+Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.สอง): a Next.js 16 static export on top of a Google Apps Script (GAS) web app and Google Sheets, fed by HDC Open Data. Production is Cloudflare Pages at `https://songhealth-dc.pages.dev`: the Data Center at `/`, PA at `/pa`. GitHub Pages serves only the stub in `legacy-redirect/`, which forwards old PA links. Phases 1 and 2 were built as tickets F01–F29 in FEATURES.md; Track G (F30–F37) redesigns the home page per V7.6. Read README.md for the overview.
 
 ## Commands
 
@@ -89,9 +89,10 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 
 Read these on demand. Don't `@`-import them: imports load into every session at start, and SPEC and SCHEMA are long.
 
-- SPEC.md: design of phases 1–2 · SCHEMA.md: sheets, GAS contracts, calculation rules, TS types · FEATURES.md: tickets F01–F29, acceptance checks, workflow rules
+- SPEC.md: design of phases 1–2 · SCHEMA.md: sheets, GAS contracts, calculation rules, TS types · FEATURES.md: tickets F01–F37, acceptance checks, workflow rules
 - GLOSSARY.md: domain terms · docs/adr/: decisions and why · CODING_STANDARDS.md: what code review checks
 - docs/reference/song-health-data-center-review-03-epi-real-response-r6.html: R6 UI mockup (its numbers are fake)
+- docs/reference/v7-6/: V7.6 visual and UX baseline for redesigning Data Center pages. SPEC §9.1–9.2 is the contract; design.md and the HTML are the look reference (mock data), not production source
 
 ## Agent skills
 

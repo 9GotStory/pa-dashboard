@@ -35,13 +35,13 @@
 - server component อ่านไฟล์ผ่าน `src/lib/dc/snapshot.ts` เท่านั้น client component ไม่ `import` `fs` และไม่เรียก GAS (ESLint ตรวจ `fs` · `dc:check` ตรวจ request ไป GAS) ยกเว้น `RegistryPopulationUpload.tsx` ซึ่งวางในหน้า `/sync` ไม่ใช่หน้าของ `(dc)` และเรียก GAS ตาม SPEC §12.1
 - `src/lib/dc/values.ts` และ `population.ts` เป็นฟังก์ชันล้วน: ไม่ import React, ไม่แตะ DOM/`window`, ไม่ `fetch` · component ใน `src/components/dc/` ไม่ import `population.ts` ซึ่งมีตัวอ่านไฟล์ของ `/sync` (งบ JS, SPEC §9.6) ยกเว้น `RegistryPopulationUpload.tsx` (ESLint ตรวจ)
 - `'use client'` เฉพาะ component ที่มี state/effect/เบราว์เซอร์ API · Leaflet โหลดผ่าน `next/dynamic` ใน client wrapper เท่านั้น
-- ไม่เพิ่ม dependency นอกจาก `leaflet@1.9.4` (dependencies) กับ `tsx`, `@types/leaflet` (devDependencies) · กราฟเป็น SVG เขียนเอง
+- ไม่เพิ่ม dependency นอกจาก `leaflet@1.9.4` (dependencies) กับ `tsx`, `@types/leaflet` (devDependencies) · กราฟเป็น SVG หรือ HTML เขียนเอง · icon ใช้ `lucide-react` ที่มีอยู่แล้ว import ทีละตัว ไม่ใช้ emoji
 - ข้อความบนหน้าเป็นภาษาไทย ยกเว้นเหตุผลจาก GAS หรือเบราว์เซอร์ที่ส่วนอัปโหลดในหน้า `/sync` แสดงต่อท้ายตามที่ได้รับ เพราะข้อความของ GAS เป็นภาษาอังกฤษตามตาราง SCHEMA §3.8 ไม่แปลในหน้าเว็บ · ใช้คำตาม `GLOSSARY.md` ไม่มีคำว่า "จำลอง"/"ตัวอย่าง"
-- สีใช้ token `dc-*` ใน `globals.css` กับ `white` ไม่ใช้ `brand-*` ของ PA หรือสีสำเร็จรูปของ Tailwind (`slate-*` ฯลฯ) · ข้อความใช้ `font-dc` ที่ layout ของ `(dc)` ตั้งไว้ หัวเรื่องใช้ `font-prompt` ไม่ใช้ `font-sans` (ได้ฟอนต์ของเครื่อง SPEC §11)
+- สีใช้ token `dc-*` ใน `globals.css` กับ `white` ไม่ใช้ `brand-*` ของ PA หรือสีสำเร็จรูปของ Tailwind (`slate-*` ฯลฯ) · โค้ดใหม่และส่วนที่แก้ใช้ token ชื่อตามความหมายของ V7.6 (SPEC §9.1) ส่วนชื่อเก่าของ R6 (`dc-blue`, `dc-navy` ฯลฯ) เป็น alias ที่ตั้งใจไว้ให้ `/reports` จนถึงขั้นหดของ ADR-0012 จึงไม่ใช่บั๊กที่ `dc-blue` เป็นสีเขียว แต่โค้ดใหม่ไม่ใช้ชื่อเก่า · ไม่มี CSS เขียนเองเพิ่มนอกจาก token ใน `@theme` · ข้อความใช้ `font-dc` ที่ layout ของ `(dc)` ตั้งไว้ หัวเรื่องใช้ `font-prompt` ไม่ใช้ `font-sans` (ได้ฟอนต์ของเครื่อง SPEC §11)
 - ไม่ import จากไฟล์ PA (ไฟล์ที่มีอยู่ก่อนใต้ `src/lib/` และ `src/components/` · ESLint ตรวจ) · ฟังก์ชันที่ต้องให้ผลเหมือน PA (`formatPct`, `formatThaiDate`) อยู่ใน `src/lib/dc/format.ts` และฟอนต์อยู่ใน `src/lib/dc/fonts.ts`
 - ร้อยละแสดงผ่าน `formatPct` ของ `src/lib/dc/format.ts` (2 ตำแหน่ง) เทียบเกณฑ์ด้วยค่าก่อนปัด · เป้าหมาย 0 แสดง "—" ไม่ใช่ 0%
 - หน้าใน `(dc)` ต้องไม่มี network request ไป `script.google.com`
-- การเข้าถึง: ทุก control มี label, ตารางมี `<caption>`, กราฟ SVG มี `role="img"` + `aria-label`, focus ย้ายไปหัวข้อเมื่อเปลี่ยนหน้าแบบ R6
+- การเข้าถึง: ทุก control มี label, ตารางมี `<caption>`, กราฟ SVG มี `role="img"` + `aria-label` ส่วนกราฟที่กดได้ (แท่งของส่วนเปรียบเทียบ แถวช่วงอายุ) เป็น `<button>` ที่ชื่อบอกค่าและ SVG ข้างในเป็น `aria-hidden`, focus ย้ายไปหัวข้อเมื่อเปลี่ยนหน้าแบบ R6
 - URL state: ตัวกรองของหน้ารายงานอยู่ใน query ตาม `ReportQuery` และตั้ง `dynamicParams = false`
 
 ## 5. เทสต์และ seam ที่ตกลงกัน

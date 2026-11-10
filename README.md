@@ -71,7 +71,7 @@ public/
 └── data/                        snapshot ที่สร้างตอน build ไม่ commit
 docs/
 ├── adr/                         บันทึกการตัดสินใจ
-└── reference/                   ต้นแบบหน้าจอ R6 (ตัวเลขเป็นข้อมูลจำลอง)
+└── reference/                   ต้นแบบหน้าจอ R6 และ V7.6 (ตัวเลขเป็นข้อมูลจำลอง)
 tools/                           snippet สำหรับรันใน DevTools ของเบราว์เซอร์ (export แค็ตตาล็อก)
 catalog-exports/                 ไฟล์ export แค็ตตาล็อกจาก snippet ไม่ commit
 ```
@@ -167,7 +167,8 @@ npm run gas:sync
 | [docs/adr/](docs/adr/) | บันทึกการตัดสินใจและเหตุผล |
 | [CODING_STANDARDS.md](CODING_STANDARDS.md) | มาตรฐานที่ใช้ตรวจโค้ดก่อน merge |
 | [CLAUDE.md](CLAUDE.md) | คำสั่งสำหรับ Claude Code |
-| [ต้นแบบหน้าจอ R6](docs/reference/song-health-data-center-review-03-epi-real-response-r6.html) | แบบหน้าตาและการใช้งานของ Data Center (ตัวเลขเป็นข้อมูลจำลอง) |
+| [ต้นแบบหน้าจอ R6](docs/reference/song-health-data-center-review-03-epi-real-response-r6.html) | แบบหน้าตาและการใช้งานของ `/reports` และ `/reports/{id}` (ตัวเลขเป็นข้อมูลจำลอง) |
+| [ต้นแบบ V7.6](docs/reference/v7-6/design.md) | แบบหน้าตาของหน้าแรกและสีของ Data Center ทั้งเว็บ (ADR-0012, ตัวเลขเป็นข้อมูลจำลอง) |
 
 ## วิธีทำงาน
 
