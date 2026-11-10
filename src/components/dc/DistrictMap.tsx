@@ -80,8 +80,9 @@ export default function DistrictMap({
             onEachFeature: (feature, layer) => {
               const id = feature.properties.ADMIN_ID3;
               const path = layer as L.Polygon;
+              const name = `ตำบล${names.get(id)}`;
               paths.set(id, path);
-              path.bindTooltip(`ตำบล${names.get(id)}`, { sticky: true, direction: "top" });
+              path.bindTooltip(name, { sticky: true, direction: "top" });
               path.on({
                 click: () => pick(id),
                 mouseover: () => hover(id, path, true),
@@ -91,10 +92,14 @@ export default function DistrictMap({
                   const el = path.getElement() as SVGPathElement;
                   el.setAttribute("tabindex", "0");
                   el.setAttribute("role", "button");
-                  el.setAttribute("aria-label", `ตำบล${names.get(id)}`);
+                  el.setAttribute("aria-label", name);
                   // The svg holds the ตำบล buttons, so it is a named group, not a picture.
                   el.ownerSVGElement!.setAttribute("role", "group");
                   el.ownerSVGElement!.setAttribute("aria-label", "ตำบลในอำเภอสอง");
+                  // Tab may reach a ตำบล out of view after a zoom to another: show the อำเภอ.
+                  el.addEventListener("focus", () => {
+                    if (!map.getBounds().contains(path.getBounds())) fit(map, boundaries.getBounds(), 11);
+                  });
                 },
                 keydown: ({ originalEvent: e }: L.LeafletKeyboardEvent) => {
                   if (e.key !== "Enter" && e.key !== " ") return;
@@ -123,13 +128,9 @@ export default function DistrictMap({
     const area = selected ? drawn.paths.get(selected) : undefined;
     // The view first: the paths have elements to mark only once the map has one.
     if (fromMap.current) fromMap.current = false;
-    else {
-      drawn.map.fitBounds(area?.getBounds() ?? drawn.bounds, {
-        padding: [24, 24],
-        maxZoom: area ? 12 : 11,
-        animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
-      });
-    }
+    else fit(drawn.map, area?.getBounds() ?? drawn.bounds, area ? 12 : 11);
+    // Marked in place, not brought to front: that would move the element, so
+    // it would lose focus and the tab order would change with every pick.
     for (const [id, path] of drawn.paths) {
       const el = path.getElement()!;
       el.toggleAttribute("data-selected", id === selected);
@@ -148,4 +149,14 @@ export default function DistrictMap({
       className="isolate h-full bg-dc-canvas! font-dc!"
     />
   );
+}
+
+// Moves the map's view to bounds, no closer than maxZoom, without the
+// animation when the reader asks for reduced motion.
+function fit(map: L.Map, bounds: L.LatLngBounds, maxZoom: number) {
+  map.fitBounds(bounds, {
+    padding: [24, 24],
+    maxZoom,
+    animate: !window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  });
 }

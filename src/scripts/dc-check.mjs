@@ -21,6 +21,8 @@ const HOME_WIDTHS = [320, 390, 768, 1440, 1920];
 const POPULATION_WIDTH = 1280;
 // The อำเภอ as the panel and the pyramid name it before any ตำบล is picked.
 const DISTRICT = "ภาพรวมอำเภอสอง";
+// The label of the home page's ตำบล <select> (SPEC §9.2).
+const PICKER = "เลือกตำบล";
 // The ช่วงอายุ of a pyramid (SCHEMA §11.3).
 const AGE_BANDS = 17;
 // How long a ตำบล picked in เลือกตำบล may take to show on the pyramid, in ms.
@@ -196,8 +198,8 @@ async function overflowProblems(browser, url) {
 
 // What the population rules compare, as the home page shows it (SPEC §9.2): a
 // figure the page does not have is null, a list it does not have is empty.
-// Runs inside the page, so it uses nothing from this module.
-function shownPopulation() {
+// Runs inside the page, so it uses nothing from this module; picker is PICKER.
+function shownPopulation(picker) {
   const parseCount = (text) => {
     const digits = text?.trim().match(/^[\d,]+/)?.[0];
     return digits ? Number(digits.replaceAll(",", "")) : null;
@@ -209,6 +211,7 @@ function shownPopulation() {
   const tambons = [...(table?.tBodies[0]?.rows ?? [])];
   const districtRow = [...(table?.tFoot?.rows ?? [])].find((row) => row.textContent.includes("รวมทั้งอำเภอ"));
   const pyramid = document.querySelector('svg[role="img"][aria-label^="พีระมิดประชากร "]');
+  const select = [...document.querySelectorAll("select")].find((s) => s.labels[0]?.textContent.trim() === picker);
   return {
     figures: [["ประชากรทั้งหมด", "รวม (คน)"], ["ประชากรชาย", "ชาย (คน)"], ["ประชากรหญิง", "หญิง (คน)"]].map(([label, column]) => {
       const at = columns.indexOf(column);
@@ -220,9 +223,7 @@ function shownPopulation() {
         tambons: tambons.map((row) => parseCount(row.cells[at]?.textContent)),
       };
     }),
-    pickable: [...([...document.querySelectorAll("select")].find((s) => s.labels[0]?.textContent.trim() === "เลือกตำบล")?.options ?? [])]
-      .filter((option) => option.value)
-      .map((option) => option.textContent.trim()),
+    pickable: [...(select?.options ?? [])].filter((option) => option.value).map((option) => option.textContent.trim()),
     panel: listedCount('section[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
     bands: [...(pyramid?.getAttribute("aria-label") ?? "").matchAll(/ชาย ([\d,]+) หญิง ([\d,]+)/g)].flatMap((m) => [parseCount(m[1]), parseCount(m[2])]),
     unsplit: parseCount(pyramid?.closest("section")?.textContent.match(/ไม่รวมประชากรที่ไม่แยกอายุ ([\d,]+) คน/)?.[1]),
@@ -260,7 +261,7 @@ function pyramidProblems(area, { bands, unsplit, panel }) {
 // nothing, and one that fails costs only this try, so this picks until the
 // pick shows; picking the ตำบล on show changes nothing.
 async function pickTambon(page, name) {
-  const select = page.getByLabel("เลือกตำบล", { exact: true });
+  const select = page.getByLabel(PICKER, { exact: true });
   const pyramid = page.locator(`svg[role="img"][aria-label^="พีระมิดประชากร ตำบล${name} "]`);
   const deadline = Date.now() + PICK_TIMEOUT;
   while (Date.now() < deadline) {
@@ -290,15 +291,15 @@ async function checkPopulation(browser, url, hasAge) {
     page.on("pageerror", (err) => problems.push(`${area}: error: ${err.message}`));
     await blockTiles(page);
     await page.goto(url, { waitUntil: "networkidle" });
-    const district = await page.evaluate(shownPopulation);
+    const district = await page.evaluate(shownPopulation, PICKER);
     problems.push(...totalsProblems(district.figures));
     if (hasAge) {
       problems.push(...pyramidProblems(area, district));
-      if (district.pickable.length === 0) problems.push(`${area}: no ตำบล to pick in เลือกตำบล`);
+      if (district.pickable.length === 0) problems.push(`${area}: no ตำบล to pick in ${PICKER}`);
       for (const name of district.pickable) {
         area = `ตำบล${name}`;
-        if (await pickTambon(page, name)) problems.push(...pyramidProblems(area, await page.evaluate(shownPopulation)));
-        else problems.push(`${area}: the pyramid does not show it after picking it in เลือกตำบล`);
+        if (await pickTambon(page, name)) problems.push(...pyramidProblems(area, await page.evaluate(shownPopulation, PICKER)));
+        else problems.push(`${area}: the pyramid does not show it after picking it in ${PICKER}`);
       }
     }
   } finally {
