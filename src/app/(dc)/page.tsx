@@ -23,7 +23,7 @@ import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
 const BOUNDARY_DOWNLOADED = "4 พฤศจิกายน 2569";
 
 // One icon per หัวข้อ of hdc_topics (SCHEMA §6), by cat_id; a หัวข้อ added
-// later gets TOPIC_ICON until it is mapped here.
+// later gets FALLBACK_TOPIC_ICON until it is mapped here.
 const TOPIC_ICONS: Record<string, LucideIcon> = {
   "1ed90bc32310b503b7ca9b32af425ae5": Baby, // อนามัยแม่และเด็ก
   "4df360514655f79f13901ef1181ca1c7": Syringe, // การสร้างเสริมภูมิคุ้มกันโรค
@@ -32,7 +32,7 @@ const TOPIC_ICONS: Record<string, LucideIcon> = {
   b2b59e64c4e6c92d4b1ec16a599d882b: HeartPulse, // Service Plan สาขาโรคไม่ติดต่อ
   db30e434e30565c12fbac44958e338d5: Smile, // Service Plan สาขาสุขภาพช่องปาก
 };
-const TOPIC_ICON = FileText;
+const FALLBACK_TOPIC_ICON = FileText;
 
 // The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
 // and population.json at build time: the Hero, the ประชากรทะเบียนราษฎร of
@@ -122,7 +122,7 @@ export default function Home() {
           </div>
           <Link
             href="/reports"
-            className="inline-flex min-h-11 items-center gap-1.5 self-start font-bold text-dc-brand-primary hover:underline sm:self-auto"
+            className="inline-flex min-h-11 items-center gap-1.5 self-start text-xs font-bold text-dc-brand-primary hover:underline sm:self-auto"
           >
             ดูรายงานทั้งหมด
             <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
@@ -130,11 +130,11 @@ export default function Home() {
         </div>
         <ul className="grid overflow-hidden rounded-[10px] border border-dc-border-subtle bg-dc-surface md:grid-cols-2">
           {topics.map(({ topic, count }) => {
-            const Icon = TOPIC_ICONS[topic.cat_id] ?? TOPIC_ICON;
+            const Icon = TOPIC_ICONS[topic.cat_id] ?? FALLBACK_TOPIC_ICON;
             return (
               <li
                 key={topic.cat_id}
-                className="min-w-0 border-t border-dc-border-subtle first:border-t-0 md:odd:border-r md:nth-2:border-t-0"
+                className="min-w-0 border-t border-dc-border-subtle first:border-t-0 md:even:border-l md:nth-2:border-t-0"
               >
                 <Link
                   href={`/reports?cat=${topic.cat_id}`}
@@ -142,7 +142,7 @@ export default function Home() {
                 >
                   <span
                     aria-hidden="true"
-                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dc-highlight-soft text-dc-brand-primary"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dc-surface-muted text-dc-brand-primary"
                   >
                     <Icon className="size-5" />
                   </span>
@@ -160,7 +160,7 @@ export default function Home() {
         </ul>
       </section>
 
-      {/* Compact: one line per source under a rule, not a card */}
+      {/* Compact: one paragraph of sources under a rule, not a card */}
       <section
         aria-labelledby="sources-title"
         className="mt-8 flex flex-col gap-1 border-t border-dc-border-subtle pt-5 text-xs text-dc-brand-deep sm:mt-10 sm:flex-row sm:gap-4"
