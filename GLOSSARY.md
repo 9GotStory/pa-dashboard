@@ -71,7 +71,7 @@
 | **ticket** | GitHub issue หนึ่งใบต่อ F## ใน FEATURES มี blocking relationship ตาม "ขึ้นกับ" | "task", "card" |
 | **spec issue** | issue ใบเดียวจาก `/to-spec` ที่สรุปเป้าหมายและข้อตัดสินใจ ไม่ใส่ path ไฟล์ | |
 | **seam** | จุดที่ตกลงกันว่าจะเขียนเทสต์ (CODING_STANDARDS §5) เช่น handler ของ GAS ใน `node:vm`, `values.ts`, `build-snapshot.mjs` กับ stub server | "boundary" |
-| **expand–contract** | ลำดับงาน ขยายระบบให้รับทั้งแบบเก่าและใหม่ (Track A–C) → ย้ายผู้ใช้ (Track D) → ตัดของเก่า (Track E) | "big bang" |
+| **expand–contract** | ลำดับงาน ขยายระบบให้รับทั้งแบบเก่าและใหม่ (Track A–C) → ย้ายผู้ใช้ (Track D) → ตัดของเก่า (Track E) · สีของ Track G ใช้ลำดับเดียวกัน: ชื่อสีเก่าของ R6 ชี้ไปที่ token ใหม่ แล้วลบตอนออกแบบ `/reports` ใหม่ (ADR-0012) | "big bang" |
 
 ## การคำนวณรายงาน
 
