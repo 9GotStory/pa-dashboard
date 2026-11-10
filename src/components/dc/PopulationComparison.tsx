@@ -52,7 +52,7 @@ export default function PopulationComparison({
   const top = Math.max(...areas.map((a) => a.totals.total));
 
   return (
-    <section aria-labelledby="comparison-title" className="min-w-0">
+    <section id="comparison" aria-labelledby="comparison-title" className="min-w-0">
       <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <h2 id="comparison-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">

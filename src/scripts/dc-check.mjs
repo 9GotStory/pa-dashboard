@@ -222,7 +222,7 @@ function shownPopulation(picker) {
       return {
         label,
         column,
-        summary: listedCount('section[aria-label="สรุปประชากรและการปกครอง"]', label),
+        overview: listedCount('section[aria-labelledby="overview-title"]', label),
         district: parseCount(districtRow?.cells[at]?.textContent),
         tambons: tambons.map((row) => parseCount(row.cells[at]?.textContent)),
       };
@@ -246,12 +246,12 @@ function mismatchProblems(area, nameA, a, nameB, b) {
   return [`${area}: ${nameA} ${shown(a)} ≠ ${nameB} ${shown(b)}`];
 }
 
-// The totals rule: the summary, the รวมทั้งอำเภอ row and the sum of the ตำบล rows agree.
+// The totals rule: the ภาพรวมประชากร, the รวมทั้งอำเภอ row and the sum of the ตำบล rows agree.
 function totalsProblems(figures) {
-  return figures.flatMap(({ label, column, summary, district, tambons }) => {
+  return figures.flatMap(({ label, column, overview, district, tambons }) => {
     const sum = tambons.length > 0 && !tambons.includes(null) ? tambons.reduce((a, b) => a + b) : null;
     return [
-      ...mismatchProblems(DISTRICT, `summary ${label}`, summary, `รวมทั้งอำเภอ ${column}`, district),
+      ...mismatchProblems(DISTRICT, `ภาพรวมประชากร ${label}`, overview, `รวมทั้งอำเภอ ${column}`, district),
       ...mismatchProblems(DISTRICT, `รวมทั้งอำเภอ ${column}`, district, `sum of the ตำบล rows ${column}`, sum),
     ];
   });

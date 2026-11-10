@@ -60,7 +60,7 @@ export default function DistrictExplorer({
 
   return (
     <div className="flex flex-col gap-5">
-      <section aria-labelledby="area-title" className="min-w-0">
+      <section id="area" aria-labelledby="area-title" className="min-w-0">
         <h2 id="area-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
           สำรวจข้อมูลในพื้นที่
         </h2>
