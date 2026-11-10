@@ -27,7 +27,9 @@ function mostlyEnglish(text) {
 }
 
 // The texts Claude wrote in this turn, the last reply aside: those after the
-// last message the user typed (a tool result is not one).
+// last message the user typed. A tool result is not one, nor is a user entry
+// Claude Code writes itself: a skill's text loaded mid-turn (isMeta), a
+// subagent's report or a task notification (origin other than "human").
 function turnNotes(transcriptPath, last) {
   let entries;
   try {
@@ -41,6 +43,7 @@ function turnNotes(transcriptPath, last) {
   }
   const typed = (e) => {
     const content = e.message?.content;
+    if (e.isMeta || (e.origin?.kind ?? "human") !== "human") return false;
     return typeof content === "string" || (Array.isArray(content) && !content.some((c) => c.type === "tool_result"));
   };
   const start = entries.findLastIndex((e) => e.type === "user" && typed(e));
