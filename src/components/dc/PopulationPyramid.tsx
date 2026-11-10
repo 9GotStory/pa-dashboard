@@ -8,7 +8,7 @@ import type { AgeProfile, UnsplitGroup } from "@/lib/dc/types";
 // The columns of a ช่วงอายุ row and of the header above the rows: ชาย bar,
 // ชาย figure, ช่วงอายุ, หญิง figure, หญิง bar. The figures keep their width
 // at 320px, so they never hide; the bars take what is left.
-const COLUMNS =
+const ROW_GRID =
   "grid grid-cols-[minmax(0,1fr)_2.75rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_3.25rem_3.5rem_3.25rem_minmax(0,1fr)] sm:gap-2";
 
 // The name of each kind of ประชากรที่ไม่แยกอายุ, in the order SCHEMA §11.4
@@ -53,6 +53,7 @@ export default function PopulationPyramid({
   // The ช่วงอายุ shown, by label, so it stays when another ตำบล is picked.
   const [shown, setShown] = useState<string | null>(null);
   const band = age.bands.find((b) => b.label === shown);
+  const bandTotal = band ? band.male + band.female : 0;
   const top = Math.max(...age.bands.flatMap((b) => [b.male, b.female]));
   // A bar's width as a percentage of its half: the area's largest count fills it.
   const barWidth = (count: number) => `${(count / top) * 100}%`;
@@ -80,7 +81,7 @@ export default function PopulationPyramid({
       <div className="mt-1 grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(16rem,0.62fr)]">
         <div className="min-w-0 rounded-[10px] border border-dc-border-subtle bg-dc-surface px-2 py-4 sm:px-5">
           <div className="mx-auto max-w-3xl">
-            <p aria-hidden="true" className={`${COLUMNS} border-b border-dc-border-subtle px-1 pb-2 text-[11px] font-bold text-dc-brand-deep sm:px-2`}>
+            <p aria-hidden="true" className={`${ROW_GRID} border-b border-dc-border-subtle px-1 pb-2 text-[11px] font-bold text-dc-brand-deep sm:px-2`}>
               <span className="inline-flex items-center justify-end gap-1.5">
                 <i className="inline-block size-2.5 rounded-sm bg-dc-pyramid-male" />
                 ชาย
@@ -102,7 +103,7 @@ export default function PopulationPyramid({
                   aria-label={`ช่วงอายุ ${bandName(b.label)} ชาย ${formatCount(b.male)} คน หญิง ${formatCount(b.female)} คน · ${scope}`}
                   onClick={() => setShown(b.label)}
                   onFocus={() => setShown(b.label)}
-                  className={`${COLUMNS} min-h-7 rounded-md px-1 text-[11px] tabular-nums sm:px-2 sm:text-xs ${
+                  className={`${ROW_GRID} min-h-7 rounded-md px-1 text-[11px] tabular-nums sm:px-2 sm:text-xs ${
                     b.label === shown ? "bg-dc-highlight-soft" : "hover:bg-dc-canvas"
                   }`}
                 >
@@ -120,7 +121,7 @@ export default function PopulationPyramid({
             </div>
             <p aria-live="polite" className="mt-3 rounded-md bg-dc-surface-muted px-3 py-2 text-xs text-dc-brand-deep">
               {band
-                ? `${scope} · ช่วงอายุ ${bandName(band.label)} รวม ${formatCount(band.male + band.female)} คน ร้อยละ ${formatPct(((band.male + band.female) / age.age_total) * 100)} ของผู้ที่แยกอายุได้`
+                ? `${scope} · ช่วงอายุ ${bandName(band.label)} รวม ${formatCount(bandTotal)} คน ร้อยละ ${formatPct((bandTotal / age.age_total) * 100)} ของผู้ที่แยกอายุได้`
                 : "เลือกช่วงอายุเพื่อดูยอดรวมและร้อยละ"}
             </p>
           </div>

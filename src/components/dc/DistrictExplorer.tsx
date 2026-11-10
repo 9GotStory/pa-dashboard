@@ -53,6 +53,8 @@ export default function DistrictExplorer({
   const area = areas.find((a) => a.id === selected);
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
+  // What the pyramid names: the ตำบล picked, or the อำเภอ as เลือกตำบล names it.
+  const scope = area ? title : "ทั้งอำเภอสอง";
   // The population of what the panel shows: the ตำบล picked, or the อำเภอ.
   const panelPopulation = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
 
@@ -164,7 +166,7 @@ export default function DistrictExplorer({
       )}
       {panelPopulation?.age && (
         <PopulationPyramid
-          scope={area ? title : "ทั้งอำเภอสอง"}
+          scope={scope}
           age={panelPopulation.age}
           source={source}
           onClear={() => setSelected(null)}
