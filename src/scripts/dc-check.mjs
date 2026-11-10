@@ -4,8 +4,8 @@
 // that shows on the rendered page. The home page is opened at V7.6's review
 // widths as well, and the check exits 1, naming the width, when it scrolls
 // sideways at one (SPEC §9.1). It is opened wide once more, and the check
-// exits 1, naming the area, when its population figures disagree (SPEC
-// §9.2). The pages are opened with playwright-core in the installed Google
+// exits 1, naming the area, when its population figures disagree, the
+// figures by the bars of the ตำบล chart among them (SPEC §9.2). The pages are opened with playwright-core in the installed Google
 // Chrome, the one dependency CODING_STANDARDS §3 allows a node script.
 import fs from "node:fs";
 import http from "node:http";
@@ -16,8 +16,8 @@ const OUT = path.resolve("out");
 const WIDTH = 360;
 // The widths V7.6 reviews the home page at (design.md §3.3).
 const HOME_WIDTHS = [320, 390, 768, 1440, 1920];
-// Wide enough for the ประชากรรายตำบล table: at 360 px it is hidden and its
-// rows are closed cards (SPEC §9.2).
+// The width the population rules read the home page at: a desktop's, with
+// the map and the panel side by side.
 const POPULATION_WIDTH = 1280;
 // The อำเภอ as the panel and the pyramid name it before any ตำบล is picked.
 const DISTRICT = "ภาพรวมอำเภอสอง";
@@ -206,7 +206,9 @@ function shownPopulation(picker) {
   };
   const listedCount = (scope, label) =>
     parseCount([...document.querySelectorAll(`${scope} dt`)].find((dt) => dt.textContent.trim() === label)?.nextElementSibling?.textContent);
+  // The table and the chart of the ตำบล are both on the page, one of them hidden (SPEC §9.2).
   const table = [...document.querySelectorAll("table")].find((t) => t.caption?.textContent.includes("ประชากรรายตำบล"));
+  const chart = document.querySelector('[role="group"][aria-label^="กราฟประชากรรายตำบล"]');
   const columns = [...(table?.tHead?.rows[0]?.cells ?? [])].map((cell) => cell.textContent.trim());
   const tambons = [...(table?.tBodies[0]?.rows ?? [])];
   const districtRow = [...(table?.tFoot?.rows ?? [])].find((row) => row.textContent.includes("รวมทั้งอำเภอ"));
@@ -223,6 +225,11 @@ function shownPopulation(picker) {
         tambons: tambons.map((row) => parseCount(row.cells[at]?.textContent)),
       };
     }),
+    tambons: tambons.map((row) => row.cells[0]?.textContent.trim()),
+    bars: [...(chart?.querySelectorAll("button") ?? [])].map((bar) => ({
+      name: bar.firstElementChild?.textContent.trim(),
+      count: parseCount(bar.lastElementChild?.textContent),
+    })),
     pickable: [...(select?.options ?? [])].filter((option) => option.value).map((option) => option.textContent.trim()),
     panel: listedCount('section[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
     bands: [...(pyramid?.getAttribute("aria-label") ?? "").matchAll(/ชาย ([\d,]+) หญิง ([\d,]+)/g)].flatMap((m) => [parseCount(m[1]), parseCount(m[2])]),
@@ -246,6 +253,21 @@ function totalsProblems(figures) {
       ...mismatchProblems(DISTRICT, `รวมทั้งอำเภอ ${column}`, district, `sum of the ตำบล rows ${column}`, sum),
     ];
   });
+}
+
+// The chart rule: the figure by each ตำบล's bar is its รวม (คน) in the
+// table, and every ตำบล of the table has a bar.
+function chartProblems({ figures, tambons, bars }) {
+  if (bars.length === 0) return [`${DISTRICT}: no bars in the ตำบล chart`];
+  const totals = figures.find((f) => f.column === "รวม (คน)").tambons;
+  const inTable = new Map(tambons.map((name, i) => [name, totals[i]]));
+  const charted = new Set(bars.map((bar) => bar.name));
+  return [
+    ...bars.flatMap(({ name, count }) =>
+      mismatchProblems(`ตำบล${name}`, "the figure by its bar", count, "รวม (คน) in the table", inTable.get(name) ?? null),
+    ),
+    ...tambons.filter((name) => !charted.has(name)).map((name) => `ตำบล${name}: no bar in the ตำบล chart`),
+  ];
 }
 
 // The pyramid rule: ชาย and หญิง of every ช่วงอายุ on the pyramid, plus the
@@ -292,7 +314,7 @@ async function checkPopulation(browser, url, hasAge) {
     await blockTiles(page);
     await page.goto(url, { waitUntil: "networkidle" });
     const district = await page.evaluate(shownPopulation, PICKER);
-    problems.push(...totalsProblems(district.figures));
+    problems.push(...totalsProblems(district.figures), ...chartProblems(district));
     if (hasAge) {
       problems.push(...pyramidProblems(area, district));
       if (district.pickable.length === 0) problems.push(`${area}: no ตำบล to pick in ${PICKER}`);
@@ -335,7 +357,11 @@ if (problems.length > 0) {
   problems.forEach((problem) => console.error(`dc-check: ${problem}`));
   fail(`${problems.length} problem(s) on ${urlPaths.length} page(s) checked; the rules are in CODING_STANDARDS §4–5`);
 }
-const populationResult = !shownYear ? "no population data, so no population rules" : hasAge ? "population totals and pyramids agree" : "population totals agree";
+const populationResult = !shownYear
+  ? "no population data, so no population rules"
+  : hasAge
+    ? "population totals, the ตำบล chart and pyramids agree"
+    : "population totals and the ตำบล chart agree";
 console.log(
   `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; / does not scroll sideways at ${HOME_WIDTHS.join(", ")} px; ${populationResult}`,
 );
