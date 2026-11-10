@@ -301,9 +301,8 @@ async function pickTambon(page, name) {
   return false;
 }
 
-// The population rules of the home page (CODING_STANDARDS §5), on a wide page
-// of its own: the totals rule, and the pyramid rule when the year shown has
-// age rows.
+// The population rules of the home page (SPEC §9.2), on a wide page of its
+// own: the totals rule, and the pyramid rule when the year shown has age rows.
 async function checkPopulation(browser, url, hasAge) {
   const problems = [];
   let area = DISTRICT;

@@ -66,12 +66,12 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 
 ## Project
 
-Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.สอง): a Next.js 16 static export on top of a Google Apps Script (GAS) web app and Google Sheets, fed by HDC Open Data. Production is Cloudflare Pages at `https://songhealth-dc.pages.dev`: the Data Center at `/`, PA at `/pa`. GitHub Pages serves only the stub in `legacy-redirect/`, which forwards old PA links. Phases 1 and 2 were built as tickets F01–F29 in FEATURES.md; Track G (F30–F37) redesigns the home page per V7.6. Read README.md for the overview.
+Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.สอง): a Next.js 16 static export on top of a Google Apps Script (GAS) web app and Google Sheets, fed by HDC Open Data. Production is Cloudflare Pages at `https://songhealth-dc.pages.dev`: the Data Center at `/`, PA at `/pa`. GitHub Pages serves only the stub in `legacy-redirect/`, which forwards old PA links. Phases 1 and 2 were built as tickets F01–F29 in FEATURES.md; Track G (F30–F37) redesigned the home page per V7.6. Read README.md for the overview.
 
 ## Commands
 
 - `npm ci` · `npm run dev` (http://localhost:3000) · `npm run lint`
-- `npm run build` writes the static site to `out/`. Its prebuild reads the live GAS (GET, about 2.5 minutes); `npx next build` rebuilds from the snapshot already in `public/data/`. After a build, `npm run dc:check` and `npm run dc:budget` check the Data Center pages. Preview with `npx serve@latest out`; `next start` does not work with `output: 'export'`. An acceptance check by hand (a Playwright script of your own, the LCP comparison with `main`): docs/agents/page-checks.md.
+- `npm run build` writes the static site to `out/`. Its prebuild reads the live GAS (GET, about 2.5 minutes); `npx next build` rebuilds from the snapshot already in `public/data/`. After a build, `npm run dc:check` and `npm run dc:budget` check the Data Center pages. Preview with `npx serve@latest out`; `next start` does not work with `output: 'export'`. An acceptance check by hand (a Playwright script of your own, the LCP comparison with `main`, a check on the live site): docs/agents/page-checks.md.
 - `npm test` runs the GAS tests in `src/scripts/test/` and the Data Center tests in `src/lib/dc/`.
 - To try `/sync` in a browser, run `npm run dc:sync-local [-- <port>]`: `next dev` on port 3217 against the GAS of the test harness, in memory, and it prints the URL and PIN. `npm run dev` reads the production GAS URL from `.env.local`, so a save there is a POST to production.
 - `next build` downloads Google Fonts (Prompt, Sarabun) through `next/font/google`. If a build fails while fetching fonts, the network is blocked; it is not a code bug.

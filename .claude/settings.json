@@ -42,6 +42,17 @@
         ]
       }
     ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "echo",
+            "args": ["CLAUDE.md: the user reads Thai. Every text Claude writes in this turn is Thai, the short notes between tool calls included; code, paths and commands stay as written."]
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [
