@@ -16,15 +16,15 @@ const OUT = path.resolve("out");
 const WIDTH = 360;
 // The widths V7.6 reviews the home page at (design.md §3.3).
 const HOME_WIDTHS = [320, 390, 768, 1440, 1920];
-// Wide enough for the ประชากรรายตำบล table and its ดูข้อมูล buttons: at 360 px
-// the table is hidden and the buttons are in closed cards (SPEC §9.2).
+// Wide enough for the ประชากรรายตำบล table: at 360 px it is hidden and its
+// rows are closed cards (SPEC §9.2).
 const POPULATION_WIDTH = 1280;
 // The อำเภอ as the panel and the pyramid name it before any ตำบล is picked.
 const DISTRICT = "ภาพรวมอำเภอสอง";
 // The ช่วงอายุ of a pyramid (SCHEMA §11.3).
 const AGE_BANDS = 17;
-// How long a ตำบล's ดูข้อมูล may take to show on the pyramid, in ms. The first
-// click may land before the page has hydrated.
+// How long a ตำบล picked in เลือกตำบล may take to show on the pyramid, in ms.
+// The first pick may land before the page has hydrated.
 const PICK_TIMEOUT = 15_000;
 // Roles a person operates; each needs a label (CODING_STANDARDS §4). The
 // CamelCase ones are Chrome's own roles for native date, time and colour
@@ -97,8 +97,11 @@ function domRules() {
   for (const svg of document.querySelectorAll("svg")) {
     // Hidden by itself or an ancestor, or part of an outer svg: nothing to name.
     if (svg.closest('[aria-hidden="true"]') || svg.parentElement?.closest("svg")) continue;
-    if (svg.getAttribute("role") !== "img" || !svg.getAttribute("aria-label")?.trim()) {
-      found.push(`svg without aria-hidden="true" or role="img" + aria-label: ${snippet(svg)}`);
+    // One that holds buttons, as the map's ตำบล are (SPEC §9.2), is a group of
+    // them, not a picture whose parts a screen reader skips.
+    const role = svg.querySelector('[role="button"]') ? "group" : "img";
+    if (svg.getAttribute("role") !== role || !svg.getAttribute("aria-label")?.trim()) {
+      found.push(`svg without aria-hidden="true" or role="${role}" + aria-label: ${snippet(svg)}`);
     }
   }
   // A wide table scrolls inside its own box (SPEC §9.1), never the page.
@@ -217,8 +220,10 @@ function shownPopulation() {
         tambons: tambons.map((row) => parseCount(row.cells[at]?.textContent)),
       };
     }),
-    pickable: tambons.filter((row) => row.querySelector("button")).map((row) => row.querySelector("th").textContent.trim()),
-    panel: listedCount('aside[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
+    pickable: [...([...document.querySelectorAll("select")].find((s) => s.labels[0]?.textContent.trim() === "เลือกตำบล")?.options ?? [])]
+      .filter((option) => option.value)
+      .map((option) => option.textContent.trim()),
+    panel: listedCount('section[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
     bands: [...(pyramid?.getAttribute("aria-label") ?? "").matchAll(/ชาย ([\d,]+) หญิง ([\d,]+)/g)].flatMap((m) => [parseCount(m[1]), parseCount(m[2])]),
     unsplit: parseCount(pyramid?.closest("section")?.textContent.match(/ไม่รวมประชากรที่ไม่แยกอายุ ([\d,]+) คน/)?.[1]),
   };
@@ -250,17 +255,17 @@ function pyramidProblems(area, { bands, unsplit, panel }) {
   return mismatchProblems(area, "pyramid + ประชากรที่ไม่แยกอายุ", counted, "ประชากรทั้งหมด in the panel", panel);
 }
 
-// Picks a ตำบล with its ดูข้อมูล button and waits for the pyramid to name it,
-// false if it never does. A click before the page has hydrated does nothing,
-// and one that fails costs only this try, so this clicks until the pick shows;
-// picking the ตำบล on show changes nothing.
-async function pickTambon(page, area) {
-  const button = page.getByRole("button", { name: `ดูข้อมูล ${area}`, exact: true });
-  const pyramid = page.locator(`svg[role="img"][aria-label^="พีระมิดประชากร ${area} "]`);
+// Picks a ตำบล by its name in เลือกตำบล and waits for the pyramid to name
+// it, false if it never does. A pick before the page has hydrated does
+// nothing, and one that fails costs only this try, so this picks until the
+// pick shows; picking the ตำบล on show changes nothing.
+async function pickTambon(page, name) {
+  const select = page.getByLabel("เลือกตำบล", { exact: true });
+  const pyramid = page.locator(`svg[role="img"][aria-label^="พีระมิดประชากร ตำบล${name} "]`);
   const deadline = Date.now() + PICK_TIMEOUT;
   while (Date.now() < deadline) {
-    const shown = await button
-      .click({ timeout: 1000 })
+    const shown = await select
+      .selectOption({ label: name }, { timeout: 1000 })
       .then(() => pyramid.waitFor({ timeout: 500 }))
       .then(
         () => true,
@@ -277,7 +282,7 @@ async function pickTambon(page, area) {
 async function checkPopulation(browser, url, hasAge) {
   const problems = [];
   let area = DISTRICT;
-  // Reduced motion, so a scroll or the map's move does not hold up the next click.
+  // Reduced motion, so the map's move does not hold up the next pick.
   const page = await browser.newPage({ viewport: { width: POPULATION_WIDTH, height: 800 }, reducedMotion: "reduce" });
   try {
     // pageerror but not console: picking a ตำบล loads new map tiles, and each
@@ -289,11 +294,11 @@ async function checkPopulation(browser, url, hasAge) {
     problems.push(...totalsProblems(district.figures));
     if (hasAge) {
       problems.push(...pyramidProblems(area, district));
-      if (district.pickable.length === 0) problems.push(`${area}: no ดูข้อมูล button in the ตำบล table`);
+      if (district.pickable.length === 0) problems.push(`${area}: no ตำบล to pick in เลือกตำบล`);
       for (const name of district.pickable) {
         area = `ตำบล${name}`;
-        if (await pickTambon(page, area)) problems.push(...pyramidProblems(area, await page.evaluate(shownPopulation)));
-        else problems.push(`${area}: the pyramid does not show it after its ดูข้อมูล button`);
+        if (await pickTambon(page, name)) problems.push(...pyramidProblems(area, await page.evaluate(shownPopulation)));
+        else problems.push(`${area}: the pyramid does not show it after picking it in เลือกตำบล`);
       }
     }
   } finally {
