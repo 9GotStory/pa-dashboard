@@ -491,7 +491,7 @@ test("GAS answers Busy to everything → asked again for 1.5 s (5 min scaled), t
 
   const started = Date.now();
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
-  const ran = Date.now() - started;
+  const elapsed = Date.now() - started;
 
   assert.equal(res.code, 1);
   assert.match(
@@ -502,7 +502,7 @@ test("GAS answers Busy to everything → asked again for 1.5 s (5 min scaled), t
   // so the run takes at least 1.4 s by its own clock; load only makes it
   // longer. 3 retries of another failure would be over within 70 ms.
   assert.ok(gas.requests.length > 1, `asked ${gas.requests.length} time(s)`);
-  assert.ok(ran >= 1400, `ran for ${ran} ms`);
+  assert.ok(elapsed >= 1400, `ran for ${elapsed} ms`);
   assert.equal(snapshot(res.cwd), null);
 });
 
