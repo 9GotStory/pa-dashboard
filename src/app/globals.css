@@ -97,24 +97,25 @@
   --color-neutral-900: #0f172a;
   --color-neutral-950: #020617;
 
-  /* Data Center (SPEC §9.1): R6's tokens from its last :root, the "HOME R3"
-     navy/teal palette. R6 still calls its blues --green, --green-dark and
-     --green-light; here they are dc-blue*, and the rest keep R6's names. PA
-     never uses dc-*. */
-  --color-dc-blue: #155b86;
-  --color-dc-blue-dark: #103b5a;
-  --color-dc-blue-light: #e7f1f8;
-  --color-dc-ink: #182d43;
-  --color-dc-muted: #546b7b;
-  --color-dc-border: #d6e1ea;
-  --color-dc-canvas: #f1f5f9;
+  /* Data Center (SPEC §9.1): V7.6's tokens, named for their use after
+     design.md §3.1. dc-brand-accent, dc-text-secondary and dc-pyramid-female
+     are darker than design.md so their pairs pass WCAG AA. PA never uses
+     dc-*. */
+  --color-dc-brand-deep: #153d32;
+  --color-dc-brand-primary: #155f4b;
+  --color-dc-brand-accent: #177a5f;
+  --color-dc-brand-dark-surface: #174e42;
+  --color-dc-canvas: #f8f9f6;
+  --color-dc-surface: #ffffff;
+  --color-dc-surface-muted: #eef3ed;
+  --color-dc-border-subtle: #e0e8df;
+  --color-dc-text-secondary: #5b7064;
+  --color-dc-pyramid-male: #3d92a0;
+  --color-dc-pyramid-female: #b9707f;
+  --color-dc-highlight-soft: #e8f5e9;
+  /* R6's gold: the goal line and ไม่ผ่าน of the report pages, a meaning no
+     V7.6 token has, so it keeps R6's value. */
   --color-dc-gold: #c89240;
-  /* R6 HOME R3's masthead, menu and focus colors */
-  --color-dc-navy: #143653;
-  --color-dc-navy-dark: #0d2a46;
-  --color-dc-teal: #168a87;
-  --color-dc-teal-light: #2dc1b6;
-  --color-dc-focus: #c57f16;
 }
 
 /* Data Center text in Sarabun. inline puts var(--font-sarabun) in the font-dc
@@ -123,13 +124,25 @@
    value, so PA's text falls back to a system font (SPEC §11). */
 @theme inline {
   --font-dc: var(--font-sarabun), ui-sans-serif, system-ui, sans-serif;
+
+  /* R6's color names, kept for /reports and /reports/{id} until they are
+     redesigned: the expand step of ADR-0012, each name on the closest V7.6
+     token, so dc-blue being green is intended. New code uses the V7.6 names. */
+  --color-dc-blue: var(--color-dc-brand-primary);
+  --color-dc-blue-dark: var(--color-dc-brand-deep);
+  --color-dc-blue-light: var(--color-dc-highlight-soft);
+  --color-dc-ink: var(--color-dc-brand-deep);
+  --color-dc-muted: var(--color-dc-text-secondary);
+  --color-dc-border: var(--color-dc-border-subtle);
+  --color-dc-navy: var(--color-dc-brand-deep);
+  --color-dc-teal: var(--color-dc-brand-accent);
 }
 
-/* R6's focus ring on Data Center pages only (the .dc wrapper of the (dc)
+/* V7.6's focus ring on Data Center pages only (the .dc wrapper of the (dc)
    layout); in the base layer so a utility can still change it. */
 @layer base {
   .dc :focus-visible {
-    outline: 3px solid var(--color-dc-focus);
+    outline: 3px solid var(--color-dc-brand-accent);
     outline-offset: 3px;
   }
 }

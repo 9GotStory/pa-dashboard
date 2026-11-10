@@ -1,9 +1,10 @@
 // Data Center page check (CODING_STANDARDS §4–5, FEATURES F16). After
 // npm run build, opens every built page of /, /reports and /reports/[id] in
 // out/ at 360 px wide and exits 1, naming the page, when a page breaks a rule
-// that shows on the rendered page. The home page is opened wide as well, and
-// the check exits 1, naming the area, when its population figures disagree
-// (SPEC §9.2). The pages are opened with playwright-core in the installed
+// that shows on the rendered page. The home page is also opened at the V7.6
+// review widths, and the check exits 1, naming the width, when it scrolls
+// sideways at one (SPEC §9.1); and wide, exiting 1, naming the area, when its
+// population figures disagree (SPEC §9.2). The pages are opened with playwright-core in the installed
 // Google Chrome, the one dependency CODING_STANDARDS §3 allows a node script.
 import fs from "node:fs";
 import http from "node:http";
@@ -12,6 +13,8 @@ import { chromium } from "playwright-core";
 
 const OUT = path.resolve("out");
 const WIDTH = 360;
+// The widths V7.6 reviews the home page at (design.md §3.3).
+const HOME_WIDTHS = [320, 390, 768, 1440, 1920];
 // Wide enough for the ประชากรรายตำบล table and its ดูข้อมูล buttons: at 360 px
 // the table is hidden and the buttons are in closed cards (SPEC §9.2).
 const POPULATION_WIDTH = 1280;
@@ -157,6 +160,33 @@ async function checkPage(browser, url) {
   return problems;
 }
 
+// The widths of HOME_WIDTHS at which the home page scrolls sideways, as
+// problems naming the width. A wide table scrolls inside its own box (SPEC
+// §9.1), never the page.
+async function overflowProblems(browser, url) {
+  const problems = [];
+  const page = await browser.newPage();
+  try {
+    // Aborted, so the check never depends on the tile server.
+    await page.route(
+      (u) => u.hostname === "tile.openstreetmap.org",
+      (route) => route.abort(),
+    );
+    for (const width of HOME_WIDTHS) {
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto(url, { waitUntil: "networkidle" });
+      const { scrollWidth, clientWidth } = await page.evaluate(() => {
+        const { scrollWidth, clientWidth } = document.documentElement;
+        return { scrollWidth, clientWidth };
+      });
+      if (scrollWidth > clientWidth) problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
+    }
+  } finally {
+    await page.close();
+  }
+  return problems;
+}
+
 // What the population rules compare, as the home page shows it (SPEC §9.2): a
 // figure the page does not have is null, a list it does not have is empty.
 // Runs inside the page, so it uses nothing from this module.
@@ -284,6 +314,7 @@ try {
   for (const urlPath of urlPaths) {
     for (const problem of await checkPage(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
+  for (const problem of await overflowProblems(browser, origin + "/")) problems.push(`/: ${problem}`);
   if (shownYear) {
     for (const problem of await checkPopulation(browser, origin + "/", hasAge)) problems.push(`/: ${problem}`);
   }
@@ -299,4 +330,6 @@ if (problems.length > 0) {
   fail(`${problems.length} problem(s) on ${urlPaths.length} page(s) checked; the rules are in CODING_STANDARDS §4–5`);
 }
 const populationResult = !shownYear ? "no population data, so no population rules" : hasAge ? "population totals and pyramids agree" : "population totals agree";
-console.log(`dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; ${populationResult}`);
+console.log(
+  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; / does not scroll sideways at ${HOME_WIDTHS.join(", ")} px; ${populationResult}`,
+);

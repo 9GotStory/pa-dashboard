@@ -16,7 +16,7 @@ const LINKS = [
 export default function MainNav() {
   const pathname = usePathname();
   return (
-    <div className="flex w-full justify-between sm:w-auto sm:justify-start">
+    <div className="flex justify-between gap-1 md:justify-start">
       {LINKS.map(({ href, label, prefetch }) => {
         const inSection = pathname === href || pathname.startsWith(href + "/");
         return (
@@ -25,10 +25,10 @@ export default function MainNav() {
             href={href}
             prefetch={prefetch}
             aria-current={inSection ? (pathname === href ? "page" : "true") : undefined}
-            className={`flex min-h-11 items-center px-3 text-xs sm:px-5 sm:text-[13.5px] ${
+            className={`flex min-h-11 items-center border-b-2 px-2 text-[13px] sm:px-3 ${
               inSection
-                ? "bg-dc-navy-dark font-semibold text-white shadow-[inset_0_-4px_0_var(--color-dc-teal-light)]"
-                : "text-dc-blue-light hover:bg-dc-navy-dark hover:text-white"
+                ? "border-dc-brand-accent font-bold text-dc-brand-primary"
+                : "border-transparent text-dc-text-secondary hover:text-dc-brand-primary"
             }`}
           >
             {label}
