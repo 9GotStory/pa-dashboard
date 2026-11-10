@@ -2,12 +2,12 @@
 
 import { RotateCcw } from "lucide-react";
 import dynamic from "next/dynamic";
-import { useRef, useState } from "react";
-import { flushSync, preconnect } from "react-dom";
+import { useState } from "react";
+import { preconnect } from "react-dom";
 import { formatCount } from "@/lib/dc/format";
 import type { DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
+import PopulationComparison from "./PopulationComparison";
 import PopulationPyramid from "./PopulationPyramid";
-import PopulationTable from "./PopulationTable";
 
 type Area = DcCatalog["areas"][number];
 type Hospital = DcCatalog["hospitals"][number];
@@ -22,15 +22,17 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
 /**
  * The ข้อมูลพื้นที่ section of the home page (SPEC §9.2) and the parts below
  * it that follow the ตำบลที่เลือก: the one value of the page, an areas[].id
- * or null for the whole อำเภอ, set on the map, in เลือกตำบล or with the
- * ประชากรรายตำบล table's ดูข้อมูล, and back to null with ล้างการเลือก.
+ * or null for the whole อำเภอ, set on the map, in เลือกตำบล or with a bar or
+ * a row of the เปรียบเทียบประชากรรายตำบล section, and back to null with
+ * ล้างการเลือก.
  * เลือกตำบล works without the map, as when its tiles or boundaries cannot
  * load. The panel shows the population of what is picked and, for a ตำบล,
  * the หน่วยบริการ located in it (its ตำบลที่ตั้ง, hospitals.tambon_id in
  * catalog.json); for the อำเภอ, only how many there are. With population,
- * the table, labelled with source, comes next, then the population pyramid
+ * the comparison, labelled with source, comes next, then the population pyramid
  * of what is picked when the year has age rows. Without population, the
- * panel has no population rows and neither follows.
+ * panel has no population rows and neither follows. A pick from the
+ * comparison stays where it is: its bar or row shows the pick.
  */
 export default function DistrictExplorer({
   areas,
@@ -48,22 +50,11 @@ export default function DistrictExplorer({
   preconnect(TILE_SERVER);
   const [selected, setSelected] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "failed">("loading");
-  const heading = useRef<HTMLHeadingElement>(null);
   const area = areas.find((a) => a.id === selected);
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
   // The population of what the panel shows: the ตำบล picked, or the อำเภอ.
   const panelPopulation = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
-
-  // ดูข้อมูล in the table, far below the panel: pick the ตำบล, then bring the
-  // panel's heading into view and focus it, as R6 does. The panel is drawn
-  // first, so the scroll lands where it ends up.
-  function showInPanel(id: string) {
-    flushSync(() => setSelected(id));
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    heading.current?.scrollIntoView({ block: "center", behavior: reducedMotion ? "auto" : "smooth" });
-    heading.current?.focus({ preventScroll: true });
-  }
 
   return (
     <div className="flex flex-col gap-5">
@@ -117,7 +108,7 @@ export default function DistrictExplorer({
             </select>
 
             <div className="mt-5">
-              <h3 ref={heading} tabIndex={-1} className="font-prompt text-lg font-semibold text-dc-brand-deep">
+              <h3 className="font-prompt text-lg font-semibold text-dc-brand-deep">
                 {title}
               </h3>
               {area ? (
@@ -163,12 +154,12 @@ export default function DistrictExplorer({
       </section>
 
       {population && (
-        <PopulationTable
+        <PopulationComparison
           population={population}
           source={source}
           selected={selected}
           pickable={(id) => areas.some((a) => a.id === id)}
-          onView={showInPanel}
+          onPick={setSelected}
         />
       )}
       {panelPopulation?.age && <PopulationPyramid areaName={title} age={panelPopulation.age} source={source} />}
