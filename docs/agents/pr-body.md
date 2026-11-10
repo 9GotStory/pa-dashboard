@@ -2,7 +2,7 @@
 
 The `pr` skill gives the headings: Summary, Evidence, Merge Danger. This file is how far each one goes here, because the merge is decided from the PR alone. Write from this skeleton; it replaces reading earlier PR bodies. The body is in Thai with GLOSSARY.md terms; code, commands and file names stay as they are.
 
-Done when every acceptance check of the ticket has its own line of evidence and every review finding is marked fixed or kept.
+Done when every acceptance check of the ticket has its own line of evidence, every review finding is marked fixed or kept, and `node src/scripts/check-glossary.mjs --file <body>` passes.
 
 ## Collect the evidence as it happens
 

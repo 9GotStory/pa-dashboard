@@ -19,4 +19,4 @@ Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playw
    - The LCP element: Lighthouse 13 has no `largest-contentful-paint-element` audit; the element's `nodeLabel` and `snippet` are inside `audits["lcp-breakdown-insight"].details`.
 4. Record both medians and the LCP element of each in the PR. Note the load average: this machine is shared.
 
-`dc:budget` reads `./out` only. For `main`'s figure, run it from a directory whose `out` links to `main`'s copy: `ln -s <main-out> <dir>/out && cd <dir> && node <repo>/src/scripts/dc-budget.mjs`.
+`dc:budget` reads `./out` only. When no merge since the last PR changed client JavaScript, that PR's After figure is `main`'s: `gh pr view <n> --json body --jq .body | grep -F dc:budget` (`-F`: a Thai pattern with `.{0,n}` exceeds ugrep's limits). Otherwise run it from a directory whose `out` links to `main`'s copy: `ln -s <main-out> <dir>/out && cd <dir> && node <repo>/src/scripts/dc-budget.mjs`.

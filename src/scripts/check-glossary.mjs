@@ -4,11 +4,15 @@
 // judges those (CODING_STANDARDS.md).
 //
 // Checks the lines added since the merge base with <base> (the working tree
-// and untracked files included) and the commit messages since then.
+// and untracked files included) and the commit messages since then. With
+// --file, checks every line of that file instead, such as a PR body before
+// gh pr create.
 // Usage: node src/scripts/check-glossary.mjs [base]   (default origin/main)
+//        node src/scripts/check-glossary.mjs --file <path>
 import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 
+const checkFile = process.argv[2] === "--file" ? process.argv[3] : null;
 const base = process.argv[2] || "origin/main";
 const git = (...args) =>
   execFileSync("git", ["-c", "core.quotePath=false", ...args], { encoding: "utf8", maxBuffer: 256 * 1024 * 1024 });
@@ -32,6 +36,13 @@ for (const line of fs.readFileSync("GLOSSARY.md", "utf8").split("\n")) {
 if (phrases.length === 0) {
   console.error("check-glossary: no phrase found in the เลี่ยง column of GLOSSARY.md; has its table format changed?");
   process.exit(1);
+}
+
+if (checkFile) {
+  report(
+    fs.readFileSync(checkFile, "utf8").split("\n").map((line, i) => [`${checkFile}:${i + 1}`, line]),
+    checkFile,
+  );
 }
 
 let mergeBase;
@@ -70,16 +81,22 @@ for (const line of git("log", "--format=%B", `${mergeBase}..HEAD`).split("\n")) 
   added.push(["commit message", line]);
 }
 
-const hits = [];
-for (const [where, text] of added) {
-  const lower = text.toLowerCase();
-  for (const phrase of phrases) {
-    if (lower.includes(phrase.toLowerCase())) hits.push(`${where}: "${phrase}" in ${text.trim().slice(0, 120)}`);
+report(added, `the change since ${base}`);
+
+// Exits 1 listing every avoided phrase in lines ([where, text] pairs), else 0.
+function report(lines, what) {
+  const hits = [];
+  for (const [where, text] of lines) {
+    const lower = text.toLowerCase();
+    for (const phrase of phrases) {
+      if (lower.includes(phrase.toLowerCase())) hits.push(`${where}: "${phrase}" in ${text.trim().slice(0, 120)}`);
+    }
   }
+  if (hits.length > 0) {
+    console.error("check-glossary: GLOSSARY.md says to avoid these phrases; use the term in its first column instead:");
+    hits.forEach((hit) => console.error("  " + hit));
+    process.exit(1);
+  }
+  console.log(`check-glossary: none of the ${phrases.length} avoided phrases in ${what}`);
+  process.exit(0);
 }
-if (hits.length > 0) {
-  console.error("check-glossary: GLOSSARY.md says to avoid these phrases; use the term in its first column instead:");
-  hits.forEach((hit) => console.error("  " + hit));
-  process.exit(1);
-}
-console.log(`check-glossary: none of the ${phrases.length} avoided phrases in the change since ${base}`);
