@@ -1,4 +1,16 @@
-import { CalendarDays } from "lucide-react";
+import {
+  ArrowRight,
+  Baby,
+  CalendarDays,
+  ChevronRight,
+  FileText,
+  HeartPulse,
+  Leaf,
+  ScanSearch,
+  Smile,
+  Syringe,
+  type LucideIcon,
+} from "lucide-react";
 import Link from "next/link";
 import DistrictExplorer from "@/components/dc/DistrictExplorer";
 import Hero from "@/components/dc/Hero";
@@ -10,10 +22,22 @@ import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
 // records it (SCHEMA §8); a new download changes both.
 const BOUNDARY_DOWNLOADED = "4 พฤศจิกายน 2569";
 
+// One icon per หัวข้อ of hdc_topics (SCHEMA §6), by cat_id; a หัวข้อ added
+// later gets TOPIC_ICON until it is mapped here.
+const TOPIC_ICONS: Record<string, LucideIcon> = {
+  "1ed90bc32310b503b7ca9b32af425ae5": Baby, // อนามัยแม่และเด็ก
+  "4df360514655f79f13901ef1181ca1c7": Syringe, // การสร้างเสริมภูมิคุ้มกันโรค
+  bebf866fceaef84c4078965eaf619565: Leaf, // การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม
+  "6966b0664b89805a484d7ac96c6edc48": ScanSearch, // การคัดกรอง
+  b2b59e64c4e6c92d4b1ec16a599d882b: HeartPulse, // Service Plan สาขาโรคไม่ติดต่อ
+  db30e434e30565c12fbac44958e338d5: Smile, // Service Plan สาขาสุขภาพช่องปาก
+};
+const TOPIC_ICON = FileText;
+
 // The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
 // and population.json at build time: the Hero, the ประชากรทะเบียนราษฎร of
 // the อำเภอ, the ตำบล on a map with their หน่วยบริการ, population and
-// population pyramid, a card per หัวข้อ into the report library, and the
+// population pyramid, a row per หัวข้อ into the report library, and the
 // sources with the latest data date. The client gets the population as
 // computed (HomePopulation), never the rows; without population data the
 // page is as in phase 1, under the Hero.
@@ -87,51 +111,59 @@ export default function Home() {
 
       <DistrictExplorer areas={areas} hospitals={hospitals} population={population} source={source} />
 
-      <section aria-labelledby="topics-title" className="mt-7">
-        <div className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+      {/* One plain link row per หัวข้อ, no numbering and no card per row; the focus ring is inset so the list's rounded clip keeps it */}
+      <section aria-labelledby="topics-title" className="mt-8 sm:mt-10">
+        <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <h2 id="topics-title" className="font-prompt text-lg font-semibold text-dc-navy">
+            <h2 id="topics-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
               รายงานตามหัวข้อ
             </h2>
-            <p className="text-xs text-dc-muted">เลือกหัวข้อเพื่อดูรายงานในคลังรายงาน</p>
+            <p className="text-xs text-dc-text-secondary">เลือกหัวข้อเพื่อดูรายงานในคลังรายงาน</p>
           </div>
           <Link
             href="/reports"
-            className="inline-flex min-h-10 items-center self-start rounded-md border border-dc-border bg-white px-3 text-xs font-bold text-dc-blue hover:bg-dc-blue-light sm:self-auto"
+            className="inline-flex min-h-11 items-center gap-1.5 self-start font-bold text-dc-brand-primary hover:underline sm:self-auto"
           >
-            ดูรายงานทั้งหมด <span aria-hidden="true">&nbsp;→</span>
+            ดูรายงานทั้งหมด
+            <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
           </Link>
         </div>
-        <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {topics.map(({ topic, count }, i) => (
-            <li key={topic.cat_id} className="min-w-0">
-              <Link
-                href={`/reports?cat=${topic.cat_id}`}
-                className="flex h-full items-center gap-3 rounded-lg border border-dc-border bg-white p-4 hover:border-dc-blue hover:bg-dc-blue-light/40"
+        <ul className="grid overflow-hidden rounded-[10px] border border-dc-border-subtle bg-dc-surface md:grid-cols-2">
+          {topics.map(({ topic, count }) => {
+            const Icon = TOPIC_ICONS[topic.cat_id] ?? TOPIC_ICON;
+            return (
+              <li
+                key={topic.cat_id}
+                className="min-w-0 border-t border-dc-border-subtle first:border-t-0 md:odd:border-r md:nth-2:border-t-0"
               >
-                <span
-                  aria-hidden="true"
-                  className="flex size-8 shrink-0 items-center justify-center rounded-md bg-dc-blue-light text-[11px] font-bold text-dc-blue"
+                <Link
+                  href={`/reports?cat=${topic.cat_id}`}
+                  className="group flex h-full min-h-11 items-center gap-3 px-4 py-3.5 hover:bg-dc-canvas focus-visible:-outline-offset-3 sm:gap-4 sm:px-5"
                 >
-                  {String(i + 1).padStart(2, "0")}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <small className="block text-[11px] font-semibold text-dc-teal">{topic.main_report_name}</small>
-                  <strong className="block text-[13px] leading-snug font-semibold text-dc-ink">{topic.category_name}</strong>
-                  <small className="mt-0.5 block text-xs text-dc-muted">{count} รายงาน</small>
-                </span>
-                <span aria-hidden="true" className="text-lg text-dc-muted">
-                  →
-                </span>
-              </Link>
-            </li>
-          ))}
+                  <span
+                    aria-hidden="true"
+                    className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-dc-highlight-soft text-dc-brand-primary"
+                  >
+                    <Icon className="size-5" />
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block leading-snug font-semibold text-dc-brand-deep group-hover:underline">{topic.category_name}</span>
+                    <span className="mt-0.5 block text-xs text-dc-text-secondary">
+                      {topic.main_report_name} · <span className="tabular-nums">{count}</span> รายงาน
+                    </span>
+                  </span>
+                  <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-dc-text-secondary" />
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       </section>
 
+      {/* Compact: one line per source under a rule, not a card */}
       <section
         aria-labelledby="sources-title"
-        className="mt-7 flex flex-col gap-1 rounded-md border border-dc-border-subtle bg-dc-surface-muted px-4 py-3 text-xs text-dc-brand-deep sm:flex-row sm:gap-4"
+        className="mt-8 flex flex-col gap-1 border-t border-dc-border-subtle pt-5 text-xs text-dc-brand-deep sm:mt-10 sm:flex-row sm:gap-4"
       >
         <h2 id="sources-title" className="font-prompt font-semibold whitespace-nowrap text-dc-brand-deep">
           ที่มาของข้อมูล
