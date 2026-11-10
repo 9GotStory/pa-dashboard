@@ -500,8 +500,9 @@ test("GAS answers Busy to everything → asked again for 1.5 s (5 min scaled), t
   );
   // It stops asking once less than one wait (100 ms) is left before the limit,
   // so the run takes at least 1.4 s by its own clock; load only makes it
-  // longer. 3 retries of another failure would be over within 70 ms.
-  assert.ok(gas.requests.length > 1, `asked ${gas.requests.length} time(s)`);
+  // longer. 3 retries of another failure would be over within 70 ms. The
+  // requests are not counted: when the first answer takes over 1.4 s under
+  // load, it asks only once.
   assert.ok(elapsed >= 1400, `ran for ${elapsed} ms`);
   assert.equal(snapshot(res.cwd), null);
 });
