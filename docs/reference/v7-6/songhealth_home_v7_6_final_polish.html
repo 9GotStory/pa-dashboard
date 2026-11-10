@@ -1,0 +1,3580 @@
+<!DOCTYPE html>
+<html lang="th"><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1" name="viewport"/><meta content="#113e35" name="theme-color"/><title>Song Health Data Center — V7.6 Final Polish</title><meta content="ต้นแบบออกแบบหน้าแรกของศูนย์ข้อมูลสุขภาพอำเภอสอง โดยยึดเนื้อหาและข้อมูลจริงบนเว็บไซต์" name="description"/><!-- Tailwind CSS v4.1.10 compiled offline; no handcrafted CSS --><style>/*
+  1. Prevent padding and border from affecting element width. (https://github.com/mozdevs/cssremedy/issues/4)
+  2. Remove default margins and padding
+  3. Reset all borders.
+*/
+
+*,
+::after,
+::before,
+::backdrop,
+::file-selector-button {
+  box-sizing: border-box; /* 1 */
+  margin: 0; /* 2 */
+  padding: 0; /* 2 */
+  border: 0 solid; /* 3 */
+}
+
+/*
+  1. Use a consistent sensible line-height in all browsers.
+  2. Prevent adjustments of font size after orientation changes in iOS.
+  3. Use a more readable tab size.
+  4. Use the user's configured `sans` font-family by default.
+  5. Use the user's configured `sans` font-feature-settings by default.
+  6. Use the user's configured `sans` font-variation-settings by default.
+  7. Disable tap highlights on iOS.
+*/
+
+html,
+:host {
+  line-height: 1.5; /* 1 */
+  -webkit-text-size-adjust: 100%; /* 2 */
+  tab-size: 4; /* 3 */
+  font-family: --theme(
+    --default-font-family,
+    ui-sans-serif,
+    system-ui,
+    sans-serif,
+    'Apple Color Emoji',
+    'Segoe UI Emoji',
+    'Segoe UI Symbol',
+    'Noto Color Emoji'
+  ); /* 4 */
+  font-feature-settings: --theme(--default-font-feature-settings, normal); /* 5 */
+  font-variation-settings: --theme(--default-font-variation-settings, normal); /* 6 */
+  -webkit-tap-highlight-color: transparent; /* 7 */
+}
+
+/*
+  1. Add the correct height in Firefox.
+  2. Correct the inheritance of border color in Firefox. (https://bugzilla.mozilla.org/show_bug.cgi?id=190655)
+  3. Reset the default border style to a 1px solid border.
+*/
+
+hr {
+  height: 0; /* 1 */
+  color: inherit; /* 2 */
+  border-top-width: 1px; /* 3 */
+}
+
+/*
+  Add the correct text decoration in Chrome, Edge, and Safari.
+*/
+
+abbr:where([title]) {
+  -webkit-text-decoration: underline dotted;
+  text-decoration: underline dotted;
+}
+
+/*
+  Remove the default font size and weight for headings.
+*/
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-size: inherit;
+  font-weight: inherit;
+}
+
+/*
+  Reset links to optimize for opt-in styling instead of opt-out.
+*/
+
+a {
+  color: inherit;
+  -webkit-text-decoration: inherit;
+  text-decoration: inherit;
+}
+
+/*
+  Add the correct font weight in Edge and Safari.
+*/
+
+b,
+strong {
+  font-weight: bolder;
+}
+
+/*
+  1. Use the user's configured `mono` font-family by default.
+  2. Use the user's configured `mono` font-feature-settings by default.
+  3. Use the user's configured `mono` font-variation-settings by default.
+  4. Correct the odd `em` font sizing in all browsers.
+*/
+
+code,
+kbd,
+samp,
+pre {
+  font-family: --theme(
+    --default-mono-font-family,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    'Liberation Mono',
+    'Courier New',
+    monospace
+  ); /* 1 */
+  font-feature-settings: --theme(--default-mono-font-feature-settings, normal); /* 2 */
+  font-variation-settings: --theme(--default-mono-font-variation-settings, normal); /* 3 */
+  font-size: 1em; /* 4 */
+}
+
+/*
+  Add the correct font size in all browsers.
+*/
+
+small {
+  font-size: 80%;
+}
+
+/*
+  Prevent `sub` and `sup` elements from affecting the line height in all browsers.
+*/
+
+sub,
+sup {
+  font-size: 75%;
+  line-height: 0;
+  position: relative;
+  vertical-align: baseline;
+}
+
+sub {
+  bottom: -0.25em;
+}
+
+sup {
+  top: -0.5em;
+}
+
+/*
+  1. Remove text indentation from table contents in Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=999088, https://bugs.webkit.org/show_bug.cgi?id=201297)
+  2. Correct table border color inheritance in all Chrome and Safari. (https://bugs.chromium.org/p/chromium/issues/detail?id=935729, https://bugs.webkit.org/show_bug.cgi?id=195016)
+  3. Remove gaps between table borders by default.
+*/
+
+table {
+  text-indent: 0; /* 1 */
+  border-color: inherit; /* 2 */
+  border-collapse: collapse; /* 3 */
+}
+
+/*
+  Use the modern Firefox focus style for all focusable elements.
+*/
+
+:-moz-focusring {
+  outline: auto;
+}
+
+/*
+  Add the correct vertical alignment in Chrome and Firefox.
+*/
+
+progress {
+  vertical-align: baseline;
+}
+
+/*
+  Add the correct display in Chrome and Safari.
+*/
+
+summary {
+  display: list-item;
+}
+
+/*
+  Make lists unstyled by default.
+*/
+
+ol,
+ul,
+menu {
+  list-style: none;
+}
+
+/*
+  1. Make replaced elements `display: block` by default. (https://github.com/mozdevs/cssremedy/issues/14)
+  2. Add `vertical-align: middle` to align replaced elements more sensibly by default. (https://github.com/jensimmons/cssremedy/issues/14#issuecomment-634934210)
+      This can trigger a poorly considered lint error in some tools but is included by design.
+*/
+
+img,
+svg,
+video,
+canvas,
+audio,
+iframe,
+embed,
+object {
+  display: block; /* 1 */
+  vertical-align: middle; /* 2 */
+}
+
+/*
+  Constrain images and videos to the parent width and preserve their intrinsic aspect ratio. (https://github.com/mozdevs/cssremedy/issues/14)
+*/
+
+img,
+video {
+  max-width: 100%;
+  height: auto;
+}
+
+/*
+  1. Inherit font styles in all browsers.
+  2. Remove border radius in all browsers.
+  3. Remove background color in all browsers.
+  4. Ensure consistent opacity for disabled states in all browsers.
+*/
+
+button,
+input,
+select,
+optgroup,
+textarea,
+::file-selector-button {
+  font: inherit; /* 1 */
+  font-feature-settings: inherit; /* 1 */
+  font-variation-settings: inherit; /* 1 */
+  letter-spacing: inherit; /* 1 */
+  color: inherit; /* 1 */
+  border-radius: 0; /* 2 */
+  background-color: transparent; /* 3 */
+  opacity: 1; /* 4 */
+}
+
+/*
+  Restore default font weight.
+*/
+
+:where(select:is([multiple], [size])) optgroup {
+  font-weight: bolder;
+}
+
+/*
+  Restore indentation.
+*/
+
+:where(select:is([multiple], [size])) optgroup option {
+  padding-inline-start: 20px;
+}
+
+/*
+  Restore space after button.
+*/
+
+::file-selector-button {
+  margin-inline-end: 4px;
+}
+
+/*
+  Reset the default placeholder opacity in Firefox. (https://github.com/tailwindlabs/tailwindcss/issues/3300)
+*/
+
+::placeholder {
+  opacity: 1;
+}
+
+/*
+  Set the default placeholder color to a semi-transparent version of the current text color in browsers that do not
+  crash when using `color-mix(…)` with `currentcolor`. (https://github.com/tailwindlabs/tailwindcss/issues/17194)
+*/
+
+@supports (not (-webkit-appearance: -apple-pay-button)) /* Not Safari */ or
+  (contain-intrinsic-size: 1px) /* Safari 17+ */ {
+  ::placeholder {
+    color: color-mix(in oklab, currentcolor 50%, transparent);
+  }
+}
+
+/*
+  Prevent resizing textareas horizontally by default.
+*/
+
+textarea {
+  resize: vertical;
+}
+
+/*
+  Remove the inner padding in Chrome and Safari on macOS.
+*/
+
+::-webkit-search-decoration {
+  -webkit-appearance: none;
+}
+
+/*
+  1. Ensure date/time inputs have the same height when empty in iOS Safari.
+  2. Ensure text alignment can be changed on date/time inputs in iOS Safari.
+*/
+
+::-webkit-date-and-time-value {
+  min-height: 1lh; /* 1 */
+  text-align: inherit; /* 2 */
+}
+
+/*
+  Prevent height from changing on date/time inputs in macOS Safari when the input is set to `display: block`.
+*/
+
+::-webkit-datetime-edit {
+  display: inline-flex;
+}
+
+/*
+  Remove excess padding from pseudo-elements in date/time inputs to ensure consistent height across browsers.
+*/
+
+::-webkit-datetime-edit-fields-wrapper {
+  padding: 0;
+}
+
+::-webkit-datetime-edit,
+::-webkit-datetime-edit-year-field,
+::-webkit-datetime-edit-month-field,
+::-webkit-datetime-edit-day-field,
+::-webkit-datetime-edit-hour-field,
+::-webkit-datetime-edit-minute-field,
+::-webkit-datetime-edit-second-field,
+::-webkit-datetime-edit-millisecond-field,
+::-webkit-datetime-edit-meridiem-field {
+  padding-block: 0;
+}
+
+/*
+  Remove the additional `:invalid` styles in Firefox. (https://github.com/mozilla/gecko-dev/blob/2f9eacd9d3d995c937b4251a5557d95d494c9be1/layout/style/res/forms.css#L728-L737)
+*/
+
+:-moz-ui-invalid {
+  box-shadow: none;
+}
+
+/*
+  Correct the inability to style the border radius in iOS Safari.
+*/
+
+button,
+input:where([type='button'], [type='reset'], [type='submit']),
+::file-selector-button {
+  appearance: button;
+}
+
+/*
+  Correct the cursor style of increment and decrement buttons in Safari.
+*/
+
+::-webkit-inner-spin-button,
+::-webkit-outer-spin-button {
+  height: auto;
+}
+
+/*
+  Make elements with the HTML hidden attribute stay hidden by default.
+*/
+
+[hidden]:where(:not([hidden='until-found'])) {
+  display: none !important;
+}
+
+/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@layer properties;
+:root, :host {
+  --font-sans: "Noto Sans Thai", Tahoma, system-ui, sans-serif;
+  --color-white: #fff;
+  --spacing: 0.25rem;
+  --font-weight-normal: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+  --tracking-normal: 0em;
+  --radius-sm: 0.25rem;
+  --radius-md: 0.375rem;
+  --radius-lg: 0.5rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+  --blur-xl: 24px;
+  --default-transition-duration: 150ms;
+  --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pointer-events-none {
+  pointer-events: none;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+.absolute {
+  position: absolute;
+}
+.fixed {
+  position: fixed;
+}
+.relative {
+  position: relative;
+}
+.sticky {
+  position: sticky;
+}
+.inset-0 {
+  inset: calc(var(--spacing) * 0);
+}
+.top-0 {
+  top: calc(var(--spacing) * 0);
+}
+.top-3\.5 {
+  top: calc(var(--spacing) * 3.5);
+}
+.top-4 {
+  top: calc(var(--spacing) * 4);
+}
+.top-5 {
+  top: calc(var(--spacing) * 5);
+}
+.right-4 {
+  right: calc(var(--spacing) * 4);
+}
+.right-5 {
+  right: calc(var(--spacing) * 5);
+}
+.bottom-4 {
+  bottom: calc(var(--spacing) * 4);
+}
+.left-4 {
+  left: calc(var(--spacing) * 4);
+}
+.left-5 {
+  left: calc(var(--spacing) * 5);
+}
+.isolate {
+  isolation: isolate;
+}
+.z-10 {
+  z-index: 10;
+}
+.z-50 {
+  z-index: 50;
+}
+.z-\[120\] {
+  z-index: 120;
+}
+.col-span-2 {
+  grid-column: span 2 / span 2;
+}
+.m-0 {
+  margin: calc(var(--spacing) * 0);
+}
+.mx-1 {
+  margin-inline: calc(var(--spacing) * 1);
+}
+.mx-5 {
+  margin-inline: calc(var(--spacing) * 5);
+}
+.mx-auto {
+  margin-inline: auto;
+}
+.mt-0\.5 {
+  margin-top: calc(var(--spacing) * 0.5);
+}
+.mt-1 {
+  margin-top: calc(var(--spacing) * 1);
+}
+.mt-2 {
+  margin-top: calc(var(--spacing) * 2);
+}
+.mt-3 {
+  margin-top: calc(var(--spacing) * 3);
+}
+.mt-4 {
+  margin-top: calc(var(--spacing) * 4);
+}
+.mt-5 {
+  margin-top: calc(var(--spacing) * 5);
+}
+.mt-6 {
+  margin-top: calc(var(--spacing) * 6);
+}
+.mt-8 {
+  margin-top: calc(var(--spacing) * 8);
+}
+.mt-9 {
+  margin-top: calc(var(--spacing) * 9);
+}
+.mt-10 {
+  margin-top: calc(var(--spacing) * 10);
+}
+.mt-16 {
+  margin-top: calc(var(--spacing) * 16);
+}
+.mt-auto {
+  margin-top: auto;
+}
+.mr-1 {
+  margin-right: calc(var(--spacing) * 1);
+}
+.mb-1 {
+  margin-bottom: calc(var(--spacing) * 1);
+}
+.mb-2 {
+  margin-bottom: calc(var(--spacing) * 2);
+}
+.mb-3 {
+  margin-bottom: calc(var(--spacing) * 3);
+}
+.mb-4 {
+  margin-bottom: calc(var(--spacing) * 4);
+}
+.mb-5 {
+  margin-bottom: calc(var(--spacing) * 5);
+}
+.mb-6 {
+  margin-bottom: calc(var(--spacing) * 6);
+}
+.mb-7 {
+  margin-bottom: calc(var(--spacing) * 7);
+}
+.mb-8 {
+  margin-bottom: calc(var(--spacing) * 8);
+}
+.ml-2 {
+  margin-left: calc(var(--spacing) * 2);
+}
+.block {
+  display: block;
+}
+.flex {
+  display: flex;
+}
+.grid {
+  display: grid;
+}
+.hidden {
+  display: none;
+}
+.inline {
+  display: inline;
+}
+.inline-block {
+  display: inline-block;
+}
+.inline-flex {
+  display: inline-flex;
+}
+.h-1\.5 {
+  height: calc(var(--spacing) * 1.5);
+}
+.h-2 {
+  height: calc(var(--spacing) * 2);
+}
+.h-2\.5 {
+  height: calc(var(--spacing) * 2.5);
+}
+.h-3\.5 {
+  height: calc(var(--spacing) * 3.5);
+}
+.h-4 {
+  height: calc(var(--spacing) * 4);
+}
+.h-5 {
+  height: calc(var(--spacing) * 5);
+}
+.h-6 {
+  height: calc(var(--spacing) * 6);
+}
+.h-7 {
+  height: calc(var(--spacing) * 7);
+}
+.h-8 {
+  height: calc(var(--spacing) * 8);
+}
+.h-9 {
+  height: calc(var(--spacing) * 9);
+}
+.h-10 {
+  height: calc(var(--spacing) * 10);
+}
+.h-11 {
+  height: calc(var(--spacing) * 11);
+}
+.h-12 {
+  height: calc(var(--spacing) * 12);
+}
+.h-14 {
+  height: calc(var(--spacing) * 14);
+}
+.h-\[16px\] {
+  height: 16px;
+}
+.h-\[22px\] {
+  height: 22px;
+}
+.h-\[46px\] {
+  height: 46px;
+}
+.h-\[78px\] {
+  height: 78px;
+}
+.h-\[100dvh\] {
+  height: 100dvh;
+}
+.h-full {
+  height: 100%;
+}
+.h-px {
+  height: 1px;
+}
+.max-h-\[100dvh\] {
+  max-height: 100dvh;
+}
+.min-h-0 {
+  min-height: calc(var(--spacing) * 0);
+}
+.min-h-11 {
+  min-height: calc(var(--spacing) * 11);
+}
+.min-h-12 {
+  min-height: calc(var(--spacing) * 12);
+}
+.min-h-16 {
+  min-height: calc(var(--spacing) * 16);
+}
+.min-h-\[340px\] {
+  min-height: 340px;
+}
+.min-h-\[440px\] {
+  min-height: 440px;
+}
+.w-1\.5 {
+  width: calc(var(--spacing) * 1.5);
+}
+.w-2\.5 {
+  width: calc(var(--spacing) * 2.5);
+}
+.w-3\.5 {
+  width: calc(var(--spacing) * 3.5);
+}
+.w-4 {
+  width: calc(var(--spacing) * 4);
+}
+.w-5 {
+  width: calc(var(--spacing) * 5);
+}
+.w-6 {
+  width: calc(var(--spacing) * 6);
+}
+.w-7 {
+  width: calc(var(--spacing) * 7);
+}
+.w-8 {
+  width: calc(var(--spacing) * 8);
+}
+.w-9 {
+  width: calc(var(--spacing) * 9);
+}
+.w-10 {
+  width: calc(var(--spacing) * 10);
+}
+.w-11 {
+  width: calc(var(--spacing) * 11);
+}
+.w-12 {
+  width: calc(var(--spacing) * 12);
+}
+.w-14 {
+  width: calc(var(--spacing) * 14);
+}
+.w-25 {
+  width: calc(var(--spacing) * 25);
+}
+.w-\[22px\] {
+  width: 22px;
+}
+.w-\[29\.09\%\] {
+  width: 29.09%;
+}
+.w-\[46px\] {
+  width: 46px;
+}
+.w-\[48\.31\%\] {
+  width: 48.31%;
+}
+.w-\[51\.69\%\] {
+  width: 51.69%;
+}
+.w-fit {
+  width: fit-content;
+}
+.w-full {
+  width: 100%;
+}
+.max-w-\[300px\] {
+  max-width: 300px;
+}
+.max-w-\[310px\] {
+  max-width: 310px;
+}
+.max-w-\[490px\] {
+  max-width: 490px;
+}
+.max-w-\[640px\] {
+  max-width: 640px;
+}
+.max-w-\[750px\] {
+  max-width: 750px;
+}
+.max-w-\[800px\] {
+  max-width: 800px;
+}
+.max-w-\[840px\] {
+  max-width: 840px;
+}
+.max-w-\[1320px\] {
+  max-width: 1320px;
+}
+.min-w-0 {
+  min-width: calc(var(--spacing) * 0);
+}
+.min-w-\[685px\] {
+  min-width: 685px;
+}
+.flex-1 {
+  flex: 1;
+}
+.shrink-0 {
+  flex-shrink: 0;
+}
+.border-collapse {
+  border-collapse: collapse;
+}
+.cursor-pointer {
+  cursor: pointer;
+}
+.scroll-mt-25 {
+  scroll-margin-top: calc(var(--spacing) * 25);
+}
+.scroll-mt-27 {
+  scroll-margin-top: calc(var(--spacing) * 27);
+}
+.scroll-mt-28 {
+  scroll-margin-top: calc(var(--spacing) * 28);
+}
+.appearance-none {
+  appearance: none;
+}
+.grid-cols-1 {
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+}
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.grid-cols-3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.grid-cols-\[70px_1fr_63px\] {
+  grid-template-columns: 70px 1fr 63px;
+}
+.grid-cols-\[minmax\(0\,1fr\)_37px_47px_37px_minmax\(0\,1fr\)\] {
+  grid-template-columns: minmax(0,1fr) 37px 47px 37px minmax(0,1fr);
+}
+.flex-col {
+  flex-direction: column;
+}
+.flex-wrap {
+  flex-wrap: wrap;
+}
+.items-center {
+  align-items: center;
+}
+.items-end {
+  align-items: flex-end;
+}
+.items-start {
+  align-items: flex-start;
+}
+.items-stretch {
+  align-items: stretch;
+}
+.justify-between {
+  justify-content: space-between;
+}
+.justify-center {
+  justify-content: center;
+}
+.justify-end {
+  justify-content: flex-end;
+}
+.gap-1 {
+  gap: calc(var(--spacing) * 1);
+}
+.gap-1\.5 {
+  gap: calc(var(--spacing) * 1.5);
+}
+.gap-2 {
+  gap: calc(var(--spacing) * 2);
+}
+.gap-3 {
+  gap: calc(var(--spacing) * 3);
+}
+.gap-4 {
+  gap: calc(var(--spacing) * 4);
+}
+.gap-5 {
+  gap: calc(var(--spacing) * 5);
+}
+.gap-\[1px\] {
+  gap: 1px;
+}
+.divide-y {
+  :where(& > :not(:last-child)) {
+    --tw-divide-y-reverse: 0;
+    border-bottom-style: var(--tw-border-style);
+    border-top-style: var(--tw-border-style);
+    border-top-width: calc(1px * var(--tw-divide-y-reverse));
+    border-bottom-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
+  }
+}
+.divide-\[\#edf1ec\] {
+  :where(& > :not(:last-child)) {
+    border-color: #edf1ec;
+  }
+}
+.truncate {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.overflow-hidden {
+  overflow: hidden;
+}
+.overflow-x-auto {
+  overflow-x: auto;
+}
+.overflow-y-auto {
+  overflow-y: auto;
+}
+.rounded-2xl {
+  border-radius: var(--radius-2xl);
+}
+.rounded-\[4px\] {
+  border-radius: 4px;
+}
+.rounded-\[9px\] {
+  border-radius: 9px;
+}
+.rounded-\[12px\] {
+  border-radius: 12px;
+}
+.rounded-\[13px\] {
+  border-radius: 13px;
+}
+.rounded-\[14px\] {
+  border-radius: 14px;
+}
+.rounded-\[15px\] {
+  border-radius: 15px;
+}
+.rounded-\[17px\] {
+  border-radius: 17px;
+}
+.rounded-\[18px\] {
+  border-radius: 18px;
+}
+.rounded-\[19px\] {
+  border-radius: 19px;
+}
+.rounded-\[22px\] {
+  border-radius: 22px;
+}
+.rounded-\[23px\] {
+  border-radius: 23px;
+}
+.rounded-\[26px\] {
+  border-radius: 26px;
+}
+.rounded-\[27px\] {
+  border-radius: 27px;
+}
+.rounded-\[30px\] {
+  border-radius: 30px;
+}
+.rounded-full {
+  border-radius: calc(infinity * 1px);
+}
+.rounded-lg {
+  border-radius: var(--radius-lg);
+}
+.rounded-md {
+  border-radius: var(--radius-md);
+}
+.rounded-sm {
+  border-radius: var(--radius-sm);
+}
+.rounded-xl {
+  border-radius: var(--radius-xl);
+}
+.rounded-l-\[4px\] {
+  border-top-left-radius: 4px;
+  border-bottom-left-radius: 4px;
+}
+.rounded-r-\[4px\] {
+  border-top-right-radius: 4px;
+  border-bottom-right-radius: 4px;
+}
+.border {
+  border-style: var(--tw-border-style);
+  border-width: 1px;
+}
+.border-y {
+  border-block-style: var(--tw-border-style);
+  border-block-width: 1px;
+}
+.border-t {
+  border-top-style: var(--tw-border-style);
+  border-top-width: 1px;
+}
+.border-r {
+  border-right-style: var(--tw-border-style);
+  border-right-width: 1px;
+}
+.border-b {
+  border-bottom-style: var(--tw-border-style);
+  border-bottom-width: 1px;
+}
+.border-l {
+  border-left-style: var(--tw-border-style);
+  border-left-width: 1px;
+}
+.border-\[\#a9dac0\] {
+  border-color: #a9dac0;
+}
+.border-\[\#aed5bd\] {
+  border-color: #aed5bd;
+}
+.border-\[\#bed8c7\] {
+  border-color: #bed8c7;
+}
+.border-\[\#cbe5cf\] {
+  border-color: #cbe5cf;
+}
+.border-\[\#cde4d4\] {
+  border-color: #cde4d4;
+}
+.border-\[\#cde7d3\] {
+  border-color: #cde7d3;
+}
+.border-\[\#d5e4d9\] {
+  border-color: #d5e4d9;
+}
+.border-\[\#d5e5d9\] {
+  border-color: #d5e5d9;
+}
+.border-\[\#d6e4d6\] {
+  border-color: #d6e4d6;
+}
+.border-\[\#d6e7da\] {
+  border-color: #d6e7da;
+}
+.border-\[\#d7e5db\] {
+  border-color: #d7e5db;
+}
+.border-\[\#d8e3d8\] {
+  border-color: #d8e3d8;
+}
+.border-\[\#d8e6d8\] {
+  border-color: #d8e6d8;
+}
+.border-\[\#d8e8d8\] {
+  border-color: #d8e8d8;
+}
+.border-\[\#d8e8df\] {
+  border-color: #d8e8df;
+}
+.border-\[\#d9e5d7\] {
+  border-color: #d9e5d7;
+}
+.border-\[\#d9e8da\] {
+  border-color: #d9e8da;
+}
+.border-\[\#dbe8df\] {
+  border-color: #dbe8df;
+}
+.border-\[\#dce5d9\] {
+  border-color: #dce5d9;
+}
+.border-\[\#dce6dc\] {
+  border-color: #dce6dc;
+}
+.border-\[\#dce7dc\] {
+  border-color: #dce7dc;
+}
+.border-\[\#dce7e0\] {
+  border-color: #dce7e0;
+}
+.border-\[\#dfe9dc\] {
+  border-color: #dfe9dc;
+}
+.border-\[\#dfe9dd\] {
+  border-color: #dfe9dd;
+}
+.border-\[\#e0e7dd\] {
+  border-color: #e0e7dd;
+}
+.border-\[\#e0e8df\] {
+  border-color: #e0e8df;
+}
+.border-\[\#e0e9df\] {
+  border-color: #e0e9df;
+}
+.border-\[\#e0e9e0\] {
+  border-color: #e0e9e0;
+}
+.border-\[\#e1e8df\] {
+  border-color: #e1e8df;
+}
+.border-\[\#e2e8e1\] {
+  border-color: #e2e8e1;
+}
+.border-\[\#e2eade\] {
+  border-color: #e2eade;
+}
+.border-\[\#e2eae2\] {
+  border-color: #e2eae2;
+}
+.border-\[\#e2ebe1\] {
+  border-color: #e2ebe1;
+}
+.border-\[\#e3eae1\] {
+  border-color: #e3eae1;
+}
+.border-\[\#e3eae2\] {
+  border-color: #e3eae2;
+}
+.border-\[\#e3ece1\] {
+  border-color: #e3ece1;
+}
+.border-\[\#e6ebe1\] {
+  border-color: #e6ebe1;
+}
+.border-\[\#e7ece7\] {
+  border-color: #e7ece7;
+}
+.border-\[\#e8ece7\] {
+  border-color: #e8ece7;
+}
+.border-\[\#e8eee7\] {
+  border-color: #e8eee7;
+}
+.border-\[\#e8eee8\] {
+  border-color: #e8eee8;
+}
+.border-\[\#eaf0e9\] {
+  border-color: #eaf0e9;
+}
+.border-\[\#edf0ec\] {
+  border-color: #edf0ec;
+}
+.border-\[\#f0e4cc\] {
+  border-color: #f0e4cc;
+}
+.border-transparent {
+  border-color: transparent;
+}
+.border-white\/15 {
+  border-color: color-mix(in srgb, #fff 15%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in oklab, var(--color-white) 15%, transparent);
+  }
+}
+.border-white\/20 {
+  border-color: color-mix(in srgb, #fff 20%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in oklab, var(--color-white) 20%, transparent);
+  }
+}
+.border-white\/25 {
+  border-color: color-mix(in srgb, #fff 25%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    border-color: color-mix(in oklab, var(--color-white) 25%, transparent);
+  }
+}
+.bg-\[\#0a241d\]\/55 {
+  background-color: color-mix(in oklab, #0a241d 55%, transparent);
+}
+.bg-\[\#1b6654\] {
+  background-color: #1b6654;
+}
+.bg-\[\#2f9279\] {
+  background-color: #2f9279;
+}
+.bg-\[\#3a9f81\] {
+  background-color: #3a9f81;
+}
+.bg-\[\#3d92a0\] {
+  background-color: #3d92a0;
+}
+.bg-\[\#103e35\] {
+  background-color: #103e35;
+}
+.bg-\[\#155b4a\] {
+  background-color: #155b4a;
+}
+.bg-\[\#155f4b\] {
+  background-color: #155f4b;
+}
+.bg-\[\#163b34\] {
+  background-color: #163b34;
+}
+.bg-\[\#174e42\] {
+  background-color: #174e42;
+}
+.bg-\[\#17483c\] {
+  background-color: #17483c;
+}
+.bg-\[\#bce7a0\] {
+  background-color: #bce7a0;
+}
+.bg-\[\#c6df9a\] {
+  background-color: #c6df9a;
+}
+.bg-\[\#cb8795\] {
+  background-color: #cb8795;
+}
+.bg-\[\#cfe3a0\] {
+  background-color: #cfe3a0;
+}
+.bg-\[\#d0e9a3\] {
+  background-color: #d0e9a3;
+}
+.bg-\[\#d5e6ad\] {
+  background-color: #d5e6ad;
+}
+.bg-\[\#d7e2a6\] {
+  background-color: #d7e2a6;
+}
+.bg-\[\#d79ba4\] {
+  background-color: #d79ba4;
+}
+.bg-\[\#e0f1e2\] {
+  background-color: #e0f1e2;
+}
+.bg-\[\#e1f0e4\] {
+  background-color: #e1f0e4;
+}
+.bg-\[\#e3f3e4\] {
+  background-color: #e3f3e4;
+}
+.bg-\[\#e4f3e9\] {
+  background-color: #e4f3e9;
+}
+.bg-\[\#e5efe6\] {
+  background-color: #e5efe6;
+}
+.bg-\[\#e7f3e6\] {
+  background-color: #e7f3e6;
+}
+.bg-\[\#e7f3e7\] {
+  background-color: #e7f3e7;
+}
+.bg-\[\#e8f5e9\] {
+  background-color: #e8f5e9;
+}
+.bg-\[\#e9f1e7\] {
+  background-color: #e9f1e7;
+}
+.bg-\[\#eaf1ec\] {
+  background-color: #eaf1ec;
+}
+.bg-\[\#eaf3e8\] {
+  background-color: #eaf3e8;
+}
+.bg-\[\#eaf4eb\] {
+  background-color: #eaf4eb;
+}
+.bg-\[\#eaf5e9\] {
+  background-color: #eaf5e9;
+}
+.bg-\[\#ecf6f0\] {
+  background-color: #ecf6f0;
+}
+.bg-\[\#edf3e8\] {
+  background-color: #edf3e8;
+}
+.bg-\[\#edf4ec\] {
+  background-color: #edf4ec;
+}
+.bg-\[\#eef3ed\] {
+  background-color: #eef3ed;
+}
+.bg-\[\#eef5ed\] {
+  background-color: #eef5ed;
+}
+.bg-\[\#eff5f3\] {
+  background-color: #eff5f3;
+}
+.bg-\[\#f1f5ef\] {
+  background-color: #f1f5ef;
+}
+.bg-\[\#f1f7f1\] {
+  background-color: #f1f7f1;
+}
+.bg-\[\#f3f9f4\] {
+  background-color: #f3f9f4;
+}
+.bg-\[\#f4f8f3\] {
+  background-color: #f4f8f3;
+}
+.bg-\[\#f4f9f3\] {
+  background-color: #f4f9f3;
+}
+.bg-\[\#f4faf4\] {
+  background-color: #f4faf4;
+}
+.bg-\[\#f5faf4\] {
+  background-color: #f5faf4;
+}
+.bg-\[\#f6faf5\] {
+  background-color: #f6faf5;
+}
+.bg-\[\#f7faf5\] {
+  background-color: #f7faf5;
+}
+.bg-\[\#f7faf6\] {
+  background-color: #f7faf6;
+}
+.bg-\[\#f7faf7\] {
+  background-color: #f7faf7;
+}
+.bg-\[\#f8f9f6\] {
+  background-color: #f8f9f6;
+}
+.bg-\[\#f8faf6\] {
+  background-color: #f8faf6;
+}
+.bg-\[\#faf0f1\] {
+  background-color: #faf0f1;
+}
+.bg-\[\#fbfdfa\] {
+  background-color: #fbfdfa;
+}
+.bg-\[\#fdfefa\] {
+  background-color: #fdfefa;
+}
+.bg-\[\#fff9ee\] {
+  background-color: #fff9ee;
+}
+.bg-white {
+  background-color: var(--color-white);
+}
+.bg-white\/10 {
+  background-color: color-mix(in srgb, #fff 10%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+  }
+}
+.bg-white\/15 {
+  background-color: color-mix(in srgb, #fff 15%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--color-white) 15%, transparent);
+  }
+}
+.bg-white\/90 {
+  background-color: color-mix(in srgb, #fff 90%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--color-white) 90%, transparent);
+  }
+}
+.bg-white\/95 {
+  background-color: color-mix(in srgb, #fff 95%, transparent);
+  @supports (color: color-mix(in lab, red, red)) {
+    background-color: color-mix(in oklab, var(--color-white) 95%, transparent);
+  }
+}
+.p-0 {
+  padding: calc(var(--spacing) * 0);
+}
+.p-1 {
+  padding: calc(var(--spacing) * 1);
+}
+.p-5 {
+  padding: calc(var(--spacing) * 5);
+}
+.px-1 {
+  padding-inline: calc(var(--spacing) * 1);
+}
+.px-2 {
+  padding-inline: calc(var(--spacing) * 2);
+}
+.px-3 {
+  padding-inline: calc(var(--spacing) * 3);
+}
+.px-3\.5 {
+  padding-inline: calc(var(--spacing) * 3.5);
+}
+.px-4 {
+  padding-inline: calc(var(--spacing) * 4);
+}
+.px-5 {
+  padding-inline: calc(var(--spacing) * 5);
+}
+.px-6 {
+  padding-inline: calc(var(--spacing) * 6);
+}
+.px-7 {
+  padding-inline: calc(var(--spacing) * 7);
+}
+.px-8 {
+  padding-inline: calc(var(--spacing) * 8);
+}
+.py-1\.5 {
+  padding-block: calc(var(--spacing) * 1.5);
+}
+.py-2 {
+  padding-block: calc(var(--spacing) * 2);
+}
+.py-2\.5 {
+  padding-block: calc(var(--spacing) * 2.5);
+}
+.py-3 {
+  padding-block: calc(var(--spacing) * 3);
+}
+.py-3\.5 {
+  padding-block: calc(var(--spacing) * 3.5);
+}
+.py-4 {
+  padding-block: calc(var(--spacing) * 4);
+}
+.py-5 {
+  padding-block: calc(var(--spacing) * 5);
+}
+.py-6 {
+  padding-block: calc(var(--spacing) * 6);
+}
+.py-7 {
+  padding-block: calc(var(--spacing) * 7);
+}
+.py-8 {
+  padding-block: calc(var(--spacing) * 8);
+}
+.py-9 {
+  padding-block: calc(var(--spacing) * 9);
+}
+.py-10 {
+  padding-block: calc(var(--spacing) * 10);
+}
+.py-16 {
+  padding-block: calc(var(--spacing) * 16);
+}
+.py-\[5px\] {
+  padding-block: 5px;
+}
+.pt-3 {
+  padding-top: calc(var(--spacing) * 3);
+}
+.pt-4 {
+  padding-top: calc(var(--spacing) * 4);
+}
+.pt-5 {
+  padding-top: calc(var(--spacing) * 5);
+}
+.pt-6 {
+  padding-top: calc(var(--spacing) * 6);
+}
+.pt-7 {
+  padding-top: calc(var(--spacing) * 7);
+}
+.pr-4 {
+  padding-right: calc(var(--spacing) * 4);
+}
+.pb-3 {
+  padding-bottom: calc(var(--spacing) * 3);
+}
+.pb-4 {
+  padding-bottom: calc(var(--spacing) * 4);
+}
+.pb-6 {
+  padding-bottom: calc(var(--spacing) * 6);
+}
+.pb-11 {
+  padding-bottom: calc(var(--spacing) * 11);
+}
+.pb-16 {
+  padding-bottom: calc(var(--spacing) * 16);
+}
+.pl-12 {
+  padding-left: calc(var(--spacing) * 12);
+}
+.text-center {
+  text-align: center;
+}
+.text-left {
+  text-align: left;
+}
+.text-right {
+  text-align: right;
+}
+.font-sans {
+  font-family: var(--font-sans);
+}
+.text-\[9px\] {
+  font-size: 9px;
+}
+.text-\[10px\] {
+  font-size: 10px;
+}
+.text-\[11px\] {
+  font-size: 11px;
+}
+.text-\[12px\] {
+  font-size: 12px;
+}
+.text-\[13px\] {
+  font-size: 13px;
+}
+.text-\[14px\] {
+  font-size: 14px;
+}
+.text-\[15px\] {
+  font-size: 15px;
+}
+.text-\[16px\] {
+  font-size: 16px;
+}
+.text-\[17px\] {
+  font-size: 17px;
+}
+.text-\[21px\] {
+  font-size: 21px;
+}
+.text-\[23px\] {
+  font-size: 23px;
+}
+.text-\[24px\] {
+  font-size: 24px;
+}
+.text-\[25px\] {
+  font-size: 25px;
+}
+.text-\[27px\] {
+  font-size: 27px;
+}
+.text-\[29px\] {
+  font-size: 29px;
+}
+.text-\[31px\] {
+  font-size: 31px;
+}
+.text-\[32px\] {
+  font-size: 32px;
+}
+.text-\[35px\] {
+  font-size: 35px;
+}
+.text-\[38px\] {
+  font-size: 38px;
+}
+.text-\[43px\] {
+  font-size: 43px;
+}
+.text-\[47px\] {
+  font-size: 47px;
+}
+.text-\[92px\] {
+  font-size: 92px;
+}
+.leading-\[1\.5\] {
+  --tw-leading: 1.5;
+  line-height: 1.5;
+}
+.leading-\[1\.6\] {
+  --tw-leading: 1.6;
+  line-height: 1.6;
+}
+.leading-\[1\.7\] {
+  --tw-leading: 1.7;
+  line-height: 1.7;
+}
+.leading-\[1\.8\] {
+  --tw-leading: 1.8;
+  line-height: 1.8;
+}
+.leading-\[1\.9\] {
+  --tw-leading: 1.9;
+  line-height: 1.9;
+}
+.leading-\[1\.15\] {
+  --tw-leading: 1.15;
+  line-height: 1.15;
+}
+.leading-\[1\.23\] {
+  --tw-leading: 1.23;
+  line-height: 1.23;
+}
+.leading-\[1\.45\] {
+  --tw-leading: 1.45;
+  line-height: 1.45;
+}
+.leading-\[1\.65\] {
+  --tw-leading: 1.65;
+  line-height: 1.65;
+}
+.leading-\[1\.75\] {
+  --tw-leading: 1.75;
+  line-height: 1.75;
+}
+.leading-\[1\.85\] {
+  --tw-leading: 1.85;
+  line-height: 1.85;
+}
+.leading-\[1\.95\] {
+  --tw-leading: 1.95;
+  line-height: 1.95;
+}
+.leading-\[2\.05\] {
+  --tw-leading: 2.05;
+  line-height: 2.05;
+}
+.leading-none {
+  --tw-leading: 1;
+  line-height: 1;
+}
+.font-black {
+  --tw-font-weight: var(--font-weight-black);
+  font-weight: var(--font-weight-black);
+}
+.font-bold {
+  --tw-font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-bold);
+}
+.font-extrabold {
+  --tw-font-weight: var(--font-weight-extrabold);
+  font-weight: var(--font-weight-extrabold);
+}
+.font-medium {
+  --tw-font-weight: var(--font-weight-medium);
+  font-weight: var(--font-weight-medium);
+}
+.font-normal {
+  --tw-font-weight: var(--font-weight-normal);
+  font-weight: var(--font-weight-normal);
+}
+.font-semibold {
+  --tw-font-weight: var(--font-weight-semibold);
+  font-weight: var(--font-weight-semibold);
+}
+.tracking-\[-\.04em\] {
+  --tw-tracking: -.04em;
+  letter-spacing: -.04em;
+}
+.tracking-\[-\.05em\] {
+  --tw-tracking: -.05em;
+  letter-spacing: -.05em;
+}
+.tracking-\[-\.06em\] {
+  --tw-tracking: -.06em;
+  letter-spacing: -.06em;
+}
+.tracking-\[-\.07em\] {
+  --tw-tracking: -.07em;
+  letter-spacing: -.07em;
+}
+.tracking-\[-\.08em\] {
+  --tw-tracking: -.08em;
+  letter-spacing: -.08em;
+}
+.tracking-\[-\.09em\] {
+  --tw-tracking: -.09em;
+  letter-spacing: -.09em;
+}
+.tracking-\[-\.055em\] {
+  --tw-tracking: -.055em;
+  letter-spacing: -.055em;
+}
+.tracking-\[-\.075em\] {
+  --tw-tracking: -.075em;
+  letter-spacing: -.075em;
+}
+.tracking-\[\.2em\] {
+  --tw-tracking: .2em;
+  letter-spacing: .2em;
+}
+.tracking-\[\.09em\] {
+  --tw-tracking: .09em;
+  letter-spacing: .09em;
+}
+.tracking-\[\.10em\] {
+  --tw-tracking: .10em;
+  letter-spacing: .10em;
+}
+.tracking-\[\.12em\] {
+  --tw-tracking: .12em;
+  letter-spacing: .12em;
+}
+.tracking-\[\.13em\] {
+  --tw-tracking: .13em;
+  letter-spacing: .13em;
+}
+.tracking-\[\.14em\] {
+  --tw-tracking: .14em;
+  letter-spacing: .14em;
+}
+.tracking-\[\.15em\] {
+  --tw-tracking: .15em;
+  letter-spacing: .15em;
+}
+.tracking-\[\.16em\] {
+  --tw-tracking: .16em;
+  letter-spacing: .16em;
+}
+.tracking-\[\.26em\] {
+  --tw-tracking: .26em;
+  letter-spacing: .26em;
+}
+.tracking-normal {
+  --tw-tracking: var(--tracking-normal);
+  letter-spacing: var(--tracking-normal);
+}
+.whitespace-nowrap {
+  white-space: nowrap;
+}
+.text-\[\#1b483c\] {
+  color: #1b483c;
+}
+.text-\[\#1b5545\] {
+  color: #1b5545;
+}
+.text-\[\#1c4a3e\] {
+  color: #1c4a3e;
+}
+.text-\[\#2a624d\] {
+  color: #2a624d;
+}
+.text-\[\#2a8090\] {
+  color: #2a8090;
+}
+.text-\[\#2b5845\] {
+  color: #2b5845;
+}
+.text-\[\#2c7d5e\] {
+  color: #2c7d5e;
+}
+.text-\[\#2c5949\] {
+  color: #2c5949;
+}
+.text-\[\#2e826b\] {
+  color: #2e826b;
+}
+.text-\[\#4e7b63\] {
+  color: #4e7b63;
+}
+.text-\[\#4f8068\] {
+  color: #4f8068;
+}
+.text-\[\#5b8d78\] {
+  color: #5b8d78;
+}
+.text-\[\#5d7168\] {
+  color: #5d7168;
+}
+.text-\[\#5e7569\] {
+  color: #5e7569;
+}
+.text-\[\#6a8073\] {
+  color: #6a8073;
+}
+.text-\[\#6b8175\] {
+  color: #6b8175;
+}
+.text-\[\#6f8278\] {
+  color: #6f8278;
+}
+.text-\[\#6f8676\] {
+  color: #6f8676;
+}
+.text-\[\#7b8a80\] {
+  color: #7b8a80;
+}
+.text-\[\#7b9181\] {
+  color: #7b9181;
+}
+.text-\[\#7c9688\] {
+  color: #7c9688;
+}
+.text-\[\#7d8c81\] {
+  color: #7d8c81;
+}
+.text-\[\#7d8e82\] {
+  color: #7d8e82;
+}
+.text-\[\#7d9686\] {
+  color: #7d9686;
+}
+.text-\[\#7f9487\] {
+  color: #7f9487;
+}
+.text-\[\#8b9c8d\] {
+  color: #8b9c8d;
+}
+.text-\[\#8b9e91\] {
+  color: #8b9e91;
+}
+.text-\[\#8c9a90\] {
+  color: #8c9a90;
+}
+.text-\[\#8ca095\] {
+  color: #8ca095;
+}
+.text-\[\#78a38a\] {
+  color: #78a38a;
+}
+.text-\[\#153d32\] {
+  color: #153d32;
+}
+.text-\[\#163d34\] {
+  color: #163d34;
+}
+.text-\[\#164d3d\] {
+  color: #164d3d;
+}
+.text-\[\#167a5e\] {
+  color: #167a5e;
+}
+.text-\[\#173e36\] {
+  color: #173e36;
+}
+.text-\[\#173f35\] {
+  color: #173f35;
+}
+.text-\[\#176c51\] {
+  color: #176c51;
+}
+.text-\[\#204f3e\] {
+  color: #204f3e;
+}
+.text-\[\#207b60\] {
+  color: #207b60;
+}
+.text-\[\#208a6a\] {
+  color: #208a6a;
+}
+.text-\[\#214c3e\] {
+  color: #214c3e;
+}
+.text-\[\#227c63\] {
+  color: #227c63;
+}
+.text-\[\#234d40\] {
+  color: #234d40;
+}
+.text-\[\#245f4c\] {
+  color: #245f4c;
+}
+.text-\[\#267c5d\] {
+  color: #267c5d;
+}
+.text-\[\#285c4d\] {
+  color: #285c4d;
+}
+.text-\[\#295b49\] {
+  color: #295b49;
+}
+.text-\[\#315b48\] {
+  color: #315b48;
+}
+.text-\[\#315d49\] {
+  color: #315d49;
+}
+.text-\[\#325d4c\] {
+  color: #325d4c;
+}
+.text-\[\#388d72\] {
+  color: #388d72;
+}
+.text-\[\#478a70\] {
+  color: #478a70;
+}
+.text-\[\#496c59\] {
+  color: #496c59;
+}
+.text-\[\#507c65\] {
+  color: #507c65;
+}
+.text-\[\#627b6c\] {
+  color: #627b6c;
+}
+.text-\[\#647b6c\] {
+  color: #647b6c;
+}
+.text-\[\#647b6e\] {
+  color: #647b6e;
+}
+.text-\[\#647f6d\] {
+  color: #647f6d;
+}
+.text-\[\#657e72\] {
+  color: #657e72;
+}
+.text-\[\#667e70\] {
+  color: #667e70;
+}
+.text-\[\#709e84\] {
+  color: #709e84;
+}
+.text-\[\#728a78\] {
+  color: #728a78;
+}
+.text-\[\#869d8c\] {
+  color: #869d8c;
+}
+.text-\[\#11634f\] {
+  color: #11634f;
+}
+.text-\[\#14826b\] {
+  color: #14826b;
+}
+.text-\[\#17674f\] {
+  color: #17674f;
+}
+.text-\[\#19483b\] {
+  color: #19483b;
+}
+.text-\[\#21856d\] {
+  color: #21856d;
+}
+.text-\[\#22876b\] {
+  color: #22876b;
+}
+.text-\[\#23856a\] {
+  color: #23856a;
+}
+.text-\[\#26806a\] {
+  color: #26806a;
+}
+.text-\[\#28725b\] {
+  color: #28725b;
+}
+.text-\[\#29634f\] {
+  color: #29634f;
+}
+.text-\[\#39604f\] {
+  color: #39604f;
+}
+.text-\[\#54836d\] {
+  color: #54836d;
+}
+.text-\[\#69877a\] {
+  color: #69877a;
+}
+.text-\[\#71847a\] {
+  color: #71847a;
+}
+.text-\[\#72867a\] {
+  color: #72867a;
+}
+.text-\[\#74867a\] {
+  color: #74867a;
+}
+.text-\[\#74877a\] {
+  color: #74877a;
+}
+.text-\[\#75847b\] {
+  color: #75847b;
+}
+.text-\[\#77877d\] {
+  color: #77877d;
+}
+.text-\[\#82968a\] {
+  color: #82968a;
+}
+.text-\[\#83938a\] {
+  color: #83938a;
+}
+.text-\[\#84978b\] {
+  color: #84978b;
+}
+.text-\[\#89998e\] {
+  color: #89998e;
+}
+.text-\[\#178366\] {
+  color: #178366;
+}
+.text-\[\#198467\] {
+  color: #198467;
+}
+.text-\[\#205543\] {
+  color: #205543;
+}
+.text-\[\#235441\] {
+  color: #235441;
+}
+.text-\[\#235749\] {
+  color: #235749;
+}
+.text-\[\#237758\] {
+  color: #237758;
+}
+.text-\[\#238567\] {
+  color: #238567;
+}
+.text-\[\#248568\] {
+  color: #248568;
+}
+.text-\[\#268369\] {
+  color: #268369;
+}
+.text-\[\#275847\] {
+  color: #275847;
+}
+.text-\[\#285747\] {
+  color: #285747;
+}
+.text-\[\#287987\] {
+  color: #287987;
+}
+.text-\[\#386554\] {
+  color: #386554;
+}
+.text-\[\#438769\] {
+  color: #438769;
+}
+.text-\[\#479177\] {
+  color: #479177;
+}
+.text-\[\#507160\] {
+  color: #507160;
+}
+.text-\[\#557766\] {
+  color: #557766;
+}
+.text-\[\#698073\] {
+  color: #698073;
+}
+.text-\[\#698679\] {
+  color: #698679;
+}
+.text-\[\#718579\] {
+  color: #718579;
+}
+.text-\[\#789587\] {
+  color: #789587;
+}
+.text-\[\#799083\] {
+  color: #799083;
+}
+.text-\[\#819085\] {
+  color: #819085;
+}
+.text-\[\#819589\] {
+  color: #819589;
+}
+.text-\[\#829589\] {
+  color: #829589;
+}
+.text-\[\#849889\] {
+  color: #849889;
+}
+.text-\[\#907550\] {
+  color: #907550;
+}
+.text-\[\#a2c6b4\] {
+  color: #a2c6b4;
+}
+.text-\[\#a9cabb\] {
+  color: #a9cabb;
+}
+.text-\[\#b3e89a\] {
+  color: #b3e89a;
+}
+.text-\[\#b5cfc0\] {
+  color: #b5cfc0;
+}
+.text-\[\#b8d6bc\] {
+  color: #b8d6bc;
+}
+.text-\[\#b9d4c8\] {
+  color: #b9d4c8;
+}
+.text-\[\#b56a7b\] {
+  color: #b56a7b;
+}
+.text-\[\#b66b7a\] {
+  color: #b66b7a;
+}
+.text-\[\#bcdbc7\] {
+  color: #bcdbc7;
+}
+.text-\[\#bdd8c2\] {
+  color: #bdd8c2;
+}
+.text-\[\#c1dbcc\] {
+  color: #c1dbcc;
+}
+.text-\[\#c5d4c7\] {
+  color: #c5d4c7;
+}
+.text-\[\#c5dcd0\] {
+  color: #c5dcd0;
+}
+.text-\[\#c5dfce\] {
+  color: #c5dfce;
+}
+.text-\[\#c6dfcf\] {
+  color: #c6dfcf;
+}
+.text-\[\#c8e2cd\] {
+  color: #c8e2cd;
+}
+.text-\[\#c8e8b4\] {
+  color: #c8e8b4;
+}
+.text-\[\#c09a59\] {
+  color: #c09a59;
+}
+.text-\[\#d5e6ad\] {
+  color: #d5e6ad;
+}
+.text-\[\#d7eead\] {
+  color: #d7eead;
+}
+.text-\[\#d8e7c1\] {
+  color: #d8e7c1;
+}
+.text-\[\#d9eda7\] {
+  color: #d9eda7;
+}
+.text-\[\#f2f6eb\] {
+  color: #f2f6eb;
+}
+.text-white {
+  color: var(--color-white);
+}
+.tabular-nums {
+  --tw-numeric-spacing: tabular-nums;
+  font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
+}
+.underline {
+  text-decoration-line: underline;
+}
+.antialiased {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+.shadow-2xl {
+  --tw-shadow: 0 25px 50px -12px var(--tw-shadow-color, rgb(0 0 0 / 0.25));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.shadow-\[0_8px_20px_-12px_rgba\(18\,89\,68\,\.6\)\] {
+  --tw-shadow: 0 8px 20px -12px var(--tw-shadow-color, rgba(18,89,68,.6));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.shadow-\[0_12px_32px_-32px_rgba\(20\,65\,46\,\.3\)\] {
+  --tw-shadow: 0 12px 32px -32px var(--tw-shadow-color, rgba(20,65,46,.3));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.shadow-\[0_17px_35px_-38px_rgba\(26\,62\,43\,\.4\)\] {
+  --tw-shadow: 0 17px 35px -38px var(--tw-shadow-color, rgba(26,62,43,.4));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.shadow-\[0_18px_35px_-37px_rgba\(20\,59\,43\,\.4\)\] {
+  --tw-shadow: 0 18px 35px -37px var(--tw-shadow-color, rgba(20,59,43,.4));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.shadow-\[0_24px_54px_-44px_rgba\(17\,51\,39\,\.38\)\] {
+  --tw-shadow: 0 24px 54px -44px var(--tw-shadow-color, rgba(17,51,39,.38));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.shadow-sm {
+  --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.ring-1 {
+  --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+  box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+}
+.ring-\[\#94c6ae\] {
+  --tw-ring-color: #94c6ae;
+}
+.backdrop-blur-\[2px\] {
+  --tw-backdrop-blur: blur(2px);
+  -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+  backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+}
+.backdrop-blur-xl {
+  --tw-backdrop-blur: blur(var(--blur-xl));
+  -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+  backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+}
+.transition-all {
+  transition-property: all;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+}
+.transition-colors {
+  transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+}
+.transition-transform {
+  transition-property: transform, translate, scale, rotate;
+  transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+  transition-duration: var(--tw-duration, var(--default-transition-duration));
+}
+.duration-150 {
+  --tw-duration: 150ms;
+  transition-duration: 150ms;
+}
+.group-hover\:translate-x-1 {
+  &:is(:where(.group):hover *) {
+    @media (hover: hover) {
+      --tw-translate-x: calc(var(--spacing) * 1);
+      translate: var(--tw-translate-x) var(--tw-translate-y);
+    }
+  }
+}
+.group-hover\:bg-\[\#d7eadb\] {
+  &:is(:where(.group):hover *) {
+    @media (hover: hover) {
+      background-color: #d7eadb;
+    }
+  }
+}
+.group-hover\:bg-\[\#dbeedd\] {
+  &:is(:where(.group):hover *) {
+    @media (hover: hover) {
+      background-color: #dbeedd;
+    }
+  }
+}
+.selection\:bg-\[\#c6ecd2\] {
+  & *::selection {
+    background-color: #c6ecd2;
+  }
+  &::selection {
+    background-color: #c6ecd2;
+  }
+}
+.placeholder\:text-\[\#93a69a\] {
+  &::placeholder {
+    color: #93a69a;
+  }
+}
+.hover\:border-\[\#58a886\] {
+  &:hover {
+    @media (hover: hover) {
+      border-color: #58a886;
+    }
+  }
+}
+.hover\:border-\[\#95c7b2\] {
+  &:hover {
+    @media (hover: hover) {
+      border-color: #95c7b2;
+    }
+  }
+}
+.hover\:border-\[\#d9ebd9\] {
+  &:hover {
+    @media (hover: hover) {
+      border-color: #d9ebd9;
+    }
+  }
+}
+.hover\:bg-\[\#0b7659\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #0b7659;
+    }
+  }
+}
+.hover\:bg-\[\#d6edda\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #d6edda;
+    }
+  }
+}
+.hover\:bg-\[\#e5f6eb\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #e5f6eb;
+    }
+  }
+}
+.hover\:bg-\[\#eaf4ec\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #eaf4ec;
+    }
+  }
+}
+.hover\:bg-\[\#f0f5f0\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f0f5f0;
+    }
+  }
+}
+.hover\:bg-\[\#f0f7f1\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f0f7f1;
+    }
+  }
+}
+.hover\:bg-\[\#f1f7f2\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f1f7f2;
+    }
+  }
+}
+.hover\:bg-\[\#f2f9f3\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f2f9f3;
+    }
+  }
+}
+.hover\:bg-\[\#f3f8f0\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f3f8f0;
+    }
+  }
+}
+.hover\:bg-\[\#f4f9f3\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f4f9f3;
+    }
+  }
+}
+.hover\:bg-\[\#f5faf4\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f5faf4;
+    }
+  }
+}
+.hover\:bg-\[\#f6faf5\] {
+  &:hover {
+    @media (hover: hover) {
+      background-color: #f6faf5;
+    }
+  }
+}
+.hover\:bg-white\/15 {
+  &:hover {
+    @media (hover: hover) {
+      background-color: color-mix(in srgb, #fff 15%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        background-color: color-mix(in oklab, var(--color-white) 15%, transparent);
+      }
+    }
+  }
+}
+.hover\:text-\[\#0e5b47\] {
+  &:hover {
+    @media (hover: hover) {
+      color: #0e5b47;
+    }
+  }
+}
+.hover\:text-\[\#145b49\] {
+  &:hover {
+    @media (hover: hover) {
+      color: #145b49;
+    }
+  }
+}
+.hover\:text-\[\#14644f\] {
+  &:hover {
+    @media (hover: hover) {
+      color: #14644f;
+    }
+  }
+}
+.hover\:underline {
+  &:hover {
+    @media (hover: hover) {
+      text-decoration-line: underline;
+    }
+  }
+}
+.hover\:opacity-70 {
+  &:hover {
+    @media (hover: hover) {
+      opacity: 70%;
+    }
+  }
+}
+.focus\:not-sr-only {
+  &:focus {
+    position: static;
+    width: auto;
+    height: auto;
+    padding: 0;
+    margin: 0;
+    overflow: visible;
+    clip: auto;
+    white-space: normal;
+  }
+}
+.focus\:fixed {
+  &:focus {
+    position: fixed;
+  }
+}
+.focus\:top-4 {
+  &:focus {
+    top: calc(var(--spacing) * 4);
+  }
+}
+.focus\:left-4 {
+  &:focus {
+    left: calc(var(--spacing) * 4);
+  }
+}
+.focus\:z-\[100\] {
+  &:focus {
+    z-index: 100;
+  }
+}
+.focus\:rounded-xl {
+  &:focus {
+    border-radius: var(--radius-xl);
+  }
+}
+.focus\:bg-white {
+  &:focus {
+    background-color: var(--color-white);
+  }
+}
+.focus\:px-4 {
+  &:focus {
+    padding-inline: calc(var(--spacing) * 4);
+  }
+}
+.focus\:py-3 {
+  &:focus {
+    padding-block: calc(var(--spacing) * 3);
+  }
+}
+.focus\:outline-2 {
+  &:focus {
+    outline-style: var(--tw-outline-style);
+    outline-width: 2px;
+  }
+}
+.focus\:outline-\[\#218e73\] {
+  &:focus {
+    outline-color: #218e73;
+  }
+}
+.focus\:outline-\[\#148969\] {
+  &:focus {
+    outline-color: #148969;
+  }
+}
+.focus\:outline-\[\#178566\] {
+  &:focus {
+    outline-color: #178566;
+  }
+}
+.focus-visible\:outline-2 {
+  &:focus-visible {
+    outline-style: var(--tw-outline-style);
+    outline-width: 2px;
+  }
+}
+.focus-visible\:outline-offset-2 {
+  &:focus-visible {
+    outline-offset: 2px;
+  }
+}
+.focus-visible\:outline-offset-\[-2px\] {
+  &:focus-visible {
+    outline-offset: -2px;
+  }
+}
+.focus-visible\:outline-\[\#0f745b\] {
+  &:focus-visible {
+    outline-color: #0f745b;
+  }
+}
+.focus-visible\:outline-\[\#23856a\] {
+  &:focus-visible {
+    outline-color: #23856a;
+  }
+}
+.focus-visible\:outline-\[\#26896a\] {
+  &:focus-visible {
+    outline-color: #26896a;
+  }
+}
+.focus-visible\:outline-\[\#168466\] {
+  &:focus-visible {
+    outline-color: #168466;
+  }
+}
+.focus-visible\:outline-\[\#178966\] {
+  &:focus-visible {
+    outline-color: #178966;
+  }
+}
+.focus-visible\:outline-\[\#188768\] {
+  &:focus-visible {
+    outline-color: #188768;
+  }
+}
+.focus-visible\:outline-\[\#198767\] {
+  &:focus-visible {
+    outline-color: #198767;
+  }
+}
+.focus-visible\:outline-\[\#238566\] {
+  &:focus-visible {
+    outline-color: #238566;
+  }
+}
+.focus-visible\:outline-white {
+  &:focus-visible {
+    outline-color: var(--color-white);
+  }
+}
+.sm\:mx-8 {
+  @media (width >= 40rem) {
+    margin-inline: calc(var(--spacing) * 8);
+  }
+}
+.sm\:block {
+  @media (width >= 40rem) {
+    display: block;
+  }
+}
+.sm\:hidden {
+  @media (width >= 40rem) {
+    display: none;
+  }
+}
+.sm\:min-h-\[430px\] {
+  @media (width >= 40rem) {
+    min-height: 430px;
+  }
+}
+.sm\:min-h-\[500px\] {
+  @media (width >= 40rem) {
+    min-height: 500px;
+  }
+}
+.sm\:grid-cols-2 {
+  @media (width >= 40rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.sm\:grid-cols-\[110px_1fr_80px\] {
+  @media (width >= 40rem) {
+    grid-template-columns: 110px 1fr 80px;
+  }
+}
+.sm\:grid-cols-\[minmax\(0\,1fr\)_48px_55px_48px_minmax\(0\,1fr\)\] {
+  @media (width >= 40rem) {
+    grid-template-columns: minmax(0,1fr) 48px 55px 48px minmax(0,1fr);
+  }
+}
+.sm\:flex-row {
+  @media (width >= 40rem) {
+    flex-direction: row;
+  }
+}
+.sm\:gap-2 {
+  @media (width >= 40rem) {
+    gap: calc(var(--spacing) * 2);
+  }
+}
+.sm\:gap-5 {
+  @media (width >= 40rem) {
+    gap: calc(var(--spacing) * 5);
+  }
+}
+.sm\:p-8 {
+  @media (width >= 40rem) {
+    padding: calc(var(--spacing) * 8);
+  }
+}
+.sm\:p-9 {
+  @media (width >= 40rem) {
+    padding: calc(var(--spacing) * 9);
+  }
+}
+.sm\:px-2 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 2);
+  }
+}
+.sm\:px-5 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 5);
+  }
+}
+.sm\:px-7 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 7);
+  }
+}
+.sm\:px-8 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 8);
+  }
+}
+.sm\:px-9 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 9);
+  }
+}
+.sm\:px-12 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 12);
+  }
+}
+.sm\:px-13 {
+  @media (width >= 40rem) {
+    padding-inline: calc(var(--spacing) * 13);
+  }
+}
+.sm\:py-6 {
+  @media (width >= 40rem) {
+    padding-block: calc(var(--spacing) * 6);
+  }
+}
+.sm\:py-8 {
+  @media (width >= 40rem) {
+    padding-block: calc(var(--spacing) * 8);
+  }
+}
+.sm\:py-10 {
+  @media (width >= 40rem) {
+    padding-block: calc(var(--spacing) * 10);
+  }
+}
+.sm\:py-16 {
+  @media (width >= 40rem) {
+    padding-block: calc(var(--spacing) * 16);
+  }
+}
+.sm\:py-20 {
+  @media (width >= 40rem) {
+    padding-block: calc(var(--spacing) * 20);
+  }
+}
+.sm\:py-21 {
+  @media (width >= 40rem) {
+    padding-block: calc(var(--spacing) * 21);
+  }
+}
+.sm\:pt-10 {
+  @media (width >= 40rem) {
+    padding-top: calc(var(--spacing) * 10);
+  }
+}
+.sm\:pb-15 {
+  @media (width >= 40rem) {
+    padding-bottom: calc(var(--spacing) * 15);
+  }
+}
+.sm\:pb-21 {
+  @media (width >= 40rem) {
+    padding-bottom: calc(var(--spacing) * 21);
+  }
+}
+.sm\:text-\[11px\] {
+  @media (width >= 40rem) {
+    font-size: 11px;
+  }
+}
+.sm\:text-\[13px\] {
+  @media (width >= 40rem) {
+    font-size: 13px;
+  }
+}
+.sm\:text-\[14px\] {
+  @media (width >= 40rem) {
+    font-size: 14px;
+  }
+}
+.sm\:text-\[15px\] {
+  @media (width >= 40rem) {
+    font-size: 15px;
+  }
+}
+.sm\:text-\[19px\] {
+  @media (width >= 40rem) {
+    font-size: 19px;
+  }
+}
+.sm\:text-\[28px\] {
+  @media (width >= 40rem) {
+    font-size: 28px;
+  }
+}
+.sm\:text-\[30px\] {
+  @media (width >= 40rem) {
+    font-size: 30px;
+  }
+}
+.sm\:text-\[32px\] {
+  @media (width >= 40rem) {
+    font-size: 32px;
+  }
+}
+.sm\:text-\[34px\] {
+  @media (width >= 40rem) {
+    font-size: 34px;
+  }
+}
+.sm\:text-\[35px\] {
+  @media (width >= 40rem) {
+    font-size: 35px;
+  }
+}
+.sm\:text-\[38px\] {
+  @media (width >= 40rem) {
+    font-size: 38px;
+  }
+}
+.sm\:text-\[40px\] {
+  @media (width >= 40rem) {
+    font-size: 40px;
+  }
+}
+.sm\:text-\[47px\] {
+  @media (width >= 40rem) {
+    font-size: 47px;
+  }
+}
+.sm\:text-\[58px\] {
+  @media (width >= 40rem) {
+    font-size: 58px;
+  }
+}
+.sm\:text-\[62px\] {
+  @media (width >= 40rem) {
+    font-size: 62px;
+  }
+}
+.sm\:text-\[124px\] {
+  @media (width >= 40rem) {
+    font-size: 124px;
+  }
+}
+.md\:grid-cols-2 {
+  @media (width >= 48rem) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.md\:odd\:border-r {
+  @media (width >= 48rem) {
+    &:nth-child(odd) {
+      border-right-style: var(--tw-border-style);
+      border-right-width: 1px;
+    }
+  }
+}
+.lg\:col-span-1 {
+  @media (width >= 64rem) {
+    grid-column: span 1 / span 1;
+  }
+}
+.lg\:flex {
+  @media (width >= 64rem) {
+    display: flex;
+  }
+}
+.lg\:hidden {
+  @media (width >= 64rem) {
+    display: none;
+  }
+}
+.lg\:min-h-\[505px\] {
+  @media (width >= 64rem) {
+    min-height: 505px;
+  }
+}
+.lg\:grid-cols-\[\.98fr_1\.02fr\] {
+  @media (width >= 64rem) {
+    grid-template-columns: .98fr 1.02fr;
+  }
+}
+.lg\:grid-cols-\[1\.3fr_\.7fr\] {
+  @media (width >= 64rem) {
+    grid-template-columns: 1.3fr .7fr;
+  }
+}
+.lg\:grid-cols-\[1\.07fr_\.93fr\] {
+  @media (width >= 64rem) {
+    grid-template-columns: 1.07fr .93fr;
+  }
+}
+.lg\:grid-cols-\[1\.55fr_1fr_1fr_\.8fr\] {
+  @media (width >= 64rem) {
+    grid-template-columns: 1.55fr 1fr 1fr .8fr;
+  }
+}
+.lg\:grid-cols-\[1\.75fr_\.62fr\] {
+  @media (width >= 64rem) {
+    grid-template-columns: 1.75fr .62fr;
+  }
+}
+.lg\:flex-row {
+  @media (width >= 64rem) {
+    flex-direction: row;
+  }
+}
+.lg\:items-start {
+  @media (width >= 64rem) {
+    align-items: flex-start;
+  }
+}
+.lg\:justify-between {
+  @media (width >= 64rem) {
+    justify-content: space-between;
+  }
+}
+.lg\:border-r {
+  @media (width >= 64rem) {
+    border-right-style: var(--tw-border-style);
+    border-right-width: 1px;
+  }
+}
+.lg\:border-b-0 {
+  @media (width >= 64rem) {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 0px;
+  }
+}
+.lg\:px-16 {
+  @media (width >= 64rem) {
+    padding-inline: calc(var(--spacing) * 16);
+  }
+}
+.lg\:text-\[128px\] {
+  @media (width >= 64rem) {
+    font-size: 128px;
+  }
+}
+.xl\:text-\[67px\] {
+  @media (width >= 80rem) {
+    font-size: 67px;
+  }
+}
+@property --tw-divide-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ordinal {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-slashed-zero {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-figure {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-spacing {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-fraction {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-backdrop-blur {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-brightness {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-contrast {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-grayscale {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-hue-rotate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-invert {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-opacity {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-saturate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-sepia {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-duration {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-translate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-divide-y-reverse: 0;
+      --tw-border-style: solid;
+      --tw-leading: initial;
+      --tw-font-weight: initial;
+      --tw-tracking: initial;
+      --tw-ordinal: initial;
+      --tw-slashed-zero: initial;
+      --tw-numeric-figure: initial;
+      --tw-numeric-spacing: initial;
+      --tw-numeric-fraction: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-backdrop-blur: initial;
+      --tw-backdrop-brightness: initial;
+      --tw-backdrop-contrast: initial;
+      --tw-backdrop-grayscale: initial;
+      --tw-backdrop-hue-rotate: initial;
+      --tw-backdrop-invert: initial;
+      --tw-backdrop-opacity: initial;
+      --tw-backdrop-saturate: initial;
+      --tw-backdrop-sepia: initial;
+      --tw-duration: initial;
+      --tw-translate-x: 0;
+      --tw-translate-y: 0;
+      --tw-translate-z: 0;
+      --tw-outline-style: solid;
+    }
+  }
+}
+.min-h-\[270px\] {
+  min-height: 270px;
+}
+</style></head>
+<body class="m-0 bg-[#f8f9f6] font-sans text-[#173e36] antialiased selection:bg-[#c6ecd2]">
+<a class="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-xl focus:bg-white focus:px-4 focus:py-3" href="#main">ข้ามไปยังเนื้อหาหลัก</a>
+
+<header class="sticky top-0 z-50 border-b border-[#e8ece7] bg-white/95 backdrop-blur-xl"><div class="mx-auto flex h-[78px] max-w-[1320px] items-center justify-between gap-5 px-5 sm:px-8"><a class="flex min-w-0 items-center gap-3" href="#top"><span class="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[15px] bg-[#155b4a] text-[23px] font-black tracking-[-.08em] text-white">S<span class="text-[#b3e89a]">+</span></span><span class="min-w-0"><span class="block truncate text-[16px] font-extrabold tracking-[-.05em] text-[#163d34] sm:text-[19px]">Song Health <span class="text-[#14826b]">Data Center</span></span><span class="mt-0.5 block truncate text-[10px] text-[#77877d] sm:text-[11px]">ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</span></span></a><nav aria-label="เมนูหลัก" class="hidden items-center gap-1 lg:flex"><a class="text-[12px] font-bold px-3 py-3 text-[#16664f]" href="#top">หน้าแรก</a><a class="text-[12px] font-medium text-[#5d7168] hover:text-[#14644f] px-3 py-3" href="#map">ข้อมูลพื้นที่</a><a class="text-[12px] font-medium text-[#5d7168] hover:text-[#14644f] px-3 py-3" href="#ages">โครงสร้างประชากร</a><a class="text-[12px] font-medium text-[#5d7168] hover:text-[#14644f] px-3 py-3" href="https://songhealth-dc.pages.dev/reports">คลังรายงาน</a><a class="inline-flex items-center gap-1.5 text-[12px] font-bold hover:border-[#95c7b2] px-3 py-3 text-[#266c54]" href="https://songhealth-dc.pages.dev/pa">PA Dashboard<svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></a></nav><button aria-controls="mobile-nav" aria-expanded="false" aria-label="เปิดเมนู" class="flex h-11 w-11 items-center justify-center rounded-xl border border-[#dce7e0] text-[#235749] lg:hidden" id="menu-btn" type="button"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 7h16M4 12h16M4 17h16"></path></svg></button></div><nav aria-label="เมนูมือถือ" class="mx-5 mb-4 hidden flex-col gap-1 border-t border-[#e7ece7] pt-3 sm:mx-8 lg:hidden" id="mobile-nav"><a class="rounded-xl px-4 py-3 hover:bg-[#eaf4ec]" href="#top">หน้าแรก</a><a class="rounded-xl px-4 py-3 hover:bg-[#eaf4ec]" href="#map">ข้อมูลพื้นที่</a><a class="rounded-xl px-4 py-3 hover:bg-[#eaf4ec]" href="#ages">โครงสร้างประชากร</a><a class="rounded-xl px-4 py-3 hover:bg-[#eaf4ec]" href="https://songhealth-dc.pages.dev/reports">คลังรายงาน</a><a class="rounded-xl px-4 py-3 hover:bg-[#eaf4ec]" href="https://songhealth-dc.pages.dev/pa">PA Dashboard</a></nav></header>
+<main id="main">
+<section class="scroll-mt-28" id="top"><div class="mx-auto max-w-[1320px] px-5 pb-11 pt-7 sm:px-8 sm:pb-15 sm:pt-10">
+<div class="grid overflow-hidden rounded-[30px] bg-[#fdfefa] shadow-[0_24px_54px_-44px_rgba(17,51,39,.38)] lg:min-h-[505px] lg:grid-cols-[1.07fr_.93fr]">
+<div class="relative flex flex-col justify-center px-7 py-8 sm:px-13 sm:py-13 lg:px-16">
+
+<h1 class="max-w-[640px] text-[43px] font-black leading-[1.23] tracking-[-.075em] text-[#153d32] sm:text-[62px] xl:text-[67px]">มองเห็นพื้นที่<span class="block text-[#198467]">เข้าใจสุขภาพ<span class="text-[#c09a59]">.</span></span></h1>
+<p class="mt-5 max-w-[490px] text-[13px] leading-[2.05] text-[#6a8073] sm:text-[15px]">ศูนย์รวมข้อมูลประชากร โครงสร้างช่วงวัย และรายงานสาธารณสุขอำเภอสอง เพื่อให้ทุกการตัดสินใจเริ่มต้นจากบริบทของพื้นที่จริง</p>
+<div class="mt-8 flex flex-wrap items-center gap-3"><a class="group inline-flex min-h-12 items-center gap-2 rounded-[12px] bg-[#155f4b] px-5 py-3 text-[13px] font-bold text-white shadow-[0_8px_20px_-12px_rgba(18,89,68,.6)] transition-colors hover:bg-[#0b7659] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#0f745b]" href="#map">สำรวจข้อมูลพื้นที่ <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg></a><a class="inline-flex items-center gap-2 text-[13px] font-bold text-[#29634f] px-2 py-2 hover:underline" href="#population">เปรียบเทียบประชากร <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m9 18 6-6-6-6"></path></svg></a></div>
+
+</div>
+<div class="relative isolate min-h-[270px] overflow-hidden bg-[#103e35] text-white sm:min-h-[430px] lg:min-h-[505px]">
+<svg aria-hidden="true" class="absolute inset-0 h-full w-full" preserveaspectratio="xMidYMid slice" viewbox="0 0 570 520"><defs><lineargradient id="v7-bg" x1="0" x2="1" y1="0" y2="1"><stop offset="0" stop-color="#1b6955"></stop><stop offset=".62" stop-color="#114c40"></stop><stop offset="1" stop-color="#092d29"></stop></lineargradient><radialgradient id="v7-glow"><stop offset="0" stop-color="#a4d9ac" stop-opacity=".22"></stop><stop offset="1" stop-color="#a4d9ac" stop-opacity="0"></stop></radialgradient><pattern height="26" id="v7-dots" patternunits="userSpaceOnUse" width="26"><circle cx="1" cy="1" fill="#b2d8a6" fill-opacity=".20" r=".85"></circle></pattern></defs>
+<rect fill="url(#v7-bg)" height="520" width="570"></rect><rect fill="url(#v7-dots)" height="520" width="570"></rect><ellipse cx="390" cy="200" fill="url(#v7-glow)" rx="245" ry="240"></ellipse>
+<g fill="none" opacity=".21" stroke="#8ccab0" stroke-width="1"><ellipse cx="355" cy="220" rx="160" ry="150" transform="rotate(-15 355 220)"></ellipse><ellipse cx="355" cy="220" rx="200" ry="184" transform="rotate(-15 355 220)"></ellipse><ellipse cx="355" cy="220" rx="240" ry="220" transform="rotate(-15 355 220)"></ellipse><ellipse cx="355" cy="220" rx="280" ry="260" transform="rotate(-15 355 220)"></ellipse></g>
+<path d="M78 370Q165 280 275 308T523 171" fill="none" stroke="#a5cba4" stroke-dasharray="4 8" stroke-opacity=".23" stroke-width="2"></path>
+<path d="M122 150C161 87 255 88 296 135S400 179 438 139" fill="none" stroke="#a2dfbd" stroke-opacity=".48" stroke-width="1.6"></path>
+<circle cx="295" cy="135" fill="#d4e5a1" r="6.5"></circle><circle cx="295" cy="135" fill="none" r="14" stroke="#cfe4a4" stroke-opacity=".35"></circle><circle cx="438" cy="139" fill="#d4e5a1" r="4"></circle>
+<path d="M70 425c90-50 170-17 244-63s146-42 213-32" fill="none" stroke="#7eb19c" stroke-opacity=".2" stroke-width="1"></path>
+<path d="M90 445c90-50 167-19 247-60s150-40 190-29" fill="none" stroke="#7eb19c" stroke-opacity=".18" stroke-width="1"></path>
+</svg>
+<div class="relative z-10 flex h-full flex-col justify-between px-8 py-8 sm:min-h-[430px] sm:px-12 sm:py-10 lg:min-h-[505px] min-h-[270px]">
+<div class="flex items-start justify-between gap-4"><span class="inline-flex items-center gap-2 text-[10px] font-bold tracking-[.2em] text-[#bdd8c2]"><span class="h-1.5 w-1.5 rounded-full bg-[#d7e2a6]"></span> PLACE / PEOPLE / HEALTH</span><span class="flex h-9 w-9 items-center justify-center rounded-full border border-white/25 text-[#c8e2cd]"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 17 9 4l5 9 3-5 4 9H3Z"></path></svg></span></div>
+<div class="relative mt-6"><span class="mb-3 block text-[11px] font-extrabold tracking-[.26em] text-[#d8e7c1]">DISTRICT OF PHRAE</span><div class="text-[92px] font-black leading-[1.15] tracking-[-.09em] text-[#f2f6eb] sm:text-[124px] lg:text-[128px]">สอง<span class="text-[#d5e6ad]">.</span></div><div class="mt-4 h-px w-25 bg-[#d5e6ad]"></div><p class="mt-4 max-w-[300px] text-[13px] leading-[1.85] text-[#b9d4c8]">ข้อมูลท้องถิ่นที่เข้าถึงได้<br/>เพื่อสร้างภาพอนาคตสุขภาพที่ชัดเจน</p></div>
+
+</div>
+</div>
+</div>
+</div></section>
+<section class="scroll-mt-28" id="overview"><div class="mx-auto max-w-[1320px] px-5 pb-16 sm:px-8 sm:pb-21"><div class="mb-6 flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-[25px] font-black tracking-[-.06em] text-[#173f35] sm:text-[32px]">ภาพรวมประชากรอำเภอสอง</h2><p class="mt-2 text-[12px] text-[#718579]">ข้อมูลพื้นฐานสำหรับเข้าใจสัดส่วนประชากรและการบริหารพื้นที่</p></div><span class="inline-flex items-center gap-2 rounded-full border border-[#dce5d9] bg-white px-4 py-2 text-[11px] font-semibold text-[#557766]"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect height="16" rx="2" width="18" x="3" y="5"></rect><path d="M8 3v4m8-4v4M3 10h18"></path></svg> ทะเบียนราษฎร ณ 31 ธันวาคม 2568 · กรมการปกครอง</span></div>
+<div class="overflow-hidden rounded-[23px] bg-white"><div class="grid grid-cols-2 lg:grid-cols-[1.55fr_1fr_1fr_.8fr]">
+<div class="col-span-2 border-[#e8eee7] px-6 py-6 lg:col-span-1 sm:px-8 sm:py-8"><p class="text-[12px] font-semibold text-[#667e70]">ประชากรทั้งหมด</p><p class="mt-2 text-[47px] font-black leading-none tracking-[-.07em] text-[#164d3d] tabular-nums sm:text-[58px]">46,527 <span class="text-[15px] font-medium tracking-normal text-[#819589]">คน</span></p><div class="mt-5 h-1.5 max-w-[310px] overflow-hidden rounded-full bg-[#e5efe6]"><div class="flex h-full"><span class="w-[48.31%] bg-[#2f9279]"></span><span class="w-[51.69%] bg-[#d79ba4]"></span></div></div><p class="mt-2 text-[10px] text-[#869d8c]">สัดส่วนชาย–หญิงจากทะเบียนราษฎร</p></div>
+<div class="border-[#e8eee7] px-5 py-7 sm:px-7 sm:py-8"><div class="flex items-center gap-2 text-[12px] font-semibold text-[#6f8278]"><span class="h-2.5 w-2.5 rounded-full bg-[#2f9279]"></span> ประชากรชาย</div><p class="mt-4 text-[29px] font-extrabold tracking-[-.06em] tabular-nums text-[#19483b] sm:text-[38px]">22,475</p><p class="mt-1 text-[11px] text-[#82968a]">คน</p></div>
+<div class="border-[#e8eee7] px-5 py-7 sm:px-7 sm:py-8"><div class="flex items-center gap-2 text-[12px] font-semibold text-[#6f8278]"><span class="h-2.5 w-2.5 rounded-full bg-[#d79ba4]"></span> ประชากรหญิง</div><p class="mt-4 text-[29px] font-extrabold tracking-[-.06em] tabular-nums text-[#19483b] sm:text-[38px]">24,052</p><p class="mt-1 text-[11px] text-[#82968a]">คน</p></div>
+<div class="px-5 py-7 sm:px-7 sm:py-8"><div class="flex items-center gap-2 text-[12px] font-semibold text-[#6f8278]"><span class="flex h-6 w-6 items-center justify-center rounded-md bg-[#e9f1e7] text-[#438769]"><svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect height="7" rx="1" width="7" x="3" y="3"></rect><rect height="7" rx="1" width="7" x="14" y="3"></rect><rect height="7" rx="1" width="7" x="3" y="14"></rect><rect height="7" rx="1" width="7" x="14" y="14"></rect></svg></span> เขตการปกครอง</div><p class="mt-4 text-[32px] font-extrabold leading-none tracking-[-.04em] text-[#19483b] sm:text-[40px]">8 <span class="text-[13px] font-medium tracking-normal text-[#82968a]">ตำบล</span></p><p class="mt-3 text-[11px] text-[#82968a]">อำเภอสอง · จังหวัดแพร่</p></div>
+</div></div></div></section>
+<section class="scroll-mt-27 border-y border-[#e2eae2] bg-[#eef3ed]" id="map"><div class="mx-auto max-w-[1320px] px-5 py-16 sm:px-8 sm:py-21"><div class="mb-7 flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-[27px] font-black tracking-[-.06em] sm:text-[34px]">สำรวจข้อมูลในพื้นที่</h2><p class="mt-2 text-[12px] leading-[1.8] text-[#72867a] sm:text-[13px]">เลือกตำบลเพื่อดูข้อมูลประชากรและจำนวนบ้านในพื้นที่</p></div><button aria-controls="services-modal" aria-haspopup="dialog" class="group inline-flex min-h-11 items-center gap-2 py-2 text-[12px] font-bold text-[#17674f] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#178966] px-2 hover:underline" id="open-services" title="เปิดดูรายชื่อหน่วยบริการทั้ง 17 แห่ง" type="button"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect height="18" rx="2" width="16" x="4" y="3"></rect><path d="M9 21v-4h6v4M9 8h.01M15 8h.01M9 12h.01M15 12h.01"></path></svg> หน่วยบริการ 17 แห่ง <svg aria-hidden="true" class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg></button></div><div class="grid overflow-hidden rounded-[27px] bg-white shadow-[0_18px_35px_-37px_rgba(20,59,43,.4)] lg:grid-cols-[1.3fr_.7fr]"><div class="relative min-h-[440px] overflow-hidden border-b border-[#dfe9dd] bg-[#edf3e8] sm:min-h-[500px] lg:border-b-0 lg:border-r"><div class="absolute left-5 top-5 z-10 flex items-center gap-2 px-3 py-2 text-[10px] font-bold text-[#507c65] bg-white rounded-xl">แผนผังสาธิต · ไม่ใช่ขอบเขต GIS จริง</div>
+<svg aria-label="แผนผังสาธิต 8 โซน เลือกตำบลจากตัวเลือกด้านข้าง" class="absolute inset-0 h-full w-full" id="illustrative-map" role="img" viewbox="0 0 830 545"><defs><pattern height="30" id="streetdot" patternunits="userSpaceOnUse" width="30"><circle cx="1" cy="1" fill="#c6d8cb" r="1"></circle></pattern></defs><rect fill="url(#streetdot)" height="545" width="830"></rect><g fill="none" stroke="#d7e2d3" stroke-width="2"><path d="M-25 92Q190 30 300 105T850 66"></path><path d="M-20 133Q190 71 300 146T850 107"></path><path d="M-20 174Q190 112 300 187T850 148"></path><path d="M-20 390Q190 325 300 400T850 359"></path><path d="M-20 431Q190 366 300 441T850 400"></path><path d="M-20 472Q190 407 300 482T850 441"></path></g><path d="M70 458Q190 365 290 395T540 240Q660 178 810 95" fill="none" stroke="#fff" stroke-linecap="round" stroke-width="13"></path><path d="M70 458Q190 365 290 395T540 240Q660 178 810 95" fill="none" stroke="#d7cdb1" stroke-dasharray="7 11" stroke-width="1.8"></path>
+<g stroke="#f7fbf4" stroke-linejoin="round" stroke-width="4">
+<polygon aria-label="เลือกตำบลบ้านหนุน" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="0" fill="#c9e4d6" points="298 70 393 91 441 153 394 205 306 179 261 118" role="button" tabindex="0"><title>ตำบลบ้านหนุน</title></polygon>
+<polygon aria-label="เลือกตำบลบ้านกลาง" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="1" fill="#d7e9d5" points="394 205 441 153 510 143 565 207 504 268 430 256" role="button" tabindex="0"><title>ตำบลบ้านกลาง</title></polygon>
+<polygon aria-label="เลือกตำบลห้วยหม้าย" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="2" fill="#b9dccf" points="261 118 306 179 394 205 365 266 281 265 224 196" role="button" tabindex="0"><title>ตำบลห้วยหม้าย</title></polygon>
+<polygon aria-label="เลือกตำบลเตาปูน" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="3" fill="#d4e4bf" points="430 256 504 268 565 207 627 259 590 337 491 345" role="button" tabindex="0"><title>ตำบลเตาปูน</title></polygon>
+<polygon aria-label="เลือกตำบลหัวเมือง" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="4" fill="#bcdaca" points="281 265 365 266 430 256 491 345 406 396 300 371" role="button" tabindex="0"><title>ตำบลหัวเมือง</title></polygon>
+<polygon aria-label="เลือกตำบลสะเอียบ" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="5" fill="#d8e8dc" points="184 208 224 196 281 265 300 371 233 426 146 341" role="button" tabindex="0"><title>ตำบลสะเอียบ</title></polygon>
+<polygon aria-label="เลือกตำบลแดนชุมพล" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="6" fill="#cbe7d6" points="406 396 491 345 590 337 625 414 542 456 462 449" role="button" tabindex="0"><title>ตำบลแดนชุมพล</title></polygon>
+<polygon aria-label="เลือกตำบลทุ่งน้าว" aria-pressed="false" class="cursor-pointer transition-all duration-150 hover:opacity-70" data-zone="7" fill="#b4d5bf" points="233 426 300 371 406 396 462 449 349 496 263 477" role="button" tabindex="0"><title>ตำบลทุ่งน้าว</title></polygon>
+</g><g fill="#235e50" stroke="#edf3e8" stroke-width="3"><circle cx="359" cy="151" r="5"></circle><circle cx="488" cy="213" r="5"></circle><circle cx="304" cy="227" r="5"></circle><circle cx="545" cy="285" r="5"></circle><circle cx="382" cy="335" r="5"></circle><circle cx="218" cy="324" r="5"></circle><circle cx="527" cy="403" r="5"></circle><circle cx="350" cy="442" r="5"></circle></g></svg>
+</div><div class="flex flex-col px-6 py-6 sm:px-8 sm:py-8"><div class="mb-4 flex items-center justify-between"><h3 class="text-[17px] font-extrabold text-[#1c4a3e]">เลือกตำบล</h3><button class="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#388d72] hover:text-[#145b49]" id="reset-area" type="button"><svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 12a9 9 0 1 0 3-6.7L3 8m0-5v5h5"></path></svg>ล้างการเลือก</button></div><label class="sr-only" for="area-select">เลือกตำบลเพื่อดูรายละเอียด</label><div class="relative"><select class="w-full appearance-none rounded-xl border border-[#d5e4d9] bg-[#f7faf5] px-4 py-3.5 text-[13px] font-semibold text-[#295b49] focus:outline-2 focus:outline-[#218e73]" id="area-select"><option value="">— เลือกตำบล —</option>
+<option value="0">บ้านหนุน</option>
+<option value="1">บ้านกลาง</option>
+<option value="2">ห้วยหม้าย</option>
+<option value="3">เตาปูน</option>
+<option value="4">หัวเมือง</option>
+<option value="5">สะเอียบ</option>
+<option value="6">แดนชุมพล</option>
+<option value="7">ทุ่งน้าว</option>
+</select><svg aria-hidden="true" class="pointer-events-none absolute right-4 top-4 h-4 w-4 text-[#5b8d78]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m6 9 6 6 6-6"></path></svg></div><div class="mt-6 flex-1" id="district-state"><div class="p-5" id="area-overview"><div class="mb-3 flex h-11 w-11 items-center justify-center rounded-xl bg-[#e1f0e4] text-[#2e826b]"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="m16 8-3 5-5 3 3-5 5-3Z"></path></svg></div><p class="text-[15px] font-bold text-[#1b483c]">ภาพรวมอำเภอสอง</p><p class="mt-2 text-[12px] leading-[1.9] text-[#71847a]">มี 8 ตำบลให้สำรวจ เลือกจากรายการด้านบนหรือพื้นที่บนแผนผัง เพื่อแสดงรายละเอียดเฉพาะตำบล</p><button aria-controls="services-modal" aria-haspopup="dialog" class="mt-4 inline-flex items-center gap-2 text-[12px] font-bold text-[#167a5e] hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#178966]" id="open-services-secondary" type="button">ดูรายชื่อหน่วยบริการ <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg></button></div><div class="hidden rounded-2xl bg-[#f4faf4] p-5" id="area-selected" tabindex="-1"><div class="text-[10px] font-extrabold tracking-[.12em] text-[#208a6a]">พื้นที่ที่เลือก</div><h4 class="mt-2 text-[21px] font-extrabold tracking-[-.04em] text-[#1b5545]" id="area-name">ตำบลบ้านหนุน</h4><div class="mt-5 border-b border-[#d6e7da] pb-4"><p class="text-[11px] text-[#698679]">ประชากรรวม</p><p class="mt-1 text-[31px] font-extrabold tracking-[-.055em] tabular-nums" id="area-total">7,399 <span class="text-[13px] font-normal text-[#789587]">คน</span></p></div><div class="mt-4 grid grid-cols-3 gap-2"><div><p class="text-[10px] text-[#799083]">ชาย</p><strong class="mt-1 block text-[15px] tabular-nums" id="area-male">3,442</strong></div><div><p class="text-[10px] text-[#799083]">หญิง</p><strong class="mt-1 block text-[15px] tabular-nums" id="area-female">3,957</strong></div><div><p class="text-[10px] text-[#799083]">บ้าน</p><strong class="mt-1 block text-[15px] tabular-nums" id="area-houses">3,499</strong></div></div></div></div><div class="mt-5 flex items-center gap-2 border-t border-[#edf0ec] pt-4 text-[10px] leading-[1.65] text-[#83938a]"><svg aria-hidden="true" class="h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg> จำนวนหน่วยบริการรายตำบลและพิกัดจริงจะเชื่อมจากระบบเดิม</div><p aria-live="polite" class="sr-only" id="area-live"></p></div></div></div></section>
+<section class="scroll-mt-28" id="population"><div class="mx-auto max-w-[1320px] px-5 py-16 sm:px-8 sm:py-21"><div class="mb-7 flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-[27px] font-black tracking-[-.06em] sm:text-[34px]">ประชากร 8 ตำบล</h2><p class="mt-2 text-[12px] leading-[1.8] text-[#75847b]">ดูตัวเลขแบบตารางหรือเปรียบเทียบสัดส่วนด้วยกราฟ</p></div><div class="flex flex-wrap items-center gap-2"><label class="sr-only" for="sort-by">เรียงลำดับตำบล</label><select class="rounded-xl border border-[#dce6dc] bg-white px-3 py-2.5 text-[11px] font-semibold text-[#507160] focus:outline-2 focus:outline-[#178566]" id="sort-by"><option value="default">เรียงตามรายชื่อเดิม</option><option value="total">ประชากรมากไปน้อย</option><option value="houses">จำนวนบ้านมากไปน้อย</option></select><div aria-label="รูปแบบการแสดงข้อมูล" class="flex" role="group"><button aria-pressed="true" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold px-3" id="table-btn" type="button"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><rect height="16" rx="2" width="18" x="3" y="4"></rect><path d="M8 4v16m4-11h6m-6 4h6"></path></svg> ตาราง</button><button aria-pressed="false" class="inline-flex items-center gap-1.5 px-3.5 py-2 text-[11px] font-bold px-3" id="chart-btn" type="button"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18M7 16v-4m5 4V7m5 9v-7"></path></svg> กราฟ</button></div></div></div><div class="overflow-hidden rounded-[22px] bg-white"><div class="overflow-x-auto" id="table-panel"><table class="w-full min-w-[685px] border-collapse text-left"><caption class="sr-only">ประชากรชาย หญิง รวม และจำนวนบ้านของ 8 ตำบล</caption><thead class="bg-[#f4f8f3] text-[11px] font-bold text-[#698073]"><tr><th class="px-6 py-4" scope="col">ตำบล</th><th class="px-4 py-4 text-right" scope="col">ชาย</th><th class="px-4 py-4 text-right" scope="col">หญิง</th><th class="px-4 py-4 text-right" scope="col">ประชากรรวม</th><th class="px-4 py-4 text-right" scope="col">บ้าน</th><th class="px-5 py-4 text-center" scope="col">รายละเอียด</th></tr></thead><tbody class="divide-y divide-[#edf1ec]" id="pop-rows"></tbody><tfoot class="border-t border-[#e3eae1] bg-[#f7faf6] text-[12px] font-extrabold text-[#205543]"><tr><th class="px-6 py-4" scope="row">รวมทั้งอำเภอ</th><td class="px-4 py-4 text-right tabular-nums">22,475</td><td class="px-4 py-4 text-right tabular-nums">24,052</td><td class="px-4 py-4 text-right tabular-nums">46,527</td><td class="px-4 py-4 text-right tabular-nums">20,101</td><td></td></tr></tfoot></table></div><div class="hidden p-5 sm:p-9" id="chart-panel"><div class="mb-5 flex items-center gap-2 text-[11px] text-[#7b8a80]"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M3 3v18h18M7 16v-4m5 4V7m5 9v-7"></path></svg> เปรียบเทียบจำนวนประชากรแต่ละตำบล (คน)</div><div class="grid gap-1.5" id="pop-chart"></div></div></div><p class="mt-3 flex items-center gap-1.5 text-[11px] text-[#8c9a90] sm:hidden"><svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg> ในมุมมองตาราง ปัดซ้ายหรือขวาเพื่อดูคอลัมน์อื่น</p></div></section>
+<section class="scroll-mt-25 border-y border-[#e6ebe1] bg-[#eaf1ec]" id="ages"><div class="mx-auto max-w-[1320px] px-5 py-16 sm:px-8 sm:py-20"><div class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-[27px] font-black tracking-[-.06em] sm:text-[35px]">พีระมิดประชากร</h2><p class="mt-2 max-w-[640px] text-[12px] leading-[1.85] text-[#74867a]">มองเห็นโครงสร้างประชากรตามช่วงอายุและเพศ โดยเชื่อมกับตำบลที่เลือก เพื่อการวางแผนสุขภาพตลอดช่วงชีวิต</p></div><span class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-[11px] font-bold text-[#4e7b63]"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg> ช่วงอายุ 5 ปี · ชาย / หญิง</span></div><div class="grid gap-5 lg:grid-cols-[1.75fr_.62fr]"><div class="rounded-[27px] bg-white p-5 sm:p-8"><div class="mb-6 flex flex-wrap items-center justify-between gap-3"><div><p class="text-[14px] font-extrabold text-[#285747]">โครงสร้างประชากรตามช่วงอายุ</p><p class="mt-1 text-[11px] text-[#89998e]">แสดงตัวเลขกำกับทุกช่วงอายุ · พีระมิดจะเปลี่ยนตามตำบลที่เลือก (ข้อมูลจำลองเพื่อประเมิน UX)</p></div><div class="flex items-center gap-4 text-[11px] font-semibold text-[#5e7569]"><span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 rounded-sm bg-[#3d92a0]"></i> ชาย</span><span class="inline-flex items-center gap-1.5"><i class="h-2.5 w-2.5 rounded-sm bg-[#cb8795]"></i> หญิง</span></div></div><div aria-label="กราฟพีระมิดประชากร จำนวนชายหญิงตามช่วงอายุ ตัวเลขตัวอย่างเพื่อสาธิตดีไซน์" class="mx-auto max-w-[800px]" id="population-pyramid">
+<div class="mb-3 grid grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 border-b border-[#eaf0e9] pb-3 text-center text-[11px] font-extrabold text-[#657e72] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2">
+<span class="text-right text-[#2a8090]">ชาย</span><span class="text-right text-[9px] text-[#829589]">คน</span><span>อายุ</span><span class="text-left text-[9px] text-[#829589]">คน</span><span class="text-left text-[#b56a7b]">หญิง</span></div>
+<div class="grid gap-[1px]" id="pyramid-rows">
+<button aria-label="อายุ 85+ ปี ชาย 418 คน หญิง 677 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="0" title="ช่วงอายุ 85+ ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:18.96%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">418</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">85+</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">677</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:30.7%"></span></span>
+</button>
+<button aria-label="อายุ 80–84 ปี ชาย 558 คน หญิง 846 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="1" title="ช่วงอายุ 80–84 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:25.31%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">558</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">80–84</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">846</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:38.37%"></span></span>
+</button>
+<button aria-label="อายุ 75–79 ปี ชาย 796 คน หญิง 1,055 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="2" title="ช่วงอายุ 75–79 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:36.1%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">796</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">75–79</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,055</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:47.85%"></span></span>
+</button>
+<button aria-label="อายุ 70–74 ปี ชาย 1,095 คน หญิง 1,364 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="3" title="ช่วงอายุ 70–74 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:49.66%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,095</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">70–74</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,364</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:61.86%"></span></span>
+</button>
+<button aria-label="อายุ 65–69 ปี ชาย 1,433 คน หญิง 1,632 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="4" title="ช่วงอายุ 65–69 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:64.99%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,433</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">65–69</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,632</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:74.01%"></span></span>
+</button>
+<button aria-label="อายุ 60–64 ปี ชาย 1,722 คน หญิง 1,891 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="5" title="ช่วงอายุ 60–64 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:78.1%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,722</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">60–64</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,891</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:85.76%"></span></span>
+</button>
+<button aria-label="อายุ 55–59 ปี ชาย 1,508 คน หญิง 1,617 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="6" title="ช่วงอายุ 55–59 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:68.39%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,508</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">55–59</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,617</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:73.33%"></span></span>
+</button>
+<button aria-label="อายุ 50–54 ปี ชาย 1,794 คน หญิง 1,871 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="7" title="ช่วงอายุ 50–54 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:81.36%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,794</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">50–54</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,871</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:84.85%"></span></span>
+</button>
+<button aria-label="อายุ 45–49 ปี ชาย 1,957 คน หญิง 2,058 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="8" title="ช่วงอายุ 45–49 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:88.75%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,957</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">45–49</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">2,058</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:93.33%"></span></span>
+</button>
+<button aria-label="อายุ 40–44 ปี ชาย 2,147 คน หญิง 2,205 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="9" title="ช่วงอายุ 40–44 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:97.37%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">2,147</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">40–44</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">2,205</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:100.0%"></span></span>
+</button>
+<button aria-label="อายุ 35–39 ปี ชาย 1,862 คน หญิง 1,871 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="10" title="ช่วงอายุ 35–39 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:84.44%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,862</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">35–39</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,871</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:84.85%"></span></span>
+</button>
+<button aria-label="อายุ 30–34 ปี ชาย 1,495 คน หญิง 1,504 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="11" title="ช่วงอายุ 30–34 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:67.8%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,495</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">30–34</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,504</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:68.21%"></span></span>
+</button>
+<button aria-label="อายุ 25–29 ปี ชาย 1,210 คน หญิง 1,203 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="12" title="ช่วงอายุ 25–29 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:54.88%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,210</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">25–29</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,203</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:54.56%"></span></span>
+</button>
+<button aria-label="อายุ 20–24 ปี ชาย 1,033 คน หญิง 1,042 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="13" title="ช่วงอายุ 20–24 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:46.85%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">1,033</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">20–24</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">1,042</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:47.26%"></span></span>
+</button>
+<button aria-label="อายุ 15–19 ปี ชาย 924 คน หญิง 869 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="14" title="ช่วงอายุ 15–19 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:41.9%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">924</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">15–19</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">869</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:39.41%"></span></span>
+</button>
+<button aria-label="อายุ 10–14 ปี ชาย 870 คน หญิง 822 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="15" title="ช่วงอายุ 10–14 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:39.46%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">870</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">10–14</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">822</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:37.28%"></span></span>
+</button>
+<button aria-label="อายุ 5–9 ปี ชาย 822 คน หญิง 768 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="16" title="ช่วงอายุ 5–9 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:37.28%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">822</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">5–9</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">768</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:34.83%"></span></span>
+</button>
+<button aria-label="อายุ 0–4 ปี ชาย 741 คน หญิง 682 คน ตัวเลขสาธิต" aria-pressed="false" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" data-age-index="17" title="ช่วงอายุ 0–4 ปี (ข้อมูลสาธิต)" type="button">
+<span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:33.61%"></span></span>
+<span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">741</span>
+<span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">0–4</span>
+<span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">682</span>
+<span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:30.93%"></span></span>
+</button>
+</div>
+<div aria-live="polite" class="mt-4 hidden rounded-xl bg-[#f3f9f4] px-4 py-3 text-[12px] text-[#2a624d]" id="age-detail"></div>
+<p class="mt-4 text-[11px] leading-[1.7] text-[#6f8676]">ตัวเลขชาย–หญิงแสดงข้างแท่งกราฟตลอดเวลา · คลิกช่วงอายุเพื่อดูผลรวมและสัดส่วน · เชื่อมกับตำบลที่เลือก</p>
+</div><div class="mt-4 flex items-start gap-2 text-[11px] leading-[1.7] text-[#907550] px-1 py-2"><svg aria-hidden="true" class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="M12 16v-4m0-4h.01"></path></svg> ตัวเลขชาย–หญิงรายช่วงอายุเป็นข้อมูลจำลองเพื่อประเมิน UX และผูกกับตำบลที่เลือกให้เห็นพฤติกรรมของหน้าจอ ยังไม่ใช่ข้อมูลจริงรายช่วงอายุ ต้องเชื่อมข้อมูลต้นทางก่อนเผยแพร่</div></div><aside class="flex flex-col gap-4"><div class="rounded-[23px] bg-[#174e42] px-7 py-8 text-white sm:px-8"><div class="mb-7 flex h-11 w-11 items-center justify-center rounded-[14px] bg-white/10 text-[#c8e8b4]"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div><p class="text-[12px] font-medium text-[#c1dbcc]">ประชากรอายุ 60 ปีขึ้นไป</p><p class="mt-3 text-[38px] font-extrabold leading-none tracking-[-.06em] tabular-nums sm:text-[47px]">13,487 <span class="text-[16px] font-normal text-[#c5dfce]">คน</span></p><div class="mt-9 border-t border-white/15 pt-6"><p class="text-[11px] text-[#bcdbc7]">สัดส่วนผู้สูงอายุ</p><p class="mt-1 text-[35px] font-extrabold tracking-[-.06em] tabular-nums text-[#d9eda7]">29.09%</p><div class="mt-4 h-2 overflow-hidden rounded-full bg-white/15"><div class="h-full w-[29.09%] rounded-full bg-[#c6df9a]"></div></div><p class="mt-4 text-[11px] leading-[1.8] text-[#a9cabb]">คิดจากประชากร 46,362 คน ที่จำแนกช่วงอายุได้</p></div></div></aside></div></div></section>
+<section class="scroll-mt-28" id="reports"><div class="mx-auto max-w-[1320px] px-5 py-16 sm:px-8 sm:py-20"><div class="mb-8 flex flex-wrap items-end justify-between gap-4"><div><h2 class="text-[27px] font-black tracking-[-.06em] sm:text-[34px]">รายงานตามหัวข้อ</h2><p class="mt-2 text-[12px] text-[#7d8c81]">เข้าถึงข้อมูลสุขภาพที่จัดตามงานบริการและกลุ่มประเด็น</p></div><a class="inline-flex items-center gap-2 text-[12px] font-bold text-[#207b60] hover:text-[#0e5b47]" href="https://songhealth-dc.pages.dev/reports">ดูรายงานทั้งหมด<svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M5 12h14m-6-6 6 6-6 6"></path></svg></a></div><div class="grid overflow-hidden rounded-[26px] bg-white md:grid-cols-2">
+<a class="group flex min-w-0 items-start gap-4 border-b border-[#e8eee8] px-5 py-5 transition-colors hover:bg-[#f6faf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#188768] sm:gap-5 sm:px-7 sm:py-6 md:odd:border-r" href="https://songhealth-dc.pages.dev/reports?cat=1ed90bc32310b503b7ca9b32af425ae5"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-[#eaf4eb] text-[#268369] group-hover:bg-[#d7eadb]"><svg aria-hidden="true" class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="9"></circle><path d="M10 9h.01M14 9h.01M9 14q3 4 6 0"></path></svg></span><span class="min-w-0 flex-1"><span class="mb-1 block text-[11px] font-medium text-[#8b9c8d]">ส่งเสริมป้องกัน</span><span class="block text-[13px] font-bold leading-[1.65] text-[#234d40] sm:text-[14px]">อนามัยแม่และเด็ก</span><span class="mt-2 block text-[11px] font-semibold text-[#54836d]">4 รายงาน</span></span><span class="mt-2 shrink-0 text-[#709e84] transition-transform group-hover:translate-x-1"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></a>
+<a class="group flex min-w-0 items-start gap-4 border-b border-[#e8eee8] px-5 py-5 transition-colors hover:bg-[#f6faf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#188768] sm:gap-5 sm:px-7 sm:py-6 md:odd:border-r" href="https://songhealth-dc.pages.dev/reports?cat=4df360514655f79f13901ef1181ca1c7"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-[#eaf4eb] text-[#268369] group-hover:bg-[#d7eadb]"><svg aria-hidden="true" class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="m18 2 4 4-4 4M6 16l-4 6m5-7 2 2 9-9-4-4-9 9 2 2Z"></path><path d="m14 4 6 6M9 9l2 2"></path></svg></span><span class="min-w-0 flex-1"><span class="mb-1 block text-[11px] font-medium text-[#8b9c8d]">ส่งเสริมป้องกัน</span><span class="block text-[13px] font-bold leading-[1.65] text-[#234d40] sm:text-[14px]">สร้างเสริมภูมิคุ้มกันโรค</span><span class="mt-2 block text-[11px] font-semibold text-[#54836d]">8 รายงาน</span></span><span class="mt-2 shrink-0 text-[#709e84] transition-transform group-hover:translate-x-1"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></a>
+<a class="group flex min-w-0 items-start gap-4 border-b border-[#e8eee8] px-5 py-5 transition-colors hover:bg-[#f6faf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#188768] sm:gap-5 sm:px-7 sm:py-6 md:odd:border-r" href="https://songhealth-dc.pages.dev/reports?cat=bebf866fceaef84c4078965eaf619565"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-[#eaf4eb] text-[#268369] group-hover:bg-[#d7eadb]"><svg aria-hidden="true" class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20 4c-9-1-16 3-16 11a5 5 0 0 0 5 5c8 0 12-7 11-16Z"></path><path d="M4 20c2-5 6-8 11-10"></path></svg></span><span class="min-w-0 flex-1"><span class="mb-1 block text-[11px] font-medium text-[#8b9c8d]">เฝ้าระวังและป้องกัน</span><span class="block text-[13px] font-bold leading-[1.65] text-[#234d40] sm:text-[14px]">ส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม</span><span class="mt-2 block text-[11px] font-semibold text-[#54836d]">1 รายงาน</span></span><span class="mt-2 shrink-0 text-[#709e84] transition-transform group-hover:translate-x-1"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></a>
+<a class="group flex min-w-0 items-start gap-4 border-b border-[#e8eee8] px-5 py-5 transition-colors hover:bg-[#f6faf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#188768] sm:gap-5 sm:px-7 sm:py-6 md:odd:border-r" href="https://songhealth-dc.pages.dev/reports?cat=6966b0664b89805a484d7ac96c6edc48"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-[#eaf4eb] text-[#268369] group-hover:bg-[#d7eadb]"><svg aria-hidden="true" class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M4 9V5a1 1 0 0 1 1-1h4m6 0h4a1 1 0 0 1 1 1v4M4 15v4a1 1 0 0 0 1 1h4m6 0h4a1 1 0 0 0 1-1v-4M4 12h16"></path></svg></span><span class="min-w-0 flex-1"><span class="mb-1 block text-[11px] font-medium text-[#8b9c8d]">บริการป้องกัน</span><span class="block text-[13px] font-bold leading-[1.65] text-[#234d40] sm:text-[14px]">การคัดกรอง</span><span class="mt-2 block text-[11px] font-semibold text-[#54836d]">1 รายงาน</span></span><span class="mt-2 shrink-0 text-[#709e84] transition-transform group-hover:translate-x-1"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></a>
+<a class="group flex min-w-0 items-start gap-4 border-b border-[#e8eee8] px-5 py-5 transition-colors hover:bg-[#f6faf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#188768] sm:gap-5 sm:px-7 sm:py-6 md:odd:border-r" href="https://songhealth-dc.pages.dev/reports?cat=b2b59e64c4e6c92d4b1ec16a599d882b"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-[#eaf4eb] text-[#268369] group-hover:bg-[#d7eadb]"><svg aria-hidden="true" class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1.1-1.1a5.5 5.5 0 0 0-7.8 7.8l9 8.8 8.8-8.8a5.5 5.5 0 0 0-.1-7.8Z"></path><path d="M3.3 12H8l2-3 3 6 2-3h5.7"></path></svg></span><span class="min-w-0 flex-1"><span class="mb-1 block text-[11px] font-medium text-[#8b9c8d]">Service Plan · DM / HT / CVD</span><span class="block text-[13px] font-bold leading-[1.65] text-[#234d40] sm:text-[14px]">โรคไม่ติดต่อเรื้อรัง (NCD)</span><span class="mt-2 block text-[11px] font-semibold text-[#54836d]">4 รายงาน</span></span><span class="mt-2 shrink-0 text-[#709e84] transition-transform group-hover:translate-x-1"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></a>
+<a class="group flex min-w-0 items-start gap-4 border-b border-[#e8eee8] px-5 py-5 transition-colors hover:bg-[#f6faf5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#188768] sm:gap-5 sm:px-7 sm:py-6 md:odd:border-r" href="https://songhealth-dc.pages.dev/reports?cat=db30e434e30565c12fbac44958e338d5"><span class="flex h-12 w-12 shrink-0 items-center justify-center rounded-[15px] bg-[#eaf4eb] text-[#268369] group-hover:bg-[#d7eadb]"><svg aria-hidden="true" class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="12" cy="12" r="10"></circle><path d="M8 14s1.5 2 4 2 4-2 4-2M8 9h.01M16 9h.01"></path></svg></span><span class="min-w-0 flex-1"><span class="mb-1 block text-[11px] font-medium text-[#8b9c8d]">Service Plan</span><span class="block text-[13px] font-bold leading-[1.65] text-[#234d40] sm:text-[14px]">สุขภาพช่องปาก</span><span class="mt-2 block text-[11px] font-semibold text-[#54836d]">3 รายงาน</span></span><span class="mt-2 shrink-0 text-[#709e84] transition-transform group-hover:translate-x-1"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></span></a>
+</div></div></section>
+<section class="border-t border-[#e2e8e1] bg-[#f1f5ef]"><div class="mx-auto flex max-w-[1320px] flex-col gap-5 px-5 py-9 sm:px-8 lg:flex-row lg:items-start lg:justify-between"><div class="max-w-[750px]"><h2 class="text-[13px] font-extrabold text-[#315b48]">แหล่งข้อมูลและการนำไปใช้งาน</h2><p class="mt-2 text-[11px] leading-[1.95] text-[#74877a]">ประชากรจากกรมการปกครอง · ข้อมูลรายงานจาก HDC Open Data · ขอบเขตแผนที่จริงจาก MOPH GIS · แผนที่พื้นหลัง OpenStreetMap</p><p class="mt-2 text-[10px] leading-[1.8] text-[#8ca095]">ต้นแบบงานออกแบบนี้ใช้ข้อมูลสรุปที่ตรวจสอบได้จากเว็บไซต์ ณ 9 พฤศจิกายน 2569 ส่วนกราฟรายช่วงอายุและรูปแผนผังพื้นที่เป็นภาพจำลองเพื่อการออกแบบ</p></div><div class="flex flex-wrap gap-2"><a class="inline-flex items-center gap-1.5 rounded-full border border-[#d6e4d6] bg-white px-3 py-2 text-[11px] font-semibold text-[#4f8068]" href="https://stat.bora.dopa.go.th/" rel="noopener noreferrer" target="_blank">กรมการปกครอง<svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 5h6v6m0-6-8 8"></path><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"></path></svg></a><a class="inline-flex items-center gap-1.5 rounded-full border border-[#d6e4d6] bg-white px-3 py-2 text-[11px] font-semibold text-[#4f8068]" href="https://opendata.moph.go.th/" rel="noopener noreferrer" target="_blank">HDC Open Data<svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M13 5h6v6m0-6-8 8"></path><path d="M19 13v5a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h5"></path></svg></a></div></div></section></main><footer class="border-t border-[#e2e8e1] bg-white"><div class="mx-auto flex max-w-[1320px] flex-col justify-between gap-3 px-5 py-7 text-[11px] text-[#819085] sm:flex-row sm:px-8"><span>Song Health Data Center · สำนักงานสาธารณสุขอำเภอสอง จังหวัดแพร่</span><span>V7.2 UX Refinement</span></div></footer>
+<script>(()=>{
+const areas=[{"name": "บ้านหนุน", "male": 3442, "female": 3957, "houses": 3499, "total": 7399}, {"name": "บ้านกลาง", "male": 3152, "female": 3534, "houses": 3335, "total": 6686}, {"name": "ห้วยหม้าย", "male": 3564, "female": 3903, "houses": 3096, "total": 7467}, {"name": "เตาปูน", "male": 3903, "female": 4089, "houses": 2954, "total": 7992}, {"name": "หัวเมือง", "male": 2975, "female": 3062, "houses": 2297, "total": 6037}, {"name": "สะเอียบ", "male": 2692, "female": 2643, "houses": 2555, "total": 5335}, {"name": "แดนชุมพล", "male": 1181, "female": 1230, "houses": 957, "total": 2411}, {"name": "ทุ่งน้าว", "male": 1566, "female": 1634, "houses": 1408, "total": 3200}];
+const $=sel=>document.querySelector(sel), $$=sel=>[...document.querySelectorAll(sel)];const number=n=>n.toLocaleString('en-US');
+let selected=-1,view='chart';
+const sorted=()=>{const l=areas.map((a,i)=>({...a,index:i}));const by=$('#sort-by').value;if(by!=='default')l.sort((a,b)=>b[by]-a[by]);return l;};
+function render(){const sortedAreas=sorted();$('#pop-rows').innerHTML=sortedAreas.map(a=>`<tr data-row="${a.index}" class="transition-colors hover:bg-[#f5faf4] ${selected===a.index?'bg-[#e8f5e9]':''}"><th scope="row" class="whitespace-nowrap px-6 py-4 text-[12px] font-bold text-[#2c5949]">${a.name}</th><td class="px-4 py-4 text-right text-[12px] tabular-nums text-[#647b6c]">${number(a.male)}</td><td class="px-4 py-4 text-right text-[12px] tabular-nums text-[#647b6c]">${number(a.female)}</td><td class="px-4 py-4 text-right text-[12px] font-extrabold tabular-nums text-[#245f4c]">${number(a.total)}</td><td class="px-4 py-4 text-right text-[12px] tabular-nums text-[#647b6c]">${number(a.houses)}</td><td class="px-5 py-4 text-center"><button data-select="${a.index}" type="button" aria-label="ดูข้อมูลตำบล${a.name}" class="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-[#eef5ed] text-[#23856a] hover:bg-[#d6edda] focus-visible:outline-2 focus-visible:outline-[#23856a]"><svg class="h-4 w-4" viewBox="0 0 24 24" stroke="currentColor" fill="none" stroke-width="1.8"><path d="m9 18 6-6-6-6" stroke-linecap="round" stroke-linejoin="round"/></svg></button></td></tr>`).join('');
+$('#pop-chart').innerHTML=sortedAreas.map(a=>`<button data-select="${a.index}" type="button" aria-pressed="${selected===a.index}" class="grid grid-cols-[70px_1fr_63px] items-center gap-3 rounded-xl px-2 py-2 text-left hover:bg-[#f4f9f3] focus-visible:outline-2 focus-visible:outline-[#26896a] sm:grid-cols-[110px_1fr_80px] ${selected===a.index?'bg-[#e8f5e9]':''}"><span class="truncate text-[11px] font-bold text-[#39604f]">${a.name}</span><span class="block h-3.5 overflow-hidden rounded-full bg-[#edf4ec]"><span class="block h-full rounded-full bg-[#3a9f81]" style="width:${(a.total/7992*100).toFixed(2)}%"></span></span><span class="text-right text-[11px] font-bold tabular-nums text-[#386554]">${number(a.total)}</span></button>`).join('');
+$$('[data-select]').forEach(el=>el.addEventListener('click',()=>{choose(Number(el.dataset.select));$('#map').scrollIntoView({behavior:window.matchMedia('(prefers-reduced-motion: reduce)').matches?'instant':'smooth',block:'start'});}));}
+function choose(idx){selected=Number.isInteger(idx)&&idx>=0&&idx<areas.length?idx:-1;$('#area-select').value=selected<0?'':String(selected);$('#area-overview').classList.toggle('hidden',selected>=0);$('#area-selected').classList.toggle('hidden',selected<0);
+$$('[data-zone]').forEach(el=>{const active=Number(el.dataset.zone)===selected;el.setAttribute('aria-pressed',String(active));el.setAttribute('fill',active?'#59b891':['#c9e4d6','#d7e9d5','#b9dccf','#d4e4bf','#bcdaca','#d8e8dc','#cbe7d6','#b4d5bf'][Number(el.dataset.zone)]);el.setAttribute('stroke',active?'#1b8060':'#f7fbf4');});
+if(selected>=0){const a=areas[selected];$('#area-name').textContent='ตำบล'+a.name;$('#area-total').innerHTML=number(a.total)+' <span class="text-[13px] font-normal text-[#789587]">คน</span>';$('#area-male').textContent=number(a.male);$('#area-female').textContent=number(a.female);$('#area-houses').textContent=number(a.houses);$('#area-live').textContent='เลือกตำบล'+a.name+' ประชากร '+number(a.total)+' คน';}else{$('#area-live').textContent='กลับสู่ภาพรวมอำเภอสอง';}render();document.dispatchEvent(new CustomEvent('songhealth:area-change',{detail:{tambon:selected>=0?areas[selected].name:null,index:selected}}));}
+$('#area-select').addEventListener('change',e=>choose(e.target.value===''?-1:Number(e.target.value)));
+$('#reset-area').addEventListener('click',()=>choose(-1));
+$$('[data-zone]').forEach(el=>{const f=()=>choose(Number(el.dataset.zone));el.addEventListener('click',f);el.addEventListener('keydown',e=>{if(e.key===' '||e.key==='Enter'){e.preventDefault();f();}});});
+$('#sort-by').addEventListener('change',render);
+function setView(v){view=v;$('#table-panel').classList.toggle('hidden',v!=='table');$('#chart-panel').classList.toggle('hidden',v!=='chart');for(const [id,active] of [['#table-btn',v==='table'],['#chart-btn',v==='chart']]){let e=$(id);e.setAttribute('aria-pressed',String(active));e.classList.toggle('bg-[#1b6654]',active);e.classList.toggle('text-white',active);e.classList.toggle('text-[#647b6e]',!active);}}
+$('#table-btn').addEventListener('click',()=>setView('table'));$('#chart-btn').addEventListener('click',()=>setView('chart'));
+$('#menu-btn').addEventListener('click',()=>{const el=$('#mobile-nav');const open=el.classList.toggle('hidden')===false;el.classList.toggle('flex',open);$('#menu-btn').setAttribute('aria-expanded',String(open));$('#menu-btn').setAttribute('aria-label',open?'ปิดเมนู':'เปิดเมนู');});
+$$('#mobile-nav a').forEach(a=>a.addEventListener('click',()=>{$('#mobile-nav').classList.add('hidden');$('#mobile-nav').classList.remove('flex');$('#menu-btn').setAttribute('aria-expanded','false');}));
+document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('#mobile-nav').classList.contains('hidden')){$('#mobile-nav').classList.add('hidden');$('#mobile-nav').classList.remove('flex');$('#menu-btn').setAttribute('aria-expanded','false');$('#menu-btn').focus();}});
+render();setView('chart');
+})();</script>
+<script>(()=>{
+const ageRows=[{"age": "85+", "male": 418, "female": 677}, {"age": "80–84", "male": 558, "female": 846}, {"age": "75–79", "male": 796, "female": 1055}, {"age": "70–74", "male": 1095, "female": 1364}, {"age": "65–69", "male": 1433, "female": 1632}, {"age": "60–64", "male": 1722, "female": 1891}, {"age": "55–59", "male": 1508, "female": 1617}, {"age": "50–54", "male": 1794, "female": 1871}, {"age": "45–49", "male": 1957, "female": 2058}, {"age": "40–44", "male": 2147, "female": 2205}, {"age": "35–39", "male": 1862, "female": 1871}, {"age": "30–34", "male": 1495, "female": 1504}, {"age": "25–29", "male": 1210, "female": 1203}, {"age": "20–24", "male": 1033, "female": 1042}, {"age": "15–19", "male": 924, "female": 869}, {"age": "10–14", "male": 870, "female": 822}, {"age": "5–9", "male": 822, "female": 768}, {"age": "0–4", "male": 741, "female": 682}];
+const total=ageRows.reduce((s,r)=>s+r.male+r.female,0);
+const pretty=n=>n.toLocaleString('en-US');
+const note=document.getElementById('age-detail');
+document.querySelectorAll('[data-age-index]').forEach(btn=>btn.addEventListener('click',()=>{
+ const already=btn.getAttribute('aria-pressed')==='true';
+ document.querySelectorAll('[data-age-index]').forEach(x=>{x.setAttribute('aria-pressed','false');x.classList.remove('bg-[#e4f3e9]','ring-1','ring-[#94c6ae]');});
+ if(already){note.classList.add('hidden');note.textContent='';return;}
+ btn.setAttribute('aria-pressed','true');btn.classList.add('bg-[#e4f3e9]','ring-1','ring-[#94c6ae]');
+ const r=ageRows[Number(btn.dataset.ageIndex)];const count=r.male+r.female;
+ note.textContent='ช่วงอายุ '+r.age+' ปี · รวม '+pretty(count)+' คน · '+(count/total*100).toFixed(1)+'% ของชุดข้อมูลสาธิต (ไม่ใช่จำนวนประชากรจริง)';note.classList.remove('hidden');
+}));
+})();</script>
+<!-- Interactive service directory: prototype; official HCODE/address/coordinates must be validated before production -->
+<div aria-hidden="true" class="fixed inset-0 z-[120] hidden items-stretch justify-end bg-[#0a241d]/55 p-0 backdrop-blur-[2px]" id="services-modal">
+<div aria-describedby="services-description" aria-labelledby="services-heading" aria-modal="true" class="flex h-[100dvh] max-h-[100dvh] w-full max-w-[840px] flex-col overflow-hidden bg-[#fbfdfa] shadow-2xl" id="services-dialog" role="dialog">
+<div class="relative flex shrink-0 items-start justify-between gap-4 bg-[#17483c] px-5 py-5 text-white sm:px-7 sm:py-6">
+<div class="min-w-0"><div class="mb-2 inline-flex items-center gap-2 text-[10px] font-bold tracking-[.15em] text-[#b8d6bc]"><span class="inline-block h-1.5 w-1.5 rounded-full bg-[#d0e9a3]"></span> SONG HEALTH / SERVICE NETWORK</div>
+<h2 class="text-[21px] font-black tracking-[-.055em] sm:text-[28px]" id="services-heading">เครือข่ายหน่วยบริการ <span class="whitespace-nowrap text-[#d7eead]">17 แห่ง</span></h2>
+<p class="mt-1 text-[11px] leading-[1.7] text-[#c6dfcf] sm:text-[13px]" id="services-description">ค้นหาหน่วยบริการ ดูตำบลที่ตั้ง และสำรวจเขตรับผิดชอบเมื่อมีข้อมูลยืนยัน</p></div>
+<button aria-label="ปิดรายละเอียดหน่วยบริการ" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-white/20 text-white hover:bg-white/15 focus-visible:outline-2 focus-visible:outline-white" id="close-services" type="button"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2" viewbox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"></path></svg></button>
+</div>
+<div class="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[.98fr_1.02fr]">
+<section class="flex min-h-0 flex-col overflow-hidden border-r border-[#e3ece1] bg-white" id="service-list-panel">
+<div class="shrink-0 px-5 pb-3 pt-5 sm:px-7"><div class="flex flex-wrap items-center justify-between gap-2"><h3 class="text-[14px] font-extrabold text-[#204f3e]">ค้นหาหน่วยบริการ</h3><span aria-live="polite" class="text-[11px] font-bold text-[#7d9686]" id="service-results-count">ทั้งหมด 17 แห่ง</span></div>
+<label class="relative mt-3 block"><span class="sr-only">ค้นหาชื่อหน่วยบริการ</span><span class="pointer-events-none absolute left-4 top-3.5 text-[#7c9688]"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8" viewbox="0 0 24 24"><circle cx="11" cy="11" r="7.5"></circle><path d="m20 20-3.5-3.5"></path></svg></span><input autocomplete="off" class="w-full rounded-xl border border-[#d5e5d9] bg-[#f7faf7] py-3 pl-12 pr-4 text-[13px] text-[#275847] placeholder:text-[#93a69a] focus:outline-2 focus:outline-[#148969]" id="service-search" placeholder="ค้นหาหน่วยบริการ ตำบล หรือหมู่บ้าน" type="search"/></label>
+<div class="mt-3 flex items-center gap-2"><label class="shrink-0 text-[11px] font-semibold text-[#647f6e]" for="service-tambon-filter">ตำบลที่เกี่ยวข้อง</label><select class="min-w-0 flex-1 rounded-xl border border-[#d5e5d9] bg-white px-3 py-2.5 text-[12px] font-semibold text-[#255a43] focus:outline-2 focus:outline-[#168466]" id="service-tambon-filter"><option value="all">ทุกตำบล</option></select></div>
+<div aria-label="เลือกประเภทหน่วยบริการ" class="mt-3 flex flex-wrap gap-1.5" role="group">
+<button aria-pressed="true" class="px-3 py-1.5 text-[11px] font-semibold text-[#627b6c] hover:bg-[#f0f7f1] focus-visible:outline-2 focus-visible:outline-[#198767] rounded-lg" data-service-filter="all" type="button">ทั้งหมด 17</button>
+<button aria-pressed="false" class="px-3 py-1.5 text-[11px] font-semibold text-[#627b6c] hover:bg-[#f0f7f1] focus-visible:outline-2 focus-visible:outline-[#198767] rounded-lg" data-service-filter="hospital" type="button">โรงพยาบาล 1</button>
+<button aria-pressed="false" class="px-3 py-1.5 text-[11px] font-semibold text-[#627b6c] hover:bg-[#f0f7f1] focus-visible:outline-2 focus-visible:outline-[#198767] rounded-lg" data-service-filter="phc" type="button">รพ.สต. 15</button>
+<button aria-pressed="false" class="px-3 py-1.5 text-[11px] font-semibold text-[#627b6c] hover:bg-[#f0f7f1] focus-visible:outline-2 focus-visible:outline-[#198767] rounded-lg" data-service-filter="community" type="button">สสช. 1</button>
+</div>
+</div>
+<div aria-label="รายชื่อหน่วยบริการ" class="min-h-0 flex-1 overflow-y-auto px-3 pb-6 sm:px-5" id="service-results"></div>
+</section>
+<section aria-label="รายละเอียดหน่วยบริการที่เลือก" class="hidden min-h-0 flex-col overflow-y-auto bg-[#f6faf5] px-5 py-6 lg:flex sm:px-8 sm:py-8" id="service-detail-panel">
+<button class="mb-5 inline-flex w-fit items-center gap-2 text-[12px] font-bold text-[#237758] lg:hidden" id="service-back" type="button"><svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="M19 12H5m6 6-6-6 6-6"></path></svg> กลับไปดูรายชื่อ</button>
+<h3 class="mt-2 text-[24px] font-black leading-[1.45] tracking-[-.04em] text-[#214c3e] sm:text-[30px]" id="service-detail-name">โรงพยาบาลสอง</h3>
+<span class="mt-3 inline-flex w-fit items-center rounded-full bg-[#e0f1e2] px-3 py-1.5 text-[11px] font-bold text-[#2c7d5e]" id="service-detail-type">โรงพยาบาลชุมชน</span>
+<div class="mt-5 rounded-xl bg-white p-5">
+<div class="flex items-center gap-2 text-[#285a45]"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9" viewbox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg><h4 class="text-[13px] font-extrabold">ที่ตั้งหน่วยบริการ</h4></div>
+<div class="mt-3 grid grid-cols-2 gap-3"><div><p class="text-[10px] text-[#718779]">ตำบลที่ตั้ง</p><p class="mt-1 text-[13px] font-extrabold text-[#214f3e]" id="service-detail-tambon">กำลังตรวจสอบ</p></div><div><p class="text-[10px] text-[#718779]">หมู่ที่ตั้ง</p><p class="mt-1 text-[13px] font-extrabold text-[#214f3e]" id="service-detail-moo">กำลังตรวจสอบ</p></div></div>
+<p class="mt-3 border-t border-[#edf1ed] pt-3 text-[11px] text-[#718779]" id="service-detail-location">อำเภอสอง จังหวัดแพร่</p>
+<a class="mt-2 hidden items-center gap-1 text-[11px] font-bold text-[#1b8262] hover:underline" href="#" id="service-location-source" rel="noopener noreferrer" target="_blank">ดูหลักฐานที่ตั้ง <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.7" viewbox="0 0 24 24"><path d="M7 17 17 7M8 7h9v9"></path></svg></a>
+</div>
+<div class="mt-4 overflow-hidden rounded-xl bg-white">
+<div class="flex items-center justify-between gap-2 border-b border-[#e5efe5] bg-[#eaf4ea] px-4 py-3 sm:px-5"><div class="flex items-center gap-2 text-[#245b42]"><svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3V6Z"></path><path d="M9 3v15m6-12v15"></path></svg><h4 class="text-[13px] font-extrabold">เขตรับผิดชอบ</h4></div><span class="rounded-full bg-[#f2e6ca] px-2.5 py-1 text-[10px] font-bold text-[#866c34]" id="service-coverage-badge">รอยืนยัน</span></div>
+<div class="p-4 sm:p-5"><p class="text-[11px] font-semibold text-[#637f6a]">ตำบลที่รับผิดชอบและหมู่บ้าน</p><div aria-live="polite" class="mt-3" id="service-coverage-content"></div></div>
+</div>
+<div class="mt-4 rounded-[13px] bg-[#f0f6ee] px-4 py-3"><p class="text-[11px] leading-[1.8] text-[#627d6d]">ตำบลที่ตั้งไม่จำเป็นต้องตรงกับตำบลที่รับผิดชอบ ข้อมูลเขตรับผิดชอบต้องอ้างอิงทะเบียนพื้นที่บริการ ไม่คำนวณจากที่อยู่หรือชื่อหน่วยบริการ</p></div>
+<div class="mt-4 flex flex-wrap items-center gap-3"><a class="inline-flex items-center gap-2 text-[12px] font-bold text-[#178366] hover:underline" href="https://www.google.com/maps/search/?api=1" id="service-map-search" rel="noopener noreferrer" target="_blank">ค้นหาบน Google Maps <svg aria-hidden="true" class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M7 17 17 7M8 7h9v9"></path></svg></a><span class="text-[11px] text-[#80938a]" id="service-hcode"></span></div>
+<p class="mt-auto pt-4 text-[10px] leading-[1.75] text-[#8b9e91]">หมายเหตุ: ต้นแบบ UI · ยังไม่ใช่ทะเบียนหน่วยบริการที่ตรวจรับจากระบบต้นทาง</p>
+</section>
+</div>
+<div class="shrink-0 border-t border-[#e3eae2] bg-white px-5 py-3 text-[10px] leading-[1.65] text-[#7f9487] sm:px-9">ข้อมูลตั้งต้น: <a class="font-semibold text-[#267c5d] underline" href="https://healthserv.net/hospitalnews/2448" rel="noopener noreferrer" target="_blank">รายชื่อ รพ.สต.</a> และ <a class="font-semibold text-[#267c5d] underline" href="https://healthserv.net/%E0%B8%A3%E0%B8%B2%E0%B8%A2%E0%B8%8A%E0%B8%B7%E0%B9%88%E0%B8%AD%E0%B9%82%E0%B8%A3%E0%B8%87%E0%B8%9E%E0%B8%A2%E0%B8%B2%E0%B8%9A%E0%B8%B2%E0%B8%A5%E0%B9%83%E0%B8%99%E0%B8%88%E0%B8%B1%E0%B8%87%E0%B8%AB%E0%B8%A7%E0%B8%B1%E0%B8%94%E0%B9%81%E0%B8%9E%E0%B8%A3%E0%B9%88" rel="noopener noreferrer" target="_blank">เครือข่ายโรงพยาบาล</a> · ตรวจสอบข้อมูลอีกครั้งก่อนเผยแพร่</div>
+</div>
+</div>
+<script>(()=>{
+const facilities=[
+  {id:1,name:'โรงพยาบาลสอง',type:'hospital',locatedTambon:'บ้านหนุน',locatedMoo:'3',locationSource:'https://www.song.go.th/trv-otp-detail?id=367',hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'บ้านหนุน',villages:[{moo:'1',name:'บ้านหนุนกลาง'},{moo:'5',name:'บ้านปง'}]},
+    {tambon:'บ้านกลาง',villages:[{moo:'2',name:'บ้านกลางเหนือ'},{moo:'7',name:'บ้านวังดิน'}]}
+  ]},
+  {id:2,name:'รพ.สต.แดนชุมพล',type:'phc',locatedTambon:'แดนชุมพล',locatedMoo:'4',locationSource:'https://hcode.moph.go.th/code/20304/',hcode5:'06426',coverageStatus:'mock',responsibility:[
+    {tambon:'แดนชุมพล',villages:[{moo:'1',name:'บ้านแดนชุมพล'},{moo:'4',name:'บ้านแดนชุมพลกลาง'},{moo:'7',name:'บ้านแม่ถาง'}]}
+  ]},
+  {id:3,name:'รพ.สต.เตาปูน',type:'phc',locatedTambon:'เตาปูน',locatedMoo:'2',locationSource:'https://hcode.moph.go.th/code/11252/',hcode5:'06419',coverageStatus:'mock',responsibility:[
+    {tambon:'เตาปูน',villages:[{moo:'1',name:'บ้านเตาปูน'},{moo:'2',name:'บ้านเตาปูนใต้'},{moo:'8',name:'บ้านแม่แขม'}]}
+  ]},
+  {id:4,name:'รพ.สต.บ้านทุ่งน้าว',type:'phc',locatedTambon:'ทุ่งน้าว',locatedMoo:'2',locationSource:'https://www.thungnow.go.th/trv-otp-detail?id=313',hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'ทุ่งน้าว',villages:[{moo:'2',name:'บ้านทุ่งน้าว'},{moo:'5',name:'บ้านใหม่ทุ่งน้าว'}]}
+  ]},
+  {id:5,name:'รพ.สต.บ้านนาไร่เดียว',type:'phc',locatedTambon:'เตาปูน',locatedMoo:'4',locationSource:'https://hcode.moph.go.th/code/13631/',hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'เตาปูน',villages:[{moo:'4',name:'บ้านนาไร่เดียว'},{moo:'6',name:'บ้านปงป่าหวาย'}]}
+  ]},
+  {id:6,name:'รพ.สต.บ้านนาหลวง',type:'phc',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'บ้านหนุน',villages:[{moo:'8',name:'บ้านนาหลวง'},{moo:'10',name:'บ้านห้วยฮ่อม'}]}
+  ]},
+  {id:7,name:'รพ.สต.บ้านป่าเลา',type:'phc',locatedTambon:'สะเอียบ',locatedMoo:'3',locationSource:'https://hcode.moph.go.th/code/17436/',hcode5:'06424',coverageStatus:'mock',responsibility:[
+    {tambon:'สะเอียบ',villages:[{moo:'3',name:'บ้านป่าเลา'},{moo:'9',name:'บ้านห้วยฮ่อมสะเอียบ'}]}
+  ]},
+  {id:8,name:'รพ.สต.บ้านลูนิเกตุ',type:'phc',locatedTambon:'ห้วยหม้าย',locatedMoo:'1',locationSource:'https://hcode.moph.go.th/code/20307/',hcode5:'06416',coverageStatus:'mock',responsibility:[
+    {tambon:'ห้วยหม้าย',villages:[{moo:'1',name:'บ้านลูนิเกตุ'},{moo:'6',name:'บ้านห้วยหม้ายใต้'}]}
+  ]},
+  {id:9,name:'รพ.สต.บ้านวังดิน',type:'phc',locatedTambon:'บ้านกลาง',locatedMoo:null,locationSource:'https://healthserv.net/hospitalnews/2448',hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'บ้านกลาง',villages:[{moo:'11',name:'บ้านวังดิน'},{moo:'12',name:'บ้านดอนไชย'}]}
+  ]},
+  {id:10,name:'รพ.สต.บ้านวังฟ่อน',type:'phc',locatedTambon:'หัวเมือง',locatedMoo:'11',locationSource:'https://hcode.moph.go.th/code/20376/',hcode5:'06422',coverageStatus:'mock',responsibility:[
+    {tambon:'หัวเมือง',villages:[{moo:'11',name:'บ้านวังฟ่อน'},{moo:'13',name:'บ้านหัวเมืองใหม่'}]}
+  ]},
+  {id:11,name:'รพ.สต.บ้านหนุน',type:'phc',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'บ้านหนุน',villages:[{moo:'2',name:'บ้านหนุน'},{moo:'6',name:'บ้านแม่สวก'}]}
+  ]},
+  {id:12,name:'รพ.สต.บ้านห้วยขอน',type:'phc',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'บ้านกลาง',villages:[{moo:'9',name:'บ้านห้วยขอน'},{moo:'10',name:'บ้านดอนชัย'}]}
+  ]},
+  {id:13,name:'รพ.สต.สะเอียบ',type:'phc',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'สะเอียบ',villages:[{moo:'1',name:'บ้านสะเอียบ'},{moo:'5',name:'บ้านแม่สะนาน'}]}
+  ]},
+  {id:14,name:'รพ.สต.หนองเสี้ยว',type:'phc',locatedTambon:'หัวเมือง',locatedMoo:null,locationSource:'https://healthserv.net/hospitalnews/2448',hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'หัวเมือง',villages:[{moo:'4',name:'บ้านหนองเสี้ยว'},{moo:'8',name:'บ้านค้างปินใจ'}]}
+  ]},
+  {id:15,name:'รพ.สต.ห้วยหม้าย',type:'phc',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'ห้วยหม้าย',villages:[{moo:'2',name:'บ้านห้วยหม้าย'},{moo:'7',name:'บ้านแม่ยาง'}]}
+  ]},
+  {id:16,name:'รพ.สต.หัวเมือง',type:'phc',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'หัวเมือง',villages:[{moo:'1',name:'บ้านหัวเมือง'},{moo:'6',name:'บ้านหัวเมืองเหนือ'}]}
+  ]},
+  {id:17,name:'สถานบริการสาธารณสุขชุมชนแม่แรม',type:'community',locatedTambon:null,locatedMoo:null,locationSource:null,hcode5:null,coverageStatus:'mock',responsibility:[
+    {tambon:'ทุ่งน้าว',villages:[{moo:'7',name:'บ้านแม่แรม'},{moo:'8',name:'บ้านแม่แรมนอก'}]}
+  ]}
+];
+const modal=document.getElementById('services-modal'),dialog=document.getElementById('services-dialog');
+const $=id=>document.getElementById(id);
+const labels={hospital:'โรงพยาบาลชุมชน',phc:'รพ.สต.',community:'สถานบริการสาธารณสุขชุมชน'};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm=s=>String(s??'').toLocaleLowerCase('th-TH').replace(/\s+/g,'');
+let activeType='all',activeTambon='all',activeIndex=0,previousFocus=null,activeCoverageOnly=false;
+const tambons=[...new Set(facilities.flatMap(f=>[f.locatedTambon,...(f.responsibility||[]).map(r=>r.tambon)]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
+$('service-tambon-filter').insertAdjacentHTML('beforeend',tambons.map(t=>`<option value="${esc(t)}">ต.${esc(t)}</option>`).join(''));
+function items(){
+  const q=norm($('service-search').value);
+  return facilities.map((f,index)=>({...f,index})).filter(f=>
+    (activeType==='all'||f.type===activeType)&&
+    (activeTambon==='all'||(activeCoverageOnly?f.responsibility.some(x=>x.tambon===activeTambon):(f.locatedTambon===activeTambon||f.responsibility.some(x=>x.tambon===activeTambon))))&&
+    (!q||norm([f.name,labels[f.type],f.locatedTambon,f.locatedMoo,...f.responsibility.flatMap(x=>[x.tambon,...x.villages.map(v=>`${v.moo} ${v.name}`)])].join(' ')).includes(q))
+  );
+}
+function renderList(){
+  const shown=items();
+  const baseItems=facilities.filter(f=>activeTambon==='all'||(activeCoverageOnly?f.responsibility.some(x=>x.tambon===activeTambon):(f.locatedTambon===activeTambon||f.responsibility.some(x=>x.tambon===activeTambon))));
+  document.querySelectorAll('[data-service-filter]').forEach(b=>{const type=b.dataset.serviceFilter;const count=type==='all'?baseItems.length:baseItems.filter(f=>f.type===type).length;b.textContent=(type==='all'?'ทั้งหมด':type==='hospital'?'โรงพยาบาล':type==='phc'?'รพ.สต.':'สสช.')+' '+count;});
+  $('service-results-count').textContent='พบ '+shown.length+' แห่ง';
+  $('service-results').innerHTML=shown.length?shown.map(f=>`<button data-facility="${f.index}" aria-pressed="${f.index===activeIndex}" type="button" class="group flex min-h-16 w-full items-center gap-3 border-b border-[#e8eee7] px-3 py-3 text-left transition-colors hover:bg-[#f2f9f3] focus-visible:outline-2 focus-visible:outline-[#168466] ${f.index===activeIndex?'bg-[#eaf5e9]':''}"><span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-[11px] bg-[#eaf3e8] text-[#478a70]"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 10h8M12 6v8M9 21v-4h6v4"/></svg></span><span class="min-w-0 flex-1"><span class="block text-[12px] font-extrabold leading-[1.6] text-[#235441] sm:text-[13px]">${esc(f.name)}</span><span class="mt-0.5 block text-[10px] leading-[1.5] text-[#718e7b]">${esc(labels[f.type])} · ${f.locatedTambon?'ที่ตั้ง ต.'+esc(f.locatedTambon)+(f.locatedMoo?' ม.'+esc(f.locatedMoo):''):'รอตรวจสอบตำบลที่ตั้ง'}</span><span class="mt-1 block text-[10px] text-[#5c8a72]">รับผิดชอบ ${f.responsibility.length} ตำบล · ${f.responsibility.reduce((s,g)=>s+g.villages.length,0)} หมู่บ้าน</span></span><svg class="h-4 w-4 shrink-0 text-[#78a38a]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg></button>`).join(''):'<div class="rounded-[14px] bg-[#f1f7f1] px-4 py-8 text-center text-[13px] text-[#647f6d]">ไม่พบหน่วยบริการตามเงื่อนไขที่เลือก</div>';
+  document.querySelectorAll('[data-service-filter]').forEach(b=>{const on=b.dataset.serviceFilter===activeType;b.setAttribute('aria-pressed',String(on));b.classList.toggle('bg-[#e3f3e4]',on);;b.classList.toggle('text-[#176c51]',on)});
+  $('service-results').querySelectorAll('[data-facility]').forEach(b=>b.addEventListener('click',()=>selectFacility(Number(b.dataset.facility),true)));
+}
+function renderCoverage(f){
+  const el=$('service-coverage-content');
+  const tambonCount=f.responsibility.length;
+  const villageCount=f.responsibility.reduce((s,g)=>s+g.villages.length,0);
+  const header=`<div class="mb-3 grid grid-cols-2 gap-2 rounded-xl bg-[#f5faf5] p-3"><div><div class="text-[10px] text-[#7e9386]">ตำบลที่รับผิดชอบ</div><div class="mt-1 text-[13px] font-extrabold text-[#234f3f]">${tambonCount}</div></div><div><div class="text-[10px] text-[#7e9386]">หมู่บ้านที่แสดง</div><div class="mt-1 text-[13px] font-extrabold text-[#234f3f]">${villageCount}</div></div></div>`;
+  if(!f.responsibility.length){$('service-coverage-badge').textContent='รอยืนยัน';el.innerHTML=`${header}<div class="rounded-xl border border-dashed border-[#d4e3d5] bg-[#f9fbf8] p-5"><div class="flex items-start gap-2"><svg class="mt-0.5 h-5 w-5 shrink-0 text-[#78937e]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 7.5h.01"/></svg><div><p class="text-[12px] font-bold text-[#355c48]">ยังไม่มีข้อมูลเขตรับผิดชอบ</p><p class="mt-1 text-[11px] leading-[1.7] text-[#718879]">เมื่อเชื่อมทะเบียนพื้นที่บริการ จะแสดงตำบลที่รับผิดชอบ รายชื่อหมู่บ้าน และหมู่ที่ในส่วนนี้</p></div></div></div>`;return;}
+  $('service-coverage-badge').textContent=f.coverageStatus==='mock'?'Mockup':'ตรวจสอบแล้ว';
+  $('service-coverage-badge').className='rounded-full '+(f.coverageStatus==='mock'?'bg-[#e8f1ff] px-2.5 py-1 text-[10px] font-bold text-[#406baf]':'bg-[#e2f5e5] px-2.5 py-1 text-[10px] font-bold text-[#2f7b59]');
+  el.innerHTML=header+`<div class="mb-3 px-1 py-2 text-[11px] leading-[1.7] text-[#688275]">ตัวอย่างเขตรับผิดชอบ (Mockup) · กดชื่อตำบลเพื่อดูหมู่บ้าน</div>`+f.responsibility.map((g,i)=>`<details class="mb-1 overflow-hidden border-b border-[#d6e7da] bg-[#fafdfa]" ${i===0?'open':''}><summary class="flex cursor-pointer items-center justify-between p-3 text-[12px] font-bold text-[#305b44] focus-visible:outline-2 focus-visible:outline-[#148969]"><span>ตำบล${esc(g.tambon)}</span><span class="text-[11px] font-semibold text-[#698777]">${g.villages.length} หมู่บ้าน</span></summary><div class="border-t border-[#e4ede4] px-3 py-2">${g.villages.map(v=>`<div class="flex justify-between gap-3 border-b border-[#e8eee7] py-2 text-[12px] last:border-0"><span class="font-semibold text-[#335c45]">หมู่ ${esc(v.moo)}</span><span class="text-right text-[#708b79]">${esc(v.name)}</span></div>`).join('')}</div></details>`).join('');
+}
+function showDetails(mobile){if(mobile&&innerWidth<1024){$('service-list-panel').classList.add('hidden');$('service-detail-panel').classList.remove('hidden');$('service-detail-panel').classList.add('flex');$('service-back').focus();}}
+function selectFacility(idx,mobile=false){activeIndex=idx;const f=facilities[idx];$('service-detail-name').textContent=f.name;$('service-detail-type').textContent=labels[f.type];$('service-detail-tambon').textContent=f.locatedTambon?'ต.'+f.locatedTambon:'กำลังตรวจสอบ';$('service-detail-moo').textContent=f.locatedMoo?'หมู่ '+f.locatedMoo:'ยังไม่ระบุ';$('service-detail-location').textContent='อำเภอสอง จังหวัดแพร่ · '+(f.locationSource?'ที่ตั้งมีแหล่งอ้างอิง':'ตำแหน่งรอยืนยัน');$('service-hcode').textContent=f.hcode5?'รหัส HCODE 5 หลัก: '+f.hcode5:'';const src=$('service-location-source');src.classList.toggle('hidden',!f.locationSource);src.classList.toggle('inline-flex',!!f.locationSource);if(f.locationSource)src.href=f.locationSource;renderCoverage(f);$('service-map-search').href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(f.name+' อำเภอสอง จังหวัดแพร่');renderList();showDetails(mobile);}
+function back(){$('service-detail-panel').classList.add('hidden');$('service-detail-panel').classList.remove('flex');$('service-list-panel').classList.remove('hidden');$('service-search').focus()}
+function open(){previousFocus=document.activeElement;modal.classList.remove('hidden');modal.classList.add('flex');modal.setAttribute('aria-hidden','false');document.body.classList.add('overflow-hidden');activeType='all';activeTambon='all';activeCoverageOnly=false;$('service-tambon-filter').value='all';$('service-search').value='';back();selectFacility(0);$('service-search').focus()}
+function close(){modal.classList.add('hidden');modal.classList.remove('flex');modal.setAttribute('aria-hidden','true');document.body.classList.remove('overflow-hidden');if(previousFocus&&typeof previousFocus.focus==='function')previousFocus.focus()}
+$('open-services').addEventListener('click',open);$('open-services-secondary').addEventListener('click',open);$('close-services').addEventListener('click',close);$('service-back').addEventListener('click',back);modal.addEventListener('click',e=>{if(e.target===modal)close()});$('service-search').addEventListener('input',renderList);$('service-tambon-filter').addEventListener('change',e=>{activeTambon=e.target.value;activeCoverageOnly=false;back();renderList();updateFilterNote()});document.querySelectorAll('[data-service-filter]').forEach(btn=>btn.addEventListener('click',()=>{activeType=btn.dataset.serviceFilter;back();renderList()}));
+document.addEventListener('keydown',e=>{if(modal.classList.contains('hidden'))return;if(e.key==='Escape'){e.preventDefault();close();return}if(e.key==='Tab'){const els=[...dialog.querySelectorAll('button:not([disabled]),input:not([disabled]),select:not([disabled]),a[href]')].filter(el=>el.getClientRects().length);const first=els[0],last=els[els.length-1];if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}});
+
+// V7.5: a single district selection controls a compact, contextual service list.
+// Only responsibility relationships (mockup) count here; facility address is not authority.
+const areaSelected=document.getElementById('area-selected');
+const serviceAreaBlock=document.createElement('section');
+serviceAreaBlock.id='area-responsible-services';
+serviceAreaBlock.className='mt-5 border-t border-[#d6e7da] pt-4';
+areaSelected.appendChild(serviceAreaBlock);
+
+const filterNotice=document.createElement('p');
+filterNotice.id='coverage-filter-note';
+filterNotice.className='mt-2 text-[11px] font-medium leading-[1.65] text-[#688778]';
+$('service-tambon-filter').parentElement.insertAdjacentElement('afterend',filterNotice);
+function updateFilterNote(){
+  filterNotice.textContent=activeCoverageOnly&&activeTambon!=='all'
+    ? 'เฉพาะหน่วยบริการที่รับผิดชอบ ต.'+activeTambon+' (ข้อมูล Mockup)'
+    : 'ค้นหาตามตำบลที่ตั้งหรือพื้นที่รับผิดชอบ';
+}
+function unitsFor(tambon){return facilities.map((f,index)=>({...f,index})).filter(f=>f.responsibility.some(c=>c.tambon===tambon));}
+function openCoverageDirectory(tambon,index=null){
+  open();
+  activeType='all';activeTambon=tambon;activeCoverageOnly=true;
+  $('service-tambon-filter').value=tambon;
+  updateFilterNote();
+  renderList();
+  const allowed=unitsFor(tambon);
+  if(!allowed.length)return;
+  const active=allowed.find(f=>f.index===index)||allowed[0];
+  selectFacility(active.index,index!==null);
+  if(index===null){$('service-search').focus();}
+}
+function renderAreaServices(tambon){
+  if(!tambon){serviceAreaBlock.replaceChildren();return;}
+  const found=unitsFor(tambon);
+  const villCount=found.reduce((sum,f)=>sum+f.responsibility.filter(g=>g.tambon===tambon).reduce((n,g)=>n+g.villages.length,0),0);
+  serviceAreaBlock.innerHTML=`<div class="flex flex-wrap items-center justify-between gap-2">
+      <div><p class="text-[12px] font-extrabold leading-[1.5] text-[#285b47]">หน่วยบริการที่รับผิดชอบตำบลนี้</p><p class="mt-1 text-[10px] text-[#728b7b]">ข้อมูลเขตรับผิดชอบตัวอย่าง (Mockup)</p></div>
+      <span class="text-[12px] font-extrabold tabular-nums text-[#257357]">${found.length} แห่ง</span>
+    </div><div class="mt-3 grid gap-1">${found.length?found.map(f=>{
+      const covered=f.responsibility.filter(c=>c.tambon===tambon).reduce((n,c)=>n+c.villages.length,0);
+      return `<button type="button" data-open-coverage="${f.index}" class="group flex w-full items-center justify-between gap-2 border-b border-[#d6e7da] px-1 py-3 text-left transition-colors hover:bg-[#f7fcf8] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#238569]" aria-label="ดูเขตรับผิดชอบของ ${esc(f.name)}">
+        <span class="min-w-0"><span class="block text-[11px] font-bold leading-[1.5] text-[#2e5c49]">${esc(f.name)}</span><span class="mt-0.5 block text-[10px] text-[#739080]">${covered} หมู่บ้าน</span></span><svg class="h-4 w-4 shrink-0 text-[#4f9b76] transition-transform group-hover:translate-x-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+      </button>`;
+    }).join(''):'<p class="rounded-xl border border-[#d9e6da] bg-white p-3 text-[11px] text-[#718a7c]">ยังไม่มีข้อมูล mockup ของหน่วยบริการที่รับผิดชอบตำบลนี้</p>'}</div>
+    <div class="mt-3 flex flex-wrap items-center justify-between gap-2"><span class="text-[10px] leading-[1.6] text-[#73897b]">${villCount} รายการหมู่บ้าน (อาจซ้ำข้ามหน่วยบริการ)</span><button id="view-area-services" type="button" class="${found.length<=1?'hidden':'inline-flex'} items-center gap-1.5 px-1 py-2 text-[11px] font-bold text-[#207b60] hover:underline focus-visible:outline-2 focus-visible:outline-[#238569]">ดูหน่วยบริการในตำบล <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button></div>
+    `;
+  serviceAreaBlock.querySelectorAll('[data-open-coverage]').forEach(b=>b.addEventListener('click',()=>openCoverageDirectory(tambon,Number(b.dataset.openCoverage))));
+  serviceAreaBlock.querySelector('#view-area-services').addEventListener('click',()=>openCoverageDirectory(tambon));
+}
+document.addEventListener('songhealth:area-change',e=>renderAreaServices(e.detail.tambon));
+renderAreaServices($('area-select').value===''?null:['บ้านหนุน','บ้านกลาง','ห้วยหม้าย','เตาปูน','หัวเมือง','สะเอียบ','แดนชุมพล','ทุ่งน้าว'][Number($('area-select').value)]);
+updateFilterNote();
+
+const footerNote=document.querySelector('#services-dialog .shrink-0.border-t'); if(footerNote){footerNote.innerHTML='ต้นแบบข้อมูลบริการ: รายชื่อหน่วยบริการอ้างอิงจากแหล่งเดิม · <strong>ตำบล/หมู่บ้านที่รับผิดชอบในแผงนี้เป็น mockup เพื่อออกแบบ UX</strong> · ตรวจสอบข้อมูลจริงอีกครั้งก่อนเผยแพร่';}
+selectFacility(0);
+})();</script>
+<script>(()=>{
+const areaList=[
+  {name:'บ้านหนุน',male:3442,female:3957,houses:3499,total:7399},
+  {name:'บ้านกลาง',male:3152,female:3534,houses:3335,total:6686},
+  {name:'ห้วยหม้าย',male:3564,female:3903,houses:3096,total:7467},
+  {name:'เตาปูน',male:3903,female:4089,houses:2954,total:7992},
+  {name:'หัวเมือง',male:2975,female:3062,houses:2297,total:6037},
+  {name:'สะเอียบ',male:2692,female:2643,houses:2555,total:5335},
+  {name:'แดนชุมพล',male:1181,female:1230,houses:957,total:2411},
+  {name:'ทุ่งน้าว',male:1566,female:1634,houses:1408,total:3200}
+];
+const districtTotals={name:'ทั้งอำเภอสอง',male:22475,female:24052,houses:20101,total:46527};
+const baseRows=[
+  {age:'85+',male:418,female:677},
+  {age:'80–84',male:558,female:846},
+  {age:'75–79',male:796,female:1055},
+  {age:'70–74',male:1095,female:1364},
+  {age:'65–69',male:1433,female:1632},
+  {age:'60–64',male:1722,female:1891},
+  {age:'55–59',male:1508,female:1617},
+  {age:'50–54',male:1794,female:1871},
+  {age:'45–49',male:1957,female:2058},
+  {age:'40–44',male:2147,female:2205},
+  {age:'35–39',male:1862,female:1871},
+  {age:'30–34',male:1495,female:1504},
+  {age:'25–29',male:1210,female:1203},
+  {age:'20–24',male:1033,female:1042},
+  {age:'15–19',male:924,female:869},
+  {age:'10–14',male:870,female:822},
+  {age:'5–9',male:822,female:768},
+  {age:'0–4',male:741,female:682}
+];
+const profileByArea={
+  'บ้านหนุน':{child:0.95,youth:0.95,working:0.92,elder:1.18},
+  'บ้านกลาง':{child:0.98,youth:1.04,working:1.08,elder:0.94},
+  'ห้วยหม้าย':{child:0.92,youth:0.93,working:0.96,elder:1.16},
+  'เตาปูน':{child:1.03,youth:1.02,working:1.10,elder:0.90},
+  'หัวเมือง':{child:0.90,youth:0.94,working:0.96,elder:1.20},
+  'สะเอียบ':{child:0.96,youth:0.95,working:0.94,elder:1.14},
+  'แดนชุมพล':{child:1.12,youth:1.06,working:1.02,elder:0.84},
+  'ทุ่งน้าว':{child:1.06,youth:1.03,working:1.00,elder:0.92}
+};
+const pretty=n=>n.toLocaleString('en-US');
+const note=document.getElementById('age-detail');
+const rowsEl=document.getElementById('pyramid-rows');
+const areaSelect=document.getElementById('area-select');
+if(!rowsEl||!areaSelect) return;
+const ageCard=rowsEl.closest('.bg-white');
+const asideCard=document.querySelector('#ages aside > div:first-child');
+const descCard=document.querySelector('#ages aside > div:nth-child(2) p');
+const headerBlock=ageCard.querySelector('.mb-6');
+const scopeBar=document.createElement('div');
+scopeBar.id='age-scope-bar';
+scopeBar.className='mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-[#f7faf7] px-4 py-3';
+scopeBar.innerHTML=`<div><div class="text-[10px] font-extrabold tracking-[.12em] text-[#2a8268]">กำลังแสดงข้อมูล</div><div class="mt-1 flex flex-wrap items-center gap-2"><span id="age-scope-name" class="inline-flex items-center gap-2 text-[12px] font-extrabold text-[#235847]">ทั้งอำเภอสอง</span><span id="age-scope-meta" class="text-[11px] text-[#708478]">เชื่อมกับตำบลที่เลือกจากแผนที่/ตารางด้านบน</span></div></div><button id="age-reset-filter" type="button" class="inline-flex items-center gap-1.5 px-2 py-2 text-[11px] font-bold text-[#2a7c61] hover:underline">กลับสู่ทั้งอำเภอ</button>`;
+headerBlock.insertAdjacentElement('afterend', scopeBar);
+document.getElementById('age-reset-filter').addEventListener('click',()=>document.getElementById('reset-area').click());
+
+function band(age){
+  if(['10–14','5–9','0–4'].includes(age)) return 'child';
+  if(['15–19','20–24'].includes(age)) return 'youth';
+  if(['25–29','30–34','35–39','40–44','45–49','50–54','55–59'].includes(age)) return 'working';
+  return 'elder';
+}
+function distribute(sourceValues,target){
+  const sum=sourceValues.reduce((a,b)=>a+b,0)||1;
+  const scaled=sourceValues.map(v=>v*target/sum);
+  const floors=scaled.map(v=>Math.floor(v));
+  let rem=target-floors.reduce((a,b)=>a+b,0);
+  const order=scaled.map((v,i)=>({i,frac:v-floors[i]})).sort((a,b)=>b.frac-a.frac);
+  for(let k=0;k<rem;k++) floors[order[k%order.length].i]++;
+  return floors;
+}
+function buildAreaRows(area){
+  const prof=profileByArea[area.name]||{child:1,youth:1,working:1,elder:1};
+  const maleSeed=baseRows.map(r=>r.male*prof[band(r.age)]);
+  const femaleSeed=baseRows.map(r=>r.female*prof[band(r.age)]);
+  const maleVals=distribute(maleSeed,area.male);
+  const femaleVals=distribute(femaleSeed,area.female);
+  return baseRows.map((r,i)=>({age:r.age,male:maleVals[i],female:femaleVals[i]}));
+}
+const districtRows=baseRows.map(r=>({...r}));;
+const rowCache={'ทั้งอำเภอสอง':districtRows};
+areaList.forEach(a=>rowCache[a.name]=buildAreaRows(a));
+
+function selectedArea(){
+  const idx=areaSelect.value;
+  if(idx==='') return null;
+  return areaList[Number(idx)]||null;
+}
+function currentData(){
+  const area=selectedArea();
+  if(!area) return {scope:districtTotals,rows:rowCache['ทั้งอำเภอสอง'],mock:true};
+  return {scope:area,rows:rowCache[area.name],mock:true};
+}
+function renderAgeRows(data){
+  const max=Math.max(...data.rows.flatMap(r=>[r.male,r.female]),1);
+  rowsEl.innerHTML=data.rows.map((r,i)=>`<button type="button" data-age-index="${i}" aria-pressed="false" aria-label="อายุ ${r.age} ปี ชาย ${pretty(r.male)} คน หญิง ${pretty(r.female)} คน ข้อมูลจำลอง" class="age-row group grid w-full grid-cols-[minmax(0,1fr)_37px_47px_37px_minmax(0,1fr)] items-center gap-1 rounded-[9px] px-1 py-[5px] text-left transition-colors hover:bg-[#f1f7f2] focus-visible:outline-2 focus-visible:outline-offset-[-2px] focus-visible:outline-[#238566] sm:grid-cols-[minmax(0,1fr)_48px_55px_48px_minmax(0,1fr)] sm:gap-2 sm:px-2" title="ช่วงอายุ ${r.age} ปี (ข้อมูลจำลอง)"><span class="flex h-[16px] min-w-0 justify-end rounded-[4px] bg-[#eff5f3]"><span class="h-full rounded-l-[4px] bg-[#3d92a0]" style="width:${(r.male/max*100).toFixed(2)}%"></span></span><span class="text-right text-[10px] font-extrabold tabular-nums text-[#287987] sm:text-[11px]">${pretty(r.male)}</span><span class="text-center text-[10px] font-semibold tabular-nums text-[#496c59] sm:text-[11px]">${r.age}</span><span class="text-left text-[10px] font-extrabold tabular-nums text-[#b66b7a] sm:text-[11px]">${pretty(r.female)}</span><span class="flex h-[16px] min-w-0 rounded-[4px] bg-[#faf0f1]"><span class="h-full rounded-r-[4px] bg-[#cb8795]" style="width:${(r.female/max*100).toFixed(2)}%"></span></span></button>`).join('');
+  note.classList.add('hidden');
+  note.textContent='';
+  const total = data.rows.reduce((s,r)=>s+r.male+r.female,0) || 1;
+  rowsEl.querySelectorAll('[data-age-index]').forEach(btn=>btn.addEventListener('click',()=>{
+    const already=btn.getAttribute('aria-pressed')==='true';
+    rowsEl.querySelectorAll('[data-age-index]').forEach(x=>{x.setAttribute('aria-pressed','false');x.classList.remove('bg-[#e4f3e9]','ring-1','ring-[#94c6ae]');});
+    if(already){note.classList.add('hidden');note.textContent='';return;}
+    btn.setAttribute('aria-pressed','true');btn.classList.add('bg-[#e4f3e9]','ring-1','ring-[#94c6ae]');
+    const r=data.rows[Number(btn.dataset.ageIndex)]; const count=r.male+r.female;
+    note.textContent=`${data.scope.name==='ทั้งอำเภอสอง'?'ทั้งอำเภอสอง':'ตำบล'+data.scope.name} · ช่วงอายุ ${r.age} ปี · รวม ${pretty(count)} คน · ${(count/total*100).toFixed(1)}% ของข้อมูลจำลองชุดนี้`;
+    note.classList.remove('hidden');
+  }));
+}
+function renderAside(data){
+  if(!asideCard) return;
+  const elderly = data.rows.slice(0,6).reduce((s,r)=>s+r.male+r.female,0);
+  const total = data.rows.reduce((s,r)=>s+r.male+r.female,0) || 1;
+  const percent = elderly/total*100;
+  const titleP = asideCard.querySelector('p');
+  const countP = asideCard.querySelector('p.mt-3');
+  const block = asideCard.querySelector('.mt-9');
+  const blockPs = block.querySelectorAll('p');
+  const bar = block.querySelector('.h-full');
+  titleP.textContent = data.scope.name==='ทั้งอำเภอสอง' ? 'ประชากรอายุ 60 ปีขึ้นไป' : 'ประชากรอายุ 60 ปีขึ้นไป · ต.'+data.scope.name;
+  countP.innerHTML = `${pretty(elderly)} <span class="text-[16px] font-normal text-[#c5dfce]">คน</span>`;
+  blockPs[0].textContent='สัดส่วนผู้สูงอายุ';
+  blockPs[1].textContent=percent.toFixed(2)+'%';
+  bar.style.width=percent.toFixed(2)+'%';
+  blockPs[2].textContent = `อ้างอิงจากประชากร ${pretty(total)} คน ${data.scope.name==='ทั้งอำเภอสอง'?'ที่จำแนกช่วงอายุได้ · กราฟรายช่วงอายุเป็น mockup':'ของตำบลที่เลือก · ข้อมูลจำลอง'}`;
+  if(descCard) descCard.textContent = data.scope.name==='ทั้งอำเภอสอง' ? 'ข้อมูลรายช่วงอายุในส่วนนี้เป็น mockup เพื่อทดสอบการโต้ตอบของหน้าจอ' : 'พีระมิดประชากรและการ์ดสรุปนี้เปลี่ยนตามตำบลที่เลือก โดยยังเป็นข้อมูล mockup เพื่อประเมิน UX';
+}
+function renderScope(data){
+  document.getElementById('age-scope-name').textContent = data.scope.name==='ทั้งอำเภอสอง' ? 'ทั้งอำเภอสอง' : 'ตำบล'+data.scope.name;
+  document.getElementById('age-scope-meta').textContent = data.scope.name==='ทั้งอำเภอสอง' ? 'เลือกตำบลจากแผนที่ ตาราง หรือดรอปดาวน์ด้านบนเพื่อเปรียบเทียบโครงสร้างช่วงวัย' : `ชาย ${pretty(data.scope.male)} · หญิง ${pretty(data.scope.female)} · รวม ${pretty(data.scope.total)} · บ้าน ${pretty(data.scope.houses)} (mockup รายช่วงอายุ)`;
+}
+function sync(){ const data=currentData(); renderScope(data); renderAgeRows(data); renderAside(data); }
+document.addEventListener('songhealth:area-change',sync);
+areaSelect.addEventListener('change',()=>setTimeout(sync,0));
+document.addEventListener('click',e=>{ if(e.target.closest('[data-zone],[data-select],#reset-area')) setTimeout(sync,0); });
+document.addEventListener('keydown',e=>{ if((e.key==='Enter'||e.key===' ') && e.target.closest('[data-zone]')) setTimeout(sync,0); });
+sync();
+})();</script>
+</body></html>

@@ -92,6 +92,7 @@ Read these on demand. Don't `@`-import them: imports load into every session at 
 - SPEC.md: design of phases 1–2 · SCHEMA.md: sheets, GAS contracts, calculation rules, TS types · FEATURES.md: tickets F01–F29, acceptance checks, workflow rules
 - GLOSSARY.md: domain terms · docs/adr/: decisions and why · CODING_STANDARDS.md: what code review checks
 - docs/reference/song-health-data-center-review-03-epi-real-response-r6.html: R6 UI mockup (its numbers are fake)
+- docs/reference/v7-6/: V7.6 visual and UX baseline for redesigning Data Center pages. design.md holds the rules; the HTML is a prototype with mock data, not production source
 
 ## Agent skills
 
