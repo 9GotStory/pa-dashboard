@@ -127,7 +127,9 @@
 
   /* R6's color names, kept for /reports and /reports/{id} until they are
      redesigned: the expand step of ADR-0012, each name on the closest V7.6
-     token, so dc-blue being green is intended. New code uses the V7.6 names. */
+     token, so dc-blue being green is intended. New code uses the V7.6 names.
+     Here in inline, so a utility such as bg-dc-blue reads the V7.6 token's
+     variable itself. */
   --color-dc-blue: var(--color-dc-brand-primary);
   --color-dc-blue-dark: var(--color-dc-brand-deep);
   --color-dc-blue-light: var(--color-dc-highlight-soft);

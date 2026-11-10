@@ -7,7 +7,9 @@ import { prompt, sarabun } from "@/lib/dc/fonts";
 // §9.1). /pa and /sync sit outside this route group, so PA keeps its look.
 // The wrapper sets the font variables that font-dc and font-prompt read.
 // wrap-break-word: HDC names such as "BCG ,HBV1,DTP1,…" have no break point
-// after their commas and would widen the page at 360 px.
+// after their commas and would widen the page at 360 px. The scroll margin is
+// taller than the sticky Masthead (two rows below md, one from md), so an
+// element scrolled to by focus is not hidden under it.
 export default function DcLayout({
   children,
 }: Readonly<{
@@ -15,7 +17,7 @@ export default function DcLayout({
 }>) {
   return (
     <div
-      className={`${prompt.variable} ${sarabun.variable} dc flex min-h-screen flex-col bg-dc-canvas font-dc text-sm/[1.65] text-dc-brand-deep wrap-break-word`}
+      className={`${prompt.variable} ${sarabun.variable} dc flex min-h-screen flex-col bg-dc-canvas **:scroll-mt-32 md:**:scroll-mt-20 font-dc text-sm/[1.65] text-dc-brand-deep wrap-break-word`}
     >
       <a
         href="#main"

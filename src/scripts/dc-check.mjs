@@ -1,11 +1,12 @@
 // Data Center page check (CODING_STANDARDS §4–5, FEATURES F16). After
 // npm run build, opens every built page of /, /reports and /reports/[id] in
 // out/ at 360 px wide and exits 1, naming the page, when a page breaks a rule
-// that shows on the rendered page. The home page is also opened at the V7.6
-// review widths, and the check exits 1, naming the width, when it scrolls
-// sideways at one (SPEC §9.1); and wide, exiting 1, naming the area, when its
-// population figures disagree (SPEC §9.2). The pages are opened with playwright-core in the installed
-// Google Chrome, the one dependency CODING_STANDARDS §3 allows a node script.
+// that shows on the rendered page. The home page is opened at V7.6's review
+// widths as well, and the check exits 1, naming the width, when it scrolls
+// sideways at one (SPEC §9.1). It is opened wide once more, and the check
+// exits 1, naming the area, when its population figures disagree (SPEC
+// §9.2). The pages are opened with playwright-core in the installed Google
+// Chrome, the one dependency CODING_STANDARDS §3 allows a node script.
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -160,20 +161,23 @@ async function checkPage(browser, url) {
   return problems;
 }
 
+// Aborts the map's tile requests, so a check never depends on the tile server.
+function blockTiles(page) {
+  return page.route(
+    (u) => u.hostname === "tile.openstreetmap.org",
+    (route) => route.abort(),
+  );
+}
+
 // The widths of HOME_WIDTHS at which the home page scrolls sideways, as
-// problems naming the width. A wide table scrolls inside its own box (SPEC
-// §9.1), never the page.
+// problems naming the width; domRules checks the same at WIDTH.
 async function overflowProblems(browser, url) {
   const problems = [];
   const page = await browser.newPage();
   try {
-    // Aborted, so the check never depends on the tile server.
-    await page.route(
-      (u) => u.hostname === "tile.openstreetmap.org",
-      (route) => route.abort(),
-    );
+    await blockTiles(page);
     for (const width of HOME_WIDTHS) {
-      await page.setViewportSize({ width, height: 900 });
+      await page.setViewportSize({ width, height: 800 });
       await page.goto(url, { waitUntil: "networkidle" });
       const { scrollWidth, clientWidth } = await page.evaluate(() => {
         const { scrollWidth, clientWidth } = document.documentElement;
@@ -277,13 +281,9 @@ async function checkPopulation(browser, url, hasAge) {
   const page = await browser.newPage({ viewport: { width: POPULATION_WIDTH, height: 800 }, reducedMotion: "reduce" });
   try {
     // pageerror but not console: picking a ตำบล loads new map tiles, and each
-    // tile that fails is a console error. Aborted, so these rules never depend
-    // on the tile server.
+    // tile that fails is a console error.
     page.on("pageerror", (err) => problems.push(`${area}: error: ${err.message}`));
-    await page.route(
-      (u) => u.hostname === "tile.openstreetmap.org",
-      (route) => route.abort(),
-    );
+    await blockTiles(page);
     await page.goto(url, { waitUntil: "networkidle" });
     const district = await page.evaluate(shownPopulation);
     problems.push(...totalsProblems(district.figures));
