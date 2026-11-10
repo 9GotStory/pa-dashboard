@@ -29,7 +29,7 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * load. The panel shows the population of what is picked and, for a ตำบล,
  * the หน่วยบริการ located in it (its ตำบลที่ตั้ง, hospitals.tambon_id in
  * catalog.json); for the อำเภอ, only how many there are. With population,
- * the comparison, labelled with source, comes next, then the population pyramid
+ * the comparison, labelled with source, comes next, then the โครงสร้างประชากร
  * of what is picked when the year has age rows. Without population, the
  * panel has no population rows and neither follows. A pick from the
  * comparison stays where it is: its bar or row shows the pick.
@@ -53,6 +53,8 @@ export default function DistrictExplorer({
   const area = areas.find((a) => a.id === selected);
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
+  // What the pyramid names: the ตำบล picked, or the อำเภอ as เลือกตำบล names it.
+  const scope = area ? title : "ทั้งอำเภอสอง";
   // The population of what the panel shows: the ตำบล picked, or the อำเภอ.
   const panelPopulation = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
 
@@ -162,7 +164,14 @@ export default function DistrictExplorer({
           onPick={setSelected}
         />
       )}
-      {panelPopulation?.age && <PopulationPyramid areaName={title} age={panelPopulation.age} source={source} />}
+      {panelPopulation?.age && (
+        <PopulationPyramid
+          scope={scope}
+          age={panelPopulation.age}
+          source={source}
+          onClear={() => setSelected(null)}
+        />
+      )}
     </div>
   );
 }
