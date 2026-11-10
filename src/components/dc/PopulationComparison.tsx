@@ -1,3 +1,5 @@
+"use client";
+
 import { ChartBar, MoveHorizontal, Table } from "lucide-react";
 import { useState } from "react";
 import { formatCount } from "@/lib/dc/format";
@@ -14,6 +16,8 @@ const SORTS: [Sort, string][] = [
   ["code", "ตามรหัสตำบล"],
   ["population", "ตามจำนวนประชากร"],
 ];
+// The ตำบล picked, the same in the chart and the table.
+const PICKED = "bg-dc-highlight-soft font-bold";
 
 /**
  * The เปรียบเทียบประชากรรายตำบล section of the home page (SPEC §9.2): ชาย
@@ -77,7 +81,7 @@ export default function PopulationComparison({
                   disabled={!pickable(a.key)}
                   onClick={() => onPick(a.key)}
                   className={`grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 rounded-md px-2 text-left text-xs sm:grid-cols-[8rem_minmax(0,1fr)_4.5rem] sm:text-[13px] ${
-                    picked ? "bg-dc-highlight-soft font-bold" : "hover:bg-dc-canvas"
+                    picked ? PICKED : "hover:bg-dc-canvas"
                   }`}
                 >
                   <span className="truncate text-dc-brand-deep">{a.name}</span>
@@ -95,8 +99,9 @@ export default function PopulationComparison({
         </div>
 
         <div hidden={view !== "table"}>
-          {/* Wider than a phone: it scrolls inside this box, never the page (SPEC §9.1) */}
-          <div className="overflow-x-auto">
+          {/* Wider than a phone: it scrolls inside this box, never the page (SPEC §9.1).
+              Focusable, so a keyboard scrolls it to the columns past the buttons. */}
+          <div role="region" aria-label="ตารางประชากรรายตำบล" tabIndex={0} className="overflow-x-auto">
             <table className="w-full min-w-[30rem] border-collapse text-[13px] tabular-nums">
               <caption className="sr-only">ประชากรรายตำบล ชาย หญิง รวม และบ้าน · {source}</caption>
               <thead className="bg-dc-surface-muted text-xs text-dc-brand-deep">
@@ -127,7 +132,7 @@ export default function PopulationComparison({
                     <tr
                       key={a.key}
                       onClick={canPick ? () => onPick(a.key) : undefined}
-                      className={`border-t border-dc-border-subtle ${picked ? "bg-dc-highlight-soft font-bold" : canPick ? "cursor-pointer hover:bg-dc-canvas" : ""}`}
+                      className={`border-t border-dc-border-subtle ${picked ? PICKED : canPick ? "cursor-pointer hover:bg-dc-canvas" : ""}`}
                     >
                       <th scope="row" className="py-1 pr-3 pl-2 text-left font-semibold text-dc-brand-deep sm:pl-3">
                         {/* No onClick of its own: its click reaches the row's. */}

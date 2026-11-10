@@ -5,8 +5,9 @@
 // widths as well, and the check exits 1, naming the width, when it scrolls
 // sideways at one (SPEC §9.1). It is opened wide once more, and the check
 // exits 1, naming the area, when its population figures disagree, the
-// figures by the bars of the ตำบล chart among them (SPEC §9.2). The pages are opened with playwright-core in the installed Google
-// Chrome, the one dependency CODING_STANDARDS §3 allows a node script.
+// figures by the bars of the ตำบล chart among them (SPEC §9.2). The pages
+// are opened with playwright-core in the installed Google Chrome, the one
+// dependency CODING_STANDARDS §3 allows a node script.
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -225,7 +226,7 @@ function shownPopulation(picker) {
         tambons: tambons.map((row) => parseCount(row.cells[at]?.textContent)),
       };
     }),
-    tambons: tambons.map((row) => row.cells[0]?.textContent.trim()),
+    tambonNames: tambons.map((row) => row.cells[0]?.textContent.trim()),
     bars: [...(chart?.querySelectorAll("button") ?? [])].map((bar) => ({
       name: bar.firstElementChild?.textContent.trim(),
       count: parseCount(bar.lastElementChild?.textContent),
@@ -257,16 +258,16 @@ function totalsProblems(figures) {
 
 // The chart rule: the figure by each ตำบล's bar is its รวม (คน) in the
 // table, and every ตำบล of the table has a bar.
-function chartProblems({ figures, tambons, bars }) {
+function chartProblems({ figures, tambonNames, bars }) {
   if (bars.length === 0) return [`${DISTRICT}: no bars in the ตำบล chart`];
   const totals = figures.find((f) => f.column === "รวม (คน)").tambons;
-  const inTable = new Map(tambons.map((name, i) => [name, totals[i]]));
+  const inTable = new Map(tambonNames.map((name, i) => [name, totals[i]]));
   const charted = new Set(bars.map((bar) => bar.name));
   return [
     ...bars.flatMap(({ name, count }) =>
       mismatchProblems(`ตำบล${name}`, "the figure by its bar", count, "รวม (คน) in the table", inTable.get(name) ?? null),
     ),
-    ...tambons.filter((name) => !charted.has(name)).map((name) => `ตำบล${name}: no bar in the ตำบล chart`),
+    ...tambonNames.filter((name) => !charted.has(name)).map((name) => `ตำบล${name}: no bar in the ตำบล chart`),
   ];
 }
 
