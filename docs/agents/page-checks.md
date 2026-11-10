@@ -1,6 +1,6 @@
 # Page checks by hand
 
-Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playwright script of your own against `out/`, or the local LCP comparison with `main` that SPEC §9.6 asks of a ticket changing the home page. The script itself is not committed; its output goes in the PR's Evidence.
+Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playwright script of your own against `out/` or the live site, or the local LCP comparison with `main` that SPEC §9.6 asks of a ticket changing the home page. The script itself is not committed; its output goes in the PR's Evidence or the issue's record.
 
 ## A Playwright script in the scratchpad
 
@@ -18,5 +18,10 @@ Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playw
    - LCP in ms: `audits["largest-contentful-paint"].numericValue`.
    - The LCP element: Lighthouse 13 has no `largest-contentful-paint-element` audit; the element's `nodeLabel` and `snippet` are inside `audits["lcp-breakdown-insight"].details`.
 4. Record both medians and the LCP element of each in the PR. Note the load average: this machine is shared.
+
+## On the live site
+
+- Name the build you checked: read `built_at` in `https://songhealth-dc.pages.dev/data/meta.json` before and after. A merge to `main`, docs-only included, redeploys Cloudflare Pages, and a redeploy can land mid-measurement; when `built_at` changed, check again.
+- `gh` cannot upload images, so the user drags screenshots into the issue comment by hand. Write a placeholder per image in the comment (`[ภาพ <name>.png]`) and save the files in `.wizard/<ticket>/` (gitignored, kept across reboots), not the scratchpad, which `/tmp` loses on reboot.
 
 `dc:budget` reads `./out` only. When no merge since the last PR changed client JavaScript, that PR's After figure is `main`'s: `gh pr view <n> --json body --jq .body | grep -F dc:budget` (`-F`: a Thai pattern with `.{0,n}` exceeds ugrep's limits). Otherwise run it from a directory whose `out` links to `main`'s copy: `ln -s <main-out> <dir>/out && cd <dir> && node <repo>/src/scripts/dc-budget.mjs`.

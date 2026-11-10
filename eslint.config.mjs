@@ -32,6 +32,29 @@ const eslintConfig = defineConfig([
       "no-irregular-whitespace": ["error", { skipStrings: false }],
     },
   },
+  // Old R6 colour names are aliases until /reports is redesigned (SPEC §9.1,
+  // expand–contract). The ignored files are the ones still on them; the
+  // contract step moves them to the V7.6 names and drops the ignores.
+  // dc-canvas is a name of both, and dc-border-subtle a new one.
+  {
+    files: ["src/app/(dc)/**", "src/components/dc/**"],
+    ignores: [
+      "src/app/(dc)/reports/**",
+      "src/components/dc/CoverageReport.tsx",
+      "src/components/dc/RegistryPopulationUpload.tsx",
+      "src/components/dc/ReportLibrary.tsx",
+      "src/components/dc/charts/**",
+    ],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        ...["Literal[value", "TemplateElement[value.raw"].map((node) => ({
+          selector: `${node}=/\\bdc-(blue|ink|muted|navy|teal|gold)\\b|\\bdc-border(?!-)/]`,
+          message: "Use the V7.6 colour names here; the R6 names are aliases kept for /reports until its redesign (SPEC §9.1).",
+        })),
+      ],
+    },
+  },
   {
     files: ["src/lib/dc/snapshot.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles] }] },
