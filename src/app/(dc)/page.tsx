@@ -1,5 +1,7 @@
+import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import DistrictExplorer from "@/components/dc/DistrictExplorer";
+import Hero from "@/components/dc/Hero";
 import { formatBuildTime, formatCount, formatThaiDate } from "@/lib/dc/format";
 import { homePopulation, registryAsOf } from "@/lib/dc/population";
 import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
@@ -9,17 +11,17 @@ import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
 const BOUNDARY_DOWNLOADED = "4 พฤศจิกายน 2569";
 
 // The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
-// and population.json at build time: the latest data date, the ประชากร
-// ทะเบียนราษฎร of the อำเภอ, the ตำบล on a map with their หน่วยบริการ,
-// population and population pyramid, a card per หัวข้อ into the report
-// library, and the sources. The client gets the population as computed
-// (HomePopulation), never the rows; without population data the page is as
-// in phase 1.
+// and population.json at build time: the Hero, the ประชากรทะเบียนราษฎร of
+// the อำเภอ, the ตำบล on a map with their หน่วยบริการ, population and
+// population pyramid, a card per หัวข้อ into the report library, and the
+// sources with the latest data date. The client gets the population as
+// computed (HomePopulation), never the rows; without population data the
+// page is as in phase 1, under the Hero.
 export default function Home() {
   const { areas, hospitals, mains } = readCatalog();
   const { built_at, latest_date_com } = readMeta();
   const population = homePopulation(readPopulation(), areas);
-  // The label of the summary and of the ตำบล table, one text so the two match
+  // The label of the ภาพรวมประชากร and of the ตำบล table, one text so the two match
   // (SPEC §9.2). Made here, not in the client: population.ts holds the /sync
   // file reader too.
   const source = population ? `ทะเบียนราษฎร ${registryAsOf(population.yymm)} · กรมการปกครอง` : "";
@@ -29,62 +31,57 @@ export default function Home() {
 
   return (
     <>
-      <div className="mb-5 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-        <div>
-          <h1 className="font-prompt text-2xl font-bold text-dc-navy sm:text-[30px]">ข้อมูลพื้นฐานอำเภอสอง</h1>
-          <p className="mt-1 text-dc-muted">เขตการปกครอง · หน่วยบริการ · คลังรายงานสุขภาพ จังหวัดแพร่</p>
-          <p className="mt-3 inline-flex items-center gap-2 rounded-md border border-dc-gold/50 bg-dc-gold/10 px-3 py-2 text-xs font-semibold text-dc-ink">
-            <span aria-hidden="true" className="size-2 shrink-0 rounded-full bg-dc-gold" />
-            วันที่ข้อมูลล่าสุด {formatThaiDate(latest_date_com) || "—"}
-          </p>
-        </div>
-        {!population && (
-          <dl className="rounded-[10px] border border-l-4 border-dc-border border-l-dc-blue bg-dc-blue-light px-5 py-4 md:min-w-56">
-            <dt className="text-xs font-semibold text-dc-muted">เขตการปกครอง</dt>
-            <dd className="mt-1 font-prompt text-[28px] leading-none font-bold text-dc-navy">
-              {areas.length} <small className="text-sm font-semibold">ตำบล</small>
-            </dd>
-            <dd className="mt-1.5 text-xs text-dc-muted">อำเภอสอง · จังหวัดแพร่</dd>
-          </dl>
-        )}
-      </div>
+      <Hero comparison={population !== null} />
 
-      {/* R6's 4 blocks: the อำเภอ's population, then the เขตการปกครอง block that phase 1 shows on its own */}
-      {population && (
-        <section aria-label="สรุปประชากรและการปกครอง" className="mb-5">
-          <dl className="grid grid-cols-2 gap-px overflow-hidden rounded-[10px] border border-dc-border bg-dc-border md:grid-cols-[1.3fr_1fr_1fr_1fr]">
-            <div className="min-w-0 border-l-4 border-l-dc-blue bg-dc-blue-light px-4 py-3.5 sm:px-6 sm:py-5">
-              <dt className="text-xs font-semibold text-dc-muted">ประชากรทั้งหมด</dt>
-              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy tabular-nums lg:text-[29px]">
-                {formatCount(population.district.totals.total)}
-              </dd>
-              <dd className="text-xs text-dc-muted">คน</dd>
-              <dd className="mt-1 text-xs text-dc-muted">{source}</dd>
-            </div>
-            <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
-              <dt className="text-xs font-semibold text-dc-muted">ประชากรชาย</dt>
-              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy tabular-nums lg:text-[29px]">
-                {formatCount(population.district.totals.male)}
-              </dd>
-              <dd className="text-xs text-dc-muted">คน</dd>
-            </div>
-            <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
-              <dt className="text-xs font-semibold text-dc-muted">ประชากรหญิง</dt>
-              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy tabular-nums lg:text-[29px]">
-                {formatCount(population.district.totals.female)}
-              </dd>
-              <dd className="text-xs text-dc-muted">คน</dd>
-            </div>
-            <div className="min-w-0 bg-white px-4 py-3.5 sm:px-6 sm:py-5">
-              <dt className="text-xs font-semibold text-dc-muted">เขตการปกครอง</dt>
-              <dd className="mt-1 font-prompt text-2xl leading-tight font-bold text-dc-navy lg:text-[29px]">
-                {areas.length} <small className="text-sm font-semibold">ตำบล</small>
-              </dd>
-              <dd className="text-xs text-dc-muted">อำเภอสอง · จังหวัดแพร่</dd>
-            </div>
-          </dl>
-        </section>
-      )}
+      {/* The อำเภอ's population and its เขตการปกครอง, read-only text in one strip; without population, the เขตการปกครอง alone as in phase 1 */}
+      <section aria-labelledby="overview-title" className="mb-8 sm:mb-10">
+        <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-end md:justify-between">
+          <h2 id="overview-title" className="font-prompt text-2xl font-bold text-dc-brand-deep sm:text-[32px]">
+            {population ? "ภาพรวมประชากรอำเภอสอง" : "ภาพรวมอำเภอสอง"}
+          </h2>
+          {population && (
+            <p className="inline-flex items-center gap-2 text-xs font-semibold text-dc-text-secondary">
+              <CalendarDays aria-hidden="true" className="size-4 shrink-0" />
+              {source}
+            </p>
+          )}
+        </div>
+        <dl className="grid overflow-hidden rounded-[20px] bg-dc-surface sm:grid-cols-3 lg:grid-cols-[1.55fr_1fr_1fr_0.8fr]">
+          {population && (
+            <>
+              <div className="min-w-0 px-5 py-5 sm:col-span-3 sm:px-8 sm:py-7 lg:col-span-1">
+                <dt className="text-xs font-semibold text-dc-text-secondary">ประชากรทั้งหมด</dt>
+                <dd className="mt-2 font-prompt text-[40px] leading-none font-bold text-dc-brand-deep tabular-nums sm:text-[52px]">
+                  {formatCount(population.district.totals.total)} <small className="text-sm font-medium text-dc-text-secondary">คน</small>
+                </dd>
+              </div>
+              {(
+                [
+                  ["ประชากรชาย", population.district.totals.male, "bg-dc-pyramid-male"],
+                  ["ประชากรหญิง", population.district.totals.female, "bg-dc-pyramid-female"],
+                ] as const
+              ).map(([label, count, dot]) => (
+                <div key={label} className="min-w-0 border-t border-dc-border-subtle px-5 py-5 sm:border-t-0 sm:px-7 sm:py-7">
+                  <dt className="flex items-center gap-2 text-xs font-semibold text-dc-text-secondary">
+                    <span aria-hidden="true" className={`size-2.5 rounded-full ${dot}`} />
+                    {label}
+                  </dt>
+                  <dd className="mt-3 font-prompt text-[32px] leading-none font-bold text-dc-brand-deep tabular-nums sm:text-[38px]">
+                    {formatCount(count)} <small className="text-xs font-medium text-dc-text-secondary">คน</small>
+                  </dd>
+                </div>
+              ))}
+            </>
+          )}
+          <div className="min-w-0 border-t border-dc-border-subtle px-5 py-5 first:border-t-0 sm:border-t-0 sm:px-7 sm:py-7">
+            <dt className="text-xs font-semibold text-dc-text-secondary">เขตการปกครอง</dt>
+            <dd className="mt-3 font-prompt text-[32px] leading-none font-bold text-dc-brand-deep sm:text-[38px]">
+              {areas.length} <small className="text-xs font-medium text-dc-text-secondary">ตำบล</small>
+            </dd>
+            <dd className="mt-2 text-xs text-dc-text-secondary">อำเภอสอง · จังหวัดแพร่</dd>
+          </div>
+        </dl>
+      </section>
 
       <DistrictExplorer areas={areas} hospitals={hospitals} population={population} source={source} />
 
@@ -142,7 +139,7 @@ export default function Home() {
           <a href="https://opendata.moph.go.th" className="text-dc-brand-primary underline underline-offset-2">
             HDC Open Data
           </a>{" "}
-          กระทรวงสาธารณสุข ·{" "}
+          กระทรวงสาธารณสุข ข้อมูลล่าสุด {formatThaiDate(latest_date_com) || "—"} ·{" "}
           {population && (
             <>
               ประชากร:{" "}
