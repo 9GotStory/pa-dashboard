@@ -489,17 +489,20 @@ test("GAS answers Busy twice for a report, then the report → asked again 100 m
 test("GAS answers Busy to everything → asked again for 1.5 s (5 min scaled), then exit 1 saying another run holds the script lock; nothing written", async (t) => {
   const gas = await startStub(t, () => BUSY);
 
+  const started = Date.now();
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
+  const ran = Date.now() - started;
 
   assert.equal(res.code, 1);
   assert.match(
     res.stderr,
     /^build-snapshot: cannot get the catalog \(\?action=catalog\): GAS still answers Busy after 1\.5 s: another run holds the script lock/,
   );
-  // The last try comes less than one wait before the limit; 3 retries of
-  // another failure would be over within 70 ms.
-  const asked = gas.requests.map((q) => q.at);
-  assert.ok(asked.at(-1) - asked[0] >= 1300, `asked for ${asked.at(-1) - asked[0]} ms`);
+  // It stops asking once less than one wait (100 ms) is left before the limit,
+  // so the run takes at least 1.4 s by its own clock; load only makes it
+  // longer. 3 retries of another failure would be over within 70 ms.
+  assert.ok(gas.requests.length > 1, `asked ${gas.requests.length} time(s)`);
+  assert.ok(ran >= 1400, `ran for ${ran} ms`);
   assert.equal(snapshot(res.cwd), null);
 });
 
