@@ -20,7 +20,7 @@ const HOME_WIDTHS = [320, 390, 768, 1440, 1920];
 // The width the population rules read the home page at: a desktop's, with
 // the map and the panel side by side.
 const POPULATION_WIDTH = 1280;
-// The อำเภอ as the panel and the pyramid name it before any ตำบล is picked.
+// The อำเภอ as the panel names it before any ตำบล is picked.
 const DISTRICT = "ภาพรวมอำเภอสอง";
 // The label of the home page's ตำบล <select> (SPEC §9.2).
 const PICKER = "เลือกตำบล";
@@ -213,7 +213,8 @@ function shownPopulation(picker) {
   const columns = [...(table?.tHead?.rows[0]?.cells ?? [])].map((cell) => cell.textContent.trim());
   const tambons = [...(table?.tBodies[0]?.rows ?? [])];
   const districtRow = [...(table?.tFoot?.rows ?? [])].find((row) => row.textContent.includes("รวมทั้งอำเภอ"));
-  const pyramid = document.querySelector('svg[role="img"][aria-label^="พีระมิดประชากร "]');
+  // The ช่วงอายุ rows: a button each, its ชาย figure second and its หญิง figure fourth.
+  const pyramid = document.querySelector('[role="group"][aria-label^="พีระมิดประชากร "]');
   const select = [...document.querySelectorAll("select")].find((s) => s.labels[0]?.textContent.trim() === picker);
   return {
     figures: [["ประชากรทั้งหมด", "รวม (คน)"], ["ประชากรชาย", "ชาย (คน)"], ["ประชากรหญิง", "หญิง (คน)"]].map(([label, column]) => {
@@ -233,7 +234,7 @@ function shownPopulation(picker) {
     })),
     pickable: [...(select?.options ?? [])].filter((option) => option.value).map((option) => option.textContent.trim()),
     panel: listedCount('section[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
-    bands: [...(pyramid?.getAttribute("aria-label") ?? "").matchAll(/ชาย ([\d,]+) หญิง ([\d,]+)/g)].flatMap((m) => [parseCount(m[1]), parseCount(m[2])]),
+    bands: [...(pyramid?.querySelectorAll("button") ?? [])].flatMap((row) => [parseCount(row.children[1]?.textContent), parseCount(row.children[3]?.textContent)]),
     unsplit: parseCount(pyramid?.closest("section")?.textContent.match(/ไม่รวมประชากรที่ไม่แยกอายุ ([\d,]+) คน/)?.[1]),
   };
 }
@@ -275,7 +276,7 @@ function chartProblems({ figures, tambonNames, bars }) {
 // ประชากรที่ไม่แยกอายุ, are the area's ประชากรทั้งหมด in the panel.
 function pyramidProblems(area, { bands, unsplit, panel }) {
   if (bands.length !== AGE_BANDS * 2) return [`${area}: the pyramid shows ${bands.length / 2} of ${AGE_BANDS} ช่วงอายุ`];
-  const counted = unsplit === null ? null : bands.reduce((a, b) => a + b) + unsplit;
+  const counted = unsplit === null || bands.includes(null) ? null : bands.reduce((a, b) => a + b) + unsplit;
   return mismatchProblems(area, "pyramid + ประชากรที่ไม่แยกอายุ", counted, "ประชากรทั้งหมด in the panel", panel);
 }
 
@@ -285,7 +286,7 @@ function pyramidProblems(area, { bands, unsplit, panel }) {
 // pick shows; picking the ตำบล on show changes nothing.
 async function pickTambon(page, name) {
   const select = page.getByLabel(PICKER, { exact: true });
-  const pyramid = page.locator(`svg[role="img"][aria-label^="พีระมิดประชากร ตำบล${name} "]`);
+  const pyramid = page.locator(`[role="group"][aria-label^="พีระมิดประชากร ตำบล${name} "]`);
   const deadline = Date.now() + PICK_TIMEOUT;
   while (Date.now() < deadline) {
     const shown = await select
