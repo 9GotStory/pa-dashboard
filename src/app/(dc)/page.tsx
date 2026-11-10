@@ -31,7 +31,7 @@ export default function Home() {
 
   return (
     <>
-      <Hero comparison={population !== null} />
+      <Hero hasComparison={population !== null} />
 
       {/* The อำเภอ's population and its เขตการปกครอง, read-only text in one strip; without population, the เขตการปกครอง alone as in phase 1 */}
       <section aria-labelledby="overview-title" className="mb-8 sm:mb-10">
@@ -46,7 +46,9 @@ export default function Home() {
             </p>
           )}
         </div>
-        <dl className="grid overflow-hidden rounded-[20px] bg-dc-surface sm:grid-cols-3 lg:grid-cols-[1.55fr_1fr_1fr_0.8fr]">
+        <dl
+          className={`grid overflow-hidden rounded-[20px] bg-dc-surface ${population ? "sm:grid-cols-3 lg:grid-cols-[1.55fr_1fr_1fr_0.8fr]" : "sm:w-fit"}`}
+        >
           {population && (
             <>
               <div className="min-w-0 px-5 py-5 sm:col-span-3 sm:px-8 sm:py-7 lg:col-span-1">
@@ -75,7 +77,7 @@ export default function Home() {
           )}
           <div className="min-w-0 border-t border-dc-border-subtle px-5 py-5 first:border-t-0 sm:border-t-0 sm:px-7 sm:py-7">
             <dt className="text-xs font-semibold text-dc-text-secondary">เขตการปกครอง</dt>
-            <dd className="mt-3 font-prompt text-[32px] leading-none font-bold text-dc-brand-deep sm:text-[38px]">
+            <dd className="mt-3 font-prompt text-[32px] leading-none font-bold text-dc-brand-deep tabular-nums sm:text-[38px]">
               {areas.length} <small className="text-xs font-medium text-dc-text-secondary">ตำบล</small>
             </dd>
             <dd className="mt-2 text-xs text-dc-text-secondary">อำเภอสอง · จังหวัดแพร่</dd>

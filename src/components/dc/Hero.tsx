@@ -11,7 +11,7 @@ import { ArrowRight, ChevronRight } from "lucide-react";
  * asks for reduced motion: scroll-behavior works only on the element that
  * scrolls, and set here it leaves the other pages and PA as they are.
  */
-export default function Hero({ comparison }: { comparison: boolean }) {
+export default function Hero({ hasComparison }: { hasComparison: boolean }) {
   return (
     <section
       aria-labelledby="hero-title"
@@ -19,7 +19,7 @@ export default function Hero({ comparison }: { comparison: boolean }) {
     >
       <div className="flex flex-col justify-center px-5 py-6 sm:px-12 sm:py-12 lg:px-16">
         <h1 id="hero-title" className="font-prompt text-4xl leading-[1.3] font-bold text-dc-brand-deep sm:text-5xl lg:text-6xl">
-          มองเห็นพื้นที่
+          มองเห็นพื้นที่{" "}
           <span className="block text-dc-brand-accent">เข้าใจสุขภาพ.</span>
         </h1>
         <p className="mt-4 max-w-[490px] text-[13px] leading-[1.9] text-dc-text-secondary sm:mt-5 sm:text-[15px]">
@@ -33,7 +33,7 @@ export default function Hero({ comparison }: { comparison: boolean }) {
             สำรวจข้อมูลพื้นที่
             <ArrowRight aria-hidden="true" className="size-4" />
           </a>
-          {comparison && (
+          {hasComparison && (
             <a href="#comparison" className="inline-flex min-h-11 items-center gap-1.5 px-2 font-bold text-dc-brand-primary hover:underline">
               เปรียบเทียบประชากร
               <ChevronRight aria-hidden="true" className="size-4" />
