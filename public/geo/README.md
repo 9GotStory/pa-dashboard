@@ -9,4 +9,4 @@
 | วันที่ดาวน์โหลด | 4 พ.ย. 2569 |
 | properties | `ADMIN_ID3` รหัสตำบล 6 หลัก (= `tambon_master.id`) · `NAME3` ชื่อตำบล · `NAME2` อำเภอ · `NAME1` จังหวัด |
 
-ไฟล์คือ response ของ URL ข้างบนโดยไม่แก้ไข ถ้าจะดาวน์โหลดใหม่ ให้บันทึก response ของ URL เดิมทับไฟล์ ตรวจตามเกณฑ์ของ F17 ใน FEATURES.md แล้วแก้วันที่ดาวน์โหลดในไฟล์นี้และใน `BOUNDARY_DOWNLOADED` ของ `src/components/dc/Footer.tsx` ซึ่ง footer ของ Data Center แสดง
+ไฟล์คือ response ของ URL ข้างบนโดยไม่แก้ไข ถ้าจะดาวน์โหลดใหม่ ให้บันทึก response ของ URL เดิมทับไฟล์ ตรวจตามเกณฑ์ของ F17 ใน FEATURES.md แล้วแก้วันที่ดาวน์โหลดในไฟล์นี้และใน `BOUNDARY_DOWNLOADED` ของ `src/app/(dc)/page.tsx` ซึ่งส่วนที่มาของข้อมูลของหน้าแรกแสดง

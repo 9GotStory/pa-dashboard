@@ -4,6 +4,10 @@ import { formatBuildTime, formatCount, formatThaiDate } from "@/lib/dc/format";
 import { homePopulation, registryAsOf } from "@/lib/dc/population";
 import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
 
+// The day public/geo/song-tambon.geojson was downloaded, as public/geo/README.md
+// records it (SCHEMA §8); a new download changes both.
+const BOUNDARY_DOWNLOADED = "4 พฤศจิกายน 2569";
+
 // The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
 // and population.json at build time: the latest data date, the ประชากร
 // ทะเบียนราษฎร of the อำเภอ, the ตำบล on a map with their หน่วยบริการ,
@@ -128,21 +132,21 @@ export default function Home() {
 
       <section
         aria-labelledby="sources-title"
-        className="mt-7 flex flex-col gap-1 rounded-md border border-dc-border bg-dc-blue-light/50 px-4 py-3 text-xs text-dc-ink sm:flex-row sm:gap-4"
+        className="mt-7 flex flex-col gap-1 rounded-md border border-dc-border-subtle bg-dc-surface-muted px-4 py-3 text-xs text-dc-brand-deep sm:flex-row sm:gap-4"
       >
-        <h2 id="sources-title" className="font-prompt font-semibold whitespace-nowrap text-dc-navy">
+        <h2 id="sources-title" className="font-prompt font-semibold whitespace-nowrap text-dc-brand-deep">
           ที่มาของข้อมูล
         </h2>
         <p>
           รายงาน:{" "}
-          <a href="https://opendata.moph.go.th" className="text-dc-blue underline underline-offset-2">
+          <a href="https://opendata.moph.go.th" className="text-dc-brand-primary underline underline-offset-2">
             HDC Open Data
           </a>{" "}
           กระทรวงสาธารณสุข ·{" "}
           {population && (
             <>
               ประชากร:{" "}
-              <a href="https://stat.bora.dopa.go.th/" className="text-dc-blue underline underline-offset-2">
+              <a href="https://stat.bora.dopa.go.th/" className="text-dc-brand-primary underline underline-offset-2">
                 stat.bora
               </a>{" "}
               กรมการปกครอง ·{" "}
@@ -151,12 +155,12 @@ export default function Home() {
           ขอบเขตตำบล:{" "}
           <a
             href="https://pherportal.moph.go.th/arcgis/rest/services/MOPH_DATA/tambon/MapServer/0"
-            className="text-dc-blue underline underline-offset-2"
+            className="text-dc-brand-primary underline underline-offset-2"
           >
             MOPH GIS
           </a>{" "}
-          · แผนที่พื้นหลัง:{" "}
-          <a href="https://www.openstreetmap.org/copyright" className="text-dc-blue underline underline-offset-2">
+          ดาวน์โหลด {BOUNDARY_DOWNLOADED} · แผนที่พื้นหลัง:{" "}
+          <a href="https://www.openstreetmap.org/copyright" className="text-dc-brand-primary underline underline-offset-2">
             OpenStreetMap
           </a>{" "}
           · สร้างหน้าเว็บ <time dateTime={built_at}>{formatBuildTime(built_at)}</time>
