@@ -5,7 +5,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { preconnect } from "react-dom";
 import { formatCount } from "@/lib/dc/format";
-import type { DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
+import type { AreaVillages, DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
 import PopulationComparison from "./PopulationComparison";
 import PopulationPyramid from "./PopulationPyramid";
 
@@ -28,7 +28,8 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * เลือกตำบล works without the map, as when its tiles or boundaries cannot
  * load. The panel shows the population of what is picked and, for a ตำบล,
  * the หน่วยบริการ located in it (its ตำบลที่ตั้ง, hospitals.tambon_id in
- * catalog.json); for the อำเภอ, only how many there are. With population,
+ * catalog.json), then its หมู่บ้าน when the year has village rows; for the
+ * อำเภอ, only how many there are of each. With population,
  * the comparison, labelled with source, comes next, then the โครงสร้างประชากร
  * of what is picked when the year has age rows. Without population, the
  * panel has no population rows and neither follows. A pick from the
@@ -135,11 +136,14 @@ export default function DistrictExplorer({
                   ) : (
                     <p className="mt-1 text-xs text-dc-text-secondary">ไม่มีหน่วยบริการที่ตั้งอยู่ในตำบลนี้</p>
                   )}
+                  {panelPopulation?.villages && <VillageRows villages={panelPopulation.villages} />}
                 </>
               ) : (
                 <>
                   <p className="text-xs text-dc-text-secondary">
-                    {areas.length} ตำบล · หน่วยบริการ {hospitals.length} แห่ง
+                    {areas.length} ตำบล
+                    {panelPopulation?.villages && ` · ${formatCount(panelPopulation.villages.count)} หมู่บ้าน`}
+                    {` · หน่วยบริการ ${hospitals.length} แห่ง`}
                   </p>
                   {panelPopulation && <PopulationRows totals={panelPopulation.totals} />}
                   <p className="mt-4 text-xs text-dc-text-secondary">เลือกตำบลเพื่อดูหน่วยบริการที่ตั้งอยู่ในตำบลนั้น</p>
@@ -192,5 +196,27 @@ function PopulationRows({ totals }: { totals: PopulationTotals }) {
         </div>
       ))}
     </dl>
+  );
+}
+
+// The หมู่บ้าน of the ตำบล the panel shows (SPEC §9.2), always open: หมู่ที่
+// and name, คน and บ้าน, by หมู่ที่, ไม่ระบุหมู่ last without its name in the file.
+function VillageRows({ villages }: { villages: AreaVillages }) {
+  return (
+    <>
+      <h4 className="mt-4 text-xs font-bold text-dc-brand-deep">หมู่บ้าน {formatCount(villages.count)} หมู่</h4>
+      <ul className="mt-1">
+        {villages.list.map((v) => (
+          <li
+            key={v.code}
+            className="flex items-baseline gap-3 border-t border-dc-border-subtle py-2 text-[13px] first:border-t-0"
+          >
+            <span className="min-w-0 flex-1 font-semibold text-dc-brand-deep">{v.moo === null ? "ไม่ระบุหมู่" : `หมู่ ${v.moo} ${v.name}`}</span>
+            <span className="text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">{formatCount(v.totals.total)} คน</span>
+            <span className="w-16 text-right text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">{formatCount(v.totals.house)} บ้าน</span>
+          </li>
+        ))}
+      </ul>
+    </>
   );
 }

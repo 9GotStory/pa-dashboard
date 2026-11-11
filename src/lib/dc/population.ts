@@ -1,6 +1,7 @@
 import { formatCount } from "./format";
 import type {
   AgeProfile,
+  AreaVillages,
   DcCatalog,
   HomePopulation,
   PopulationSnapshot,
@@ -10,6 +11,7 @@ import type {
   RegistryPopulationRow,
   RegistryPopulationVillageRow,
   UnsplitGroup,
+  VillagePopulation,
 } from "./types";
 
 // ประชากรทะเบียนราษฎร (SCHEMA §11, ADR-0011): reading and checking the files
@@ -56,8 +58,9 @@ export function ageRowsTotals(rows: RegistryPopulationAgeRow[]): Omit<Population
  * The population part of the home page (SCHEMA §11.3), or null when
  * population.json has no year: the latest year, which every part of the page
  * shows, by ตำบล in code order and for the whole อำเภอ, each with its age
- * structure for the pyramid when that year has age rows. A ตำบล is named from
- * areas, or by its tt_name if areas lacks it.
+ * structure for the pyramid when that year has age rows and its หมู่บ้าน
+ * when it has village rows. A ตำบล is named from areas, or by its tt_name if
+ * areas lacks it.
  */
 export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["areas"]): HomePopulation | null {
   const shown = snapshot.years.at(-1);
@@ -71,17 +74,42 @@ export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["a
     byTambon.set(key, [...(byTambon.get(key) ?? []), row]);
   }
   const names = new Map(areas.map((a) => [a.id, a.name_th]));
-  // No age rows in the year shown, so no pyramid anywhere.
+  // No age rows in the year shown, so no pyramid anywhere; no village rows,
+  // so no หมู่บ้าน anywhere.
   const hasAge = shown.age.length > 0;
+  const hasVillages = shown.village.length > 0;
+  const areaList = [...byTambon.keys()].sort().map((key) => {
+    const rows = byTambon.get(key)!;
+    const age = hasAge ? ageProfile(shown.age.filter((r) => tambonOf(r) === key)) : null;
+    // A หมู่บ้าน's ตำบล is the first 6 digits of its own code (SCHEMA §11.3).
+    const villages = hasVillages ? tambonVillages(shown.village.filter((r) => r.mm.slice(0, 6) === key)) : null;
+    return { key, name: names.get(key) ?? rows[0].tt_name, totals: populationTotals(rows), age, villages };
+  });
   return {
     yymm: shown.yymm,
-    district: { key: "all", name: "อำเภอสอง", totals: populationTotals(shown.population), age: hasAge ? ageProfile(shown.age) : null },
-    areas: [...byTambon.keys()].sort().map((key) => {
-      const rows = byTambon.get(key)!;
-      const age = hasAge ? ageProfile(shown.age.filter((r) => tambonOf(r) === key)) : null;
-      return { key, name: names.get(key) ?? rows[0].tt_name, totals: populationTotals(rows), age };
-    }),
+    district: {
+      key: "all",
+      name: "อำเภอสอง",
+      totals: populationTotals(shown.population),
+      age: hasAge ? ageProfile(shown.age) : null,
+      villages: hasVillages ? { count: areaList.reduce((sum, a) => sum + a.villages!.count, 0), list: [] } : null,
+    },
+    areas: areaList,
   };
+}
+
+/**
+ * The หมู่บ้าน of a ตำบล from its village rows (SCHEMA §11.3): one per code,
+ * every สำนักทะเบียน added up and named as its first row, by หมู่ที่ (the
+ * code's last 2 digits), ไม่ระบุหมู่ (00) last and not counted.
+ */
+function tambonVillages(rows: RegistryPopulationVillageRow[]): AreaVillages {
+  const list = [...Map.groupBy(rows, (r) => r.mm)].map(([code, codeRows]): VillagePopulation => {
+    const moo = Number(code.slice(6)) || null;
+    return { code, moo, name: codeRows[0].mm_name, totals: populationTotals(codeRows) };
+  });
+  list.sort((a, b) => (a.moo ?? Infinity) - (b.moo ?? Infinity));
+  return { count: list.filter((v) => v.moo !== null).length, list };
 }
 
 // The ช่วงอายุ of the pyramid (SCHEMA §11.3): 5 years each from 0–4 to

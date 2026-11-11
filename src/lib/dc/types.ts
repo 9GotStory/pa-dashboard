@@ -177,14 +177,15 @@ export type RegistryPopulationAgeRow = {
 export interface RegistryPopulationYear {
   yymm: string;
   population: RegistryPopulationRow[];
+  village: RegistryPopulationVillageRow[];
   age: RegistryPopulationAgeRow[];
 }
 
 /** population.json (SCHEMA §7) */
 export interface PopulationSnapshot {
-  years: RegistryPopulationYear[]; // years with population rows, oldest first · [] = no data yet · age only in the last year, [] in the others
+  years: RegistryPopulationYear[]; // years with population rows, oldest first · [] = no data yet · age and village only in the last year, [] in the others
 }
-/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of the three sheets and the age rows of every year */
+/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of the three sheets and the age and village rows of every year */
 export type GasRegistryPopulation = PopulationSnapshot;
 
 /** GAS's answer to a request that failed (SCHEMA §3): message, the reason, is always there */
@@ -227,12 +228,27 @@ export interface AgeProfile {
   unsplit: Record<UnsplitGroup, number>; // ประชากรที่ไม่แยกอายุ by kind, adding up to totals.total − age_total
 }
 
+/** One หมู่บ้าน in the ตำบล panel (SCHEMA §11.3): its village rows of one code added up across สำนักทะเบียน */
+export interface VillagePopulation {
+  code: string; // the 8-digit หมู่บ้าน code (mm)
+  moo: number | null; // หมู่ที่ = the code's last 2 digits · null = ไม่ระบุหมู่ (a code ending "00")
+  name: string; // mm_name as in the file · not shown when moo is null
+  totals: PopulationTotals;
+}
+
+/** The หมู่บ้าน of one area (SCHEMA §11.3) */
+export interface AreaVillages {
+  count: number; // how many หมู่บ้าน, ไม่ระบุหมู่ not counted · the อำเภอ = the sum of its ตำบล
+  list: VillagePopulation[]; // a ตำบล: by หมู่ที่, ไม่ระบุหมู่ last · the อำเภอ: [], as the panel shows only the count
+}
+
 /** The อำเภอ or one ตำบล in the population part of the home page */
 export interface AreaPopulation {
   key: string; // "all" = the whole อำเภอ, or a 6-digit ตำบล code (= areas[].id)
   name: string;
   totals: PopulationTotals;
   age: AgeProfile | null; // null = the year shown has no age rows (the pyramid is hidden)
+  villages: AreaVillages | null; // null = the year shown has no village rows (the list and count of หมู่บ้าน are hidden)
 }
 
 /** The population part of the home page that the server component hands the client (SPEC §9.2) · null = no population data */
