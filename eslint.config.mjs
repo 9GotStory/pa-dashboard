@@ -39,7 +39,7 @@ const eslintConfig = defineConfig([
   {
     files: ["src/app/(dc)/**", "src/components/dc/**"],
     ignores: [
-      "src/app/(dc)/reports/**",
+      "src/app/(dc)/reports/\\[id\\]/**",
       "src/components/dc/CoverageReport.tsx",
       "src/components/dc/RegistryPopulationUpload.tsx",
       "src/components/dc/ReportLibrary.tsx",

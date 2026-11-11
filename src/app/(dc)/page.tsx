@@ -118,7 +118,7 @@ export default function Home() {
             <h2 id="topics-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
               รายงานตามหัวข้อ
             </h2>
-            <p className="text-xs text-dc-text-secondary">เลือกหัวข้อเพื่อดูรายงานในคลังรายงาน</p>
+            <p className="text-xs text-dc-text-secondary">เลือกหัวข้อเพื่อดูรายงานในหน้ารายงานสุขภาพ</p>
           </div>
           <Link
             href="/reports"
