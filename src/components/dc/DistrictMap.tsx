@@ -6,7 +6,11 @@ import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { AreaBoundary, DcCatalog } from "@/lib/dc/types";
 
 type Area = DcCatalog["areas"][number];
-type Drawn = { map: L.Map; paths: Map<string, L.Polygon>; bounds: L.LatLngBounds };
+type Drawn = {
+  paths: Map<string, L.Polygon>;
+  bounds: L.LatLngBounds;
+  show: (bounds: L.LatLngBounds, maxZoom: number) => void;
+};
 
 // V7.6's map: every ตำบล in dc-brand-accent and the selected one in
 // dc-brand-primary, outlined in dc-brand-deep. The colours are classes on each
@@ -24,8 +28,9 @@ const SELECTED: L.PathOptions = { weight: 3.5, fillOpacity: 0.55 };
  * named from catalog.json's areas. Each ตำบล is a button named for it, in
  * the tab order, that Enter or Space picks as a click does (design.md §8). A
  * pick on the map leaves the view where it is; a pick from elsewhere moves
- * the map to that ตำบล, or to the whole อำเภอ when none is picked, as in R6.
- * onLoad says whether the boundaries loaded. Leaflet needs the browser, so
+ * the map to that ตำบล, or to the whole อำเภอ when none is picked, as in R6,
+ * and the map ends at the latest pick however fast it changes. onLoad says
+ * whether the boundaries loaded. Leaflet needs the browser, so
  * DistrictExplorer loads this file on its own, after the page.
  */
 export default function DistrictMap({
@@ -63,6 +68,34 @@ export default function DistrictMap({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
     }).addTo(map);
     let ignore = false;
+    // Leaflet drops a move that needs a zoom while it is zooming (Map.js
+    // _tryAnimatedZoom), and starts an animated zoom only on the next frame.
+    // So a view asked for waits until then, and if a zoom is running by then,
+    // until it ends; a later ask replaces it, so the map ends at the latest.
+    let wanted: [L.LatLngBounds, number] | null = null;
+    let zooming = false;
+    const apply = () => {
+      if (ignore || !wanted || zooming) return;
+      const [bounds, maxZoom] = wanted;
+      wanted = null;
+      fit(map, bounds, maxZoom);
+    };
+    const show = (bounds: L.LatLngBounds, maxZoom: number) => {
+      wanted = [bounds, maxZoom];
+      requestAnimationFrame(apply);
+    };
+    // A pick on the map keeps the view, so it drops a view still waiting too.
+    const pickOnMap = (id: string) => {
+      wanted = null;
+      pick(id);
+    };
+    map.on({
+      zoomstart: () => (zooming = true),
+      zoomend: () => {
+        zooming = false;
+        apply();
+      },
+    });
     fetch("/geo/song-tambon.geojson")
       .then((res) => {
         if (!res.ok) throw new Error(`/geo/song-tambon.geojson: HTTP ${res.status}`);
@@ -84,7 +117,7 @@ export default function DistrictMap({
               paths.set(id, path);
               path.bindTooltip(name, { sticky: true, direction: "top" });
               path.on({
-                click: () => pick(id),
+                click: () => pickOnMap(id),
                 mouseover: () => hover(id, path, true),
                 mouseout: () => hover(id, path, false),
                 // The path's element exists once the map has a view, after this.
@@ -98,19 +131,21 @@ export default function DistrictMap({
                   el.ownerSVGElement!.setAttribute("aria-label", "ตำบลในอำเภอสอง");
                   // Tab may reach a ตำบล out of view after a zoom to another: show the อำเภอ.
                   el.addEventListener("focus", () => {
-                    if (!map.getBounds().contains(path.getBounds())) fit(map, boundaries.getBounds(), 11);
+                    if (!map.getBounds().contains(path.getBounds())) show(boundaries.getBounds(), 11);
                   });
                 },
                 keydown: ({ originalEvent: e }: L.LeafletKeyboardEvent) => {
                   if (e.key !== "Enter" && e.key !== " ") return;
                   // Space would scroll the page
                   e.preventDefault();
-                  pick(id);
+                  pickOnMap(id);
                 },
               });
             },
           }).addTo(map);
-          setDrawn({ map, paths, bounds: boundaries.getBounds() });
+          // The first view at once: the paths have elements to mark only once the map has one.
+          fit(map, boundaries.getBounds(), 11);
+          setDrawn({ paths, bounds: boundaries.getBounds(), show });
           loaded(true);
         },
         () => {
@@ -126,9 +161,8 @@ export default function DistrictMap({
   useEffect(() => {
     if (!drawn) return;
     const area = selected ? drawn.paths.get(selected) : undefined;
-    // The view first: the paths have elements to mark only once the map has one.
     if (fromMap.current) fromMap.current = false;
-    else fit(drawn.map, area?.getBounds() ?? drawn.bounds, area ? 12 : 11);
+    else drawn.show(area?.getBounds() ?? drawn.bounds, area ? 12 : 11);
     // Marked in place, not brought to front: that would move the element, so
     // it would lose focus and the tab order would change with every pick.
     for (const [id, path] of drawn.paths) {
