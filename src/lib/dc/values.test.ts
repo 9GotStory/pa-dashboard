@@ -7,7 +7,9 @@ import {
   dataYears,
   families,
   goalFor,
+  libraryByReference,
   libraryList,
+  libraryNameParts,
   libraryQuery,
   librarySearch,
   measureLabel,
@@ -534,4 +536,41 @@ test("a LibraryQuery → ?main=&cat=&q= without its defaults or page/size, which
 test("?main= or ?cat= that catalog.json lacks, such as a หัวข้อ no longer shown or the id cut short → every หมวด: all 21 reports", () => {
   assert.deepEqual(libraryQuery(MAINS, new URLSearchParams("main=73daf277&cat=4df36051")), { main: null, cat: null, q: "" });
   assert.equal(library("cat=4df36051").total, 21);
+});
+
+// FEATURES F41: the search of /reports (SPEC §9.3) on the same catalog.
+
+test("?q=เบาหวาน → the 2 reports named so, s_dm_screen and s_ncd_screen_repleate1; ?q=ส่งเสริมป้องกัน, a หมวด name → the 14 reports of that หมวด", () => {
+  assert.deepEqual(listed(library("q=เบาหวาน")), [["", "s_dm_screen", "s_ncd_screen_repleate1"]]);
+  assert.equal(library("q=ส่งเสริมป้องกัน").total, 14);
+});
+
+test("s_epi_complete matches its 4 reports by source_table alone → libraryByReference; service plan, a หัวข้อ name, and เบาหวาน, in report names → not; s_epi_complete in อนามัยแม่และเด็ก, with no report → not", () => {
+  const byReference = (search: string) => libraryByReference(MAINS, libraryQuery(MAINS, new URLSearchParams(search)));
+  assert.equal(byReference("q=s_epi_complete"), true);
+  assert.equal(byReference("q=service plan"), false);
+  assert.equal(byReference("q=เบาหวาน"), false);
+  assert.equal(byReference(`cat=${MCH.cat_id}&q=s_epi_complete`), false);
+  assert.equal(byReference(""), false);
+});
+
+test("a report name split at the search, as typed in the name: เบาหวาน at its end; ' cavity ' → Cavity in its own case; ครบ twice; no search or none found → the name alone", () => {
+  assert.deepEqual(libraryNameParts("ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน", "เบาหวาน"), [
+    { text: "ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัย", mark: false },
+    { text: "เบาหวาน", mark: true },
+  ]);
+  assert.deepEqual(libraryNameParts("ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)", " cavity "), [
+    { text: "ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (", mark: false },
+    { text: "Cavity", mark: true },
+    { text: " Free) (คน)", mark: false },
+  ]);
+  assert.deepEqual(libraryNameParts("ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 1 ปี (fully immunized)", "ครบ"), [
+    { text: "ความครอบคลุมการได้รับวัคซีนแต่ละชนิด", mark: false },
+    { text: "ครบ", mark: true },
+    { text: "ตามเกณฑ์ในเด็กอายุ", mark: false },
+    { text: "ครบ", mark: true },
+    { text: " 1 ปี (fully immunized)", mark: false },
+  ]);
+  assert.deepEqual(libraryNameParts("การคัดกรองผู้สูงอายุ 9 ด้าน", ""), [{ text: "การคัดกรองผู้สูงอายุ 9 ด้าน", mark: false }]);
+  assert.deepEqual(libraryNameParts("การคัดกรองผู้สูงอายุ 9 ด้าน", "s_aged9"), [{ text: "การคัดกรองผู้สูงอายุ 9 ด้าน", mark: false }]);
 });

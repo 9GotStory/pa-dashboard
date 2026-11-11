@@ -3,6 +3,7 @@ import type {
   DcCatalog,
   DcReport,
   DcReportData,
+  DcTopic,
   DcYearBlock,
   Family,
   LibraryList,
@@ -292,14 +293,29 @@ export function libraryQuery(mains: DcCatalog["mains"], params: URLSearchParams)
   return { main, cat, q: params.get("q") ?? "" };
 }
 
+/** A search as /reports compares it: no spaces around it, lower case */
+function searchKey(q: string): string {
+  return q.trim().toLocaleLowerCase("th");
+}
+
+/** Whether some text contains a search key, whatever its letter case */
+function contains(texts: string[], key: string): boolean {
+  return texts.some((text) => text.toLocaleLowerCase("th").includes(key));
+}
+
+/** The texts /reports shows of a report: its name, หัวข้อ, กลุ่ม and หมวด */
+function shownTexts(report: DcReport, topic: DcTopic, subgroup: string): string[] {
+  return [report.report_name, topic.category_name, subgroup, topic.main_report_name];
+}
+
 /**
  * Every report /reports lists for a query (SPEC §9.3), by หัวข้อ and กลุ่ม
  * in catalog.json order: those of the หมวด or หัวข้อ picked whose
- * report_name, source_table, opendata_id, หัวข้อ or กลุ่ม contains the
+ * report_name, source_table, opendata_id, หัวข้อ, กลุ่ม or หมวด contains the
  * search, whatever its letter case.
  */
 export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): LibraryList {
-  const search = query.q.trim().toLocaleLowerCase("th");
+  const key = searchKey(query.q);
   const groups = mains
     .filter((m) => query.main === null || m.main_report_id === query.main)
     .flatMap((m) => m.topics.filter((t) => query.cat === null || t.cat_id === query.cat))
@@ -308,14 +324,46 @@ export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): Lib
         topic,
         subgroup: g.subgroup,
         reports: g.reports.filter((report) =>
-          [report.report_name, report.source_table, report.opendata_id, topic.category_name, g.subgroup].some((text) =>
-            text.toLocaleLowerCase("th").includes(search),
-          ),
+          contains([...shownTexts(report, topic, g.subgroup), report.source_table, report.opendata_id], key),
         ),
       })),
     )
     .filter((g) => g.reports.length > 0);
   return { groups, total: groups.reduce((n, g) => n + g.reports.length, 0) };
+}
+
+/**
+ * Whether the list of a query holds a report that matches the search only by
+ * its source_table or opendata_id, which /reports does not show: the note
+ * under the list's heading (SPEC §9.3).
+ */
+export function libraryByReference(mains: DcCatalog["mains"], query: LibraryQuery): boolean {
+  const key = searchKey(query.q);
+  return libraryList(mains, query).groups.some((g) =>
+    g.reports.some((report) => !contains(shownTexts(report, g.topic, g.subgroup), key)),
+  );
+}
+
+/** A piece of a report name, mark when it is the search */
+type NamePart = { text: string; mark: boolean };
+
+/**
+ * A report name in parts, mark for each place that contains the search
+ * whatever its letter case, as libraryList finds it: /reports wraps them in
+ * <mark> (SPEC §9.3). The parts join back into the name.
+ */
+export function libraryNameParts(name: string, q: string): NamePart[] {
+  const key = searchKey(q);
+  const lower = name.toLocaleLowerCase("th");
+  const parts: NamePart[] = [];
+  let from = 0;
+  for (let at = key ? lower.indexOf(key) : -1; at >= 0; at = lower.indexOf(key, from)) {
+    if (at > from) parts.push({ text: name.slice(from, at), mark: false });
+    parts.push({ text: name.slice(at, at + key.length), mark: true });
+    from = at + key.length;
+  }
+  if (from < name.length) parts.push({ text: name.slice(from), mark: false });
+  return parts;
 }
 
 /** The URL query of a LibraryQuery without its defaults, which libraryQuery reads back: "" for the defaults alone (SPEC §9.3) */
