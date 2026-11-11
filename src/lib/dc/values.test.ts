@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { MAINS, MCH, PROMOTION, SERVICE_PLAN, VACCINES } from "./fixtures/catalog-20261104";
 import { HEADERS } from "./fixtures/headers-20261104";
-import type { Cell, DcReport, DcYearBlock, Family, LibraryPage, ReportQuery } from "./types";
+import type { Cell, DcReport, DcYearBlock, Family, LibraryList, ReportQuery } from "./types";
 import {
   dataYears,
   families,
   goalFor,
-  libraryPage,
+  libraryList,
   libraryQuery,
   librarySearch,
   measureLabel,
@@ -440,23 +440,23 @@ test("a ReportQuery without a measure → no measure in the URL", () => {
   assert.equal(reportSearch({ year: "2569", area: "all", period: "year", measure: null, by: "area" }), "?year=2569&area=all&period=year&by=area");
 });
 
-// FEATURES F19: ?main=&cat=&q=&page=&size= of /reports as a LibraryQuery, and
-// the page of catalog.json it lists (SPEC §9.3), on the real catalog of 4 Nov
+// FEATURES F19, F40: ?main=&cat=&q= of /reports as a LibraryQuery, and the
+// reports of catalog.json it lists (SPEC §9.3), on the real catalog of 4 Nov
 // 2569: 21 reports, 14 in ส่งเสริมป้องกัน and 7 in ข้อมูลตอบสนอง Service Plan.
-const library = (search: string) => libraryPage(MAINS, libraryQuery(MAINS, new URLSearchParams(search)));
+const library = (search: string) => libraryList(MAINS, libraryQuery(MAINS, new URLSearchParams(search)));
 /** Each group on a page as its กลุ่ม followed by its reports' source_table */
-const listed = (page: LibraryPage) => page.groups.map((g) => [g.subgroup, ...g.reports.map((r) => r.source_table)]);
+const listed = (list: LibraryList) => list.groups.map((g) => [g.subgroup, ...g.reports.map((r) => r.source_table)]);
 
 test("?cat= of การสร้างเสริมภูมิคุ้มกันโรค → its 8 reports in 4 กลุ่ม, กลุ่มอายุ 1 → 2 → 3 → 5 ปี, s_epi1 before fully immunized in its กลุ่ม", () => {
-  const page = library(`cat=${VACCINES.cat_id}`);
-  assert.deepEqual(listed(page), [
+  const list = library(`cat=${VACCINES.cat_id}`);
+  assert.deepEqual(listed(list), [
     ["กลุ่มอายุ 1 ปี", "s_epi1", "s_epi_complete"],
     ["กลุ่มอายุ 2 ปี", "s_epi2", "s_epi_complete"],
     ["กลุ่มอายุ 3 ปี", "s_epi3", "s_epi_complete"],
     ["กลุ่มอายุ 5 ปี", "s_epi5", "s_epi_complete"],
   ]);
-  assert.ok(page.groups.every((g) => g.topic.category_name === "การสร้างเสริมภูมิคุ้มกันโรค"));
-  assert.equal(page.total, 8);
+  assert.ok(list.groups.every((g) => g.topic.category_name === "การสร้างเสริมภูมิคุ้มกันโรค"));
+  assert.equal(list.total, 8);
 });
 
 test("?q=s_epi_complete → its 4 reports, fully immunized 1, 2, 3 and 5 ปี; ?q=กลุ่มอายุ 2 ปี → the 2 reports of that กลุ่ม", () => {
@@ -489,8 +489,6 @@ test("?main= of ข้อมูลตอบสนอง Service Plan → the rep
     main: null,
     cat: VACCINES.cat_id,
     q: "",
-    page: 1,
-    size: 10,
   });
 });
 
@@ -503,46 +501,29 @@ test("?q= searches within the หมวด or หัวข้อ picked: ร้�
   assert.equal(library(`cat=${MCH.cat_id}&q=s_epi_complete`).total, 0);
 });
 
-test("no query → page 1 of 3: the first 10 of the 21 reports, ending with กลุ่มอายุ 3 ปี; ?page=3 → s_kpi_dental33 alone, under its หัวข้อ again", () => {
-  const first = library("");
-  assert.deepEqual([first.total, first.page, first.pages], [21, 1, 3]);
-  assert.deepEqual(listed(first), [
-    ["", "s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"],
-    ["กลุ่มอายุ 1 ปี", "s_epi1", "s_epi_complete"],
-    ["กลุ่มอายุ 2 ปี", "s_epi2", "s_epi_complete"],
-    ["กลุ่มอายุ 3 ปี", "s_epi3", "s_epi_complete"],
-  ]);
-  const last = library("page=3");
-  assert.deepEqual([last.total, last.page, last.pages], [21, 3, 3]);
-  assert.deepEqual(
-    last.groups.map((g) => [g.topic.category_name, ...g.reports.map((r) => r.source_table)]),
-    [["ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก", "s_kpi_dental33"]],
-  );
+test("no query → all 21 reports in one list, in catalog.json order: อนามัยแม่และเด็ก first, s_kpi_dental33 last", () => {
+  const list = library("");
+  assert.equal(list.total, 21);
+  assert.equal(list.groups.flatMap((g) => g.reports).length, 21);
+  assert.deepEqual(list.groups[0].reports.map((r) => r.source_table), ["s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"]);
+  assert.equal(list.groups.at(-1)?.reports.at(-1)?.source_table, "s_kpi_dental33");
 });
 
-test("?size=20 → 20 reports on page 1 of 2; a size other than 10 or 20 → 10", () => {
-  const page = library("size=20");
-  assert.deepEqual([page.groups.flatMap((g) => g.reports).length, page.pages], [20, 2]);
-  assert.equal(libraryQuery(MAINS, new URLSearchParams("size=15")).size, 10);
+test("?page=3&size=20 of an old link → the LibraryQuery of no query, and all 21 reports", () => {
+  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams("page=3&size=20")), { main: null, cat: null, q: "" });
+  assert.equal(library("page=3&size=20").total, 21);
 });
 
-test("?page= past the last page → the last page; a page that is not a whole number from 1 → page 1", () => {
-  assert.equal(library("page=9").page, 3);
-  for (const page of ["0", "-2", "1.5", "1e1", "abc", ""]) {
-    assert.equal(libraryQuery(MAINS, new URLSearchParams(`page=${page}`)).page, 1, `page=${page}`);
-  }
-});
-
-test("a LibraryQuery → ?main=&cat=&q=&page=&size= without its defaults, which libraryQuery reads back as the same query; the defaults alone → no query", () => {
-  const picked = { main: null, cat: VACCINES.cat_id, q: "epi 2", page: 2, size: 20 } as const;
-  assert.equal(librarySearch(picked), "?cat=4df360514655f79f13901ef1181ca1c7&q=epi+2&page=2&size=20");
+test("a LibraryQuery → ?main=&cat=&q= without its defaults or page/size, which libraryQuery reads back as the same query; the defaults alone → no query", () => {
+  const picked = { main: null, cat: VACCINES.cat_id, q: "epi 2" } as const;
+  assert.equal(librarySearch(picked), "?cat=4df360514655f79f13901ef1181ca1c7&q=epi+2");
   assert.deepEqual(libraryQuery(MAINS, new URLSearchParams(librarySearch(picked))), picked);
-  const thai = { main: PROMOTION.main_report_id, cat: null, q: "กลุ่มอายุ 2 ปี", page: 1, size: 10 } as const;
+  const thai = { main: PROMOTION.main_report_id, cat: null, q: "กลุ่มอายุ 2 ปี" } as const;
   assert.deepEqual(libraryQuery(MAINS, new URLSearchParams(librarySearch(thai))), thai);
-  assert.equal(librarySearch({ main: null, cat: null, q: "", page: 1, size: 10 }), "");
+  assert.equal(librarySearch({ main: null, cat: null, q: "" }), "");
 });
 
 test("?main= or ?cat= that catalog.json lacks, such as a หัวข้อ no longer shown or the id cut short → every หมวด: all 21 reports", () => {
-  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams("main=73daf277&cat=4df36051")), { main: null, cat: null, q: "", page: 1, size: 10 });
+  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams("main=73daf277&cat=4df36051")), { main: null, cat: null, q: "" });
   assert.equal(library("cat=4df36051").total, 21);
 });

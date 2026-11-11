@@ -1,11 +1,14 @@
 // Data Center page check (CODING_STANDARDS §4–5, FEATURES F16). After
 // npm run build, opens every built page of /, /reports and /reports/[id] in
 // out/ at 360 px wide and exits 1, naming the page, when a page breaks a rule
-// that shows on the rendered page. The home page is opened at V7.6's review
-// widths as well, and the check exits 1, naming the width, when it scrolls
-// sideways at one (SPEC §9.1). It is opened wide once more, and the check
-// exits 1, naming the area, when its population figures disagree, the
-// figures by the bars of the ตำบล chart among them (SPEC §9.2). The pages
+// that shows on the rendered page. The home page and /reports are opened at
+// V7.6's review widths as well, and the check exits 1, naming the width, when
+// one scrolls sideways at one (SPEC §9.1). /reports as built, before any
+// JavaScript runs, must link every report of the build's catalog.json, and
+// the check exits 1 naming each one it lacks (SPEC §9.3). The home page is
+// opened wide once more, and the check exits 1, naming the area, when its
+// population figures disagree, the figures by the bars of the ตำบล chart
+// among them (SPEC §9.2). The pages
 // are opened with playwright-core in the installed Google Chrome, the one
 // dependency CODING_STANDARDS §3 allows a node script.
 import fs from "node:fs";
@@ -15,8 +18,8 @@ import { chromium } from "playwright-core";
 
 const OUT = path.resolve("out");
 const WIDTH = 360;
-// The widths V7.6 reviews the home page at (design.md §3.3).
-const HOME_WIDTHS = [320, 390, 768, 1440, 1920];
+// The widths V7.6 reviews the home page at (design.md §3.3), and V1.4 /reports.
+const REVIEW_WIDTHS = [320, 390, 768, 1440, 1920];
 // The width the population rules read the home page at: a desktop's, with
 // the map and the panel side by side.
 const POPULATION_WIDTH = 1280;
@@ -175,14 +178,14 @@ function blockTiles(page) {
   );
 }
 
-// The widths of HOME_WIDTHS at which the home page scrolls sideways, as
-// problems naming the width; domRules checks the same at WIDTH.
+// The widths of REVIEW_WIDTHS at which a page scrolls sideways, as problems
+// naming the width; domRules checks the same at WIDTH.
 async function overflowProblems(browser, url) {
   const problems = [];
   const page = await browser.newPage();
   try {
     await blockTiles(page);
-    for (const width of HOME_WIDTHS) {
+    for (const width of REVIEW_WIDTHS) {
       await page.setViewportSize({ width, height: 800 });
       await page.goto(url, { waitUntil: "networkidle" });
       const { scrollWidth, clientWidth } = await page.evaluate(() => {
@@ -195,6 +198,20 @@ async function overflowProblems(browser, url) {
     await page.close();
   }
   return problems;
+}
+
+// The reports of this build's catalog.json that out/reports.html, as built,
+// has no /reports/{opendata_id} link to, as problems naming the report: the
+// static HTML lists every report, and the browser filters it once loaded
+// (SPEC §9.3), so a page whose list needs JavaScript fails here.
+function missingReportLinks() {
+  const catalog = JSON.parse(fs.readFileSync(path.join(OUT, "data", "catalog.json"), "utf8"));
+  const html = fs.readFileSync(path.join(OUT, "reports.html"), "utf8");
+  const linked = new Set([...html.matchAll(/href="\/reports\/([^"?#/]+)"/g)].map((m) => m[1]));
+  return catalog.mains
+    .flatMap((m) => m.topics.flatMap((t) => t.groups.flatMap((g) => g.reports)))
+    .filter((r) => !linked.has(r.opendata_id))
+    .map((r) => `no link to /reports/${r.opendata_id} in the HTML as built, before JavaScript runs`);
 }
 
 // What the population rules compare, as the home page shows it (SPEC §9.2): a
@@ -343,7 +360,10 @@ try {
   for (const urlPath of urlPaths) {
     for (const problem of await checkPage(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
-  for (const problem of await overflowProblems(browser, origin + "/")) problems.push(`/: ${problem}`);
+  for (const urlPath of ["/", "/reports"]) {
+    for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
+  }
+  for (const problem of missingReportLinks()) problems.push(`/reports: ${problem}`);
   if (shownYear) {
     for (const problem of await checkPopulation(browser, origin + "/", hasAge)) problems.push(`/: ${problem}`);
   }
@@ -364,5 +384,5 @@ const populationResult = !shownYear
     ? "population totals, the ตำบล chart and pyramids agree"
     : "population totals and the ตำบล chart agree";
 console.log(
-  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; / does not scroll sideways at ${HOME_WIDTHS.join(", ")} px; ${populationResult}`,
+  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; / and /reports do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; /reports links every report before JavaScript runs; ${populationResult}`,
 );

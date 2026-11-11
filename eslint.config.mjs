@@ -42,7 +42,6 @@ const eslintConfig = defineConfig([
       "src/app/(dc)/reports/\\[id\\]/**",
       "src/components/dc/CoverageReport.tsx",
       "src/components/dc/RegistryPopulationUpload.tsx",
-      "src/components/dc/ReportLibrary.tsx",
       "src/components/dc/charts/**",
     ],
     rules: {
