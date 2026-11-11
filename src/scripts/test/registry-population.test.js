@@ -4,8 +4,9 @@ import test from "node:test";
 import { loadGas } from "./gas-harness.js";
 import { PA_SHEETS } from "./fixtures/batch-all-sheets.js";
 import { AGE_COLUMNS, AGE_ROWS_6712, AGE_ROWS_6812, ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
+import { VILLAGE_ROWS_6712, VILLAGE_ROWS_6812 } from "./fixtures/registry-population-village-20261111.js";
 
-// FEATURES F24, F27 / SCHEMA §2.6, §2.7, §3.8, §3.9.
+// FEATURES F24, F27, F44 / SCHEMA §2.6–2.8, §3.8, §3.9.
 
 const SETTINGS = [
   ["current_quarter", "current_year", "province_code", "district_code", "deploy_hook_url"],
@@ -220,8 +221,8 @@ test("GET after saving 6812 then 6712 → both years oldest first, each with its
 
   assert.deepEqual(res, {
     years: [
-      { yymm: "6712", population: ROWS_6712, age: [] },
-      { yymm: "6812", population: ROWS_6812, age: [] },
+      { yymm: "6712", population: ROWS_6712, village: [], age: [] },
+      { yymm: "6812", population: ROWS_6812, village: [], age: [] },
     ],
   });
 });
@@ -244,16 +245,18 @@ test("GET takes the script lock once and releases it", () => {
   assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });
 
-test("GET while another execution holds the script lock past the 30 s wait → error Busy, and neither sheet is read", () => {
+test("GET while another execution holds the script lock past the 30 s wait → error Busy, and no sheet is read", () => {
   const h = load();
   savePopulation(h, "6812", ROWS_6812);
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
   h.otherHolder.held = true;
-  const before = [h.reads("registry_population"), h.reads("registry_population_age")];
+  const sheets = ["registry_population", "registry_population_village", "registry_population_age"];
+  const before = sheets.map((name) => h.reads(name));
 
   const res = getRegistryPopulation(h);
 
   assert.deepEqual(res, { status: "error", message: "Busy" });
-  assert.deepEqual([h.reads("registry_population"), h.reads("registry_population_age")], before);
+  assert.deepEqual(sheets.map((name) => h.reads(name)), before);
 });
 
 test("GET reads registry_population by header name (trim + lower case) in any column order; codes typed in as numbers come back as strings, counts as numbers", () => {
@@ -267,7 +270,7 @@ test("GET reads registry_population by header name (trim + lower case) in any co
 
   const res = getRegistryPopulation(h);
 
-  assert.deepEqual(res, { years: [{ yymm: "6812", population: [ROWS_6812[0]], age: [] }] });
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: [ROWS_6812[0]], village: [], age: [] }] });
 });
 
 // The admin typing value into (row, column by header name) of a sheet.
@@ -294,7 +297,7 @@ test("GET after the admin renames the house column (บ้าน) → every row 
 
   const res = getRegistryPopulation(h);
 
-  assert.deepEqual(res, { years: [{ yymm: "6812", population: ROWS_6812.map((r) => omit(r, "house")), age: [] }] });
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: ROWS_6812.map((r) => omit(r, "house")), village: [], age: [] }] });
 });
 
 test("GET after the admin blanks one count and types text into another → each is left out of its row, not read as 0 or null", () => {
@@ -306,7 +309,7 @@ test("GET after the admin blanks one count and types text into another → each 
   const res = getRegistryPopulation(h);
 
   const expected = ROWS_6812.map((r, i) => (i === 1 ? omit(r, "male") : i === 2 ? omit(r, "female") : r));
-  assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, age: [] }] });
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, village: [], age: [] }] });
 });
 
 test("GET after the admin blanks the yymm of a row in each sheet, its other cells kept → those rows are in the answer as a year with a blank yymm, so the prebuild fails loudly (SCHEMA §7) instead of publishing a total short of them", () => {
@@ -320,8 +323,8 @@ test("GET after the admin blanks the yymm of a row in each sheet, its other cell
 
   assert.deepEqual(res, {
     years: [
-      { yymm: "", population: [{ ...ROWS_6812[0], yymm: "" }], age: [{ ...AGE_ROWS_6812[3], yymm: "" }] },
-      { yymm: "6812", population: ROWS_6812.slice(1), age: AGE_ROWS_6812.filter((_, i) => i !== 3) },
+      { yymm: "", population: [{ ...ROWS_6812[0], yymm: "" }], village: [], age: [{ ...AGE_ROWS_6812[3], yymm: "" }] },
+      { yymm: "6812", population: ROWS_6812.slice(1), village: [], age: AGE_ROWS_6812.filter((_, i) => i !== 3) },
     ],
   });
 });
@@ -337,8 +340,8 @@ test("GET after the admin clears a row but for a count that is no number → the
   const blank = { yymm: "", cc: "", cc_name: "", rcode: "", rcode_name: "", tt: "", tt_name: "", mm: "", mm_name: "" };
   assert.deepEqual(res, {
     years: [
-      { yymm: "", population: [blank], age: [] },
-      { yymm: "6812", population: ROWS_6812.filter((_, i) => i !== 1), age: [] },
+      { yymm: "", population: [blank], village: [], age: [] },
+      { yymm: "6812", population: ROWS_6812.filter((_, i) => i !== 1), village: [], age: [] },
     ],
   });
 });
@@ -357,7 +360,7 @@ test("GET after the admin clears a whole row of each sheet, and another but for 
   const res = getRegistryPopulation(h);
 
   const others = (rows) => rows.filter((_, i) => i !== 1 && i !== 3);
-  assert.deepEqual(res, { years: [{ yymm: "6812", population: others(ROWS_6812), age: others(AGE_ROWS_6812) }] });
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: others(ROWS_6812), village: [], age: others(AGE_ROWS_6812) }] });
 });
 
 test("GET after the admin deletes the header row → the rows left stay in the answer without any column, so the prebuild fails loudly (SCHEMA §7) instead of publishing no population", () => {
@@ -368,7 +371,7 @@ test("GET after the admin deletes the header row → the rows left stay in the a
   const res = getRegistryPopulation(h);
 
   // Row 1 is now ROWS_6812[0], read as the header: the other 9 are read by it.
-  assert.deepEqual(res, { years: [{ population: ROWS_6812.slice(1).map(() => ({})), age: [] }] });
+  assert.deepEqual(res, { years: [{ population: ROWS_6812.slice(1).map(() => ({})), village: [], age: [] }] });
 });
 
 test("GET after the admin types a date and TRUE and FALSE into counts → each is left out of its row, not read as a number; a count typed as text is still a number", () => {
@@ -382,7 +385,7 @@ test("GET after the admin types a date and TRUE and FALSE into counts → each i
   const res = getRegistryPopulation(h);
 
   const expected = ROWS_6812.map((r, i) => (i === 0 ? omit(r, "male") : i === 1 ? omit(r, "house") : i === 2 ? omit(r, "female") : r));
-  assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, age: [] }] });
+  assert.deepEqual(res, { years: [{ yymm: "6812", population: expected, village: [], age: [] }] });
 });
 
 test("GET returns registry_population_age rows too, typed as SCHEMA §2.7 says; years are every yymm of either sheet", () => {
@@ -403,8 +406,8 @@ test("GET returns registry_population_age rows too, typed as SCHEMA §2.7 says; 
 
   assert.deepEqual(res, {
     years: [
-      { yymm: "6712", population: [], age: [row6712] },
-      { yymm: "6812", population: ROWS_6812, age: [row6812] },
+      { yymm: "6712", population: [], village: [], age: [row6712] },
+      { yymm: "6812", population: ROWS_6812, village: [], age: [row6812] },
     ],
   });
 });
@@ -507,8 +510,8 @@ test("GET after the population of 6712 and both kinds of 6812 → 6712 without a
 
   assert.deepEqual(getRegistryPopulation(h), {
     years: [
-      { yymm: "6712", population: ROWS_6712, age: [] },
-      { yymm: "6812", population: ROWS_6812, age: AGE_ROWS_6812 },
+      { yymm: "6712", population: ROWS_6712, village: [], age: [] },
+      { yymm: "6812", population: ROWS_6812, village: [], age: AGE_ROWS_6812 },
     ],
   });
 });
@@ -599,7 +602,7 @@ for (const [what, rows] of REJECTED_POPULATION_AGAINST_AGE) {
   });
 }
 
-// Rules 12–14 of SCHEMA §3.8 read the other sheet, where a row whose yymm is
+// Rules 12–15 of SCHEMA §3.8 read the other sheet, where a row whose yymm is
 // blank is a row of no yymm (SCHEMA §3.9): [the kind saved, how many of that
 // sheet's 10 rows of 6812 have their yymm blanked, the rows sent, what the
 // rule then says, the error or null when saved].
@@ -608,6 +611,8 @@ const BLANK_YYMM_IN_THE_OTHER_SHEET = [
   ["age", 1, AGE_ROWS_6812, "rule 13: its 9 rows of 6812 do not match the 10 sent", "Does not match registry_population"],
   ["population", 10, withRow(7, { male: 1567, total: 3201 }), "rule 14: no age rows of 6812 to match, so figures unlike theirs are saved", null],
   ["population", 1, ROWS_6812, "rule 14: its 9 age rows of 6812 do not match the 10 sent", "Does not match registry_population_age"],
+  ["village", 10, VILLAGE_ROWS_6812, "rule 12: no registry_population rows of 6812", "No registry_population rows for this yymm"],
+  ["village", 1, VILLAGE_ROWS_6812, "rule 15: its 9 rows of 6812 are not the 10 ตำบล the villages add up to", "Villages do not add up to registry_population"],
 ];
 
 for (const [kind, blanked, rows, what, message] of BLANK_YYMM_IN_THE_OTHER_SHEET) {
@@ -615,12 +620,12 @@ for (const [kind, blanked, rows, what, message] of BLANK_YYMM_IN_THE_OTHER_SHEET
     const h = load();
     savePopulation(h, "6812", ROWS_6812);
     if (kind === "population") saveAge(h, "6812", AGE_ROWS_6812);
-    const otherSheet = kind === "age" ? "registry_population" : "registry_population_age";
+    const otherSheet = kind === "population" ? "registry_population_age" : "registry_population";
     for (let row = 2; row < 2 + blanked; row++) setCell(h, otherSheet, row, "yymm", "");
 
     const res = post(h, { action: "save_registry_population", kind, yymm: "6812", rows });
 
-    assert.deepEqual(res, message ? { status: "error", message } : { status: "success", kind, yymm: "6812", count: 10 });
+    assert.deepEqual(res, message ? { status: "error", message } : { status: "success", kind, yymm: "6812", count: rows.length });
   });
 }
 
@@ -632,4 +637,204 @@ test("kind: population of 6812 again with the same figures once 6812 has age row
   const res = savePopulation(h, "6812", ROWS_6812);
 
   assert.deepEqual(res, { status: "success", kind: "population", yymm: "6812", count: 10 });
+});
+
+// FEATURES F44: kind village (SCHEMA §2.8, §3.8 rules 8, 9, 12 and 15) and
+// the village rows of GET (SCHEMA §3.9).
+
+const VILLAGE_HEADER = [...HEADER];
+
+function saveVillage(h, yymm, rows) {
+  return post(h, { action: "save_registry_population", kind: "village", yymm, rows });
+}
+
+test("kind: village of 6812 after its population → registry_population_village created with its header (that of registry_population) and the 94 rows as sent, uploaded_at = now, no blank rows below", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+
+  const res = saveVillage(h, "6812", VILLAGE_ROWS_6812);
+
+  assert.deepEqual(res, { status: "success", kind: "village", yymm: "6812", count: 94 });
+  const sheet = h.sheet("registry_population_village");
+  assert.deepEqual(sheet[0], VILLAGE_HEADER);
+  assert.deepEqual(records(sheet).map(sent), VILLAGE_ROWS_6812);
+  assert.ok(records(sheet).every((r) => r.uploaded_at.getTime() === h.clock.now));
+  assert.equal(h.maxRows("registry_population_village"), 95);
+});
+
+test("kind: village of 6812 saved again → only 6812's village rows are replaced; 6712's, saved in between, keep their rows and uploaded_at, and sort first", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
+  h.clock.now += 60_000;
+  savePopulation(h, "6712", ROWS_6712);
+  saveVillage(h, "6712", VILLAGE_ROWS_6712);
+  const saved6712 = records(h.sheet("registry_population_village")).filter((r) => r.yymm === "6712");
+  h.clock.now += 60_000;
+  // stat.bora renames หมู่ 1 of บ้านหนุน in its 6812 file.
+  const corrected = VILLAGE_ROWS_6812.map((r) => (r.rcode === "5406" && r.mm === "54060101" ? { ...r, mm_name: "หนุนเหนือใหม่" } : r));
+
+  const res = saveVillage(h, "6812", corrected);
+
+  assert.deepEqual(res, { status: "success", kind: "village", yymm: "6812", count: 94 });
+  const rows = records(h.sheet("registry_population_village"));
+  assert.deepEqual(rows.slice(0, 94), saved6712);
+  assert.deepEqual(rows.slice(94).map(sent), corrected);
+  assert.ok(rows.slice(94).every((r) => r.uploaded_at.getTime() === h.clock.now));
+  assert.equal(h.maxRows("registry_population_village"), 189);
+});
+
+test("a village save takes the script lock once and releases it", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  h.gas.readSettings();
+  h.gas.readKpiMasterConfig();
+  h.lock.tryLock = 0;
+  h.lock.releaseLock = 0;
+
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
+
+  assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
+});
+
+test("sheet, sheetName and tableName in the body of kind village are ignored: only registry_population_village is written", () => {
+  const h = load({ hospitals: [["hospcode", "hospname", "tambon_id"], ["06413", "บ้านหนุน", "540601"]] });
+  savePopulation(h, "6812", ROWS_6812);
+  const before = sheetsExceptLogs(h);
+
+  const res = post(h, {
+    action: "save_registry_population", kind: "village", yymm: "6812", rows: VILLAGE_ROWS_6812,
+    sheet: "registry_population", sheetName: "hospitals", tableName: "s_epi2",
+  });
+
+  assert.equal(res.status, "success");
+  const after = sheetsExceptLogs(h);
+  assert.deepEqual(Object.keys(after).sort(), [...Object.keys(before), "registry_population_village"].sort());
+  for (const name of Object.keys(before)) assert.deepEqual(after[name], before[name], name);
+});
+
+// VILLAGE_ROWS_6812 with the row of (rcode, mm) changed (a key set to
+// undefined is left out, as JSON drops it).
+function withVillage(rcode, mm, change) {
+  assert.ok(VILLAGE_ROWS_6812.some((r) => r.rcode === rcode && r.mm === mm), `${rcode} ${mm}`);
+  return VILLAGE_ROWS_6812.map((r) => (r.rcode === rcode && r.mm === mm ? { ...r, ...change } : r));
+}
+// หมู่ 1 หนุนเหนือ of บ้านหนุน under 5406: 229 + 249 = 478 คน, 224 บ้าน.
+const NUN_NUEA = ["5406", "54060101"];
+
+// Requests of kind village that break one rule of SCHEMA §3.8, sent once 6812
+// has its registry_population rows: [what, changes to a valid body for 6812,
+// the error message].
+const REJECTED_VILLAGE = [
+  ["kind of another name", { kind: "villages" }, "Unknown kind"],
+  ["yymm of November", { yymm: "6811" }, "Invalid yymm"],
+  ["yymm of 2569, which has not ended on 6 Nov 2569", { yymm: "6912" }, "Invalid yymm"],
+  ["no rows", { rows: [] }, "Empty rows"],
+  ["a row without house", { rows: withVillage(...NUN_NUEA, { house: undefined }) }, "Row keys do not match the header"],
+  ["a row with uploaded_at", { rows: withVillage(...NUN_NUEA, { uploaded_at: "2026-11-11" }) }, "Row keys do not match the header"],
+  ["the ตำบล rows of stat_m sent as kind village", { rows: ROWS_6812 }, "Not a village row"],
+  ["a row of 6712", { rows: withVillage(...NUN_NUEA, { yymm: "6712" }) }, "Row of another yymm"],
+  ["rcode as a number", { rows: withVillage(...NUN_NUEA, { rcode: 5406 }) }, "Invalid value"],
+  ["mm as a number", { rows: withVillage(...NUN_NUEA, { mm: 54060101 }) }, "Invalid value"],
+  ["an mm_name that setValues would write as a formula (=1+1)", { rows: withVillage(...NUN_NUEA, { mm_name: "=1+1" }) }, "Invalid value"],
+  ["house below 0", { rows: withVillage(...NUN_NUEA, { house: -1 }) }, "Invalid value"],
+  ["ตำบลน้ำชำ of อำเภอเมืองแพร่ (54010300) with its หมู่ 1", { rows: withVillage(...NUN_NUEA, { tt: "54010300", mm: "54010301" }) }, "Row outside district"],
+  ["mm of 7 digits", { rows: withVillage(...NUN_NUEA, { mm: "5406010" }) }, "Not a village row"],
+  ["mm of บ้านกลาง (54060211) under ตำบลบ้านหนุน", { rows: withVillage(...NUN_NUEA, { mm: "54060211" }) }, "Not a village row"],
+  ["หมู่ 1 of บ้านหนุน under 5406 twice", { rows: [...VILLAGE_ROWS_6812, VILLAGE_ROWS_6812[0]] }, "Duplicate village row"],
+  ["male + female ≠ total", { rows: withVillage(...NUN_NUEA, { total: 479 }) }, "Male + female does not equal total"],
+  ["หนุนเหนือ with 225 บ้าน, so บ้านหนุน of 5406 adds up to 2,164 not 2,163", { rows: withVillage(...NUN_NUEA, { house: 225 }) }, "Villages do not add up to registry_population"],
+  ["one more man in หนุนเหนือ (230 + 249 = 479), so บ้านหนุน of 5406 adds up to 2,137 ชาย", { rows: withVillage(...NUN_NUEA, { male: 230, total: 479 }) }, "Villages do not add up to registry_population"],
+  ["without the 6 villages of ตำบลทุ่งน้าว (5406)", { rows: VILLAGE_ROWS_6812.filter((r) => r.tt !== "54060800") }, "Villages do not add up to registry_population"],
+  [
+    "a village of ห้วยหม้าย under 5489, which has no ตำบลห้วยหม้าย row",
+    { rows: [...VILLAGE_ROWS_6812, { ...VILLAGE_ROWS_6812.find((r) => r.mm === "54060301"), rcode: "5489", rcode_name: "ท้องถิ่นเทศบาลตำบลสอง" }] },
+    "Villages do not add up to registry_population",
+  ],
+];
+
+for (const [what, change, message] of REJECTED_VILLAGE) {
+  test(`kind: village, ${what} → error ${message}, no sheet written, an ERROR in system_logs`, () => {
+    const h = load();
+    savePopulation(h, "6812", ROWS_6812);
+    const before = sheetsExceptLogs(h);
+
+    const res = post(h, { action: "save_registry_population", kind: "village", yymm: "6812", rows: VILLAGE_ROWS_6812, ...change });
+
+    assert.deepEqual(res, { status: "error", message });
+    assert.deepEqual(sheetsExceptLogs(h), before);
+    const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+    assert.deepEqual(errors.map((r) => r.Details), [message]);
+    if (message !== "Unknown kind") assert.match(errors[0].Message, /^Save rejected registry_population_village /);
+  });
+}
+
+test("kind: village of 6812 before 6812 has registry_population rows (none saved, or only 6712's) → error No registry_population rows for this yymm, no sheet written", () => {
+  for (const saved of [[], [ROWS_6712]]) {
+    const h = load();
+    saved.forEach((rows) => savePopulation(h, rows[0].yymm, rows));
+    const before = sheetsExceptLogs(h);
+
+    const res = saveVillage(h, "6812", VILLAGE_ROWS_6812);
+
+    assert.deepEqual(res, { status: "error", message: "No registry_population rows for this yymm" });
+    assert.deepEqual(sheetsExceptLogs(h), before);
+  }
+});
+
+test("kind: population of 6812 again with figures unlike its village rows → saved, the village rows kept: rule 14 has no village pair, as the upload sends kind village right after (SCHEMA §3.8)", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
+  const villages = h.sheet("registry_population_village");
+  const corrected = ROWS_6812.map((r) => (r.rcode === "5406" && r.tt === "54060800" ? { ...r, male: 1567, total: 3201 } : r));
+
+  const res = savePopulation(h, "6812", corrected);
+
+  assert.deepEqual(res, { status: "success", kind: "population", yymm: "6812", count: 10 });
+  assert.deepEqual(h.sheet("registry_population_village"), villages);
+});
+
+test("GET after the population of 6712 and 6812 and the villages of 6812 → 6812 with its 94 village rows as sent, 6712 with village []", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
+  savePopulation(h, "6712", ROWS_6712);
+
+  assert.deepEqual(getRegistryPopulation(h), {
+    years: [
+      { yymm: "6712", population: ROWS_6712, village: [], age: [] },
+      { yymm: "6812", population: ROWS_6812, village: VILLAGE_ROWS_6812, age: [] },
+    ],
+  });
+});
+
+test("GET reads registry_population_village by header name; codes typed in as numbers come back as strings, a count left blank is left out of its row", () => {
+  const h = load();
+  savePopulation(h, "6812", ROWS_6812);
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
+  setCell(h, "registry_population_village", 2, "mm", 54060101);
+  setCell(h, "registry_population_village", 3, "house", "");
+
+  const res = getRegistryPopulation(h);
+
+  const expected = VILLAGE_ROWS_6812.map((r, i) => (i === 1 ? omit(r, "house") : r));
+  assert.deepEqual(res.years[0].village, expected);
+});
+
+test("registry_population_village is no PA unit, sync unit or BATCH_ALL table: BATCH_ALL is unchanged with it saved, and save_kpi_data refuses it", () => {
+  const h = loadGas({ sheets: PA_SHEETS });
+  h.clock.now = Date.parse("2026-11-06T10:00:00+07:00");
+  savePopulation(h, "6812", ROWS_6812);
+  saveVillage(h, "6812", VILLAGE_ROWS_6812);
+  const saved = h.sheet("registry_population_village");
+
+  const batch = JSON.parse(h.gas.doGet({ parameter: { sheet: "BATCH_ALL" } }).getContent());
+  const kpi = post(h, { action: "save_kpi_data", tableName: "registry_population_village", year: "2569", data: VILLAGE_ROWS_6812 });
+
+  const { years, ...meta } = batch.meta;
+  assert.deepEqual(years, ["2565", "2566", "2567", "2568", "2569"]);
+  assert.deepEqual({ ...batch, meta }, BATCH_ALL_BEFORE_F04);
+  assert.deepEqual(kpi, { status: "error", message: "Unknown table: registry_population_village" });
+  assert.deepEqual(h.sheet("registry_population_village"), saved);
 });

@@ -1,5 +1,6 @@
 /**
- * Data Center: ประชากรทะเบียนราษฎร from stat.bora (SCHEMA §2.6, §3.8, ADR-0011).
+ * Data Center: ประชากรทะเบียนราษฎร from stat.bora (SCHEMA §2.6–2.8, §3.8,
+ * ADR-0011, ADR-0014).
  *
  * Shares the Apps Script global scope with รหัส.js, dc-storage.js and
  * dc-catalog.js. Read those only inside functions, never at top level: file
@@ -7,7 +8,7 @@
  */
 
 const DC_REGISTRY_POPULATION_SHEET = "registry_population";
-// The 13 values of a stat_t line in file order (SCHEMA §2.6); the sheet adds
+// The 13 values of a stat_m line in file order (SCHEMA §2.6); the sheet adds
 // uploaded_at after them.
 const DC_REGISTRY_POPULATION_COLUMNS = [
   "yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name",
@@ -20,6 +21,10 @@ const DC_REGISTRY_POPULATION_COUNT_COLUMNS = ["male", "female", "total", "house"
 // The string columns with a format of their own (SCHEMA §3.8 rule 6). tt's is
 // rule 7.
 const DC_REGISTRY_POPULATION_CODE_PATTERNS = { cc: /^\d{2}$/, rcode: /^\d{4}$/ };
+
+// The หมู่บ้าน lines of stat_m (SCHEMA §2.8), in the columns of the ตำบล
+// lines.
+const DC_REGISTRY_POPULATION_VILLAGE_SHEET = "registry_population_village";
 
 // The age sheet (SCHEMA §2.7), from the age file of stat.bora.
 const DC_REGISTRY_POPULATION_AGE_SHEET = "registry_population_age";
@@ -48,6 +53,12 @@ const DC_REGISTRY_LAYOUTS = {
     counts: DC_REGISTRY_POPULATION_COUNT_COLUMNS,
     text: DC_REGISTRY_POPULATION_TEXT_COLUMNS,
   },
+  village: {
+    name: DC_REGISTRY_POPULATION_VILLAGE_SHEET,
+    columns: DC_REGISTRY_POPULATION_COLUMNS,
+    counts: DC_REGISTRY_POPULATION_COUNT_COLUMNS,
+    text: DC_REGISTRY_POPULATION_TEXT_COLUMNS,
+  },
   age: {
     name: DC_REGISTRY_POPULATION_AGE_SHEET,
     columns: DC_REGISTRY_POPULATION_AGE_COLUMNS,
@@ -61,7 +72,7 @@ const DC_REGISTRY_LAYOUTS = {
  * in order, then replace the rows of its yymm in the sheet of its kind, every
  * other year's rows kept as they are. The sheet is rewritten whole in yymm
  * order, each year's rows in the order they were sent, and created with its
- * header on the first save (SCHEMA §2.6, §2.7).
+ * header on the first save (SCHEMA §2.6–2.8).
  *
  * The caller must hold the script lock (doPost): this function never calls
  * LockService (SCHEMA §3). district_code comes from readSettings(), which
@@ -70,7 +81,9 @@ const DC_REGISTRY_LAYOUTS = {
  * Returns { status: "success", kind, yymm, count } or { status: "error", message }.
  */
 function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
-  if (kindRaw !== "population" && kindRaw !== "age") return dcRejectRegistryPopulation(null, null, "Unknown kind");
+  if (kindRaw !== "population" && kindRaw !== "village" && kindRaw !== "age") {
+    return dcRejectRegistryPopulation(null, null, "Unknown kind");
+  }
   const kind = kindRaw;
   const layout = DC_REGISTRY_LAYOUTS[kind];
   // Figures at 31 Dec exist only once that year is over, so a yymm of this
@@ -110,9 +123,10 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
 
 /**
  * GET ?action=registry_population (SCHEMA §3.9): GasRegistryPopulation
- * (SCHEMA §9), the rows of both sheets by yymm, oldest first, each sheet's
- * rows in sheet order. A sheet that does not exist yet has no rows, so before
- * the first upload the answer is { years: [] }. No cache: only the build and
+ * (SCHEMA §9), the rows of the three sheets by yymm, oldest first, each
+ * sheet's rows in sheet order. A sheet that does not exist yet has no rows,
+ * so before the first upload the answer is { years: [] }, and a year of no
+ * village rows has village: []. No cache: only the build and
  * the /sync upload call it.
  *
  * The caller must hold the script lock (doGet), so no sheet is read while
@@ -123,16 +137,13 @@ function dcGetRegistryPopulation() {
   // Null prototype: a yymm typed by hand such as "constructor" must not hit
   // Object.prototype.
   const years = Object.create(null);
-  const add = function (kind) {
-    return function (row) {
-      years[row.yymm] = years[row.yymm] || { yymm: row.yymm, population: [], age: [] };
+  ["population", "village", "age"].forEach(function (kind) {
+    const layout = DC_REGISTRY_LAYOUTS[kind];
+    dcRegistryRows(layout.name, layout.columns, layout.counts).forEach(function (row) {
+      years[row.yymm] = years[row.yymm] || { yymm: row.yymm, population: [], village: [], age: [] };
       years[row.yymm][kind].push(row);
-    };
-  };
-  dcRegistryRows(DC_REGISTRY_POPULATION_SHEET, DC_REGISTRY_POPULATION_COLUMNS, DC_REGISTRY_POPULATION_COUNT_COLUMNS)
-    .forEach(add("population"));
-  dcRegistryRows(DC_REGISTRY_POPULATION_AGE_SHEET, DC_REGISTRY_POPULATION_AGE_COLUMNS, DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS)
-    .forEach(add("age"));
+    });
+  });
   return {
     years: Object.keys(years).sort().map(function (yymm) {
       return years[yymm];
@@ -211,16 +222,20 @@ function dcRegistryRowsError(kind, rows, yymm, districtCode) {
   if (kind === "population" && !rows.every(function (row) {
     return row.mm === "0";
   })) return "Not a tambon row";
+  // A หมู่บ้าน code is 8 digits, the first 6 those of its ตำบล.
+  if (kind === "village" && !rows.every(function (row) {
+    return /^\d{8}$/.test(row.mm) && row.mm.slice(0, 6) === row.tt.slice(0, 6);
+  })) return "Not a village row";
   // Null prototype: a key such as "constructor" must not hit Object.prototype.
   const seen = Object.create(null);
   const unique = rows.every(function (row) {
-    const key = row.rcode + "/" + row.tt;
+    const key = row.rcode + "/" + (kind === "village" ? row.mm : row.tt);
     if (seen[key]) return false;
     seen[key] = true;
     return true;
   });
-  if (!unique) return "Duplicate tambon row";
-  if (!rows.every(kind === "population" ? function (row) {
+  if (!unique) return kind === "village" ? "Duplicate village row" : "Duplicate tambon row";
+  if (!rows.every(kind !== "age" ? function (row) {
     return row.male + row.female === row.total;
   } : function (row) {
     return DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.every(function (group) {
@@ -248,21 +263,51 @@ function dcAgesAddUp(row) {
 }
 
 /**
- * Rules 12–14 of SCHEMA §3.8, so that the two sheets always agree on a yymm:
- * age rows need the registry_population rows of their yymm, and population
- * rows are checked once registry_population_age has rows of their yymm. The
- * message of the first rule that fails, or null.
+ * Rules 12–15 of SCHEMA §3.8, so that the sheets always agree on a yymm: age
+ * and village rows need the registry_population rows of their yymm, and
+ * population rows are checked once registry_population_age has rows of
+ * their yymm. Population rows are not checked against village rows: the
+ * upload sends the villages of the same stat_m right after them. The message
+ * of the first rule that fails, or null.
  */
 function dcRegistryOtherSheetError(kind, rows, yymm) {
-  const otherLayout = DC_REGISTRY_LAYOUTS[kind === "age" ? "population" : "age"];
+  const otherLayout = DC_REGISTRY_LAYOUTS[kind === "population" ? "age" : "population"];
   const saved = dcRegistryRows(otherLayout.name, otherLayout.columns, otherLayout.counts).filter(function (row) {
     return row.yymm === yymm;
   });
-  if (kind === "age") {
-    if (saved.length === 0) return "No registry_population rows for this yymm";
-    return dcRegistryRowsAgree(saved, rows) ? null : "Does not match registry_population";
+  if (kind === "population") {
+    return saved.length === 0 || dcRegistryRowsAgree(rows, saved) ? null : "Does not match registry_population_age";
   }
-  return saved.length === 0 || dcRegistryRowsAgree(rows, saved) ? null : "Does not match registry_population_age";
+  if (saved.length === 0) return "No registry_population rows for this yymm";
+  if (kind === "village") return dcVillagesAddUp(saved, rows) ? null : "Villages do not add up to registry_population";
+  return dcRegistryRowsAgree(saved, rows) ? null : "Does not match registry_population";
+}
+
+/**
+ * The match that rule 15 of SCHEMA §3.8 asks for: village rows of one yymm
+ * are of the same ตำบล (rcode, tt) as its population rows, every one of them,
+ * and per ตำบล their male, female, total and house add up to its row's.
+ */
+function dcVillagesAddUp(population, villages) {
+  // Null prototype: a key such as "constructor" must not hit Object.prototype.
+  const sums = Object.create(null);
+  villages.forEach(function (row) {
+    const key = row.rcode + "/" + row.tt;
+    sums[key] = sums[key] || { male: 0, female: 0, total: 0, house: 0 };
+    DC_REGISTRY_POPULATION_COUNT_COLUMNS.forEach(function (column) {
+      sums[key][column] += row[column];
+    });
+  });
+  const tambons = Object.create(null);
+  return population.every(function (row) {
+    const key = row.rcode + "/" + row.tt;
+    tambons[key] = true;
+    return sums[key] !== undefined && DC_REGISTRY_POPULATION_COUNT_COLUMNS.every(function (column) {
+      return sums[key][column] === row[column];
+    });
+  }) && Object.keys(sums).every(function (key) {
+    return tambons[key];
+  });
 }
 
 /**
