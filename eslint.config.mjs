@@ -32,9 +32,9 @@ const eslintConfig = defineConfig([
       "no-irregular-whitespace": ["error", { skipStrings: false }],
     },
   },
-  // Old R6 colour names are aliases until /reports is redesigned (SPEC §9.1,
-  // expand–contract). The ignored files are the ones still on them; the
-  // contract step moves them to the V7.6 names and drops the ignores.
+  // Old R6 colour names are aliases until /reports/{id} is redesigned (SPEC
+  // §9.1, expand–contract, ADR-0013). The ignored files are the ones still on
+  // them; the contract step moves them to the V7.6 names and drops the ignores.
   // dc-canvas is a name of both, and dc-border-subtle a new one.
   {
     files: ["src/app/(dc)/**", "src/components/dc/**"],
@@ -50,7 +50,7 @@ const eslintConfig = defineConfig([
         "error",
         ...["Literal[value", "TemplateElement[value.raw"].map((node) => ({
           selector: `${node}=/\\bdc-(blue|ink|muted|navy|teal|gold)\\b|\\bdc-border(?!-)/]`,
-          message: "Use the V7.6 colour names here; the R6 names are aliases kept for /reports until its redesign (SPEC §9.1).",
+          message: "Use the V7.6 colour names here; the R6 names are aliases kept for /reports/{id} until its redesign (SPEC §9.1).",
         })),
       ],
     },
