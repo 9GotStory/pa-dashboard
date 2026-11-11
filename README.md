@@ -71,7 +71,7 @@ public/
 └── data/                        snapshot ที่สร้างตอน build ไม่ commit
 docs/
 ├── adr/                         บันทึกการตัดสินใจ
-└── reference/                   ต้นแบบหน้าจอ R6, V7.6 และ V1.4 (ตัวเลขเป็นข้อมูลจำลอง)
+└── reference/                   ต้นแบบหน้าจอ R6, V7.6 และ V1.4 (ตัวเลขเป็นข้อมูลจำลองหรือคัดลอกไว้)
 tools/                           snippet สำหรับรันใน DevTools ของเบราว์เซอร์ (export แค็ตตาล็อก)
 catalog-exports/                 ไฟล์ export แค็ตตาล็อกจาก snippet ไม่ commit
 ```
