@@ -444,7 +444,7 @@ test("a ReportQuery without a measure → no measure in the URL", () => {
 // reports of catalog.json it lists (SPEC §9.3), on the real catalog of 4 Nov
 // 2569: 21 reports, 14 in ส่งเสริมป้องกัน and 7 in ข้อมูลตอบสนอง Service Plan.
 const library = (search: string) => libraryList(MAINS, libraryQuery(MAINS, new URLSearchParams(search)));
-/** Each group on a page as its กลุ่ม followed by its reports' source_table */
+/** Each group of a list as its กลุ่ม followed by its reports' source_table */
 const listed = (list: LibraryList) => list.groups.map((g) => [g.subgroup, ...g.reports.map((r) => r.source_table)]);
 
 test("?cat= of การสร้างเสริมภูมิคุ้มกันโรค → its 8 reports in 4 กลุ่ม, กลุ่มอายุ 1 → 2 → 3 → 5 ปี, s_epi1 before fully immunized in its กลุ่ม", () => {
@@ -501,12 +501,20 @@ test("?q= searches within the หมวด or หัวข้อ picked: ร้�
   assert.equal(library(`cat=${MCH.cat_id}&q=s_epi_complete`).total, 0);
 });
 
-test("no query → all 21 reports in one list, in catalog.json order: อนามัยแม่และเด็ก first, s_kpi_dental33 last", () => {
+test("no query → all 21 reports in one list, in catalog.json order by หัวข้อ and กลุ่ม", () => {
   const list = library("");
   assert.equal(list.total, 21);
-  assert.equal(list.groups.flatMap((g) => g.reports).length, 21);
-  assert.deepEqual(list.groups[0].reports.map((r) => r.source_table), ["s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"]);
-  assert.equal(list.groups.at(-1)?.reports.at(-1)?.source_table, "s_kpi_dental33");
+  assert.deepEqual(listed(list), [
+    ["", "s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"],
+    ["กลุ่มอายุ 1 ปี", "s_epi1", "s_epi_complete"],
+    ["กลุ่มอายุ 2 ปี", "s_epi2", "s_epi_complete"],
+    ["กลุ่มอายุ 3 ปี", "s_epi3", "s_epi_complete"],
+    ["กลุ่มอายุ 5 ปี", "s_epi5", "s_epi_complete"],
+    ["", "s_kpi_food"],
+    ["", "s_aged9"],
+    ["", "s_dm_screen", "s_ht_screen", "s_ncd_screen_repleate1", "s_ht_screen_follow"],
+    ["", "s_dental_0_5_cavity_free", "s_kpi_dental28", "s_kpi_dental33"],
+  ]);
 });
 
 test("?page=3&size=20 of an old link → the LibraryQuery of no query, and all 21 reports", () => {

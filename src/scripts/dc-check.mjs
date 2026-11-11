@@ -8,9 +8,9 @@
 // the check exits 1 naming each one it lacks (SPEC §9.3). The home page is
 // opened wide once more, and the check exits 1, naming the area, when its
 // population figures disagree, the figures by the bars of the ตำบล chart
-// among them (SPEC §9.2). The pages
-// are opened with playwright-core in the installed Google Chrome, the one
-// dependency CODING_STANDARDS §3 allows a node script.
+// among them (SPEC §9.2). The pages are opened with playwright-core in the
+// installed Google Chrome, the one dependency CODING_STANDARDS §3 allows a
+// node script.
 import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
@@ -205,7 +205,9 @@ async function overflowProblems(browser, url) {
 // static HTML lists every report, and the browser filters it once loaded
 // (SPEC §9.3), so a page whose list needs JavaScript fails here.
 function missingReportLinks() {
-  const catalog = JSON.parse(fs.readFileSync(path.join(OUT, "data", "catalog.json"), "utf8"));
+  const file = path.join(OUT, "data", "catalog.json");
+  if (!fs.existsSync(file)) fail("out/ lacks data/catalog.json: run npm run build first");
+  const catalog = JSON.parse(fs.readFileSync(file, "utf8"));
   const html = fs.readFileSync(path.join(OUT, "reports.html"), "utf8");
   const linked = new Set([...html.matchAll(/href="\/reports\/([^"?#/]+)"/g)].map((m) => m[1]));
   return catalog.mains
@@ -351,6 +353,7 @@ async function checkPopulation(browser, url, hasAge) {
 const urlPaths = dcPages();
 const shownYear = populationYearShown();
 const hasAge = shownYear?.age.length > 0;
+const unlinked = missingReportLinks();
 const server = await serveOut();
 const origin = `http://127.0.0.1:${server.address().port}`;
 const problems = [];
@@ -363,7 +366,7 @@ try {
   for (const urlPath of ["/", "/reports"]) {
     for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
-  for (const problem of missingReportLinks()) problems.push(`/reports: ${problem}`);
+  for (const problem of unlinked) problems.push(`/reports: ${problem}`);
   if (shownYear) {
     for (const problem of await checkPopulation(browser, origin + "/", hasAge)) problems.push(`/: ${problem}`);
   }

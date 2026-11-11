@@ -240,7 +240,7 @@ function Directory({
                     </div>
                     {section.map((g) => (
                       <div key={g.subgroup}>
-                        {g.subgroup && <h4 className="pt-4 pb-1 text-xs font-medium text-dc-text-secondary sm:pt-5">{g.subgroup}</h4>}
+                        {g.subgroup && <h4 className="pt-4 pb-1 font-prompt text-xs font-medium text-dc-text-secondary sm:pt-5">{g.subgroup}</h4>}
                         <ul>
                           {g.reports.map((r) => (
                             <li key={r.opendata_id}>
