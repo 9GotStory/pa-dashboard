@@ -57,7 +57,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const latest = report.years.reduce((max, y) => (y.max_date_com > max ? y.max_date_com : max), "");
   const others = related(all, here);
   const crumbs = [
-    { label: "คลังรายงาน", href: "/reports" },
+    { label: "รายงานสุขภาพ", href: "/reports" },
     { label: main.main_report_name, href: `/reports?main=${main.main_report_id}` },
     { label: topic.category_name, href: `/reports?cat=${topic.cat_id}` },
     ...(group.subgroup ? [{ label: group.subgroup }] : []),

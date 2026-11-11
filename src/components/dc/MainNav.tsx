@@ -5,12 +5,12 @@ import { usePathname } from "next/navigation";
 
 const LINKS = [
   { href: "/", label: "หน้าแรก" },
-  { href: "/reports", label: "คลังรายงาน" },
+  { href: "/reports", label: "รายงานสุขภาพ" },
   // PA is a heavy page outside the Data Center: no prefetch from every page.
   { href: "/pa", label: "PA Dashboard", prefetch: false },
 ];
 
-// The main menu marks the section on show; /reports/{id} is in คลังรายงาน.
+// The main menu marks the section on show; /reports/{id} is in รายงานสุขภาพ.
 // A client component because the (dc) layout, and so the menu, stays mounted
 // across navigations while the pathname changes.
 export default function MainNav() {
