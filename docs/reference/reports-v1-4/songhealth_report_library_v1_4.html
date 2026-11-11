@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#155f4b" />
+  <meta name="description" content="ต้นแบบ UX รายงานสุขภาพของ Song Health Data Center สำหรับตรวจรับการออกแบบ ไม่ใช่เว็บไซต์ Production" />
+  <title>รายงานสุขภาพ — Song Health Data Center · Design Prototype V1.4</title>
+  <style>
+/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: "Noto Sans Thai",Tahoma,system-ui,sans-serif;
+    --font-mono: ui-monospace,Menlo,monospace;
+    --color-white: #fff;
+    --spacing: 0.25rem;
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --font-weight-extrabold: 800;
+    --font-weight-black: 900;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --blur-lg: 16px;
+    --default-transition-duration: 150ms;
+    --default-transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+    --color-brand-deep: #153d32;
+    --color-brand-primary: #155f4b;
+    --color-brand-dark-surface: #174e42;
+    --color-brand-accent: #198467;
+    --color-canvas: #f8f9f6;
+    --color-surface-muted: #eef3ed;
+    --color-border-subtle: #e0e8df;
+    --color-text-secondary: #5d7164;
+    --color-highlight-soft: #e8f5e9;
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden="until-found"])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .pointer-events-none {
+    pointer-events: none;
+  }
+  .visible {
+    visibility: visible;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  .absolute {
+    position: absolute;
+  }
+  .relative {
+    position: relative;
+  }
+  .sticky {
+    position: sticky;
+  }
+  .inset-0 {
+    inset: calc(var(--spacing) * 0);
+  }
+  .-top-20 {
+    top: calc(var(--spacing) * -20);
+  }
+  .top-0 {
+    top: calc(var(--spacing) * 0);
+  }
+  .top-\[15px\] {
+    top: 15px;
+  }
+  .top-\[100px\] {
+    top: 100px;
+  }
+  .-right-9 {
+    right: calc(var(--spacing) * -9);
+  }
+  .right-4 {
+    right: calc(var(--spacing) * 4);
+  }
+  .-bottom-36 {
+    bottom: calc(var(--spacing) * -36);
+  }
+  .bottom-5 {
+    bottom: calc(var(--spacing) * 5);
+  }
+  .-left-16 {
+    left: calc(var(--spacing) * -16);
+  }
+  .left-8 {
+    left: calc(var(--spacing) * 8);
+  }
+  .z-40 {
+    z-index: 40;
+  }
+  .m-0 {
+    margin: calc(var(--spacing) * 0);
+  }
+  .mx-auto {
+    margin-inline: auto;
+  }
+  .mt-0\.5 {
+    margin-top: calc(var(--spacing) * 0.5);
+  }
+  .mt-1 {
+    margin-top: calc(var(--spacing) * 1);
+  }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-3 {
+    margin-top: calc(var(--spacing) * 3);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .mt-5 {
+    margin-top: calc(var(--spacing) * 5);
+  }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .mt-7 {
+    margin-top: calc(var(--spacing) * 7);
+  }
+  .mt-\[11px\] {
+    margin-top: 11px;
+  }
+  .mr-4 {
+    margin-right: calc(var(--spacing) * 4);
+  }
+  .mb-2 {
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+  .mb-2\.5 {
+    margin-bottom: calc(var(--spacing) * 2.5);
+  }
+  .mb-5 {
+    margin-bottom: calc(var(--spacing) * 5);
+  }
+  .ml-5 {
+    margin-left: calc(var(--spacing) * 5);
+  }
+  .block {
+    display: block;
+  }
+  .flex {
+    display: flex;
+  }
+  .grid {
+    display: grid;
+  }
+  .hidden {
+    display: none;
+  }
+  .inline-flex {
+    display: inline-flex;
+  }
+  .h-3\.5 {
+    height: calc(var(--spacing) * 3.5);
+  }
+  .h-4 {
+    height: calc(var(--spacing) * 4);
+  }
+  .h-5 {
+    height: calc(var(--spacing) * 5);
+  }
+  .h-9 {
+    height: calc(var(--spacing) * 9);
+  }
+  .h-10 {
+    height: calc(var(--spacing) * 10);
+  }
+  .h-11 {
+    height: calc(var(--spacing) * 11);
+  }
+  .h-\[3px\] {
+    height: 3px;
+  }
+  .h-\[4px\] {
+    height: 4px;
+  }
+  .h-\[17px\] {
+    height: 17px;
+  }
+  .h-\[46px\] {
+    height: 46px;
+  }
+  .h-\[55px\] {
+    height: 55px;
+  }
+  .h-\[78px\] {
+    height: 78px;
+  }
+  .h-\[310px\] {
+    height: 310px;
+  }
+  .h-\[320px\] {
+    height: 320px;
+  }
+  .h-full {
+    height: 100%;
+  }
+  .h-px {
+    height: 1px;
+  }
+  .min-h-8 {
+    min-height: calc(var(--spacing) * 8);
+  }
+  .min-h-11 {
+    min-height: calc(var(--spacing) * 11);
+  }
+  .min-h-12 {
+    min-height: calc(var(--spacing) * 12);
+  }
+  .min-h-\[56px\] {
+    min-height: 56px;
+  }
+  .min-h-\[64px\] {
+    min-height: 64px;
+  }
+  .min-h-\[214px\] {
+    min-height: 214px;
+  }
+  .min-h-screen {
+    min-height: 100vh;
+  }
+  .w-3\.5 {
+    width: calc(var(--spacing) * 3.5);
+  }
+  .w-4 {
+    width: calc(var(--spacing) * 4);
+  }
+  .w-5 {
+    width: calc(var(--spacing) * 5);
+  }
+  .w-7 {
+    width: calc(var(--spacing) * 7);
+  }
+  .w-9 {
+    width: calc(var(--spacing) * 9);
+  }
+  .w-10 {
+    width: calc(var(--spacing) * 10);
+  }
+  .w-11 {
+    width: calc(var(--spacing) * 11);
+  }
+  .w-\[17px\] {
+    width: 17px;
+  }
+  .w-\[46px\] {
+    width: 46px;
+  }
+  .w-\[310px\] {
+    width: 310px;
+  }
+  .w-\[320px\] {
+    width: 320px;
+  }
+  .w-full {
+    width: 100%;
+  }
+  .max-w-\[535px\] {
+    max-width: 535px;
+  }
+  .max-w-\[670px\] {
+    max-width: 670px;
+  }
+  .max-w-\[770px\] {
+    max-width: 770px;
+  }
+  .max-w-\[1320px\] {
+    max-width: 1320px;
+  }
+  .min-w-0 {
+    min-width: calc(var(--spacing) * 0);
+  }
+  .flex-1 {
+    flex: 1;
+  }
+  .shrink-0 {
+    flex-shrink: 0;
+  }
+  .scroll-mt-\[100px\] {
+    scroll-margin-top: 100px;
+  }
+  .appearance-none {
+    appearance: none;
+  }
+  .flex-col {
+    flex-direction: column;
+  }
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .items-start {
+    align-items: flex-start;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .gap-0\.5 {
+    gap: calc(var(--spacing) * 0.5);
+  }
+  .gap-1 {
+    gap: calc(var(--spacing) * 1);
+  }
+  .gap-2 {
+    gap: calc(var(--spacing) * 2);
+  }
+  .gap-2\.5 {
+    gap: calc(var(--spacing) * 2.5);
+  }
+  .gap-3 {
+    gap: calc(var(--spacing) * 3);
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
+  }
+  .gap-5 {
+    gap: calc(var(--spacing) * 5);
+  }
+  .space-y-0\.5 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 0.5) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 0.5) * calc(1 - var(--tw-space-y-reverse)));
+    }
+  }
+  .gap-x-5 {
+    column-gap: calc(var(--spacing) * 5);
+  }
+  .gap-y-2 {
+    row-gap: calc(var(--spacing) * 2);
+  }
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  .rounded-\[3px\] {
+    border-radius: 3px;
+  }
+  .rounded-\[15px\] {
+    border-radius: 15px;
+  }
+  .rounded-\[17px\] {
+    border-radius: 17px;
+  }
+  .rounded-\[19px\] {
+    border-radius: 19px;
+  }
+  .rounded-\[22px\] {
+    border-radius: 22px;
+  }
+  .rounded-\[25px\] {
+    border-radius: 25px;
+  }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
+  }
+  .rounded-lg {
+    border-radius: var(--radius-lg);
+  }
+  .rounded-md {
+    border-radius: var(--radius-md);
+  }
+  .rounded-sm {
+    border-radius: var(--radius-sm);
+  }
+  .rounded-xl {
+    border-radius: var(--radius-xl);
+  }
+  .border {
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+  }
+  .border-0 {
+    border-style: var(--tw-border-style);
+    border-width: 0px;
+  }
+  .border-t {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+  }
+  .border-b {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+  }
+  .border-\[\#d9e5d7\] {
+    border-color: #d9e5d7;
+  }
+  .border-border-subtle {
+    border-color: var(--color-border-subtle);
+  }
+  .border-border-subtle\/90 {
+    border-color: color-mix(in srgb, #e0e8df 90%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-border-subtle) 90%, transparent);
+    }
+  }
+  .border-brand-primary {
+    border-color: var(--color-brand-primary);
+  }
+  .border-transparent {
+    border-color: transparent;
+  }
+  .border-white\/10 {
+    border-color: color-mix(in srgb, #fff 10%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      border-color: color-mix(in oklab, var(--color-white) 10%, transparent);
+    }
+  }
+  .bg-\[\#b5d8ae\] {
+    background-color: #b5d8ae;
+  }
+  .bg-\[\#e7f3d7\] {
+    background-color: #e7f3d7;
+  }
+  .bg-brand-accent {
+    background-color: var(--color-brand-accent);
+  }
+  .bg-brand-dark-surface {
+    background-color: var(--color-brand-dark-surface);
+  }
+  .bg-brand-primary {
+    background-color: var(--color-brand-primary);
+  }
+  .bg-canvas {
+    background-color: var(--color-canvas);
+  }
+  .bg-highlight-soft {
+    background-color: var(--color-highlight-soft);
+  }
+  .bg-surface-muted {
+    background-color: var(--color-surface-muted);
+  }
+  .bg-transparent {
+    background-color: transparent;
+  }
+  .bg-white {
+    background-color: var(--color-white);
+  }
+  .bg-white\/85 {
+    background-color: color-mix(in srgb, #fff 85%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-white) 85%, transparent);
+    }
+  }
+  .bg-white\/95 {
+    background-color: color-mix(in srgb, #fff 95%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-white) 95%, transparent);
+    }
+  }
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
+  .px-1 {
+    padding-inline: calc(var(--spacing) * 1);
+  }
+  .px-2 {
+    padding-inline: calc(var(--spacing) * 2);
+  }
+  .px-3 {
+    padding-inline: calc(var(--spacing) * 3);
+  }
+  .px-5 {
+    padding-inline: calc(var(--spacing) * 5);
+  }
+  .px-6 {
+    padding-inline: calc(var(--spacing) * 6);
+  }
+  .px-\[1px\] {
+    padding-inline: 1px;
+  }
+  .py-1 {
+    padding-block: calc(var(--spacing) * 1);
+  }
+  .py-2 {
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .py-2\.5 {
+    padding-block: calc(var(--spacing) * 2.5);
+  }
+  .py-3 {
+    padding-block: calc(var(--spacing) * 3);
+  }
+  .py-6 {
+    padding-block: calc(var(--spacing) * 6);
+  }
+  .py-7 {
+    padding-block: calc(var(--spacing) * 7);
+  }
+  .py-9 {
+    padding-block: calc(var(--spacing) * 9);
+  }
+  .py-16 {
+    padding-block: calc(var(--spacing) * 16);
+  }
+  .py-\[16px\] {
+    padding-block: 16px;
+  }
+  .pt-1 {
+    padding-top: calc(var(--spacing) * 1);
+  }
+  .pt-2 {
+    padding-top: calc(var(--spacing) * 2);
+  }
+  .pt-4 {
+    padding-top: calc(var(--spacing) * 4);
+  }
+  .pt-5 {
+    padding-top: calc(var(--spacing) * 5);
+  }
+  .pt-6 {
+    padding-top: calc(var(--spacing) * 6);
+  }
+  .pt-7 {
+    padding-top: calc(var(--spacing) * 7);
+  }
+  .pr-11 {
+    padding-right: calc(var(--spacing) * 11);
+  }
+  .pb-1 {
+    padding-bottom: calc(var(--spacing) * 1);
+  }
+  .pb-2 {
+    padding-bottom: calc(var(--spacing) * 2);
+  }
+  .pb-3 {
+    padding-bottom: calc(var(--spacing) * 3);
+  }
+  .pb-4 {
+    padding-bottom: calc(var(--spacing) * 4);
+  }
+  .pb-5 {
+    padding-bottom: calc(var(--spacing) * 5);
+  }
+  .pb-6 {
+    padding-bottom: calc(var(--spacing) * 6);
+  }
+  .pb-16 {
+    padding-bottom: calc(var(--spacing) * 16);
+  }
+  .pl-2 {
+    padding-left: calc(var(--spacing) * 2);
+  }
+  .pl-4 {
+    padding-left: calc(var(--spacing) * 4);
+  }
+  .text-center {
+    text-align: center;
+  }
+  .text-left {
+    text-align: left;
+  }
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+  .text-\[10px\] {
+    font-size: 10px;
+  }
+  .text-\[11px\] {
+    font-size: 11px;
+  }
+  .text-\[12px\] {
+    font-size: 12px;
+  }
+  .text-\[13px\] {
+    font-size: 13px;
+  }
+  .text-\[14px\] {
+    font-size: 14px;
+  }
+  .text-\[15px\] {
+    font-size: 15px;
+  }
+  .text-\[16px\] {
+    font-size: 16px;
+  }
+  .text-\[18px\] {
+    font-size: 18px;
+  }
+  .text-\[21px\] {
+    font-size: 21px;
+  }
+  .text-\[23px\] {
+    font-size: 23px;
+  }
+  .text-\[36px\] {
+    font-size: 36px;
+  }
+  .leading-\[1\.7\] {
+    --tw-leading: 1.7;
+    line-height: 1.7;
+  }
+  .leading-\[1\.8\] {
+    --tw-leading: 1.8;
+    line-height: 1.8;
+  }
+  .leading-\[1\.9\] {
+    --tw-leading: 1.9;
+    line-height: 1.9;
+  }
+  .leading-\[1\.25\] {
+    --tw-leading: 1.25;
+    line-height: 1.25;
+  }
+  .leading-\[1\.65\] {
+    --tw-leading: 1.65;
+    line-height: 1.65;
+  }
+  .leading-\[1\.75\] {
+    --tw-leading: 1.75;
+    line-height: 1.75;
+  }
+  .leading-\[1\.85\] {
+    --tw-leading: 1.85;
+    line-height: 1.85;
+  }
+  .font-black {
+    --tw-font-weight: var(--font-weight-black);
+    font-weight: var(--font-weight-black);
+  }
+  .font-bold {
+    --tw-font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold);
+  }
+  .font-extrabold {
+    --tw-font-weight: var(--font-weight-extrabold);
+    font-weight: var(--font-weight-extrabold);
+  }
+  .font-medium {
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+  }
+  .font-normal {
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+  }
+  .font-semibold {
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+  .tracking-\[-\.02em\] {
+    --tw-tracking: -.02em;
+    letter-spacing: -.02em;
+  }
+  .tracking-\[-\.03em\] {
+    --tw-tracking: -.03em;
+    letter-spacing: -.03em;
+  }
+  .tracking-\[-\.05em\] {
+    --tw-tracking: -.05em;
+    letter-spacing: -.05em;
+  }
+  .tracking-\[-\.08em\] {
+    --tw-tracking: -.08em;
+    letter-spacing: -.08em;
+  }
+  .tracking-\[-\.012em\] {
+    --tw-tracking: -.012em;
+    letter-spacing: -.012em;
+  }
+  .tracking-\[-\.055em\] {
+    --tw-tracking: -.055em;
+    letter-spacing: -.055em;
+  }
+  .tracking-\[\.1em\] {
+    --tw-tracking: .1em;
+    letter-spacing: .1em;
+  }
+  .tracking-\[\.02em\] {
+    --tw-tracking: .02em;
+    letter-spacing: .02em;
+  }
+  .break-words {
+    overflow-wrap: break-word;
+  }
+  .text-\[\#7a9182\] {
+    color: #7a9182;
+  }
+  .text-\[\#9aaea0\] {
+    color: #9aaea0;
+  }
+  .text-\[\#244b3d\] {
+    color: #244b3d;
+  }
+  .text-\[\#526c5c\] {
+    color: #526c5c;
+  }
+  .text-\[\#735621\] {
+    color: #735621;
+  }
+  .text-\[\#759684\] {
+    color: #759684;
+  }
+  .text-\[\#b3e89a\] {
+    color: #b3e89a;
+  }
+  .text-\[\#c5a15e\] {
+    color: #c5a15e;
+  }
+  .text-\[\#d8e9d6\] {
+    color: #d8e9d6;
+  }
+  .text-brand-accent {
+    color: var(--color-brand-accent);
+  }
+  .text-brand-deep {
+    color: var(--color-brand-deep);
+  }
+  .text-brand-primary {
+    color: var(--color-brand-primary);
+  }
+  .text-text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-white {
+    color: var(--color-white);
+  }
+  .tabular-nums {
+    --tw-numeric-spacing: tabular-nums;
+    font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
+  }
+  .underline {
+    text-decoration-line: underline;
+  }
+  .decoration-brand-accent\/70 {
+    text-decoration-color: color-mix(in srgb, #198467 70%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      text-decoration-color: color-mix(in oklab, var(--color-brand-accent) 70%, transparent);
+    }
+  }
+  .decoration-transparent {
+    text-decoration-color: transparent;
+  }
+  .decoration-2 {
+    text-decoration-thickness: 2px;
+  }
+  .underline-offset-4 {
+    text-underline-offset: 4px;
+  }
+  .underline-offset-8 {
+    text-underline-offset: 8px;
+  }
+  .antialiased {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .shadow-\[0_9px_24px_rgba\(25\,66\,44\,\.04\)\] {
+    --tw-shadow: 0 9px 24px var(--tw-shadow-color, rgba(25,66,44,.04));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-\[0_10px_32px_rgba\(21\,61\,50\,\.028\)\] {
+    --tw-shadow: 0 10px 32px var(--tw-shadow-color, rgba(21,61,50,.028));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .shadow-\[0_14px_38px_rgba\(21\,61\,50\,\.045\)\] {
+    --tw-shadow: 0 14px 38px var(--tw-shadow-color, rgba(21,61,50,.045));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .backdrop-blur-lg {
+    --tw-backdrop-blur: blur(var(--blur-lg));
+    -webkit-backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+    backdrop-filter: var(--tw-backdrop-blur,) var(--tw-backdrop-brightness,) var(--tw-backdrop-contrast,) var(--tw-backdrop-grayscale,) var(--tw-backdrop-hue-rotate,) var(--tw-backdrop-invert,) var(--tw-backdrop-opacity,) var(--tw-backdrop-saturate,) var(--tw-backdrop-sepia,);
+  }
+  .transition-colors {
+    transition-property: color, background-color, border-color, outline-color, text-decoration-color, fill, stroke, --tw-gradient-from, --tw-gradient-via, --tw-gradient-to;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .transition-transform {
+    transition-property: transform, translate, scale, rotate;
+    transition-timing-function: var(--tw-ease, var(--default-transition-timing-function));
+    transition-duration: var(--tw-duration, var(--default-transition-duration));
+  }
+  .duration-150 {
+    --tw-duration: 150ms;
+    transition-duration: 150ms;
+  }
+  .group-hover\:translate-x-1 {
+    &:is(:where(.group):hover *) {
+      @media (hover: hover) {
+        --tw-translate-x: calc(var(--spacing) * 1);
+        translate: var(--tw-translate-x) var(--tw-translate-y);
+      }
+    }
+  }
+  .group-hover\:text-brand-accent {
+    &:is(:where(.group):hover *) {
+      @media (hover: hover) {
+        color: var(--color-brand-accent);
+      }
+    }
+  }
+  .group-hover\:text-brand-primary {
+    &:is(:where(.group):hover *) {
+      @media (hover: hover) {
+        color: var(--color-brand-primary);
+      }
+    }
+  }
+  .selection\:bg-highlight-soft {
+    & *::selection {
+      background-color: var(--color-highlight-soft);
+    }
+    &::selection {
+      background-color: var(--color-highlight-soft);
+    }
+  }
+  .placeholder\:text-\[\#5d7164\] {
+    &::placeholder {
+      color: #5d7164;
+    }
+  }
+  .first\:border-t-0 {
+    &:first-child {
+      border-top-style: var(--tw-border-style);
+      border-top-width: 0px;
+    }
+  }
+  .first\:pt-6 {
+    &:first-child {
+      padding-top: calc(var(--spacing) * 6);
+    }
+  }
+  .focus-within\:border-brand-accent {
+    &:focus-within {
+      border-color: var(--color-brand-accent);
+    }
+  }
+  .focus-within\:ring-2 {
+    &:focus-within {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .focus-within\:ring-brand-accent\/20 {
+    &:focus-within {
+      --tw-ring-color: color-mix(in srgb, #198467 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--color-brand-accent) 20%, transparent);
+      }
+    }
+  }
+  .hover\:bg-\[\#f4f8f3\] {
+    &:hover {
+      @media (hover: hover) {
+        background-color: #f4f8f3;
+      }
+    }
+  }
+  .hover\:bg-\[\#f5f9f4\] {
+    &:hover {
+      @media (hover: hover) {
+        background-color: #f5f9f4;
+      }
+    }
+  }
+  .hover\:bg-surface-muted {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-surface-muted);
+      }
+    }
+  }
+  .hover\:text-brand-accent {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-brand-accent);
+      }
+    }
+  }
+  .hover\:text-brand-primary {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-brand-primary);
+      }
+    }
+  }
+  .hover\:underline {
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-line: underline;
+      }
+    }
+  }
+  .hover\:decoration-brand-accent {
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-color: var(--color-brand-accent);
+      }
+    }
+  }
+  .focus\:not-sr-only {
+    &:focus {
+      position: static;
+      width: auto;
+      height: auto;
+      padding: 0;
+      margin: 0;
+      overflow: visible;
+      clip: auto;
+      white-space: normal;
+    }
+  }
+  .focus\:fixed {
+    &:focus {
+      position: fixed;
+    }
+  }
+  .focus\:top-3 {
+    &:focus {
+      top: calc(var(--spacing) * 3);
+    }
+  }
+  .focus\:left-3 {
+    &:focus {
+      left: calc(var(--spacing) * 3);
+    }
+  }
+  .focus\:z-\[100\] {
+    &:focus {
+      z-index: 100;
+    }
+  }
+  .focus\:rounded-lg {
+    &:focus {
+      border-radius: var(--radius-lg);
+    }
+  }
+  .focus\:bg-white {
+    &:focus {
+      background-color: var(--color-white);
+    }
+  }
+  .focus\:px-4 {
+    &:focus {
+      padding-inline: calc(var(--spacing) * 4);
+    }
+  }
+  .focus\:py-3 {
+    &:focus {
+      padding-block: calc(var(--spacing) * 3);
+    }
+  }
+  .focus\:text-brand-deep {
+    &:focus {
+      color: var(--color-brand-deep);
+    }
+  }
+  .focus\:shadow-lg {
+    &:focus {
+      --tw-shadow: 0 10px 15px -3px var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 4px 6px -4px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .focus\:outline-none {
+    &:focus {
+      --tw-outline-style: none;
+      outline-style: none;
+    }
+  }
+  .focus-visible\:relative {
+    &:focus-visible {
+      position: relative;
+    }
+  }
+  .focus-visible\:z-10 {
+    &:focus-visible {
+      z-index: 10;
+    }
+  }
+  .focus-visible\:rounded-md {
+    &:focus-visible {
+      border-radius: var(--radius-md);
+    }
+  }
+  .focus-visible\:outline-3 {
+    &:focus-visible {
+      outline-style: var(--tw-outline-style);
+      outline-width: 3px;
+    }
+  }
+  .focus-visible\:outline-offset-3 {
+    &:focus-visible {
+      outline-offset: 3px;
+    }
+  }
+  .focus-visible\:outline-brand-accent {
+    &:focus-visible {
+      outline-color: var(--color-brand-accent);
+    }
+  }
+  .motion-reduce\:transform-none {
+    @media (prefers-reduced-motion: reduce) {
+      transform: none;
+    }
+  }
+  .motion-reduce\:transition-none {
+    @media (prefers-reduced-motion: reduce) {
+      transition-property: none;
+    }
+  }
+  .sm\:mt-6 {
+    @media (width >= 40rem) {
+      margin-top: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:mb-3 {
+    @media (width >= 40rem) {
+      margin-bottom: calc(var(--spacing) * 3);
+    }
+  }
+  .sm\:ml-6 {
+    @media (width >= 40rem) {
+      margin-left: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:flex {
+    @media (width >= 40rem) {
+      display: flex;
+    }
+  }
+  .sm\:flex-row {
+    @media (width >= 40rem) {
+      flex-direction: row;
+    }
+  }
+  .sm\:gap-6 {
+    @media (width >= 40rem) {
+      gap: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:p-5 {
+    @media (width >= 40rem) {
+      padding: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:px-2 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 2);
+    }
+  }
+  .sm\:px-4 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 4);
+    }
+  }
+  .sm\:px-8 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:px-9 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 9);
+    }
+  }
+  .sm\:py-8 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:pt-5 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:pt-7 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 7);
+    }
+  }
+  .sm\:pt-8 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:pb-6 {
+    @media (width >= 40rem) {
+      padding-bottom: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:pb-9 {
+    @media (width >= 40rem) {
+      padding-bottom: calc(var(--spacing) * 9);
+    }
+  }
+  .sm\:text-\[11px\] {
+    @media (width >= 40rem) {
+      font-size: 11px;
+    }
+  }
+  .sm\:text-\[14px\] {
+    @media (width >= 40rem) {
+      font-size: 14px;
+    }
+  }
+  .sm\:text-\[15px\] {
+    @media (width >= 40rem) {
+      font-size: 15px;
+    }
+  }
+  .sm\:text-\[18px\] {
+    @media (width >= 40rem) {
+      font-size: 18px;
+    }
+  }
+  .sm\:text-\[19px\] {
+    @media (width >= 40rem) {
+      font-size: 19px;
+    }
+  }
+  .sm\:text-\[23px\] {
+    @media (width >= 40rem) {
+      font-size: 23px;
+    }
+  }
+  .sm\:text-\[40px\] {
+    @media (width >= 40rem) {
+      font-size: 40px;
+    }
+  }
+  .md\:block {
+    @media (width >= 48rem) {
+      display: block;
+    }
+  }
+  .md\:min-h-\[214px\] {
+    @media (width >= 48rem) {
+      min-height: 214px;
+    }
+  }
+  .md\:grid-cols-\[minmax\(0\,1\.24fr\)_minmax\(0\,\.76fr\)\] {
+    @media (width >= 48rem) {
+      grid-template-columns: minmax(0,1.24fr) minmax(0,.76fr);
+    }
+  }
+  .lg\:mt-7 {
+    @media (width >= 64rem) {
+      margin-top: calc(var(--spacing) * 7);
+    }
+  }
+  .lg\:block {
+    @media (width >= 64rem) {
+      display: block;
+    }
+  }
+  .lg\:flex {
+    @media (width >= 64rem) {
+      display: flex;
+    }
+  }
+  .lg\:hidden {
+    @media (width >= 64rem) {
+      display: none;
+    }
+  }
+  .lg\:grid-cols-\[258px_minmax\(0\,1fr\)\] {
+    @media (width >= 64rem) {
+      grid-template-columns: 258px minmax(0,1fr);
+    }
+  }
+  .lg\:flex-row {
+    @media (width >= 64rem) {
+      flex-direction: row;
+    }
+  }
+  .lg\:items-start {
+    @media (width >= 64rem) {
+      align-items: flex-start;
+    }
+  }
+  .lg\:gap-8 {
+    @media (width >= 64rem) {
+      gap: calc(var(--spacing) * 8);
+    }
+  }
+  .lg\:px-11 {
+    @media (width >= 64rem) {
+      padding-inline: calc(var(--spacing) * 11);
+    }
+  }
+  .lg\:py-8 {
+    @media (width >= 64rem) {
+      padding-block: calc(var(--spacing) * 8);
+    }
+  }
+  .lg\:pt-9 {
+    @media (width >= 64rem) {
+      padding-top: calc(var(--spacing) * 9);
+    }
+  }
+  .lg\:text-\[43px\] {
+    @media (width >= 64rem) {
+      font-size: 43px;
+    }
+  }
+  .xl\:gap-10 {
+    @media (width >= 80rem) {
+      gap: calc(var(--spacing) * 10);
+    }
+  }
+  .xl\:px-10 {
+    @media (width >= 80rem) {
+      padding-inline: calc(var(--spacing) * 10);
+    }
+  }
+}
+@property --tw-space-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ordinal {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-slashed-zero {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-figure {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-spacing {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-fraction {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-backdrop-blur {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-brightness {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-contrast {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-grayscale {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-hue-rotate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-invert {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-opacity {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-saturate {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-backdrop-sepia {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-duration {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-translate-x {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-y {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-translate-z {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-space-y-reverse: 0;
+      --tw-border-style: solid;
+      --tw-leading: initial;
+      --tw-font-weight: initial;
+      --tw-tracking: initial;
+      --tw-ordinal: initial;
+      --tw-slashed-zero: initial;
+      --tw-numeric-figure: initial;
+      --tw-numeric-spacing: initial;
+      --tw-numeric-fraction: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-backdrop-blur: initial;
+      --tw-backdrop-brightness: initial;
+      --tw-backdrop-contrast: initial;
+      --tw-backdrop-grayscale: initial;
+      --tw-backdrop-hue-rotate: initial;
+      --tw-backdrop-invert: initial;
+      --tw-backdrop-opacity: initial;
+      --tw-backdrop-saturate: initial;
+      --tw-backdrop-sepia: initial;
+      --tw-duration: initial;
+      --tw-translate-x: 0;
+      --tw-translate-y: 0;
+      --tw-translate-z: 0;
+      --tw-outline-style: solid;
+    }
+  }
+}
+
+  </style>
+</head>
+<body class="m-0 min-h-screen bg-canvas font-sans text-brand-deep antialiased selection:bg-highlight-soft">
+  <a href="#main" class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:rounded-lg focus:bg-white focus:px-4 focus:py-3 focus:text-brand-deep focus:shadow-lg">ข้ามไปยังเนื้อหาหลัก</a>
+  <header class="sticky top-0 z-40 border-b border-border-subtle bg-white/95 backdrop-blur-lg">
+    <div class="mx-auto flex h-[78px] max-w-[1320px] items-center justify-between gap-4 px-5 sm:px-8">
+      <a href="https://songhealth-dc.pages.dev/" class="flex min-w-0 items-center gap-3 rounded-lg focus-visible:outline-3 focus-visible:outline-offset-3 focus-visible:outline-brand-accent" aria-label="Song Health Data Center หน้าแรก">
+        <span class="flex h-[46px] w-[46px] shrink-0 items-center justify-center rounded-[15px] bg-brand-primary text-[23px] font-black tracking-[-.08em] text-white">S<span class="text-[#b3e89a]">+</span></span>
+        <span class="min-w-0"><span class="block truncate text-[16px] font-extrabold tracking-[-.05em] text-brand-deep sm:text-[19px]">Song Health <span class="text-brand-accent">Data Center</span></span><span class="mt-0.5 block truncate text-[10px] text-text-secondary sm:text-[11px]">ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</span></span>
+      </a>
+      <nav aria-label="เมนูหลัก" class="hidden items-center gap-1 lg:flex">
+        <a class="rounded-lg px-3 py-3 text-[12px] font-medium text-text-secondary hover:text-brand-primary focus-visible:outline-3 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/">หน้าแรก</a>
+        <a class="rounded-lg px-3 py-3 text-[12px] font-medium text-text-secondary hover:text-brand-primary focus-visible:outline-3 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/#map">ข้อมูลพื้นที่</a>
+        <a class="rounded-lg px-3 py-3 text-[12px] font-medium text-text-secondary hover:text-brand-primary focus-visible:outline-3 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/#ages">โครงสร้างประชากร</a>
+        <a aria-current="page" class="rounded-lg px-3 py-3 text-[12px] font-bold text-brand-primary underline decoration-brand-accent/70 decoration-2 underline-offset-8 focus-visible:outline-3 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/reports">รายงานสุขภาพ</a>
+        <a class="inline-flex items-center gap-1 rounded-lg px-3 py-3 text-[12px] font-bold text-brand-deep hover:text-brand-accent focus-visible:outline-3 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/pa">PA Dashboard <svg aria-hidden="true" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 17 17 7M8 7h9v9" /></svg></a>
+      </nav>
+      <button id="menu-toggle" type="button" aria-controls="mobile-menu" aria-expanded="false" aria-label="เปิดเมนูหลัก" class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border-subtle text-brand-primary hover:bg-surface-muted focus-visible:outline-3 focus-visible:outline-brand-accent lg:hidden">
+        <svg aria-hidden="true" class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" /></svg>
+      </button>
+    </div>
+    <nav id="mobile-menu" aria-label="เมนูมือถือ" hidden class="border-t border-border-subtle bg-white px-5 py-3 sm:px-8 lg:hidden">
+      <div class="mx-auto flex max-w-[1320px] flex-col gap-0.5">
+        <a href="https://songhealth-dc.pages.dev/" class="rounded-lg px-3 py-3 hover:bg-surface-muted">หน้าแรก</a>
+        <a href="https://songhealth-dc.pages.dev/#map" class="rounded-lg px-3 py-3 hover:bg-surface-muted">ข้อมูลพื้นที่</a>
+        <a href="https://songhealth-dc.pages.dev/#ages" class="rounded-lg px-3 py-3 hover:bg-surface-muted">โครงสร้างประชากร</a>
+        <a href="https://songhealth-dc.pages.dev/reports" aria-current="page" class="rounded-lg bg-highlight-soft px-3 py-3 font-bold text-brand-primary">รายงานสุขภาพ</a>
+        <a href="https://songhealth-dc.pages.dev/pa" class="rounded-lg px-3 py-3 hover:bg-surface-muted">PA Dashboard</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main" tabindex="-1" class="mx-auto w-full max-w-[1320px] px-5 pb-16 pt-6 sm:px-8 sm:pt-8 lg:pt-9">
+    <section aria-labelledby="page-title" class="grid min-w-0 overflow-hidden rounded-[25px] bg-white shadow-[0_14px_38px_rgba(21,61,50,.045)] md:min-h-[214px] md:grid-cols-[minmax(0,1.24fr)_minmax(0,.76fr)]">
+      <div class="flex min-w-0 flex-col justify-center px-6 py-7 sm:px-9 sm:py-8 lg:px-11 lg:py-8">
+        <p class="mb-2.5 flex items-center gap-2.5 text-[10px] font-semibold tracking-[.1em] text-brand-accent sm:mb-3">
+          <span aria-hidden="true" class="h-[3px] w-5 rounded-full bg-brand-accent"></span>
+          SONG HEALTH / REPORTS
+        </p>
+        <h1 id="page-title" class="text-[36px] font-bold leading-[1.25] tracking-[-.055em] text-brand-deep sm:text-[40px] lg:text-[43px]">รายงานสุขภาพ<span class="text-[#c5a15e]">.</span></h1>
+        <p class="mt-3 max-w-[535px] text-[13px] leading-[1.85] text-text-secondary sm:text-[14px]">
+          สำรวจและค้นหารายงานด้านสุขภาพและสาธารณสุขของอำเภอสอง จังหวัดแพร่
+        </p>
+      </div>
+      <div class="relative hidden min-h-[214px] overflow-hidden bg-brand-dark-surface md:block">
+        <div aria-hidden="true" class="pointer-events-none absolute -right-9 -top-20 h-[310px] w-[310px] rounded-full border border-white/10"></div>
+        <div aria-hidden="true" class="pointer-events-none absolute -bottom-36 -left-16 h-[320px] w-[320px] rounded-full border border-white/10"></div>
+        <svg aria-hidden="true" class="absolute inset-0 h-full w-full" viewBox="0 0 460 225" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+          <path d="M0 197C113 105 163 206 270 87C356 -2 402 49 470 5" stroke="#b0d6ad" stroke-opacity=".32" stroke-width="1.3"/>
+          <path d="M-10 223C124 154 177 245 299 126C364 64 419 105 477 53" stroke="#cbe4b1" stroke-opacity=".17" stroke-width="1.1"/>
+          <circle cx="80" cy="155" r="3.5" fill="#d2e69b"/><circle cx="375" cy="55" r="3.5" fill="#b0d6ad"/>
+          <g transform="translate(215 27)" stroke="#e3f2dc" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="-25" y="18" width="104" height="140" rx="10" stroke-opacity=".3" stroke-width="1.3" transform="rotate(-11 27 88)"/>
+            <rect x="-4" y="13" width="104" height="140" rx="10" fill="#236c58" stroke-opacity=".65" stroke-width="1.3"/>
+            <rect x="17" y="31" width="108" height="145" rx="12" fill="#1d5949" stroke-opacity=".72" stroke-width="1.3"/>
+            <path d="M39 62H98M39 85H108M39 108H87M39 131H100" stroke="#bfdfab" stroke-opacity=".82" stroke-width="3.5"/>
+          </g>
+        </svg>
+        <div class="absolute bottom-5 left-8 flex items-center gap-2 text-[11px] tracking-[.02em] text-[#d8e9d6]"><span class="h-px w-7 bg-[#b5d8ae]"></span>ค้นพบข้อมูลได้ง่ายในที่เดียว</div>
+      </div>
+    </section>
+
+    <section aria-labelledby="find-title" class="mt-5 sm:mt-6">
+      <h2 id="find-title" class="sr-only">ค้นหารายงาน</h2>
+      <div class="relative flex min-h-[56px] items-center rounded-[17px] border border-[#d9e5d7] bg-white shadow-[0_9px_24px_rgba(25,66,44,.04)] focus-within:border-brand-accent focus-within:ring-2 focus-within:ring-brand-accent/20">
+        <svg aria-hidden="true" class="ml-5 h-5 w-5 shrink-0 text-brand-accent sm:ml-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"><circle cx="10.8" cy="10.8" r="7.3" /><path d="m16.2 16.2 5 5" /></svg>
+        <label for="report-search" class="sr-only">ค้นหาชื่อรายงานหรือหัวข้อ</label>
+        <input id="report-search" type="search" autocomplete="off" placeholder="ค้นหาชื่อรายงานหรือหัวข้อที่สนใจ..." class="h-[55px] w-full min-w-0 flex-1 border-0 bg-transparent px-3 text-[14px] text-brand-deep placeholder:text-[#5d7164] focus:outline-none sm:px-4 sm:text-[15px]" aria-describedby="search-help" />
+        <button type="button" id="clear-search" hidden aria-label="ล้างคำค้นหา" class="mr-4 flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-[#7a9182] hover:bg-surface-muted focus-visible:outline-3 focus-visible:outline-brand-accent"><svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12" /></svg></button>
+        
+      </div>
+      <p id="search-help" class="mt-2 px-1 text-[11px] text-text-secondary">ค้นหาในหัวข้อที่เลือก และแสดงผลทันที</p>
+    </section>
+
+    <div class="mt-6 grid min-w-0 gap-5 lg:mt-7 lg:grid-cols-[258px_minmax(0,1fr)] lg:gap-8 xl:gap-10">
+      <aside class="hidden min-w-0 lg:block">
+        <div class="sticky top-[100px] rounded-[19px] bg-white/85 p-4 pb-6 sm:p-5">
+          <div class="flex items-center justify-between pb-3">
+            <h2 id="category-title" class="text-[15px] font-semibold text-brand-deep">หัวข้อรายงาน</h2>
+            <span class="text-[12px] text-text-secondary">6 หัวข้อ</span>
+          </div>
+          <nav id="category-nav" aria-labelledby="category-title" class="mt-2 border-t border-border-subtle pt-2"></nav>
+        </div>
+      </aside>
+      <div class="min-w-0">
+        <div class="mb-5 lg:hidden">
+          <label for="category-select" class="mb-2 block text-[13px] font-medium text-brand-deep">เลือกหมวดหรือหัวข้อรายงาน</label>
+          <div class="relative">
+            <select id="category-select" class="min-h-12 w-full appearance-none rounded-xl border border-border-subtle bg-white py-3 pr-11 pl-4 text-[13px] font-normal text-brand-deep focus-visible:outline-3 focus-visible:outline-brand-accent"></select>
+            <svg aria-hidden="true" class="pointer-events-none absolute top-[15px] right-4 h-4 w-4 text-brand-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="m6 9 6 6 6-6" /></svg>
+          </div>
+        </div>
+        <section aria-labelledby="results-title" class="min-w-0 rounded-[22px] bg-white px-5 pb-6 pt-5 shadow-[0_10px_32px_rgba(21,61,50,.028)] sm:px-8 sm:pb-9 sm:pt-7 xl:px-10">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-border-subtle pb-5 sm:pb-6">
+            <div>
+              <h2 id="results-title" tabindex="-1" class="scroll-mt-[100px] text-[21px] font-semibold tracking-[-.03em] text-brand-deep sm:text-[23px]">รายงานทั้งหมด</h2>
+              <p id="results-subtitle" class="mt-1 break-words text-[12px] text-text-secondary">เรียงตามหมวดและหัวข้อของระบบ</p>
+              <button id="show-all-link" type="button" hidden class="mt-2 min-h-8 rounded-sm py-1 text-[12px] font-medium text-brand-primary underline decoration-transparent underline-offset-4 hover:decoration-brand-accent focus-visible:outline-3 focus-visible:outline-brand-accent">ดูรายงานทุกหัวข้อ</button>
+            </div>
+            <span id="results-count" role="status" aria-live="polite" aria-atomic="true" class="text-[12px] font-medium tabular-nums text-text-secondary">21 รายงาน</span>
+          </div>
+          <p id="metadata-match" hidden class="mt-4 rounded-md bg-surface-muted px-3 py-2 text-[12px] leading-[1.7] text-text-secondary" role="status">บางรายการตรงกับข้อมูลอ้างอิงภายในระบบ จึงอาจไม่พบคำค้นหาในชื่อรายงาน</p>
+          <div id="results-list" class="min-w-0" role="region" aria-label="รายการรายงานสุขภาพ"><section aria-labelledby="topic-1ed90bc32310b503b7ca9b32af425ae5" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-1ed90bc32310b503b7ca9b32af425ae5" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">อนามัยแม่และเด็ก</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">4 รายงาน</span></div><div class="min-w-0"><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/1c1b8e24aff59258a806f122e264031e" aria-label="เปิดรายงาน ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/bd63b8d99f7054560fcf9c3b96f39c13" aria-label="เปิดรายงาน ร้อยละหญิงตั้งครรภ์ที่ได้รับการดูแลก่อนคลอด 5 ครั้ง ตามเกณฑ์"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละหญิงตั้งครรภ์ที่ได้รับการดูแลก่อนคลอด 5 ครั้ง ตามเกณฑ์</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/1b60d68b1cb5b003fcba38a4a0e4027b" aria-label="เปิดรายงาน ร้อยละของเด็กอายุ 0-5 ปี ทั้งหมดตามช่วงอายุที่กำหนดมีพัฒนาการสมวัย"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละของเด็กอายุ 0-5 ปี ทั้งหมดตามช่วงอายุที่กำหนดมีพัฒนาการสมวัย</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/684e99dc7538c8b1a97f19f91a100f08" aria-label="เปิดรายงาน ร้อยละของเด็กอายุ 0-5 ปี ที่ได้รับการคัดกรองพัฒนาการ พบสงสัยล่าช้า"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละของเด็กอายุ 0-5 ปี ที่ได้รับการคัดกรองพัฒนาการ พบสงสัยล่าช้า</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a></div></section>
+<section aria-labelledby="topic-4df360514655f79f13901ef1181ca1c7" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-4df360514655f79f13901ef1181ca1c7" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">การสร้างเสริมภูมิคุ้มกันโรค</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">8 รายงาน</span></div><div class="min-w-0"><div class="pt-4 pb-1 text-[12px] font-medium text-[#526c5c] sm:pt-5">กลุ่มอายุ 1 ปี</div><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/c88658f4d09acb8c76e6c06ffb58ebaf" aria-label="เปิดรายงาน ความครอบคลุมของเด็กอายุครบ 1 ปีที่ได้รับวัคซีน BCG ,HBV1,DTP1,DTP3,HBV3,Hib3,โปลิโอ3, MMR1,IPV,Rota รายไตรมาส"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมของเด็กอายุครบ 1 ปีที่ได้รับวัคซีน BCG ,HBV1,DTP1,DTP3,HBV3,Hib3,โปลิโอ3, MMR1,IPV,Rota รายไตรมาส</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/28dd2c7955ce926456240b2ff0100bde" aria-label="เปิดรายงาน ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 1 ปี (fully immunized)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 1 ปี (fully immunized)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><div class="pt-4 pb-1 text-[12px] font-medium text-[#526c5c] sm:pt-5">กลุ่มอายุ 2 ปี</div><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/71e49e4b61aafee17761601c506d5f85" aria-label="เปิดรายงาน ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/35f4a8d465e6e1edc05f3d8ab658c551" aria-label="เปิดรายงาน ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 2 ปี (fully immunized)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 2 ปี (fully immunized)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><div class="pt-4 pb-1 text-[12px] font-medium text-[#526c5c] sm:pt-5">กลุ่มอายุ 3 ปี</div><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/267ce09f2a704eb7783997e25d1f18ba" aria-label="เปิดรายงาน ความครอบคลุมของเด็กอายุครบ 3 ปี ที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมของเด็กอายุครบ 3 ปี ที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/d1fe173d08e959397adf34b1d77e88d7" aria-label="เปิดรายงาน ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 3 ปี (fully immunized)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 3 ปี (fully immunized)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><div class="pt-4 pb-1 text-[12px] font-medium text-[#526c5c] sm:pt-5">กลุ่มอายุ 5 ปี</div><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/c47283d3c2c1e6528ddcf88c254f21b3" aria-label="เปิดรายงาน ความครอบคลุมของเด็กอายุครบ 5 ปีที่ได้รับวัคซีน DTP5,โปลิโอ5 รายไตรมาส"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมของเด็กอายุครบ 5 ปีที่ได้รับวัคซีน DTP5,โปลิโอ5 รายไตรมาส</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/f033ab37c30201f73f142449d037028d" aria-label="เปิดรายงาน ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 5 ปี (fully immunized)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 5 ปี (fully immunized)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a></div></section>
+<section aria-labelledby="topic-bebf866fceaef84c4078965eaf619565" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-bebf866fceaef84c4078965eaf619565" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">1 รายงาน</span></div><div class="min-w-0"><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/4164a7c49fcb2b8c3ccca67dcdf28bd0" aria-label="เปิดรายงาน ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a></div></section>
+<section aria-labelledby="topic-6966b0664b89805a484d7ac96c6edc48" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-6966b0664b89805a484d7ac96c6edc48" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">การคัดกรอง</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">1 รายงาน</span></div><div class="min-w-0"><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/aa86b13e8cb60cae6c3216b7e3e5f151" aria-label="เปิดรายงาน การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen STEP1)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen STEP1)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a></div></section>
+<section aria-labelledby="topic-b2b59e64c4e6c92d4b1ec16a599d882b" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-b2b59e64c4e6c92d4b1ec16a599d882b" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">4 รายงาน</span></div><div class="min-w-0"><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/626c89f6b8d9f7ed90c72c719775eb07" aria-label="เปิดรายงาน ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/9702fa28cd2ec73ecc6af89d14f46874" aria-label="เปิดรายงาน ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยความดันโลหิตสูง"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยความดันโลหิตสูง</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/e9e461e793e8258f47d46d6956f12832" aria-label="เปิดรายงาน ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคเบาหวาน"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคเบาหวาน</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/b57439ff27302ade8c38d1dd189644a4" aria-label="เปิดรายงาน ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคความดันโลหิตสูง"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคความดันโลหิตสูง</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a></div></section>
+<section aria-labelledby="topic-db30e434e30565c12fbac44958e338d5" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-db30e434e30565c12fbac44958e338d5" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">3 รายงาน</span></div><div class="min-w-0"><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/abt2t2k4z4xeqzytwbave" aria-label="เปิดรายงาน ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/e07a6ff3cd63d34a759be4bff5c1a4c6" aria-label="เปิดรายงาน OHSP ร้อยละเด็ก 6 ปี ได้รับการเคลือบหลุมร่องฟันแท้ เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">OHSP ร้อยละเด็ก 6 ปี ได้รับการเคลือบหลุมร่องฟันแท้ เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a><a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="https://songhealth-dc.pages.dev/reports/1fb6b46f1d1fd42362f97072f4b3b653" aria-label="เปิดรายงาน OHSP ร้อยละผู้สูงอายุ ได้รับการตรวจช่องปาก เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">OHSP ร้อยละผู้สูงอายุ ได้รับการตรวจช่องปาก เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none"><svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg></span></a></div></section></div>
+          <div id="empty-state" hidden class="px-2 py-16 text-center">
+            <svg aria-hidden="true" class="mx-auto h-9 w-9 text-[#9aaea0]" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"><circle cx="10.8" cy="10.8" r="7.3" /><path d="m16.2 16.2 5 5" /></svg>
+            <h3 class="mt-4 text-[18px] font-semibold text-brand-deep">ไม่พบรายงานที่ตรงกับการค้นหา</h3>
+            <p class="mt-1 text-[13px] text-text-secondary">ลองเปลี่ยนคำค้นหา หรือค้นหาจากหัวข้ออื่น</p>
+            <div class="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+              <button id="search-all" type="button" hidden class="min-h-11 rounded-md px-1 text-[13px] font-medium text-brand-primary underline underline-offset-4 hover:text-brand-accent focus-visible:outline-3 focus-visible:outline-brand-accent">ค้นหาทุกหัวข้อ</button>
+              <button id="reset-all" type="button" class="min-h-11 rounded-md px-1 text-[13px] font-medium text-brand-primary underline underline-offset-4 hover:text-brand-accent focus-visible:outline-3 focus-visible:outline-brand-accent">แสดงรายงานทั้งหมด</button>
+            </div>
+          </div>
+          <div id="end-note" class="mt-7 hidden items-center gap-2 border-t border-border-subtle pt-5 text-[11px] text-text-secondary sm:flex">
+            <svg aria-hidden="true" class="h-4 w-4 shrink-0 text-brand-accent" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+            แสดงรายงานทั้งหมดตามเงื่อนไขที่เลือก · เลือกชื่อรายงานเพื่อดูรายละเอียด
+          </div>
+        </section>
+        <p class="mt-4 px-1 text-[11px] leading-[1.75] text-text-secondary">ตัวอย่างการออกแบบ · รายการและจำนวนรายงานอ้างอิงข้อมูลที่ตรวจพบใน Repository ยังไม่ได้ยืนยันกับ Production Snapshot ล่าสุด</p>
+      </div>
+    </div>
+  </main>
+
+  <section class="border-t border-border-subtle bg-surface-muted">
+    <div class="mx-auto flex max-w-[1320px] flex-col justify-between gap-5 px-5 py-9 sm:px-8 lg:flex-row lg:items-start">
+      <div class="max-w-[770px]"><h2 class="text-[13px] font-semibold text-brand-deep">เกี่ยวกับข้อมูลรายงานสุขภาพ</h2><p class="mt-2 text-[12px] leading-[1.9] text-text-secondary">รายงานอ้างอิงจาก HDC Open Data และข้อมูลที่ระบบ Song Health Data Center จัดเก็บตามรอบการประมวลผล โปรดตรวจสอบปีงบประมาณและวันที่อัปเดตภายในรายงานแต่ละฉบับก่อนนำไปใช้งาน</p></div>
+      <div class="flex items-center gap-2 text-[12px] font-semibold text-brand-primary"><a class="underline-offset-4 hover:underline focus-visible:outline-3 focus-visible:outline-brand-accent" href="https://opendata.moph.go.th/" target="_blank" rel="noopener noreferrer">HDC Open Data</a><svg aria-hidden="true" class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M7 17 17 7M8 7h9v9" /></svg></div>
+    </div>
+  </section>
+  <footer class="border-t border-border-subtle bg-white">
+    <div class="mx-auto flex max-w-[1320px] flex-col justify-between gap-2 px-5 py-6 text-[11px] text-text-secondary sm:flex-row sm:px-8"><span>Song Health Data Center · สำนักงานสาธารณสุขอำเภอสอง จังหวัดแพร่</span><span>Design Prototype V1.4 — ไม่ใช่ Production</span></div>
+  </footer>
+
+  <script id="catalog-json" type="application/json">{"mainCategories":[{"id":"73daf277928bc32a1b3c8e772192543c","name":"ส่งเสริมป้องกัน"},{"id":"02e752187c7282ebc9315123aa1cabbe","name":"ข้อมูลตอบสนอง Service Plan"}],"topics":[{"id":"1ed90bc32310b503b7ca9b32af425ae5","name":"อนามัยแม่และเด็ก","main":"73daf277928bc32a1b3c8e772192543c","mainName":"ส่งเสริมป้องกัน","reports":[{"id":"1c1b8e24aff59258a806f122e264031e","source":"s_kpi_anc12","title":"ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์","subgroup":""},{"id":"bd63b8d99f7054560fcf9c3b96f39c13","source":"s_anc5","title":"ร้อยละหญิงตั้งครรภ์ที่ได้รับการดูแลก่อนคลอด 5 ครั้ง ตามเกณฑ์","subgroup":""},{"id":"1b60d68b1cb5b003fcba38a4a0e4027b","source":"s_kpi_childdev4","title":"ร้อยละของเด็กอายุ 0-5 ปี ทั้งหมดตามช่วงอายุที่กำหนดมีพัฒนาการสมวัย","subgroup":""},{"id":"684e99dc7538c8b1a97f19f91a100f08","source":"s_kpi_childdev2","title":"ร้อยละของเด็กอายุ 0-5 ปี ที่ได้รับการคัดกรองพัฒนาการ พบสงสัยล่าช้า","subgroup":""}]},{"id":"4df360514655f79f13901ef1181ca1c7","name":"การสร้างเสริมภูมิคุ้มกันโรค","main":"73daf277928bc32a1b3c8e772192543c","mainName":"ส่งเสริมป้องกัน","reports":[{"id":"c88658f4d09acb8c76e6c06ffb58ebaf","source":"s_epi1","title":"ความครอบคลุมของเด็กอายุครบ 1 ปีที่ได้รับวัคซีน BCG ,HBV1,DTP1,DTP3,HBV3,Hib3,โปลิโอ3, MMR1,IPV,Rota รายไตรมาส","subgroup":"กลุ่มอายุ 1 ปี"},{"id":"28dd2c7955ce926456240b2ff0100bde","source":"s_epi_complete","title":"ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 1 ปี (fully immunized)","subgroup":"กลุ่มอายุ 1 ปี"},{"id":"71e49e4b61aafee17761601c506d5f85","source":"s_epi2","title":"ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส","subgroup":"กลุ่มอายุ 2 ปี"},{"id":"35f4a8d465e6e1edc05f3d8ab658c551","source":"s_epi_complete","title":"ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 2 ปี (fully immunized)","subgroup":"กลุ่มอายุ 2 ปี"},{"id":"267ce09f2a704eb7783997e25d1f18ba","source":"s_epi3","title":"ความครอบคลุมของเด็กอายุครบ 3 ปี ที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส","subgroup":"กลุ่มอายุ 3 ปี"},{"id":"d1fe173d08e959397adf34b1d77e88d7","source":"s_epi_complete","title":"ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 3 ปี (fully immunized)","subgroup":"กลุ่มอายุ 3 ปี"},{"id":"c47283d3c2c1e6528ddcf88c254f21b3","source":"s_epi5","title":"ความครอบคลุมของเด็กอายุครบ 5 ปีที่ได้รับวัคซีน DTP5,โปลิโอ5 รายไตรมาส","subgroup":"กลุ่มอายุ 5 ปี"},{"id":"f033ab37c30201f73f142449d037028d","source":"s_epi_complete","title":"ความครอบคลุมการได้รับวัคซีนแต่ละชนิดครบตามเกณฑ์ในเด็กอายุครบ 5 ปี (fully immunized)","subgroup":"กลุ่มอายุ 5 ปี"}]},{"id":"bebf866fceaef84c4078965eaf619565","name":"การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม","main":"73daf277928bc32a1b3c8e772192543c","mainName":"ส่งเสริมป้องกัน","reports":[{"id":"4164a7c49fcb2b8c3ccca67dcdf28bd0","source":"s_kpi_food","title":"ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว","subgroup":""}]},{"id":"6966b0664b89805a484d7ac96c6edc48","name":"การคัดกรอง","main":"73daf277928bc32a1b3c8e772192543c","mainName":"ส่งเสริมป้องกัน","reports":[{"id":"aa86b13e8cb60cae6c3216b7e3e5f151","source":"s_aged9","title":"การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen STEP1)","subgroup":""}]},{"id":"b2b59e64c4e6c92d4b1ec16a599d882b","name":"ข้อมูลเพื่อตอบสนอง Service Plan สาขาโรคไม่ติดต่อ (NCD DM,HT,CVD)","main":"02e752187c7282ebc9315123aa1cabbe","mainName":"ข้อมูลตอบสนอง Service Plan","reports":[{"id":"626c89f6b8d9f7ed90c72c719775eb07","source":"s_dm_screen","title":"ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยเบาหวาน","subgroup":""},{"id":"9702fa28cd2ec73ecc6af89d14f46874","source":"s_ht_screen","title":"ร้อยละของประชากรอายุ 35 ปีขึ้นไปที่ได้รับการคัดกรองเพื่อวินิจฉัยความดันโลหิตสูง","subgroup":""},{"id":"e9e461e793e8258f47d46d6956f12832","source":"s_ncd_screen_repleate1","title":"ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคเบาหวาน","subgroup":""},{"id":"b57439ff27302ade8c38d1dd189644a4","source":"s_ht_screen_follow","title":"ร้อยละการตรวจติดตามยืนยันวินิจฉัยกลุ่มสงสัยป่วยโรคความดันโลหิตสูง","subgroup":""}]},{"id":"db30e434e30565c12fbac44958e338d5","name":"ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก","main":"02e752187c7282ebc9315123aa1cabbe","mainName":"ข้อมูลตอบสนอง Service Plan","reports":[{"id":"abt2t2k4z4xeqzytwbave","source":"s_dental_0_5_cavity_free","title":"ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)","subgroup":""},{"id":"e07a6ff3cd63d34a759be4bff5c1a4c6","source":"s_kpi_dental28","title":"OHSP ร้อยละเด็ก 6 ปี ได้รับการเคลือบหลุมร่องฟันแท้ เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)","subgroup":""},{"id":"1fb6b46f1d1fd42362f97072f4b3b653","source":"s_kpi_dental33","title":"OHSP ร้อยละผู้สูงอายุ ได้รับการตรวจช่องปาก เฉพาะเขตรับผิดชอบ (คน) (ใช้แบบความครอบคลุม)","subgroup":""}]}]}</script>
+  <script>
+  (() => {
+    'use strict';
+    const catalog = JSON.parse(document.getElementById('catalog-json').textContent);
+    const mains = catalog.mainCategories;
+    const topics = catalog.topics;
+    const REPORTS_URL = 'https://songhealth-dc.pages.dev/reports/';
+    const $ = (id) => document.getElementById(id);
+    const searchInput = $('report-search');
+    const select = $('category-select');
+    const categoryNav = $('category-nav');
+    const results = $('results-list');
+    const totalNumber = topics.reduce((s, t) => s + t.reports.length, 0);
+    const escapeHTML = (v) => String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    const iconArrow = '<svg aria-hidden="true" class="h-[17px] w-[17px] shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"><path d="M5 12h14m-6-6 6 6-6 6" /></svg>';
+    let current = { main: null, cat: null, q: '' };
+
+    function fromUrl() {
+      const p = new URLSearchParams(location.search);
+      const cat = topics.find(t => t.id === p.get('cat'))?.id || null;
+      return { cat, main: cat ? null : (mains.find(m => m.id === p.get('main'))?.id || null), q: p.get('q') || '' };
+    }
+    function toQuery(st) {
+      const p = new URLSearchParams();
+      if (st.cat) p.set('cat', st.cat);
+      else if (st.main) p.set('main', st.main);
+      if (st.q) p.set('q', st.q);
+      return p.toString();
+    }
+    function updateUrl(replace=false) {
+      // A standalone offline prototype. On file:// the UI works without history changes.
+      if (!/^https?:$/.test(location.protocol)) return;
+      try {
+        const q = toQuery(current);
+        history[replace?'replaceState':'pushState'](null, '', location.pathname + (q ? '?' + q : ''));
+      } catch (_) { /* Isolated preview frame; filtering remains available. */ }
+    }
+    function mainCount(main) { return topics.filter(t => t.main === main).reduce((s,t) => s + t.reports.length, 0); }
+    function link(href, label, count, active, kind, id, inActiveParent=false) {
+      const isGroup = kind === 'main';
+      const isAll = kind === 'all';
+      const itemClass = isGroup
+        ? (active ? 'font-semibold text-brand-primary' : (inActiveParent ? 'font-semibold text-brand-primary' : 'font-semibold text-brand-deep'))
+        : active
+          ? 'border-l-[3px] border-brand-primary bg-highlight-soft font-medium text-brand-primary'
+          : 'border-l-[3px] border-transparent font-normal text-[#526c5c] hover:bg-[#f4f8f3] hover:text-brand-primary';
+      const spacing = isGroup ? 'px-1 py-2 text-[12px]' : 'px-3 py-2.5 text-[13px]';
+      const countSlot = (isAll || active) ? `<span class="shrink-0 font-normal text-[11px] tabular-nums text-text-secondary">${count}</span>` : '';
+      const selected = active ? ' aria-current="true"' : '';
+      return `<a href="${href}" data-${kind}="${escapeHTML(id)}"${selected} aria-label="${escapeHTML(label)} ${count} รายงาน" class="flex min-h-11 items-center justify-between gap-3 rounded-md text-left leading-[1.65] transition-colors duration-150 focus-visible:outline-3 focus-visible:outline-brand-accent ${spacing} ${itemClass}"><span class="min-w-0">${escapeHTML(label)}</span>${countSlot}</a>`;
+    }
+    function renderMenu() {
+      const all = !current.main && !current.cat;
+      categoryNav.innerHTML = `<div class="pb-4">${link('?', 'รายงานทั้งหมด', totalNumber, all, 'all','true')}</div>` +
+        mains.map(m => {
+          const inActiveParent = Boolean(current.cat && topics.find(t => t.id === current.cat)?.main === m.id);
+          return `<div class="border-t border-border-subtle pt-4 pb-2">
+            <div class="mb-2">${link('?main='+encodeURIComponent(m.id),m.name,mainCount(m.id),current.main===m.id,'main',m.id,inActiveParent)}</div>
+            <div class="space-y-0.5 pl-2">${topics.filter(t => t.main === m.id).map(t => link('?cat='+encodeURIComponent(t.id),t.name,t.reports.length,current.cat===t.id,'cat',t.id)).join('')}</div>
+          </div>`;
+        }).join('');
+    }
+    function populateSelect() {
+      let out='<option value="">รายงานทั้งหมด ('+totalNumber+')</option>';
+      for (const m of mains) {
+        out+='<optgroup label="'+escapeHTML(m.name)+'">';
+        out+='<option value="main:'+m.id+'">ทั้งหมดในหมวด '+escapeHTML(m.name)+'</option>';
+        for (const t of topics.filter(t => t.main === m.id)) out+='<option value="cat:'+t.id+'">'+escapeHTML(t.name)+'</option>';
+        out+='</optgroup>';
+      }
+      select.innerHTML=out;
+    }
+    function matches(t,r,q) {
+      const term=q.trim().toLocaleLowerCase('th');
+      if (!term) return true;
+      return [r.title,r.source,r.id,r.subgroup,t.name,t.mainName].some(x=>x.toLocaleLowerCase('th').includes(term));
+    }
+    // Escaping is applied to all metadata and to the typed search query before HTML rendering.
+    function highlight(text, q) {
+      const term=q.trim().toLocaleLowerCase('th');
+      if (!term) return escapeHTML(text);
+      const lower=text.toLocaleLowerCase('th');
+      let pos=0, html='';
+      while(pos < text.length) {
+        const at=lower.indexOf(term,pos);
+        if(at<0) break;
+        html+=escapeHTML(text.slice(pos,at));
+        html+=`<mark class="rounded-[3px] bg-[#e7f3d7] px-[1px] font-medium text-brand-deep">${escapeHTML(text.slice(at,at+term.length))}</mark>`;
+        pos=at+term.length;
+      }
+      return html+escapeHTML(text.slice(pos));
+    }
+    function renderResults() {
+      const visible = topics.filter(t => !current.cat || current.cat === t.id)
+        .filter(t => !current.main || current.main === t.main)
+        .map(t => ({...t,reports:t.reports.filter(r => matches(t,r,current.q))}))
+        .filter(t => t.reports.length);
+      const count=visible.reduce((s,t) => s + t.reports.length,0);
+      const chosen=topics.find(t => t.id === current.cat) || mains.find(m => m.id === current.main);
+      const hasCategory=Boolean(current.cat || current.main);
+      $('results-title').textContent=current.q.trim() ? 'ผลการค้นหา' : (chosen ? (chosen.id ? chosen.name : chosen.name) : 'รายงานทั้งหมด');
+      $('results-subtitle').textContent=current.q.trim() ? ('คำค้นหา “'+current.q.trim()+'”'+(hasCategory?' ภายในหมวดหรือหัวข้อที่เลือก':''))
+        : (chosen?(current.main?'แสดงรายงานเฉพาะหมวดที่เลือก':'แสดงรายงานเฉพาะหัวข้อที่เลือก'):'เลือกหัวข้อด้านซ้าย หรือค้นหาชื่อรายงานด้านบน');
+      const term=current.q.trim().toLocaleLowerCase('th');
+      const matchedByHiddenMetadata=Boolean(term) && visible.some(t=>t.reports.some(r=>
+        ![r.title,r.subgroup,t.name,t.mainName].some(x=>x.toLocaleLowerCase('th').includes(term)) &&
+        [r.source,r.id].some(x=>x.toLocaleLowerCase('th').includes(term))
+      ));
+      $('metadata-match').hidden=!matchedByHiddenMetadata;
+      $('results-count').textContent=count+' รายงาน';
+      $('empty-state').hidden=count!==0;
+      $('end-note').hidden=count===0;
+      $('show-all-link').hidden=!hasCategory;
+      const countAllMatching=topics.reduce((s,t)=>s+t.reports.filter(r=>matches(t,r,current.q)).length,0);
+      $('search-all').hidden=!hasCategory || !current.q.trim() || countAllMatching===0;
+      const singleTopic=Boolean(current.cat && !current.q.trim());
+      const sections=visible.map(t=>{
+        let rows='',prev='__START__';
+        for(const r of t.reports) {
+          if(r.subgroup && r.subgroup!==prev) {
+            rows+=`<div class="pt-4 pb-1 text-[12px] font-medium text-[#526c5c] sm:pt-5">${highlight(r.subgroup,current.q)}</div>`;
+          }
+          const removedNote=r.catalog_status === 'removed' ? '<span class="mt-1 block text-[11px] leading-[1.7] text-[#735621]">HDC ไม่แสดงรายงานนี้แล้ว</span>' : '';
+          rows+=`<a class="group flex min-h-[64px] min-w-0 items-center justify-between gap-4 border-b border-border-subtle/90 py-[16px] text-[#244b3d] transition-colors duration-150 motion-reduce:transition-none hover:bg-[#f5f9f4] focus-visible:relative focus-visible:z-10 focus-visible:rounded-md focus-visible:outline-3 focus-visible:outline-brand-accent sm:gap-6 sm:px-2" href="${REPORTS_URL+encodeURIComponent(r.id)}" aria-label="เปิดรายงาน ${escapeHTML(r.title)}"><span class="min-w-0 flex-1 text-[14px] font-normal leading-[1.8] tracking-[-.012em] group-hover:text-brand-primary sm:text-[15px]">${highlight(r.title,current.q)}${removedNote}</span><span class="shrink-0 text-[#759684] transition-transform duration-150 motion-reduce:transition-none group-hover:translate-x-1 group-hover:text-brand-accent motion-reduce:transform-none">${iconArrow}</span></a>`;
+          prev=r.subgroup;
+        }
+        return singleTopic ? `<div class="min-w-0 pt-1">${rows}</div>`
+          : `<section aria-labelledby="topic-${t.id}" class="min-w-0 border-t border-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"><div class="flex flex-wrap items-start justify-between gap-2 pb-2"><div class="flex min-w-0 items-start gap-3"><span aria-hidden="true" class="mt-[11px] h-[4px] w-[17px] shrink-0 rounded-full bg-brand-accent"></span><h3 id="topic-${t.id}" class="max-w-[670px] text-[16px] font-semibold leading-[1.65] tracking-[-.02em] text-brand-deep sm:text-[18px]">${highlight(t.name,current.q)}</h3></div><span class="pt-1 text-[11px] tabular-nums text-text-secondary">${t.reports.length} รายงาน</span></div><div class="min-w-0">${rows}</div></section>`;
+      });
+      results.innerHTML=sections.join('');
+      select.value=current.cat?'cat:'+current.cat:current.main?'main:'+current.main:'';
+      $('clear-search').hidden=!current.q;
+      renderMenu();
+    }
+    function go(st,{replace=false,focusHeading=false}={}) {
+      current=st;
+      searchInput.value=current.q;
+      updateUrl(replace);
+      renderResults();
+      if(focusHeading) {
+        const heading=$('results-title');
+        heading.scrollIntoView({block:'start',behavior:'instant'});
+        heading.focus({preventScroll:true});
+      }
+    }
+    function setCategory({cat=null,main=null}) {go({q:current.q,cat,main},{focusHeading:true});}
+    categoryNav.addEventListener('click',e=>{
+      const a=e.target.closest('a[data-cat],a[data-main],a[data-all]');
+      if(!a||e.button!==0||e.metaKey||e.ctrlKey||e.shiftKey||e.altKey)return;
+      e.preventDefault();
+      setCategory(a.hasAttribute('data-cat')?{cat:a.dataset.cat}:a.hasAttribute('data-main')?{main:a.dataset.main}:{});
+    });
+    select.addEventListener('change',()=>{
+      const [kind,val]=select.value.split(':');
+      setCategory(kind==='cat'?{cat:val}:kind==='main'?{main:val}:{});
+    });
+    searchInput.addEventListener('input',()=>go({...current,q:searchInput.value},{replace:true}));
+    $('clear-search').addEventListener('click',()=>{go({...current,q:''},{replace:true});searchInput.focus();});
+    $('reset-all').addEventListener('click',()=>go({cat:null,main:null,q:''},{focusHeading:true}));
+    $('search-all').addEventListener('click',()=>go({...current,cat:null,main:null},{focusHeading:true}));
+    $('show-all-link').addEventListener('click',()=>go({...current,cat:null,main:null},{focusHeading:true}));
+    window.addEventListener('popstate',()=>{current=fromUrl();searchInput.value=current.q;renderResults();});
+    document.addEventListener('keydown',e=>{
+      const editing=/^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement?.tagName)||document.activeElement?.isContentEditable;
+      if(e.key==='/'&&!editing&&!e.altKey&&!e.ctrlKey&&!e.metaKey){e.preventDefault();searchInput.focus();}
+      if(e.key==='Escape'&&document.activeElement===searchInput&&current.q){go({...current,q:''},{replace:true});}
+    });
+    const btn=$('menu-toggle'),menu=$('mobile-menu');
+    btn.addEventListener('click',()=>{menu.hidden=!menu.hidden;btn.setAttribute('aria-expanded',String(!menu.hidden));btn.setAttribute('aria-label',menu.hidden?'เปิดเมนูหลัก':'ปิดเมนูหลัก');});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!menu.hidden){menu.hidden=true;btn.setAttribute('aria-expanded','false');btn.focus();}});
+    current=fromUrl();searchInput.value=current.q;populateSelect();renderResults();
+  })();
+  </script>
+</body>
+</html>

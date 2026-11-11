@@ -1,6 +1,6 @@
 # SCHEMA — Song Health Data Center
 
-> สถานะ: ร่าง v0.8 · 6 พ.ย. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
+> สถานะ: ร่าง v0.9 · 11 พ.ย. 2569 · คู่กับ [SPEC.md](SPEC.md) · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เหตุผลของโครงอยู่ใน `docs/adr/`
 > ข้อมูลอ้างอิงที่ใช้ตรวจ: header จริงของชีต `PA-Data` (29 ต.ค. 2569), response ของ API แค็ตตาล็อกที่ได้มา 29 ต.ค. 2569, โค้ด `src/scripts/รหัส.js` และไฟล์ของ stat.bora ปี 2564–2568 (ดาวน์โหลด 6 พ.ย. 2569, §11)
 
 ---
@@ -727,16 +727,12 @@ export interface LibraryQuery {
   main: string | null;           // main_report_id ของหมวดใน catalog.json · default null (ทุกหมวด) · เป็น null เมื่อมี cat
   cat: string | null;            // cat_id ของหัวข้อใน catalog.json · default null · ชนะ main
   q: string;                     // คำค้นตามที่พิมพ์ · default ""
-  page: number;                  // เริ่มที่ 1 · default 1
-  size: 10 | 20;                 // รายงานต่อหน้า · default 10
-}
+}                                // ไม่มี page/size: ไม่แบ่งหน้า ลิงก์เก่าที่มีสองค่านี้ได้ query เดียวกับไม่มี (ADR-0013)
 
-/** หน้าหนึ่งของคลังรายงาน */
-export interface LibraryPage {
-  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[];   // รายงานของหน้านี้ตามหัวข้อและกลุ่ม ลำดับตาม catalog.json
-  total: number;                 // รายงานที่ตรงทั้งหมดทุกหน้า
-  page: number;                  // หน้าที่แสดง: หน้าสุดท้ายถ้า page ใน query เกิน
-  pages: number;                 // อย่างน้อย 1
+/** รายงานทั้งหมดที่ตรงกับ LibraryQuery ของหน้ารายงานสุขภาพ */
+export interface LibraryList {
+  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[];   // ทุกรายงานที่ตรงตามหัวข้อและกลุ่ม ลำดับตาม catalog.json
+  total: number;                 // จำนวนรายงานใน groups
 }
 
 export interface Totals {
