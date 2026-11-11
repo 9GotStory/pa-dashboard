@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useOptimistic, useRef, type ReactNode, type RefObject } from "react";
 import type { DcCatalog, DcReport, LibraryQuery } from "@/lib/dc/types";
-import { libraryByReference, libraryList, libraryQuery, librarySearch, searchParts } from "@/lib/dc/values";
+import { libraryByReference, libraryList, libraryNameParts, libraryQuery, librarySearch } from "@/lib/dc/values";
 
 type Mains = DcCatalog["mains"];
 type Topic = Mains[number]["topics"][number];
@@ -92,6 +92,8 @@ function Directory({
   const { groups, total } = libraryList(mains, query);
   const all = !query.main && !query.cat;
   const searching = query.q.trim() !== "";
+  // The search, in every หมวด and หัวข้อ
+  const everywhere: LibraryQuery = { ...query, main: null, cat: null };
   const topics = mains.flatMap((m) => m.topics);
   const topic = topics.find((t) => t.cat_id === query.cat);
   const main = mains.find((m) => m.main_report_id === query.main);
@@ -246,8 +248,8 @@ function Directory({
                 <p className="mt-1 text-[13px] text-dc-text-secondary">ลองเปลี่ยนคำค้นหา หรือค้นหาจากหัวข้ออื่น</p>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                   {/* Only when the search finds reports outside the หมวด or หัวข้อ picked */}
-                  {!all && libraryList(mains, { ...query, main: null, cat: null }).total > 0 && (
-                    <Pick to={{ ...query, main: null, cat: null }} actions={actions} className={EMPTY_LINK}>
+                  {!all && libraryList(mains, everywhere).total > 0 && (
+                    <Pick to={everywhere} actions={actions} className={EMPTY_LINK}>
                       ค้นหาทุกหัวข้อ
                     </Pick>
                   )}
@@ -356,7 +358,7 @@ function Row({ report, q }: { report: DcReport; q: string }) {
       className="group flex min-h-16 min-w-0 items-center justify-between gap-4 border-b border-dc-border-subtle py-4 hover:bg-dc-canvas focus-visible:rounded-md sm:gap-6 sm:px-2"
     >
       <span className="min-w-0 flex-1 text-sm leading-[1.8] group-hover:text-dc-brand-primary sm:text-[15px]">
-        {searchParts(report.report_name, q).map((part, i) =>
+        {libraryNameParts(report.report_name, q).map((part, i) =>
           part.mark ? (
             <mark key={i} className="rounded-[3px] bg-dc-highlight-soft px-px font-medium text-dc-brand-deep">
               {part.text}
