@@ -45,7 +45,7 @@ flowchart LR
 |---|---|
 | `/` | หน้าแรก Data Center: ประชากรทะเบียนราษฎรรายตำบลและพีระมิดประชากร แผนที่ตำบล หน่วยบริการ และหัวข้อรายงาน |
 | `/pa` | PA Dashboard ย้ายมาจาก `/` หน้าตาและตัวเลขเหมือนเดิม |
-| `/reports` | คลังรายงาน กรองตามหมวด/หัวข้อ และค้นหา |
+| `/reports` | รายงานสุขภาพ: รายงานทั้งหมดตามหมวดและหัวข้อ เลือกหมวดหรือหัวข้อ และค้นหา |
 | `/reports/{id}` | หน้ารายงาน: ร้อยละรายตำบล/รายหน่วยบริการ แนวโน้ม 5 ปี CSV |
 | `/sync` | ดึงข้อมูลจาก MOPH เข้า Sheets ต้องใส่ PIN เลือกปีงบประมาณได้ และสั่ง rebuild ผ่าน Deploy Hook ตอนจบ |
 
@@ -71,7 +71,7 @@ public/
 └── data/                        snapshot ที่สร้างตอน build ไม่ commit
 docs/
 ├── adr/                         บันทึกการตัดสินใจ
-└── reference/                   ต้นแบบหน้าจอ R6 และ V7.6 (ตัวเลขเป็นข้อมูลจำลอง)
+└── reference/                   ต้นแบบหน้าจอ R6, V7.6 และ V1.4 (ตัวเลขเป็นข้อมูลจำลอง)
 tools/                           snippet สำหรับรันใน DevTools ของเบราว์เซอร์ (export แค็ตตาล็อก)
 catalog-exports/                 ไฟล์ export แค็ตตาล็อกจาก snippet ไม่ commit
 ```
@@ -167,8 +167,9 @@ npm run gas:sync
 | [docs/adr/](docs/adr/) | บันทึกการตัดสินใจและเหตุผล |
 | [CODING_STANDARDS.md](CODING_STANDARDS.md) | มาตรฐานที่ใช้ตรวจโค้ดก่อน merge |
 | [CLAUDE.md](CLAUDE.md) | คำสั่งสำหรับ Claude Code |
-| [ต้นแบบหน้าจอ R6](docs/reference/song-health-data-center-review-03-epi-real-response-r6.html) | แบบหน้าตาและการใช้งานของ `/reports` และ `/reports/{id}` (ตัวเลขเป็นข้อมูลจำลอง) |
+| [ต้นแบบหน้าจอ R6](docs/reference/song-health-data-center-review-03-epi-real-response-r6.html) | แบบหน้าตาและการใช้งานของ `/reports/{id}` (ตัวเลขเป็นข้อมูลจำลอง) |
 | [ต้นแบบ V7.6](docs/reference/v7-6/design.md) | แบบหน้าตาของหน้าแรกและสีของ Data Center ทั้งเว็บ (ADR-0012, ตัวเลขเป็นข้อมูลจำลอง) |
+| [ต้นแบบ V1.4](docs/reference/reports-v1-4/SONGHEALTH_REPORT_LIBRARY_V1_4_HANDOFF.md) | แบบหน้าตาและการใช้งานของหน้ารายงานสุขภาพ `/reports` (ADR-0013, รายการรายงานคัดลอกจาก fixture ไม่ใช่ข้อมูลปัจจุบัน) |
 
 ## วิธีทำงาน
 
