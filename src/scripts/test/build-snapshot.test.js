@@ -783,7 +783,7 @@ test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 na
     [
       "a year without village, as GAS answered before Track I (SCHEMA §3.9)",
       { years: [without(year(), "village")] },
-      /^build-snapshot: \?action=registry_population answered 6812 without a list of village rows/,
+      /^build-snapshot: \?action=registry_population answered 6812 without a list of village rows \(registry_population_village\)/,
     ],
     [
       "a village row without mm_name",

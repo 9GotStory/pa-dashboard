@@ -104,9 +104,9 @@ export function homePopulation(snapshot: PopulationSnapshot, areas: DcCatalog["a
  * code's last 2 digits), ไม่ระบุหมู่ (00) last and not counted.
  */
 function tambonVillages(rows: RegistryPopulationVillageRow[]): AreaVillages {
-  const list = [...Map.groupBy(rows, (r) => r.mm)].map(([code, of]): VillagePopulation => {
+  const list = [...Map.groupBy(rows, (r) => r.mm)].map(([code, codeRows]): VillagePopulation => {
     const moo = Number(code.slice(6)) || null;
-    return { code, moo, name: of[0].mm_name, totals: populationTotals(of) };
+    return { code, moo, name: codeRows[0].mm_name, totals: populationTotals(codeRows) };
   });
   list.sort((a, b) => (a.moo ?? Infinity) - (b.moo ?? Infinity));
   return { count: list.filter((v) => v.moo !== null).length, list };

@@ -263,7 +263,9 @@ function registryProblem(answer) {
     if (seen.has(yymm)) return `answered yymm ${yymm} twice; ${CHECK_URL}`;
     seen.add(yymm);
     for (const [kind, columns] of Object.entries(REGISTRY_COLUMNS)) {
-      if (!Array.isArray(year[kind])) return `answered ${yymm} without a list of ${kind} rows; ${CHECK_URL}`;
+      if (!Array.isArray(year[kind])) {
+        return `answered ${yymm} without a list of ${kind} rows (${REGISTRY_SHEETS[kind]}); ${CHECK_URL}`;
+      }
       for (const [i, row] of year[kind].entries()) {
         const missing = columns.find((column) => !Object.hasOwn(Object(row), column));
         if (missing !== undefined) {

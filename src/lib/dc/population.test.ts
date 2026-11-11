@@ -606,10 +606,10 @@ test("population.json whose latest year has no age rows, as before F29 uploads t
 // Expected values come from the file's หมู่บ้าน and ตำบล lines (SCHEMA §11.4).
 
 // population.json of 2568 with its village rows, as the prebuild writes its latest year (SCHEMA §7).
-const VILLAGES_6812: PopulationSnapshot = { years: [{ yymm: "6812", population: ROWS_6812, village: read68.villages, age: [] }] };
+const VILLAGE_SNAPSHOT_6812: PopulationSnapshot = { years: [{ yymm: "6812", population: ROWS_6812, village: read68.villages, age: [] }] };
 
 test("บ้านหนุน of 2568 → 11 หมู่บ้าน, and หมู่ 4 ศรีมูลเรือง, with a line under 5406 and one under 5489, is 1,031 คน 538 บ้าน (192 + 839, 128 + 410)", () => {
-  const villages = homePopulation(VILLAGES_6812, AREAS)?.areas.find((a) => a.key === "540601")?.villages;
+  const villages = homePopulation(VILLAGE_SNAPSHOT_6812, AREAS)?.areas.find((a) => a.key === "540601")?.villages;
 
   assert.ok(villages);
   assert.equal(villages.count, 11);
@@ -618,7 +618,7 @@ test("บ้านหนุน of 2568 → 11 หมู่บ้าน, and ห�
 });
 
 test("บ้านกลาง of 2568, its rows last to first → 12 หมู่บ้าน by หมู่ที่ 1 … 12, then ไม่ระบุหมู่ 54060200 last: 14 คน (ชาย 9 หญิง 5) 3 บ้าน (0 + 14 คน, 1 + 2 บ้าน of 5406 and 5489), not counted", () => {
-  const reversed: PopulationSnapshot = { years: [{ ...VILLAGES_6812.years[0], village: [...read68.villages].reverse() }] };
+  const reversed: PopulationSnapshot = { years: [{ ...VILLAGE_SNAPSHOT_6812.years[0], village: [...read68.villages].reverse() }] };
 
   const villages = homePopulation(reversed, AREAS)?.areas.find((a) => a.key === "540602")?.villages;
 
@@ -634,7 +634,7 @@ test("บ้านกลาง of 2568, its rows last to first → 12 หมู�
 });
 
 test("the อำเภอ of 2568 → 85 หมู่บ้าน, its 8 ตำบล 11, 12, 17, 12, 13, 10, 4 and 6, and no list: the panel shows the อำเภอ's count only", () => {
-  const home = homePopulation(VILLAGES_6812, AREAS);
+  const home = homePopulation(VILLAGE_SNAPSHOT_6812, AREAS);
 
   assert.ok(home);
   assert.deepEqual(home.district.villages, { count: 85, list: [] });
@@ -642,18 +642,18 @@ test("the อำเภอ of 2568 → 85 หมู่บ้าน, its 8 ตำ�
 });
 
 test("each ตำบล of 2568 → its หมู่บ้าน, ไม่ระบุหมู่ included, add up to the ตำบล: บ้านหนุน 7,399 คน 3,499 บ้าน, บ้านกลาง 6,686 คน 3,335 บ้าน, and so the other 6", () => {
-  const home = homePopulation(VILLAGES_6812, AREAS);
+  const home = homePopulation(VILLAGE_SNAPSHOT_6812, AREAS);
 
   assert.ok(home);
-  // area.totals come from the ตำบล lines, never from the หมู่บ้าน lines.
-  for (const area of home.areas) {
-    const sum = area.villages!.list.reduce(
+  const sums = home.areas.map((area) =>
+    area.villages!.list.reduce(
       (s, v) => ({ male: s.male + v.totals.male, female: s.female + v.totals.female, total: s.total + v.totals.total, house: s.house + v.totals.house }),
       { male: 0, female: 0, total: 0, house: 0 },
-    );
-    assert.deepEqual(sum, area.totals, area.name);
-  }
-  assert.deepEqual(home.areas.slice(0, 2).map((a) => [a.totals.total, a.totals.house]), [[7399, 3499], [6686, 3335]]);
+    ),
+  );
+  assert.deepEqual(sums.slice(0, 2).map((s) => [s.total, s.house]), [[7399, 3499], [6686, 3335]]);
+  // area.totals come from the ตำบล lines, never from the หมู่บ้าน lines.
+  assert.deepEqual(sums, home.areas.map((a) => a.totals));
 });
 
 test("population.json whose latest year has no village rows, as before F45 uploads stat_m → villages null for the อำเภอ and all 8 ตำบล: the home page hides the list and count of หมู่บ้าน", () => {
