@@ -29,7 +29,8 @@ const SELECTED: L.PathOptions = { weight: 3.5, fillOpacity: 0.55 };
  * the tab order, that Enter or Space picks as a click does (design.md §8). A
  * pick on the map leaves the view where it is; a pick from elsewhere moves
  * the map to that ตำบล, or to the whole อำเภอ when none is picked, as in R6,
- * and the map ends at the latest pick however fast it changes. onLoad says whether the boundaries loaded. Leaflet needs the browser, so
+ * and the map ends at the latest pick however fast it changes. onLoad says
+ * whether the boundaries loaded. Leaflet needs the browser, so
  * DistrictExplorer loads this file on its own, after the page.
  */
 export default function DistrictMap({
@@ -83,6 +84,11 @@ export default function DistrictMap({
       wanted = [bounds, maxZoom];
       requestAnimationFrame(apply);
     };
+    // A pick on the map keeps the view, so it drops a view still waiting too.
+    const pickOnMap = (id: string) => {
+      wanted = null;
+      pick(id);
+    };
     map.on({
       zoomstart: () => (zooming = true),
       zoomend: () => {
@@ -111,7 +117,7 @@ export default function DistrictMap({
               paths.set(id, path);
               path.bindTooltip(name, { sticky: true, direction: "top" });
               path.on({
-                click: () => pick(id),
+                click: () => pickOnMap(id),
                 mouseover: () => hover(id, path, true),
                 mouseout: () => hover(id, path, false),
                 // The path's element exists once the map has a view, after this.
@@ -132,7 +138,7 @@ export default function DistrictMap({
                   if (e.key !== "Enter" && e.key !== " ") return;
                   // Space would scroll the page
                   e.preventDefault();
-                  pick(id);
+                  pickOnMap(id);
                 },
               });
             },
