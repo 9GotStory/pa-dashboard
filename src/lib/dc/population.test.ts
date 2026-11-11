@@ -1,18 +1,18 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { AGE_6812, AGE_6812_LINES } from "./fixtures/age-6812cc54-20261106";
-import { STAT_T68, STAT_T68_LINES } from "./fixtures/stat-t68-20261106";
+import { STAT_M68, STAT_M68_LINES } from "./fixtures/stat-m68-20261111";
 import { formatPct } from "./format";
-import { ageRowsTotals, homePopulation, populationTotals, readRegistryFiles, registryAsOf, registryYear } from "./population";
+import { ageRowsTotals, homePopulation, populationTotals, readRegistryFiles, registryAsOf, registryYear, villageCount } from "./population";
 import type { AgeBand, PopulationSnapshot, RegistryPopulationRow } from "./types";
 
-// FEATURES F24: reading and checking stat_t files in the /sync upload
-// (SCHEMA §11.1–11.2), on lines cut from the real stat_t68.txt. Expected
-// values come from the file's own สำนักทะเบียน total lines and the figures the
-// province announced (SCHEMA §11.4).
+// FEATURES F24, F44: reading and checking stat_m files in the /sync upload
+// (SCHEMA §11.1–11.2), on lines cut from the real stat_m68.txt. Expected
+// values come from the file's own สำนักทะเบียน total lines and ตำบล lines and
+// the figures the province announced (SCHEMA §11.4).
 
-test("stat_t68.txt → ปี 2568, 10 rows, 46,527 people (ชาย 22,475 หญิง 24,052) and 20,101 บ้าน, the figures the province announced", () => {
-  const [read] = readRegistryFiles([{ name: "stat_t68.txt", text: STAT_T68 }], "5406");
+test("stat_m68.txt → ปี 2568, 10 rows, 46,527 people (ชาย 22,475 หญิง 24,052) and 20,101 บ้าน, the figures the province announced", () => {
+  const [read] = readRegistryFiles([{ name: "stat_m68.txt", text: STAT_M68 }], "5406");
 
   assert.ok(read.ok && read.kind === "population", !read.ok ? read.reason : "");
   assert.equal(registryYear(read.yymm), "2568");
@@ -20,8 +20,34 @@ test("stat_t68.txt → ปี 2568, 10 rows, 46,527 people (ชาย 22,475 ห
   assert.deepEqual(populationTotals(read.rows), { male: 22475, female: 24052, total: 46527, house: 20101 });
 });
 
+test("stat_m68.txt → 94 หมู่บ้าน rows of อำเภอสอง (81 of 5406, 13 of 5489) and 85 หมู่บ้าน: the 7 with a line under each สำนักทะเบียน and the ไม่ระบุหมู่ lines are not counted twice", () => {
+  const [read] = readRegistryFiles([{ name: "stat_m68.txt", text: STAT_M68 }], "5406");
+  assert.ok(read.ok && read.kind === "population", !read.ok ? read.reason : "");
+
+  assert.equal(read.villages.length, 94);
+  assert.deepEqual([read.villages.filter((r) => r.rcode === "5406").length, read.villages.filter((r) => r.rcode === "5489").length], [81, 13]);
+  assert.equal(villageCount(read.villages), 85);
+});
+
+test("the หมู่บ้าน rows as SCHEMA §2.8 keeps them: หมู่ 4 ศรีมูลเรือง of บ้านหนุน has a row under 5406 (192 คน 128 บ้าน) and one under 5489 (839 คน 410 บ้าน); บ้านกลาง's ไม่ระบุหมู่ 54060200 is 0 คน 1 บ้าน under 5406 and 14 คน (ชาย 9 หญิง 5) 2 บ้าน under 5489", () => {
+  const [read] = readRegistryFiles([{ name: "stat_m68.txt", text: STAT_M68 }], "5406");
+  assert.ok(read.ok && read.kind === "population");
+
+  const row = (rcode: string, mm: string) => read.villages.find((r) => r.rcode === rcode && r.mm === mm);
+  assert.deepEqual(row("5406", "54060104"), {
+    yymm: "6812", cc: "54", cc_name: "จังหวัดแพร่", rcode: "5406", rcode_name: "อำเภอสอง",
+    tt: "54060100", tt_name: "ตำบลบ้านหนุน", mm: "54060104", mm_name: "ศรีมูลเรือง", male: 94, female: 98, total: 192, house: 128,
+  });
+  assert.deepEqual([row("5489", "54060104")?.total, row("5489", "54060104")?.house], [839, 410]);
+  assert.deepEqual(row("5406", "54060200"), {
+    yymm: "6812", cc: "54", cc_name: "จังหวัดแพร่", rcode: "5406", rcode_name: "อำเภอสอง",
+    tt: "54060200", tt_name: "ตำบลบ้านกลาง", mm: "54060200", mm_name: "บ้านกลาง", male: 0, female: 0, total: 0, house: 1,
+  });
+  assert.deepEqual([row("5489", "54060200")?.male, row("5489", "54060200")?.female, row("5489", "54060200")?.total, row("5489", "54060200")?.house], [9, 5, 14, 2]);
+});
+
 test("the rows are the district's ตำบล lines as SCHEMA §2.6 keeps them: 8 of 5406 adding up to its total line (40,389) and 2 of 5489 to its own (6,138); other districts' ตำบลน้ำชำ and ตำบลสูงเม่น are cut", () => {
-  const [read] = readRegistryFiles([{ name: "stat_t68.txt", text: STAT_T68 }], "5406");
+  const [read] = readRegistryFiles([{ name: "stat_m68.txt", text: STAT_M68 }], "5406");
   assert.ok(read.ok && read.kind === "population");
 
   const of = (rcode: string) => read.rows.filter((r) => r.rcode === rcode);
@@ -42,39 +68,40 @@ function fileOf(lines: string[]): string {
   return "\uFEFF" + lines.join("\n") + "\n";
 }
 
-// STAT_T68_LINES with the line of (RCODE, CCAATT) changed by f, or dropped if f returns null.
-function changeLine(rcode: string, tt: string, f: (values: string[]) => string[] | null): string[] {
-  return STAT_T68_LINES.flatMap((line) => {
+// STAT_M68_LINES with the line of (RCODE, CCAATT, CCAATTMM) changed by f, or
+// dropped if f returns null: the ตำบล line unless mm is given.
+function changeLine(rcode: string, tt: string, f: (values: string[]) => string[] | null, mm = "0"): string[] {
+  return STAT_M68_LINES.flatMap((line) => {
     const values = line.split("|");
-    if (values[3] !== rcode || values[5] !== tt) return [line];
+    if (values[3] !== rcode || values[5] !== tt || values[7] !== mm) return [line];
     const changed = f(values);
     return changed === null ? [] : [changed.join("|")];
   });
 }
 
 // Why readRegistryFiles refuses this one file.
-function refusal(text: string, name = "stat_t68.txt"): string {
+function refusal(text: string, name = "stat_m68.txt"): string {
   const [read] = readRegistryFiles([{ name, text }], "5406");
   assert.ok(!read.ok, "the file was read");
   return read.reason;
 }
 
-test("a stat_t without a ตำบล line of อำเภอ 5406 → refused", () => {
-  const others = STAT_T68_LINES.filter((line) => !/\|54(06|89)\|/.test(line));
+test("a stat_m without a ตำบล line of อำเภอ 5406 → refused", () => {
+  const others = STAT_M68_LINES.filter((line) => !/\|54(06|89)\|/.test(line));
 
   assert.equal(refusal(fileOf(others)), "ไม่มีบรรทัดตำบลของอำเภอ 5406 ในไฟล์");
 });
 
-test("a stat_t of November (yymm 6811 on every line) → refused: not the figures at 31 ธ.ค.", () => {
-  const november = STAT_T68_LINES.map((line) => line.replace(/^6812\|/, "6811|"));
+test("a stat_m of November (yymm 6811 on every line) → refused: not the figures at 31 ธ.ค.", () => {
+  const november = STAT_M68_LINES.map((line) => line.replace(/^6812\|/, "6811|"));
 
   assert.equal(refusal(fileOf(november)), "ปีเดือนในไฟล์คือ 6811 ไม่ใช่เดือน 12 (ยอด ณ 31 ธ.ค.)");
 });
 
-test("a stat_t with one line of 6712 among lines of 6812 → refused: one yymm per file", () => {
+test("a stat_m with one line of 6712 among lines of 6812 → refused: one yymm per file", () => {
   const mixed = changeLine("5489", "54060200", (v) => ["6712", ...v.slice(1)]);
 
-  assert.equal(refusal(fileOf(mixed)), "ปีเดือนไม่เท่ากันทั้งไฟล์: บรรทัดที่ 1 เป็น 6812 แต่บรรทัดที่ 29 เป็น 6712");
+  assert.equal(refusal(fileOf(mixed)), "ปีเดือนไม่เท่ากันทั้งไฟล์: บรรทัดที่ 1 เป็น 6812 แต่บรรทัดที่ 226 เป็น 6712");
 });
 
 test("ตำบลบ้านกลาง of 5489 with 1,862 บ้าน instead of 1,861 → refused: its ตำบล lines no longer add up to the สำนักทะเบียน's total line", () => {
@@ -87,7 +114,7 @@ test("ตำบลบ้านกลาง of 5489 with 1,862 บ้าน inste
 });
 
 test("a download cut off after ตำบลแดนชุมพล → refused: 5406's ตำบล lines add up to less than its total line", () => {
-  const cut = STAT_T68_LINES.slice(0, STAT_T68_LINES.findIndex((line) => line.includes("|54060700|")) + 1);
+  const cut = STAT_M68_LINES.slice(0, STAT_M68_LINES.findLastIndex((line) => line.includes("|54060700|")) + 1);
 
   assert.equal(
     refusal(fileOf(cut)),
@@ -95,48 +122,100 @@ test("a download cut off after ตำบลแดนชุมพล → refused:
   );
 });
 
-test("a stat_t without the total line of 5406 → refused", () => {
+test("a stat_m without the total line of 5406 → refused", () => {
   const noTotal = changeLine("5406", "0", () => null);
 
   assert.equal(refusal(fileOf(noTotal)), "ไม่มีบรรทัดยอดรวมของสำนักทะเบียน 5406 อำเภอสอง");
 });
 
 test("a download cut off mid-way through its last line (11 values, no line end) → refused, naming the line", () => {
-  const lines = [...STAT_T68_LINES.slice(0, -1), "6812|54|จังหวัดแพร่ |5492|ท้องถิ่นเทศบาลตำบลสูงเม่น|54040100|ตำบลสูงเม่น |0| |1,626|1,8"];
+  const lines = [...STAT_M68_LINES.slice(0, -1), "6812|54|จังหวัดแพร่ |5492|ท้องถิ่นเทศบาลตำบลสูงเม่น|54040100|ตำบลสูงเม่น |54040108|สูงเม่น|256|2"];
 
-  assert.equal(refusal("\uFEFF" + lines.join("\n")), "บรรทัดที่ 31 มี 11 ค่า ไฟล์ stat_t มีบรรทัดละ 13 ค่า");
+  assert.equal(refusal("\uFEFF" + lines.join("\n")), "บรรทัดที่ 241 มี 11 ค่า ไฟล์ stat_m มีบรรทัดละ 13 ค่า");
 });
 
 test("a count that is no number (\"2,1x6\") → refused, naming the line", () => {
   const changed = changeLine("5406", "54060100", (v) => [...v.slice(0, 9), "2,1x6", ...v.slice(10)]);
 
-  assert.equal(refusal(fileOf(changed)), "บรรทัดที่ 19 มีค่าที่ไม่ใช่ตัวเลข: 2,1x6");
+  assert.equal(refusal(fileOf(changed)), "บรรทัดที่ 129 มีค่าที่ไม่ใช่ตัวเลข: 2,1x6");
 });
 
-test("a file named neither stat_t{yy} nor {yymm}cc{จังหวัด} (ประชากร.txt, or cc54.txt without its year) → refused without reading it", () => {
-  assert.equal(refusal(STAT_T68, "ประชากร.txt"), "ไม่ใช่ไฟล์ stat_t{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora");
-  assert.equal(refusal(AGE_6812, "cc54.txt"), "ไม่ใช่ไฟล์ stat_t{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora");
+test("a file named neither stat_m{yy} nor {yymm}cc{จังหวัด} (ประชากร.txt, or cc54.txt without its year) → refused without reading it", () => {
+  assert.equal(refusal(STAT_M68, "ประชากร.txt"), "ไม่ใช่ไฟล์ stat_m{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora");
+  assert.equal(refusal(AGE_6812, "cc54.txt"), "ไม่ใช่ไฟล์ stat_m{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora");
 });
 
-test("stat_t68 (1).txt, a second download the browser renamed → read like stat_t68.txt", () => {
-  const [read] = readRegistryFiles([{ name: "stat_t68 (1).txt", text: STAT_T68 }], "5406");
+// stat_t68.txt as stat.bora serves it: stat_m68.txt without its หมู่บ้าน
+// lines, line for line (SCHEMA §11.1, ADR-0014).
+const STAT_T68 = fileOf(STAT_M68_LINES.filter((line) => line.split("|")[7] === "0"));
 
-  assert.ok(read.ok, !read.ok ? read.reason : "");
-  assert.equal(read.rows.length, 10);
+test("stat_t68.txt, the ตำบล level read before Track I, or stat_t68 (1).txt → refused, naming the stat_m68.txt to pick from the หมู่บ้าน level", () => {
+  const reason = "ไฟล์ stat_t เป็นระดับตำบล ไม่มีหมู่บ้าน ใช้ไฟล์ stat_m68.txt จากเมนูระดับหมู่บ้านแทน";
+
+  assert.equal(refusal(STAT_T68, "stat_t68.txt"), reason);
+  assert.equal(refusal(STAT_T68, "stat_t68 (1).txt"), reason);
+});
+
+test("stat_m68 (1).txt, a second download the browser renamed → read like stat_m68.txt", () => {
+  const [read] = readRegistryFiles([{ name: "stat_m68 (1).txt", text: STAT_M68 }], "5406");
+
+  assert.ok(read.ok && read.kind === "population", !read.ok ? read.reason : "");
+  assert.deepEqual([read.rows.length, read.villages.length], [10, 94]);
 });
 
 test("two files of 6812 in one pick → the first is read, the second refused, so each year is saved once", () => {
   const reads = readRegistryFiles(
-    [{ name: "stat_t68.txt", text: STAT_T68 }, { name: "stat_t68 (1).txt", text: STAT_T68 }],
+    [{ name: "stat_m68.txt", text: STAT_M68 }, { name: "stat_m68 (1).txt", text: STAT_M68 }],
     "5406",
   );
 
   assert.deepEqual(reads.map((r) => r.ok), [true, false]);
-  assert.equal(!reads[1].ok && reads[1].reason, "ปี 2568 ซ้ำกับไฟล์ stat_t68.txt ที่เลือกไว้");
+  assert.equal(!reads[1].ok && reads[1].reason, "ปี 2568 ซ้ำกับไฟล์ stat_m68.txt ที่เลือกไว้");
+});
+
+// SCHEMA §11.2 stat_m rule 5: the district's หมู่บ้าน lines.
+
+test("หมู่ 4 ศรีมูลเรือง of บ้านหนุน (5406) with 129 บ้าน instead of 128 → refused: บ้านหนุน's หมู่บ้าน lines of 5406 no longer add up to its ตำบล line (2,163)", () => {
+  const changed = changeLine("5406", "54060100", (v) => [...v.slice(0, 12), "129", ""], "54060104");
+
+  assert.equal(
+    refusal(fileOf(changed)),
+    "ผลรวมบรรทัดหมู่บ้านของ ตำบลบ้านหนุน ของสำนักทะเบียน 5406 อำเภอสอง ไม่เท่าบรรทัดตำบล: บ้าน 2,164 แต่บรรทัดตำบล 2,163",
+  );
+});
+
+test("ตำบลทุ่งน้าว of 5406 without its 6 หมู่บ้าน lines → refused: every ตำบล line of the district has หมู่บ้าน lines", () => {
+  const changed = STAT_M68_LINES.filter((line) => !/\|54060800\|[^|]*\|5406080[1-6]\|/.test(line));
+
+  assert.equal(refusal(fileOf(changed)), "ตำบลทุ่งน้าว ของสำนักทะเบียน 5406 อำเภอสอง ไม่มีบรรทัดหมู่บ้าน");
+});
+
+test("a หมู่บ้าน code of 7 digits, or one of ตำบลบ้านกลาง under ตำบลบ้านหนุน → refused: a หมู่บ้าน code is 8 digits starting with its ตำบล's 6", () => {
+  const short = changeLine("5406", "54060100", (v) => [...v.slice(0, 7), "5406011", ...v.slice(8)], "54060111");
+  const misplaced = changeLine("5406", "54060100", (v) => [...v.slice(0, 7), "54060211", ...v.slice(8)], "54060111");
+
+  assert.equal(refusal(fileOf(short)), "รหัสหมู่บ้าน 5406011 หนุนใต้ ไม่ใช่รหัส 8 หลักของ ตำบลบ้านหนุน (54060100)");
+  assert.equal(refusal(fileOf(misplaced)), "รหัสหมู่บ้าน 54060211 หนุนใต้ ไม่ใช่รหัส 8 หลักของ ตำบลบ้านหนุน (54060100)");
+});
+
+test("หมู่ 11 of บ้านหนุน (5406) twice → refused: one line per (สำนักทะเบียน, หมู่บ้าน), though หมู่ 4 has a line under 5406 and one under 5489", () => {
+  const line = STAT_M68_LINES.find((l) => l.includes("|5406|") && l.includes("|54060111|"))!;
+  const changed = STAT_M68_LINES.flatMap((l) => (l === line ? [l, l] : [l]));
+
+  assert.equal(refusal(fileOf(changed)), "หมู่บ้าน 54060111 หนุนใต้ ซ้ำในสำนักทะเบียน 5406 อำเภอสอง");
+});
+
+test("a หมู่บ้าน line of ตำบลห้วยหม้าย under 5489, which has no ตำบลห้วยหม้าย line → refused: its หมู่บ้าน lines go with a ตำบล line", () => {
+  const line = "6812|54|จังหวัดแพร่ |5489|ท้องถิ่นเทศบาลตำบลสอง|54060300|ตำบลห้วยหม้าย |54060301|ลูนิเกต|1|1|2|1|";
+
+  assert.equal(
+    refusal(fileOf([...STAT_M68_LINES, line])),
+    "หมู่บ้าน 54060301 ลูนิเกต ไม่มีบรรทัด ตำบลห้วยหม้าย ของสำนักทะเบียน 5489 ท้องถิ่นเทศบาลตำบลสอง",
+  );
 });
 
 // FEATURES F26: the population of the home page (SCHEMA §11.3), on the real
-// rows of 2568 as the upload reads them from the cut stat_t68.txt. Expected
+// rows of 2568 as the upload reads them from the cut stat_m68.txt. Expected
 // values come from the file's ตำบล and total lines and the figures the
 // province announced (SCHEMA §11.4).
 
@@ -153,7 +232,7 @@ const AREAS = [
 ];
 
 // The 10 rows of 2568 (SCHEMA §2.6): 8 of สำนักทะเบียน 5406 and 2 of 5489.
-const [read68] = readRegistryFiles([{ name: "stat_t68.txt", text: STAT_T68 }], "5406");
+const [read68] = readRegistryFiles([{ name: "stat_m68.txt", text: STAT_M68 }], "5406");
 if (!read68.ok || read68.kind !== "population") throw new Error(read68.ok ? `read as ${read68.kind}` : read68.reason);
 const ROWS_6812 = read68.rows;
 
@@ -164,7 +243,7 @@ function snapshotOf(...years: RegistryPopulationRow[][]): PopulationSnapshot {
 }
 
 test("population.json of 2567 and 2568 → the home page shows 2568, the latest: ณ 31 ธ.ค. 2568 and its 46,527 people", () => {
-  // stat_t67.txt's line of ตำบลบ้านหนุน in สำนักทะเบียน 5406
+  // stat_m67.txt's line of ตำบลบ้านหนุน in สำนักทะเบียน 5406
   const row6712 = { ...ROWS_6812[0], yymm: "6712", male: 2174, female: 2445, total: 4619, house: 2148 };
 
   const home = homePopulation(snapshotOf([row6712], ROWS_6812), AREAS);
@@ -217,16 +296,16 @@ test("a ตำบล that areas lacks → named by its tt_name, its people still
 
 // FEATURES F27: reading and checking the age file in the /sync upload
 // (SCHEMA §11.1–11.2), on lines cut from the real 6812cc54.txt and
-// stat_t68.txt. Expected values come from stat_t's lines and the figures of
+// stat_m68.txt. Expected values come from stat_m's lines and the figures of
 // SCHEMA §11.4, which were added up from the file's own columns.
 
 // The pick of 2568 as a browser lists it, by name: the age file first.
 const PICK_6812 = [
   { name: "6812cc54.txt", text: AGE_6812 },
-  { name: "stat_t68.txt", text: STAT_T68 },
+  { name: "stat_m68.txt", text: STAT_M68 },
 ];
 
-test("6812cc54.txt picked with stat_t68.txt → the age rows of ปี 2568, one for each of stat_t's 10 rows (8 of สำนักทะเบียน 5406, 2 of 5489), adding up to the 46,527 people the province announced (ชาย 22,475 หญิง 24,052)", () => {
+test("6812cc54.txt picked with stat_m68.txt → the age rows of ปี 2568, one for each of stat_m's 10 rows (8 of สำนักทะเบียน 5406, 2 of 5489), adding up to the 46,527 people the province announced (ชาย 22,475 หญิง 24,052)", () => {
   const [read] = readRegistryFiles(PICK_6812, "5406");
 
   assert.ok(read.ok && read.kind === "age", read.ok ? `read as ${read.kind}` : read.reason);
@@ -284,24 +363,25 @@ test("อำเภอสูงเม่น (5404), whose ตำบลน้ำ�
   assert.equal(total("5492", "54040100"), 3487);
 });
 
-// Why readRegistryFiles refuses the age file (text, named name), picked with stat_t68.txt.
+// Why readRegistryFiles refuses the age file (text, named name), picked with stat_m68.txt.
 function ageRefusal(text: string, name = "6812cc54.txt"): string {
-  const [read] = readRegistryFiles([{ name, text }, { name: "stat_t68.txt", text: STAT_T68 }], "5406");
+  const [read] = readRegistryFiles([{ name, text }, { name: "stat_m68.txt", text: STAT_M68 }], "5406");
   assert.ok(!read.ok, "the age file was read");
   return read.reason;
 }
 
-test("6812cc54.txt without a stat_t of 2568 that passed (picked alone, with stat_t67.txt, or with a stat_t68.txt that was refused) → refused: an age file needs the stat_t of its year in the same pick", () => {
-  const stat67 = fileOf(STAT_T68_LINES.map((line) => line.replace(/^6812\|/, "6712|")));
-  const stat68Refused = fileOf(STAT_T68_LINES.filter((line) => !line.includes("|54060800|")));
+test("6812cc54.txt without a stat_m of 2568 that passed (picked alone, with stat_m67.txt, with a stat_m68.txt that was refused, or with stat_t68.txt) → refused: an age file needs the stat_m of its year in the same pick", () => {
+  const stat67 = fileOf(STAT_M68_LINES.map((line) => line.replace(/^6812\|/, "6712|")));
+  const stat68Refused = fileOf(STAT_M68_LINES.filter((line) => !line.includes("|54060800|")));
   const reasons = [
     readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }], "5406"),
-    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_t67.txt", text: stat67 }], "5406"),
-    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_t68.txt", text: stat68Refused }], "5406"),
+    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_m67.txt", text: stat67 }], "5406"),
+    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_m68.txt", text: stat68Refused }], "5406"),
+    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_t68.txt", text: STAT_T68 }], "5406"),
   ].map(([read]) => (read.ok ? "read" : read.reason));
 
-  const reason = "ไม่มีไฟล์ stat_t68.txt ที่ผ่านการตรวจในชุดที่เลือก ไฟล์อายุต้องเลือกพร้อม stat_t ของปีเดียวกัน";
-  assert.deepEqual(reasons, [reason, reason, reason]);
+  const reason = "ไม่มีไฟล์ stat_m68.txt ที่ผ่านการตรวจในชุดที่เลือก ไฟล์อายุต้องเลือกพร้อม stat_m ของปีเดียวกัน";
+  assert.deepEqual(reasons, [reason, reason, reason, reason]);
 });
 
 test("an age file named 6811cc54.txt (November) → refused: not the figures at 31 ธ.ค.", () => {
@@ -313,14 +393,14 @@ test("6812cc53.txt, the age file of another จังหวัด (53) → refus
 });
 
 test("6812cc54 (1).txt, a second download the browser renamed → read like 6812cc54.txt", () => {
-  const [read] = readRegistryFiles([{ name: "6812cc54 (1).txt", text: AGE_6812 }, { name: "stat_t68.txt", text: STAT_T68 }], "5406");
+  const [read] = readRegistryFiles([{ name: "6812cc54 (1).txt", text: AGE_6812 }, { name: "stat_m68.txt", text: STAT_M68 }], "5406");
 
   assert.ok(read.ok && read.kind === "age", read.ok ? `read as ${read.kind}` : read.reason);
   assert.equal(read.yymm, "6812");
   assert.equal(read.rows.length, 10);
 });
 
-test("two age files of 6812 with stat_t68.txt in one pick → the first is read, the second refused, so each year's age rows are saved once", () => {
+test("two age files of 6812 with stat_m68.txt in one pick → the first is read, the second refused, so each year's age rows are saved once", () => {
   const reads = readRegistryFiles([...PICK_6812, { name: "6812cc54 (1).txt", text: AGE_6812 }], "5406");
 
   assert.deepEqual(reads.map((r) => r.ok), [true, true, false]);
@@ -393,18 +473,18 @@ function plusOne(values: string[], ...at: number[]): string[] {
   return values.map((value, i) => (at.includes(i) ? String(Number(value) + 1) : value));
 }
 
-test("ตำบลบ้านหนุน of อำเภอสอง with one more boy aged 0, ชาย 2,137 รวม 4,537 → refused: not the 2,136 of stat_t68.txt", () => {
+test("ตำบลบ้านหนุน of อำเภอสอง with one more boy aged 0, ชาย 2,137 รวม 4,537 → refused: not the 2,136 of stat_m68.txt", () => {
   const changed = changeAgeLine(SONG_BAN_NUN, (v) => plusOne(v, M0, TOTAL_M, TOTAL_T));
 
-  assert.equal(ageRefusal(fileOf(changed)), "ยอดของ ตำบลบ้านหนุน ในบล็อก อำเภอสอง ไม่ตรงกับ stat_t68.txt: ชาย 2,137 แต่ stat_t 2,136");
+  assert.equal(ageRefusal(fileOf(changed)), "ยอดของ ตำบลบ้านหนุน ในบล็อก อำเภอสอง ไม่ตรงกับ stat_m68.txt: ชาย 2,137 แต่ stat_m 2,136");
 });
 
-test("the line of อำเภอสอง with รวม 40,390 → refused: not the total line of สำนักทะเบียน 5406 in stat_t68.txt (40,389)", () => {
+test("the line of อำเภอสอง with รวม 40,390 → refused: not the total line of สำนักทะเบียน 5406 in stat_m68.txt (40,389)", () => {
   const changed = changeAgeLine(SONG, (v) => plusOne(v, TOTAL_T));
 
   assert.equal(
     ageRefusal(fileOf(changed)),
-    "ยอดของบล็อก อำเภอสอง ไม่ตรงกับบรรทัดยอดรวมของสำนักทะเบียน 5406 ใน stat_t68.txt: รวม 40,390 แต่ stat_t 40,389",
+    "ยอดของบล็อก อำเภอสอง ไม่ตรงกับบรรทัดยอดรวมของสำนักทะเบียน 5406 ใน stat_m68.txt: รวม 40,390 แต่ stat_m 40,389",
   );
 });
 
@@ -414,7 +494,7 @@ test("ทะเบียนบ้านกลาง of ตำบลบ้าน�
   assert.equal(ageRefusal(fileOf(changed)), "ตำบลบ้านกลาง ในบล็อก อำเภอสอง: ทะเบียนบ้านกลาง ชาย 50 + หญิง 12 ไม่เท่ารวม 63");
 });
 
-test("ตำบลบ้านหนุน of อำเภอสอง with one more boy aged 0 but ชาย 2,136 as in stat_t → refused: its ages and ประชากรที่ไม่แยกอายุ add up to 2,137", () => {
+test("ตำบลบ้านหนุน of อำเภอสอง with one more boy aged 0 but ชาย 2,136 as in stat_m → refused: its ages and ประชากรที่ไม่แยกอายุ add up to 2,137", () => {
   const changed = changeAgeLine(SONG_BAN_NUN, (v) => plusOne(v, M0));
 
   assert.equal(
@@ -424,7 +504,7 @@ test("ตำบลบ้านหนุน of อำเภอสอง with one 
 });
 
 // FEATURES F28: the population pyramid of the home page (SCHEMA §11.3), on
-// the real rows of 2568 as the upload reads them from the cut stat_t68.txt
+// the real rows of 2568 as the upload reads them from the cut stat_m68.txt
 // and 6812cc54.txt. Expected values come from the figures of SCHEMA §11.4 and
 // the age file's last columns and totals, never from adding up its counts by
 // year of age as the code does.

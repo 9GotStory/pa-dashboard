@@ -137,7 +137,7 @@ export interface TrendPoint {
   totals: Totals | null; // null = no usable columns that year, shown as "—"
 }
 
-/* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.7, §3.8–3.9, §11) ---------- */
+/* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.8, §3.8–3.9, §11) ---------- */
 
 /** A registry_population row without uploaded_at: the rows of the POST, the GET and population.json */
 export interface RegistryPopulationRow {
@@ -155,6 +155,12 @@ export interface RegistryPopulationRow {
   total: number;
   house: number;
 }
+
+/**
+ * A registry_population_village row without uploaded_at (SCHEMA §2.8): the columns and types of RegistryPopulationRow,
+ * but mm is the 8-digit หมู่บ้าน code (its first 6 = the first 6 of tt · ending "00" = ไม่ระบุหมู่) and mm_name its name in the file
+ */
+export type RegistryPopulationVillageRow = RegistryPopulationRow;
 
 /** The kinds of ประชากรที่ไม่แยกอายุ, by the age file's last columns (SCHEMA §2.7) */
 export type UnsplitGroup = "lunar" | "central" | "nonthai" | "moving";
@@ -178,7 +184,7 @@ export interface RegistryPopulationYear {
 export interface PopulationSnapshot {
   years: RegistryPopulationYear[]; // years with population rows, oldest first · [] = no data yet · age only in the last year, [] in the others
 }
-/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of both sheets and the age rows of every year */
+/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of the three sheets and the age rows of every year */
 export type GasRegistryPopulation = PopulationSnapshot;
 
 /** GAS's answer to a request that failed (SCHEMA §3): message, the reason, is always there */
@@ -192,7 +198,7 @@ export type GasUploadAnswer = { status: "success"; count?: number; remaining_tod
 
 /** A file the admin picked in the /sync upload, read and checked (SCHEMA §11.2): the district's rows of its kind, which save_registry_population takes as is (SCHEMA §3.8), or why it is refused */
 export type RegistryFileRead = { name: string } & (
-  | { ok: true; kind: "population"; yymm: string; rows: RegistryPopulationRow[] }
+  | { ok: true; kind: "population"; yymm: string; rows: RegistryPopulationRow[]; villages: RegistryPopulationVillageRow[] } // stat_m: rows = ตำบล rows (kind population) · villages = หมู่บ้าน rows (kind village)
   | { ok: true; kind: "age"; yymm: string; rows: RegistryPopulationAgeRow[] }
   | { ok: false; reason: string }
 );

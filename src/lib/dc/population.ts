@@ -8,6 +8,7 @@ import type {
   RegistryFileRead,
   RegistryPopulationAgeRow,
   RegistryPopulationRow,
+  RegistryPopulationVillageRow,
   UnsplitGroup,
 } from "./types";
 
@@ -32,6 +33,15 @@ export function populationTotals(rows: RegistryPopulationRow[]): PopulationTotal
     (sum, r) => ({ male: sum.male + r.male, female: sum.female + r.female, total: sum.total + r.total, house: sum.house + r.house }),
     { male: 0, female: 0, total: 0, house: 0 },
   );
+}
+
+/**
+ * How many หมู่บ้าน village rows are of (SCHEMA §11.2): each code once,
+ * though a หมู่บ้าน may have a row under each สำนักทะเบียน, and no ไม่ระบุหมู่
+ * (a code ending in 00).
+ */
+export function villageCount(rows: RegistryPopulationVillageRow[]): number {
+  return new Set(rows.map((r) => r.mm).filter((mm) => !mm.endsWith("00"))).size;
 }
 
 /** ชาย หญิง and รวม of age rows added up, from their total_m, total_f and total_t */
@@ -99,8 +109,11 @@ function ageProfile(rows: RegistryPopulationAgeRow[]): AgeProfile {
   return { bands, age_total, aged60, aged60_pct: (aged60 / age_total) * 100, unsplit };
 }
 
-// stat_t{yy}.txt, also as a browser names a second download: stat_t68 (1).txt
-const STAT_T_NAME = /stat_t\d{2}/;
+// stat_m{yy}.txt, also as a browser names a second download: stat_m68 (1).txt
+const STAT_M_NAME = /stat_m\d{2}/;
+// stat_t{yy}.txt, the ตำบล level of the same menu, read before Track I: it has
+// no หมู่บ้าน lines, so it is refused (ADR-0014).
+const STAT_T_NAME = /stat_t(\d{2})/;
 // The {yymm}cc{จังหวัด} of an age file's name, as in 6812cc54.txt or
 // 6812cc54 (1).txt: the file itself has no year and no codes (SCHEMA §11.1).
 const AGE_FILE_NAME = /(\d{2})(\d{2})cc(\d{2})/;
@@ -108,10 +121,10 @@ const AGE_FILE_NAME = /(\d{2})(\d{2})cc(\d{2})/;
 type Refused = Extract<RegistryFileRead, { ok: false }>;
 
 /**
- * A stat_t file that passed, with the total line of each สำนักทะเบียน of its
+ * A stat_m file that passed, with the total line of each สำนักทะเบียน of its
  * rows: the age file of its yymm is checked against both (SCHEMA §11.2).
  */
-interface CheckedStatT {
+interface CheckedStatM {
   read: Extract<RegistryFileRead, { kind: "population" }>;
   officeTotals: RegistryPopulationRow[];
 }
@@ -119,9 +132,9 @@ interface CheckedStatT {
 /**
  * The files the admin picked, in the order given, each read and checked on
  * its own (SCHEMA §11.2), its kind told by its name. An age file is checked
- * against the stat_t of its yymm in the same pick, wherever that is in it. A
+ * against the stat_m of its yymm in the same pick, wherever that is in it. A
  * file of a yymm that an earlier file of its kind already gave is refused,
- * so each year is saved once.
+ * so each year is saved once. A stat_t is refused, naming the stat_m to pick.
  */
 export function readRegistryFiles(files: { name: string; text: string }[], districtCode: string): RegistryFileRead[] {
   const duplicate = (name: string, yymm: string, first: string): Refused => ({
@@ -129,23 +142,31 @@ export function readRegistryFiles(files: { name: string; text: string }[], distr
     ok: false,
     reason: `ปี ${registryYear(yymm)} ซ้ำกับไฟล์ ${first} ที่เลือกไว้`,
   });
-  // Every stat_t first, as an age file may come before the stat_t of its year.
-  const statTs = new Map<string, CheckedStatT>(); // yymm → the stat_t read for it
-  const statTReads = files.map(({ name, text }): RegistryFileRead | null => {
-    if (!STAT_T_NAME.test(name)) return null;
-    const statT = readStatT(name, text, districtCode);
-    if (!("read" in statT)) return statT;
-    const first = statTs.get(statT.read.yymm);
-    if (first) return duplicate(name, statT.read.yymm, first.read.name);
-    statTs.set(statT.read.yymm, statT);
-    return statT.read;
+  // Every stat_m first, as an age file may come before the stat_m of its year.
+  const statMs = new Map<string, CheckedStatM>(); // yymm → the stat_m read for it
+  const statMReads = files.map(({ name, text }): RegistryFileRead | null => {
+    const statT = STAT_T_NAME.exec(name);
+    if (statT) {
+      return {
+        name,
+        ok: false,
+        reason: `ไฟล์ stat_t เป็นระดับตำบล ไม่มีหมู่บ้าน ใช้ไฟล์ stat_m${statT[1]}.txt จากเมนูระดับหมู่บ้านแทน`,
+      };
+    }
+    if (!STAT_M_NAME.test(name)) return null;
+    const statM = readStatM(name, text, districtCode);
+    if (!("read" in statM)) return statM;
+    const first = statMs.get(statM.read.yymm);
+    if (first) return duplicate(name, statM.read.yymm, first.read.name);
+    statMs.set(statM.read.yymm, statM);
+    return statM.read;
   });
   const ageFiles = new Map<string, string>(); // yymm → the age file read for it
   return files.map(({ name, text }, i): RegistryFileRead => {
-    const statTRead = statTReads[i];
-    if (statTRead) return statTRead;
-    if (!AGE_FILE_NAME.test(name)) return { name, ok: false, reason: "ไม่ใช่ไฟล์ stat_t{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora" };
-    const read = readAgeFile(name, text, districtCode, statTs);
+    const statMRead = statMReads[i];
+    if (statMRead) return statMRead;
+    if (!AGE_FILE_NAME.test(name)) return { name, ok: false, reason: "ไม่ใช่ไฟล์ stat_m{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora" };
+    const read = readAgeFile(name, text, districtCode, statMs);
     if (!read.ok) return read;
     const first = ageFiles.get(read.yymm);
     if (first !== undefined) return duplicate(name, read.yymm, first);
@@ -165,9 +186,9 @@ function fileValues(text: string): string[][] {
   return lines.map((line) => line.replace(/\|$/, "").split("|").map((s) => s.trim()));
 }
 
-// A count as stat_t writes it: digits, grouped by commas.
+// A count as stat_m writes it: digits, grouped by commas.
 const COUNT_FORMAT = /^\d+(,\d{3})*$/;
-// The 4 counts of a stat_t line as the refusals name them.
+// The 4 counts of a stat_m line as the refusals name them.
 const COUNT_LABELS: [keyof PopulationTotals, string][] = [
   ["male", "ชาย"],
   ["female", "หญิง"],
@@ -180,18 +201,19 @@ function count(value: string): number {
 }
 
 /**
- * One stat_t file by the rules of SCHEMA §11.2, in their order: the
- * district's ตำบล lines as rows of registry_population (SCHEMA §2.6), with
+ * One stat_m file by the rules of SCHEMA §11.2, in their order: the
+ * district's ตำบล lines as rows of registry_population (SCHEMA §2.6) and its
+ * หมู่บ้าน lines as rows of registry_population_village (SCHEMA §2.8), with
  * the total lines of their สำนักทะเบียน, or the first rule it breaks, in Thai.
  */
-function readStatT(name: string, text: string, districtCode: string): CheckedStatT | Refused {
+function readStatM(name: string, text: string, districtCode: string): CheckedStatM | Refused {
   const refuse = (reason: string): Refused => ({ name, ok: false, reason });
 
   // 1. 13 values a line, the counts readable. Each line is then a row of
   // registry_population.
   const fileRows: RegistryPopulationRow[] = [];
   for (const [i, values] of fileValues(text).entries()) {
-    if (values.length !== 13) return refuse(`บรรทัดที่ ${i + 1} มี ${values.length} ค่า ไฟล์ stat_t มีบรรทัดละ 13 ค่า`);
+    if (values.length !== 13) return refuse(`บรรทัดที่ ${i + 1} มี ${values.length} ค่า ไฟล์ stat_m มีบรรทัดละ 13 ค่า`);
     const bad = values.slice(9).find((s) => !COUNT_FORMAT.test(s));
     if (bad !== undefined) return refuse(`บรรทัดที่ ${i + 1} มีค่าที่ไม่ใช่ตัวเลข: ${bad}`);
     const [yymm, cc, cc_name, rcode, rcode_name, tt, tt_name, mm, mm_name, male, female, total, house] = values;
@@ -235,8 +257,36 @@ function readStatT(name: string, text: string, districtCode: string): CheckedSta
     }
   }
 
-  // 5. The district's ตำบล lines are the rows.
-  return { read: { name, ok: true, kind: "population", yymm: fileRows[0].yymm, rows: districtRows }, officeTotals };
+  // 5. The district's หมู่บ้าน lines: each code 8 digits under its ตำบล's,
+  // once per สำนักทะเบียน, and per (สำนักทะเบียน, ตำบล) adding up to the ตำบล
+  // line, which every ตำบล line of the district has (SCHEMA §3.8 rule 15).
+  const villages = fileRows.filter((r) => r.tt !== "0" && r.mm !== "0" && r.tt.startsWith(districtCode));
+  const seen = new Set<string>();
+  for (const v of villages) {
+    if (!/^\d{8}$/.test(v.mm) || v.mm.slice(0, 6) !== v.tt.slice(0, 6)) {
+      return refuse(`รหัสหมู่บ้าน ${v.mm} ${v.mm_name} ไม่ใช่รหัส 8 หลักของ ${v.tt_name} (${v.tt})`);
+    }
+    const key = `${v.rcode} ${v.mm}`;
+    if (seen.has(key)) return refuse(`หมู่บ้าน ${v.mm} ${v.mm_name} ซ้ำในสำนักทะเบียน ${v.rcode} ${v.rcode_name}`);
+    seen.add(key);
+    if (!districtRows.some((r) => r.rcode === v.rcode && r.tt === v.tt)) {
+      return refuse(`หมู่บ้าน ${v.mm} ${v.mm_name} ไม่มีบรรทัด ${v.tt_name} ของสำนักทะเบียน ${v.rcode} ${v.rcode_name}`);
+    }
+  }
+  for (const tambon of districtRows) {
+    const of = villages.filter((v) => v.rcode === tambon.rcode && v.tt === tambon.tt);
+    const where = `${tambon.tt_name} ของสำนักทะเบียน ${tambon.rcode} ${tambon.rcode_name}`;
+    if (of.length === 0) return refuse(`${where} ไม่มีบรรทัดหมู่บ้าน`);
+    const sum = populationTotals(of);
+    for (const [key, label] of COUNT_LABELS) {
+      if (sum[key] !== tambon[key]) {
+        return refuse(`ผลรวมบรรทัดหมู่บ้านของ ${where} ไม่เท่าบรรทัดตำบล: ${label} ${formatCount(sum[key])} แต่บรรทัดตำบล ${formatCount(tambon[key])}`);
+      }
+    }
+  }
+
+  // 6. The district's ตำบล lines are the rows, its หมู่บ้าน lines the villages.
+  return { read: { name, ok: true, kind: "population", yymm: fileRows[0].yymm, rows: districtRows, villages }, officeTotals };
 }
 
 // The 219 counts of an age file line after its name, in file order, as
@@ -265,17 +315,17 @@ const AGE_COUNT_FORMAT = /^\d+$/;
 /** A line of an age file: an area's name and its counts */
 type AgeLine = { tt_name: string } & Record<AgeCount, number>;
 
-// The totals an age line shares with a stat_t line, as the refusals name them.
+// The totals an age line shares with a stat_m line, as the refusals name them.
 const SHARED_TOTALS: [`total_${"m" | "f" | "t"}`, keyof PopulationTotals, string][] = [
   ["total_m", "male", "ชาย"],
   ["total_f", "female", "หญิง"],
   ["total_t", "total", "รวม"],
 ];
 
-/** The first of ชาย หญิง รวม in which an age line differs from a stat_t line, worded for a refusal, or null */
+/** The first of ชาย หญิง รวม in which an age line differs from a stat_m line, worded for a refusal, or null */
 function totalsDiffer(line: AgeLine, stat: RegistryPopulationRow): string | null {
   for (const [column, key, label] of SHARED_TOTALS) {
-    if (line[column] !== stat[key]) return `${label} ${formatCount(line[column])} แต่ stat_t ${formatCount(stat[key])}`;
+    if (line[column] !== stat[key]) return `${label} ${formatCount(line[column])} แต่ stat_m ${formatCount(stat[key])}`;
   }
   return null;
 }
@@ -288,11 +338,11 @@ interface AgeBlock {
 
 /**
  * One age file by the rules of SCHEMA §11.2, in their order, checked against
- * the stat_t of its yymm among statTs: a row of registry_population_age
- * (SCHEMA §2.7) for each row of that stat_t, or the first rule it breaks, in
+ * the stat_m of its yymm among statMs: a row of registry_population_age
+ * (SCHEMA §2.7) for each row of that stat_m, or the first rule it breaks, in
  * Thai.
  */
-function readAgeFile(name: string, text: string, districtCode: string, statTs: Map<string, CheckedStatT>): RegistryFileRead {
+function readAgeFile(name: string, text: string, districtCode: string, statMs: Map<string, CheckedStatM>): RegistryFileRead {
   const refuse = (reason: string): Refused => ({ name, ok: false, reason });
 
   // 1. The yymm and จังหวัด from the name, which readRegistryFiles has
@@ -313,11 +363,11 @@ function readAgeFile(name: string, text: string, districtCode: string, statTs: M
     lines.push({ tt_name: values[0], ...counts });
   }
 
-  // 3. A stat_t of its yymm that passed, in the same pick.
-  const statT = statTs.get(yymm);
-  if (!statT) return refuse(`ไม่มีไฟล์ stat_t${yy}.txt ที่ผ่านการตรวจในชุดที่เลือก ไฟล์อายุต้องเลือกพร้อม stat_t ของปีเดียวกัน`);
+  // 3. A stat_m of its yymm that passed, in the same pick.
+  const statM = statMs.get(yymm);
+  if (!statM) return refuse(`ไม่มีไฟล์ stat_m${yy}.txt ที่ผ่านการตรวจในชุดที่เลือก ไฟล์อายุต้องเลือกพร้อม stat_m ของปีเดียวกัน`);
 
-  // 4. The block of each สำนักทะเบียน of stat_t's rows, by name: "อำเภอสอง" is
+  // 4. The block of each สำนักทะเบียน of stat_m's rows, by name: "อำเภอสอง" is
   // its rcode_name, "เทศบาลตำบลสอง" is "ท้องถิ่นเทศบาลตำบลสอง" without
   // "ท้องถิ่น". Every line but a ตำบล line starts a block, the จังหวัด line
   // first, which no สำนักทะเบียน is named after.
@@ -327,7 +377,7 @@ function readAgeFile(name: string, text: string, districtCode: string, statTs: M
     else blocks.push({ line, tambons: [] });
   }
   const blockOf = new Map<string, AgeBlock>(); // rcode → its block
-  for (const office of statT.officeTotals) {
+  for (const office of statM.officeTotals) {
     const blockName = office.rcode_name.replace(/^ท้องถิ่น/, "");
     const named = blocks.filter((b) => b.line.tt_name === blockName);
     if (named.length === 0) return refuse(`ไม่มีบล็อก ${blockName} ของสำนักทะเบียน ${office.rcode} ในไฟล์อายุ`);
@@ -335,11 +385,11 @@ function readAgeFile(name: string, text: string, districtCode: string, statTs: M
     blockOf.set(office.rcode, named[0]);
   }
 
-  // 5. In that block, the one ตำบล line of each stat_t row, by name: a ตำบล
+  // 5. In that block, the one ตำบล line of each stat_m row, by name: a ตำบล
   // of the same name in another block (ตำบลน้ำชำ of เมืองแพร่ and of
   // สูงเม่น, ตำบลบ้านหนุน of อำเภอสอง and of เทศบาลตำบลสอง) is never taken.
   const pairs: { row: RegistryPopulationRow; block: AgeBlock; line: AgeLine }[] = [];
-  for (const row of statT.read.rows) {
+  for (const row of statM.read.rows) {
     const block = blockOf.get(row.rcode)!;
     const named = block.tambons.filter((l) => l.tt_name === row.tt_name);
     if (named.length === 0) return refuse(`ไม่มีบรรทัด ${row.tt_name} ในบล็อก ${block.line.tt_name}`);
@@ -347,17 +397,17 @@ function readAgeFile(name: string, text: string, districtCode: string, statTs: M
     pairs.push({ row, block, line: named[0] });
   }
 
-  // 6. The ชาย หญิง รวม of stat_t: each ตำบล line's are its row's, and each
+  // 6. The ชาย หญิง รวม of stat_m: each ตำบล line's are its row's, and each
   // block line's are the total line's of its สำนักทะเบียน.
   for (const { row, block, line } of pairs) {
     const differ = totalsDiffer(line, row);
-    if (differ) return refuse(`ยอดของ ${line.tt_name} ในบล็อก ${block.line.tt_name} ไม่ตรงกับ ${statT.read.name}: ${differ}`);
+    if (differ) return refuse(`ยอดของ ${line.tt_name} ในบล็อก ${block.line.tt_name} ไม่ตรงกับ ${statM.read.name}: ${differ}`);
   }
-  for (const office of statT.officeTotals) {
+  for (const office of statM.officeTotals) {
     const block = blockOf.get(office.rcode)!;
     const differ = totalsDiffer(block.line, office);
     if (differ) {
-      return refuse(`ยอดของบล็อก ${block.line.tt_name} ไม่ตรงกับบรรทัดยอดรวมของสำนักทะเบียน ${office.rcode} ใน ${statT.read.name}: ${differ}`);
+      return refuse(`ยอดของบล็อก ${block.line.tt_name} ไม่ตรงกับบรรทัดยอดรวมของสำนักทะเบียน ${office.rcode} ใน ${statM.read.name}: ${differ}`);
     }
   }
 
@@ -387,6 +437,6 @@ function readAgeFile(name: string, text: string, districtCode: string, statTs: M
     }
   }
 
-  // 8. The rows: yymm from the name, rcode and tt from stat_t, the rest as in the line.
+  // 8. The rows: yymm from the name, rcode and tt from stat_m, the rest as in the line.
   return { name, ok: true, kind: "age", yymm, rows: pairs.map(({ row, line }) => ({ yymm, rcode: row.rcode, tt: row.tt, ...line })) };
 }
