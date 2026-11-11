@@ -232,10 +232,12 @@ if (problems.length > 0) {
 }
 
 // The columns of each registry sheet that every row of
-// ?action=registry_population has (SCHEMA §2.6–2.7, §3.9), uploaded_at left
-// out.
+// ?action=registry_population has (SCHEMA §2.6–2.8, §3.9), uploaded_at left
+// out. A village row has a population row's columns.
+const POPULATION_COLUMNS = ["yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name", "male", "female", "total", "house"];
 const REGISTRY_COLUMNS = {
-  population: ["yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name", "male", "female", "total", "house"],
+  population: POPULATION_COLUMNS,
+  village: POPULATION_COLUMNS,
   age: [
     "yymm", "rcode", "tt", "tt_name",
     // m0, f0 … m101, f101 (101 = over 100 years)
@@ -243,7 +245,7 @@ const REGISTRY_COLUMNS = {
     ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [`${group}_m`, `${group}_f`, `${group}_t`]),
   ],
 };
-const REGISTRY_SHEETS = { population: "registry_population", age: "registry_population_age" };
+const REGISTRY_SHEETS = { population: "registry_population", village: "registry_population_village", age: "registry_population_age" };
 
 // Why GAS's ?action=registry_population answer has the wrong shape (SCHEMA
 // §7), or "" when it is right.
@@ -255,7 +257,7 @@ function registryProblem(answer) {
     if (typeof yymm !== "string" || !/^\d{2}12$/.test(yymm)) {
       return (
         `answered a year with yymm ${JSON.stringify(yymm)}, not the figures at 31 Dec (YY12); ` +
-        `fix the yymm column of ${REGISTRY_SHEETS.population} and ${REGISTRY_SHEETS.age} in PA-Data (SCHEMA §2.6)`
+        `fix the yymm column of ${REGISTRY_SHEETS.population}, ${REGISTRY_SHEETS.village} and ${REGISTRY_SHEETS.age} in PA-Data (SCHEMA §2.6)`
       );
     }
     if (seen.has(yymm)) return `answered yymm ${yymm} twice; ${CHECK_URL}`;
@@ -275,6 +277,38 @@ function registryProblem(answer) {
     }
   }
   return "";
+}
+
+// Why the village rows of a year do not match its population rows (SCHEMA §7),
+// one line per problem: rule 15 of SCHEMA §3.8, and no (rcode, mm) twice, since
+// the home page adds the rows up as they are and would count it twice.
+function villageMismatches({ population, village }) {
+  const rowKey = (row) => `rcode ${row.rcode} tt ${row.tt}`;
+  const populationRows = Map.groupBy(population, rowKey);
+  const villageRows = Map.groupBy(village, rowKey);
+  return [
+    ...[...Map.groupBy(village, (row) => `rcode ${row.rcode} mm ${row.mm}`)]
+      .filter(([, rows]) => rows.length > 1)
+      .map(([key, rows]) => `${REGISTRY_SHEETS.village} has ${rows.length} rows for ${key}`),
+    ...[...populationRows.keys()]
+      .filter((key) => !villageRows.has(key))
+      .map((key) => `${REGISTRY_SHEETS.village} has no row for ${key}, which ${REGISTRY_SHEETS.population} has`),
+    ...[...villageRows.keys()]
+      .filter((key) => !populationRows.has(key))
+      .map((key) => `${REGISTRY_SHEETS.village} has rows for ${key}, which ${REGISTRY_SHEETS.population} does not have`),
+    ...[...villageRows].flatMap(([key, rows]) => {
+      const pair = populationRows.get(key)?.[0];
+      if (!pair) return [];
+      return ["male", "female", "total", "house"]
+        .map((column) => [column, rows.reduce((sum, row) => sum + row[column], 0)])
+        .filter(([column, sum]) => sum !== pair[column])
+        .map(
+          ([column, sum]) =>
+            `${REGISTRY_SHEETS.village} adds up to ${column} ${sum} for ${key}, ` +
+            `but ${REGISTRY_SHEETS.population} has ${column} ${pair[column]}`,
+        );
+    }),
+  ];
 }
 
 // Why the age rows of a year do not match its population rows (SCHEMA §7), one
@@ -321,8 +355,8 @@ try {
 const wrongShape = registryProblem(registry);
 if (wrongShape) fail(`?action=registry_population ${wrongShape}`);
 // population.json (PopulationSnapshot, SCHEMA §7): the years with population
-// rows, oldest first, and the age rows of the latest of them only, so the file
-// grows by a year's population rows alone.
+// rows, oldest first, and the village and age rows of the latest of them only,
+// so the file grows by a year's population rows alone.
 const populationYears = registry.years
   .filter((year) => year.population.length > 0)
   .sort((a, b) => (a.yymm < b.yymm ? -1 : 1));
@@ -330,6 +364,7 @@ const population = {
   years: populationYears.map((year, i) => ({
     yymm: year.yymm,
     population: year.population,
+    village: i === populationYears.length - 1 ? year.village : [],
     age: i === populationYears.length - 1 ? year.age : [],
   })),
 };
@@ -337,7 +372,7 @@ const latest = population.years.at(-1);
 console.log(
   latest
     ? `build-snapshot: ?action=registry_population has population rows for ${population.years.length} years, ` +
-        `the latest ${latest.yymm} with ${latest.age.length} age rows`
+        `the latest ${latest.yymm} with ${latest.age.length} age rows and ${latest.village.length} village rows`
     : "build-snapshot: ?action=registry_population has no population rows yet, so the home page shows no population (SPEC §9.2)",
 );
 // Only the year the home page shows, the one year whose age rows are in the
@@ -349,6 +384,17 @@ if (mismatches.length > 0) {
     `the age rows of ${latest.yymm}, the year the home page shows, do not match its population rows, so nothing is written (SCHEMA §7):\n  ` +
       `${mismatches.join("\n  ")}\n` +
       `Fix those rows in PA-Data, or delete the ${latest.yymm} rows of ${REGISTRY_SHEETS.age} and upload both of that year's files again on /sync (SCHEMA §3.8)`,
+  );
+}
+// The same for village rows: a year without them passes, and the home page
+// hides its หมู่บ้าน (SCHEMA §11.3). They can differ when an upload saved the
+// population rows but not the village rows (SCHEMA §3.8).
+const villageProblems = latest?.village.length ? villageMismatches(latest) : [];
+if (villageProblems.length > 0) {
+  fail(
+    `the village rows of ${latest.yymm}, the year the home page shows, do not match its population rows, so nothing is written (SCHEMA §7):\n  ` +
+      `${villageProblems.join("\n  ")}\n` +
+      `Upload stat_m${latest.yymm.slice(0, 2)}.txt again on /sync, or fix those rows of ${REGISTRY_SHEETS.village} in PA-Data (SCHEMA §3.8)`,
   );
 }
 
