@@ -184,7 +184,7 @@ export interface RegistryPopulationYear {
 export interface PopulationSnapshot {
   years: RegistryPopulationYear[]; // years with population rows, oldest first · [] = no data yet · age only in the last year, [] in the others
 }
-/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of both sheets and the age rows of every year */
+/** GAS's ?action=registry_population answer (SCHEMA §3.9): the same shape, but every yymm of the three sheets and the age rows of every year */
 export type GasRegistryPopulation = PopulationSnapshot;
 
 /** GAS's answer to a request that failed (SCHEMA §3): message, the reason, is always there */

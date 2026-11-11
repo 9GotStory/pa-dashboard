@@ -3,14 +3,23 @@
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { formatCount } from "@/lib/dc/format";
 import { ageRowsTotals, populationTotals, readRegistryFiles, registryYear, villageCount } from "@/lib/dc/population";
-import type { DcCatalog, GasError, GasRegistryPopulation, GasUploadAnswer, RegistryFileRead } from "@/lib/dc/types";
+import type {
+  DcCatalog,
+  GasError,
+  GasRegistryPopulation,
+  GasUploadAnswer,
+  RegistryFileRead,
+  RegistryPopulationAgeRow,
+  RegistryPopulationRow,
+} from "@/lib/dc/types";
 
 // The ประชากรทะเบียนราษฎร upload of /sync, shown after the PIN (SPEC §12.1,
 // ADR-0011, ADR-0014): stat_m files and age files from stat.bora are read and
 // checked here by population.ts, saved one file at a time with
 // save_registry_population, each year's stat_m (its ตำบล rows, then its
-// หมู่บ้าน rows) before its age file, then one rebuild. The only Data Center component that calls GAS, since /sync is not
-// a page of (dc) (CODING_STANDARDS §4).
+// หมู่บ้าน rows) before its age file, then one rebuild. The only Data Center
+// component that calls GAS, since /sync is not a page of (dc)
+// (CODING_STANDARDS §4).
 
 const GAS_URL = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL ?? "";
 
@@ -52,7 +61,12 @@ interface Outcome {
 }
 
 /** POST save_registry_population of the rows of one kind of a checked file (SCHEMA §3.8), what they are named for the admin */
-async function saveRows(kind: "population" | "village" | "age", yymm: string, rows: object[], what: string): Promise<Outcome> {
+async function saveRows(
+  kind: "population" | "village" | "age",
+  yymm: string,
+  rows: RegistryPopulationRow[] | RegistryPopulationAgeRow[],
+  what: string,
+): Promise<Outcome> {
   try {
     const answer = await postGas({ action: "save_registry_population", kind, yymm, rows });
     return answer.status === "success"

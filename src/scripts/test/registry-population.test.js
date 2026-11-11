@@ -13,7 +13,7 @@ const SETTINGS = [
   [4, 2569, 54, 5406, ""],
 ];
 
-// registry_population's header (SCHEMA §2.6): the 13 values of a stat_t line
+// registry_population's header (SCHEMA §2.6): the 13 values of a stat_m line
 // in file order, then uploaded_at.
 const HEADER = [
   "yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name",
@@ -118,7 +118,7 @@ function withRow(i, change) {
 const REJECTED = [
   ["kind of another name", { kind: "ages" }, "Unknown kind"],
   ["no kind", { kind: undefined }, "Unknown kind"],
-  ["the rows of stat_t sent as kind age", { kind: "age" }, "Row keys do not match the header"],
+  ["the ตำบล rows of stat_m sent as kind age", { kind: "age" }, "Row keys do not match the header"],
   ["yymm of November", { yymm: "6811" }, "Invalid yymm"],
   ["yymm as a number", { yymm: 6812 }, "Invalid yymm"],
   ["yymm of 2569, which has not ended on 6 Nov 2569", { yymm: "6912" }, "Invalid yymm"],
@@ -547,7 +547,7 @@ const REJECTED_AGE = [
   ["9 of the 10 rows", { rows: AGE_ROWS_6812.slice(0, 9) }, "Does not match registry_population"],
   ["ตำบลห้วยหม้าย sent as 5489's", { rows: withAgeRow(2, { rcode: "5489" }) }, "Does not match registry_population"],
   [
-    "one more boy aged 0 in ตำบลบ้านหนุน and in its totals, so the row adds up but is not stat_t's 2,136 ชาย",
+    "one more boy aged 0 in ตำบลบ้านหนุน and in its totals, so the row adds up but is not stat_m's 2,136 ชาย",
     { rows: withAgeRow(0, { m0: BAN_NUN.m0 + 1, total_m: BAN_NUN.total_m + 1, total_t: BAN_NUN.total_t + 1 }) },
     "Does not match registry_population",
   ],
@@ -582,7 +582,7 @@ test("kind: age of 6812 before 6812 has registry_population rows (none saved, or
   }
 });
 
-// stat_t68.txt with ตำบลทุ่งน้าว's ชาย one more (as if stat.bora corrected it), or cut to 9 rows.
+// stat_m68.txt's ตำบล rows with ตำบลทุ่งน้าว's ชาย one more (as if stat.bora corrected it), or cut to 9 rows.
 const REJECTED_POPULATION_AGAINST_AGE = [
   ["ตำบลทุ่งน้าว's ชาย one more", ROWS_6812.map((r) => (r.rcode === "5406" && r.tt === "54060800" ? { ...r, male: 1567, total: 3201 } : r))],
   ["9 of its 10 rows", ROWS_6812.slice(0, 9)],
@@ -629,7 +629,7 @@ for (const [kind, blanked, rows, what, message] of BLANK_YYMM_IN_THE_OTHER_SHEET
   });
 }
 
-test("kind: population of 6812 again with the same figures once 6812 has age rows → saved, as when stat_t68.txt is picked again with its age file", () => {
+test("kind: population of 6812 again with the same figures once 6812 has age rows → saved, as when stat_m68.txt is picked again with its age file", () => {
   const h = load();
   savePopulation(h, "6812", ROWS_6812);
   saveAge(h, "6812", AGE_ROWS_6812);
@@ -641,8 +641,6 @@ test("kind: population of 6812 again with the same figures once 6812 has age row
 
 // FEATURES F44: kind village (SCHEMA §2.8, §3.8 rules 8, 9, 12 and 15) and
 // the village rows of GET (SCHEMA §3.9).
-
-const VILLAGE_HEADER = [...HEADER];
 
 function saveVillage(h, yymm, rows) {
   return post(h, { action: "save_registry_population", kind: "village", yymm, rows });
@@ -656,7 +654,7 @@ test("kind: village of 6812 after its population → registry_population_village
 
   assert.deepEqual(res, { status: "success", kind: "village", yymm: "6812", count: 94 });
   const sheet = h.sheet("registry_population_village");
-  assert.deepEqual(sheet[0], VILLAGE_HEADER);
+  assert.deepEqual(sheet[0], HEADER);
   assert.deepEqual(records(sheet).map(sent), VILLAGE_ROWS_6812);
   assert.ok(records(sheet).every((r) => r.uploaded_at.getTime() === h.clock.now));
   assert.equal(h.maxRows("registry_population_village"), 95);
@@ -730,6 +728,7 @@ const REJECTED_VILLAGE = [
   ["yymm of November", { yymm: "6811" }, "Invalid yymm"],
   ["yymm of 2569, which has not ended on 6 Nov 2569", { yymm: "6912" }, "Invalid yymm"],
   ["no rows", { rows: [] }, "Empty rows"],
+  ["rows not an array", { rows: { 0: VILLAGE_ROWS_6812[0] } }, "Empty rows"],
   ["a row without house", { rows: withVillage(...NUN_NUEA, { house: undefined }) }, "Row keys do not match the header"],
   ["a row with uploaded_at", { rows: withVillage(...NUN_NUEA, { uploaded_at: "2026-11-11" }) }, "Row keys do not match the header"],
   ["the ตำบล rows of stat_m sent as kind village", { rows: ROWS_6812 }, "Not a village row"],
