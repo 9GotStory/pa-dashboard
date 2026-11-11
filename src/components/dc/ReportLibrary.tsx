@@ -1,11 +1,11 @@
 "use client";
 
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronDown, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useOptimistic, useRef, type ReactNode, type RefObject } from "react";
 import type { DcCatalog, DcReport, LibraryQuery } from "@/lib/dc/types";
-import { libraryList, libraryQuery, librarySearch } from "@/lib/dc/values";
+import { libraryByReference, libraryList, libraryQuery, librarySearch, searchParts } from "@/lib/dc/values";
 
 type Mains = DcCatalog["mains"];
 type Topic = Mains[number]["topics"][number];
@@ -25,6 +25,10 @@ function barItem(current: boolean, main: boolean): string {
       }`;
   return `flex min-h-11 items-center justify-between gap-3 rounded-md leading-[1.65] ${look}`;
 }
+
+/** A button-like link of the empty list */
+const EMPTY_LINK =
+  "inline-flex min-h-11 items-center rounded-md px-1 text-[13px] font-medium text-dc-brand-primary underline underline-offset-4 hover:text-dc-brand-accent";
 
 /** The reports of some หัวข้อ */
 function count(topics: Topic[]): number {
@@ -84,12 +88,14 @@ function Directory({
   query: LibraryQuery;
   actions?: { go: Go; pick: (next: LibraryQuery) => void; heading: RefObject<HTMLHeadingElement | null> };
 }) {
+  const box = useRef<HTMLInputElement>(null);
   const { groups, total } = libraryList(mains, query);
   const all = !query.main && !query.cat;
+  const searching = query.q.trim() !== "";
   const topics = mains.flatMap((m) => m.topics);
   const topic = topics.find((t) => t.cat_id === query.cat);
   const main = mains.find((m) => m.main_report_id === query.main);
-  const title = topic?.category_name ?? main?.main_report_name ?? "รายงานทั้งหมด";
+  const title = searching ? "ผลการค้นหา" : (topic?.category_name ?? main?.main_report_name ?? "รายงานทั้งหมด");
   const picked = query.cat ? `cat:${query.cat}` : query.main ? `main:${query.main}` : "";
   // A กลุ่ม opens its หัวข้อ when the one before it is of another หัวข้อ
   const sections = groups.reduce<(typeof groups)[]>((out, g, i) => {
@@ -100,22 +106,44 @@ function Directory({
 
   return (
     <>
-      {/* The search box of R6 until F41 brings V1.4's */}
-      <div className="mt-5 flex min-w-0 flex-col gap-1 sm:mt-6">
-        <label htmlFor="library-q" className="text-xs font-bold text-dc-brand-deep">
+      <section aria-labelledby="library-find-title" className="mt-5 sm:mt-6">
+        <h2 id="library-find-title" className="sr-only">
           ค้นหารายงาน
-        </label>
-        <input
-          id="library-q"
-          type="search"
-          value={query.q}
-          onChange={(e) => actions?.go({ ...query, q: e.target.value }, "replace")}
-          placeholder="ชื่อรายงาน ตารางต้นทาง รหัส หัวข้อ หรือกลุ่ม"
-          autoComplete="off"
-          aria-describedby="library-count"
-          className="h-11 w-full min-w-0 rounded-md border border-dc-border-subtle bg-dc-surface px-3 text-[13px] text-dc-brand-deep"
-        />
-      </div>
+        </h2>
+        <div className="flex min-h-14 items-center rounded-[17px] border border-dc-border-subtle bg-dc-surface focus-within:border-dc-brand-accent focus-within:ring-2 focus-within:ring-dc-brand-accent/20">
+          <Search aria-hidden="true" className="ml-5 size-5 shrink-0 text-dc-brand-accent sm:ml-6" />
+          <label htmlFor="library-q" className="sr-only">
+            ค้นหาชื่อรายงานหรือหัวข้อ
+          </label>
+          <input
+            id="library-q"
+            ref={box}
+            type="search"
+            value={query.q}
+            onChange={(e) => actions?.go({ ...query, q: e.target.value }, "replace")}
+            placeholder="ค้นหาชื่อรายงานหรือหัวข้อที่สนใจ..."
+            autoComplete="off"
+            aria-describedby="library-help"
+            className="w-full min-w-0 flex-1 bg-transparent px-3 py-3.5 text-sm text-dc-brand-deep placeholder:text-dc-text-secondary leading-[1.8] focus-visible:outline-none sm:px-4 sm:text-[15px] [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query.q && (
+            <button
+              type="button"
+              aria-label="ล้างคำค้นหา"
+              onClick={() => {
+                actions?.go({ ...query, q: "" }, "replace");
+                box.current?.focus();
+              }}
+              className="mr-3 flex size-11 shrink-0 items-center justify-center rounded-lg text-dc-text-secondary hover:bg-dc-surface-muted"
+            >
+              <X aria-hidden="true" className="size-4" />
+            </button>
+          )}
+        </div>
+        <p id="library-help" className="mt-2 px-1 text-[11px] text-dc-text-secondary">
+          ค้นหาในหัวข้อที่เลือก และแสดงผลทันที
+        </p>
+      </section>
 
       <div className="mt-6 grid min-w-0 gap-5 lg:mt-7 lg:grid-cols-[258px_minmax(0,1fr)] lg:items-start lg:gap-8 xl:gap-10">
         <aside className="hidden min-w-0 lg:sticky lg:top-24 lg:block">
@@ -205,54 +233,67 @@ function Directory({
                 {total} รายงาน
               </p>
             </div>
+            {libraryByReference(mains, query) && (
+              <p className="mt-4 rounded-md bg-dc-surface-muted px-3 py-2 text-xs leading-[1.7] text-dc-text-secondary">
+                บางรายการตรงกับข้อมูลอ้างอิงภายในระบบ จึงอาจไม่พบคำค้นหาในชื่อรายงาน
+              </p>
+            )}
 
             {total === 0 ? (
               <div className="px-2 py-16 text-center">
-                <h3 className="font-prompt text-lg font-semibold">ไม่พบรายงานที่ตรงกับการค้นหา</h3>
+                <Search aria-hidden="true" strokeWidth={1.5} className="mx-auto size-9 text-dc-text-secondary" />
+                <h3 className="mt-4 font-prompt text-lg font-semibold">ไม่พบรายงานที่ตรงกับการค้นหา</h3>
                 <p className="mt-1 text-[13px] text-dc-text-secondary">ลองเปลี่ยนคำค้นหา หรือค้นหาจากหัวข้ออื่น</p>
-                <Pick
-                  to={ALL}
-                  actions={actions}
-                  className="mt-4 inline-flex min-h-11 items-center rounded-md px-1 text-[13px] font-medium text-dc-brand-primary underline underline-offset-4 hover:text-dc-brand-accent"
-                >
-                  แสดงรายงานทั้งหมด
-                </Pick>
+                <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+                  {/* Only when the search finds reports outside the หมวด or หัวข้อ picked */}
+                  {!all && libraryList(mains, { ...query, main: null, cat: null }).total > 0 && (
+                    <Pick to={{ ...query, main: null, cat: null }} actions={actions} className={EMPTY_LINK}>
+                      ค้นหาทุกหัวข้อ
+                    </Pick>
+                  )}
+                  <Pick to={ALL} actions={actions} className={EMPTY_LINK}>
+                    แสดงรายงานทั้งหมด
+                  </Pick>
+                </div>
               </div>
             ) : (
-              sections.map((section) => {
-                const t = section[0].topic;
-                return (
-                  <section
-                    key={t.cat_id}
-                    aria-labelledby={`topic-${t.cat_id}`}
-                    className="min-w-0 border-t border-dc-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"
-                  >
-                    <div className="flex flex-wrap items-start justify-between gap-2 pb-2">
-                      <div className="flex min-w-0 items-start gap-3">
-                        <span aria-hidden="true" className="mt-[11px] h-1 w-[17px] shrink-0 rounded-full bg-dc-brand-accent" />
-                        <h3 id={`topic-${t.cat_id}`} className="max-w-[670px] font-prompt text-base leading-[1.65] font-semibold sm:text-lg">
-                          {t.category_name}
-                        </h3>
+              // A <div> of its own, so the first หัวข้อ has no line above it
+              <div>
+                {sections.map((section) => {
+                  const t = section[0].topic;
+                  return (
+                    <section
+                      key={t.cat_id}
+                      aria-labelledby={`topic-${t.cat_id}`}
+                      className="min-w-0 border-t border-dc-border-subtle pt-7 first:border-t-0 first:pt-6 sm:pt-8"
+                    >
+                      <div className="flex flex-wrap items-start justify-between gap-2 pb-2">
+                        <div className="flex min-w-0 items-start gap-3">
+                          <span aria-hidden="true" className="mt-[11px] h-1 w-[17px] shrink-0 rounded-full bg-dc-brand-accent" />
+                          <h3 id={`topic-${t.cat_id}`} className="max-w-[670px] font-prompt text-base leading-[1.65] font-semibold sm:text-lg">
+                            {t.category_name}
+                          </h3>
+                        </div>
+                        <span className="pt-1 text-[11px] text-dc-text-secondary tabular-nums">
+                          {section.reduce((n, g) => n + g.reports.length, 0)} รายงาน
+                        </span>
                       </div>
-                      <span className="pt-1 text-[11px] text-dc-text-secondary tabular-nums">
-                        {section.reduce((n, g) => n + g.reports.length, 0)} รายงาน
-                      </span>
-                    </div>
-                    {section.map((g) => (
-                      <div key={g.subgroup}>
-                        {g.subgroup && <h4 className="pt-4 pb-1 font-prompt text-xs font-medium text-dc-text-secondary sm:pt-5">{g.subgroup}</h4>}
-                        <ul>
-                          {g.reports.map((r) => (
-                            <li key={r.opendata_id}>
-                              <Row report={r} />
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    ))}
-                  </section>
-                );
-              })
+                      {section.map((g) => (
+                        <div key={g.subgroup}>
+                          {g.subgroup && <h4 className="pt-4 pb-1 font-prompt text-xs font-medium text-dc-text-secondary sm:pt-5">{g.subgroup}</h4>}
+                          <ul>
+                            {g.reports.map((r) => (
+                              <li key={r.opendata_id}>
+                                <Row report={r} q={query.q} />
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
+                    </section>
+                  );
+                })}
+              </div>
             )}
           </section>
         </div>
@@ -303,15 +344,27 @@ function Count({ n }: { n: number }) {
   );
 }
 
-/** One report: its name and an arrow, with HDC ไม่แสดงรายงานนี้แล้ว or ยังไม่มีข้อมูล under the name (SPEC §9.3) */
-function Row({ report }: { report: DcReport }) {
+/**
+ * One report: its name, the search marked in it, and an arrow, with HDC
+ * ไม่แสดงรายงานนี้แล้ว or ยังไม่มีข้อมูล under the name (SPEC §9.3). The
+ * marks are React elements, so a search of HTML stays text.
+ */
+function Row({ report, q }: { report: DcReport; q: string }) {
   return (
     <Link
       href={`/reports/${report.opendata_id}`}
       className="group flex min-h-16 min-w-0 items-center justify-between gap-4 border-b border-dc-border-subtle py-4 hover:bg-dc-canvas focus-visible:rounded-md sm:gap-6 sm:px-2"
     >
       <span className="min-w-0 flex-1 text-sm leading-[1.8] group-hover:text-dc-brand-primary sm:text-[15px]">
-        {report.report_name}
+        {searchParts(report.report_name, q).map((part, i) =>
+          part.mark ? (
+            <mark key={i} className="rounded-[3px] bg-dc-highlight-soft px-px font-medium text-dc-brand-deep">
+              {part.text}
+            </mark>
+          ) : (
+            part.text
+          ),
+        )}
         {report.catalog_status === "removed" && (
           <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">HDC ไม่แสดงรายงานนี้แล้ว</span>
         )}

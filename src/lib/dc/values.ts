@@ -295,7 +295,7 @@ export function libraryQuery(mains: DcCatalog["mains"], params: URLSearchParams)
 /**
  * Every report /reports lists for a query (SPEC §9.3), by หัวข้อ and กลุ่ม
  * in catalog.json order: those of the หมวด or หัวข้อ picked whose
- * report_name, source_table, opendata_id, หัวข้อ or กลุ่ม contains the
+ * report_name, source_table, opendata_id, หัวข้อ, กลุ่ม or หมวด contains the
  * search, whatever its letter case.
  */
 export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): LibraryList {
@@ -308,14 +308,50 @@ export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): Lib
         topic,
         subgroup: g.subgroup,
         reports: g.reports.filter((report) =>
-          [report.report_name, report.source_table, report.opendata_id, topic.category_name, g.subgroup].some((text) =>
-            text.toLocaleLowerCase("th").includes(search),
+          [report.report_name, report.source_table, report.opendata_id, topic.category_name, g.subgroup, topic.main_report_name].some(
+            (text) => text.toLocaleLowerCase("th").includes(search),
           ),
         ),
       })),
     )
     .filter((g) => g.reports.length > 0);
   return { groups, total: groups.reduce((n, g) => n + g.reports.length, 0) };
+}
+
+/**
+ * Whether the list of a query holds a report that matches the search only by
+ * its source_table or opendata_id, which /reports does not show: the note
+ * under the list's heading (SPEC §9.3).
+ */
+export function libraryByReference(mains: DcCatalog["mains"], query: LibraryQuery): boolean {
+  const search = query.q.trim().toLocaleLowerCase("th");
+  return libraryList(mains, query).groups.some((g) =>
+    g.reports.some(
+      (report) =>
+        ![report.report_name, g.topic.category_name, g.subgroup, g.topic.main_report_name].some((text) =>
+          text.toLocaleLowerCase("th").includes(search),
+        ),
+    ),
+  );
+}
+
+/**
+ * A report name in parts, mark for each place that contains the search
+ * whatever its letter case, as libraryList finds it: /reports wraps them in
+ * <mark> (SPEC §9.3). The parts join back into the name.
+ */
+export function searchParts(name: string, q: string): { text: string; mark: boolean }[] {
+  const search = q.trim().toLocaleLowerCase("th");
+  const lower = name.toLocaleLowerCase("th");
+  const parts: { text: string; mark: boolean }[] = [];
+  let from = 0;
+  for (let at = search ? lower.indexOf(search) : -1; at >= 0; at = lower.indexOf(search, from)) {
+    if (at > from) parts.push({ text: name.slice(from, at), mark: false });
+    parts.push({ text: name.slice(at, at + search.length), mark: true });
+    from = at + search.length;
+  }
+  if (from < name.length) parts.push({ text: name.slice(from), mark: false });
+  return parts;
 }
 
 /** The URL query of a LibraryQuery without its defaults, which libraryQuery reads back: "" for the defaults alone (SPEC §9.3) */
