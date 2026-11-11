@@ -30,6 +30,8 @@ function mostlyEnglish(text) {
 // last message the user typed. A tool result is not one, nor is a user entry
 // Claude Code writes itself: a skill's text loaded mid-turn (isMeta), a
 // subagent's report or a task notification (origin other than "human").
+// Notes before this hook's own last feedback were quoted already: a subagent's
+// report that wakes Claude later in the turn must not quote them again.
 function turnNotes(transcriptPath, last) {
   let entries;
   try {
@@ -46,7 +48,8 @@ function turnNotes(transcriptPath, last) {
     if (e.isMeta || (e.origin?.kind ?? "human") !== "human") return false;
     return typeof content === "string" || (Array.isArray(content) && !content.some((c) => c.type === "tool_result"));
   };
-  const start = entries.findLastIndex((e) => e.type === "user" && typed(e));
+  const feedback = (e) => e.isMeta && typeof e.message?.content === "string" && e.message.content.startsWith("Stop hook feedback:");
+  const start = entries.findLastIndex((e) => e.type === "user" && (typed(e) || feedback(e)));
   return entries
     .slice(start + 1)
     .filter((e) => e.type === "assistant" && Array.isArray(e.message?.content))
