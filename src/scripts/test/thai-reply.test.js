@@ -10,7 +10,7 @@ import test from "node:test";
 // copied from a real transcript (10 Nov 2569): what the user types has origin
 // "human"; a skill's text loaded mid-turn (isMeta), a subagent's report
 // (origin "peer") and a task notification are user entries the user never
-// typed.
+// typed, and so is the hook's own feedback (isMeta, "Stop hook feedback: …").
 
 const HOOK = path.resolve(import.meta.dirname, "../../../.claude/hooks/thai-reply.mjs");
 const ENGLISH = "The build is running in the background while I commit the change and write the notes.";
@@ -21,6 +21,7 @@ const skill = { type: "user", isMeta: true, message: { role: "user", content: [{
 const peer = { type: "user", isMeta: true, origin: { kind: "peer" }, message: { role: "user", content: "Another Claude session sent a message: …" } };
 const notification = { type: "user", origin: { kind: "task-notification" }, message: { role: "user", content: "<task-notification>…" } };
 const note = (text) => ({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text }] } });
+const feedback = { type: "user", isMeta: true, message: { role: "user", content: "Stop hook feedback:\nCLAUDE.md: write to the user in Thai, …" } };
 const toolResult = { type: "user", message: { role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: "ok" }] } };
 
 // The hook's decision for a turn whose last reply is in Thai.
@@ -49,4 +50,13 @@ test("a subagent's report and a task notification do not start a new turn", () =
 
 test("an English note before the last typed message belongs to an earlier turn", () => {
   assert.equal(run([typed("/implement #204"), note(ENGLISH), typed("ตามที่แนะนำ"), note(THAI)]), null);
+});
+
+test("an English note the hook already quoted is not quoted again when a subagent's report wakes Claude", () => {
+  assert.equal(run([typed("/implement #233"), note(ENGLISH), feedback, note(THAI), peer, notification, note(THAI)]), null);
+});
+
+test("an English note after the hook's feedback is still caught", () => {
+  const result = run([typed("/implement #233"), note(ENGLISH), feedback, note(THAI), peer, note(ENGLISH), note(THAI)]);
+  assert.match(result?.reason ?? "", /1 note\(s\)/);
 });
