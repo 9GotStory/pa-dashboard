@@ -83,6 +83,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Gitignored wizards and page-check scripts (docs/agents/page-checks.md)
+    ".wizard/**",
   ]),
 ]);
 

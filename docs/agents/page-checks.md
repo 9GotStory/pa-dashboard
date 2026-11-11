@@ -4,10 +4,15 @@ Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playw
 
 ## A Playwright script in the scratchpad
 
+- Start from `.wizard/f42/check.mjs`, F42's live check of `/reports` (counts against `catalog.json`, search, history, focus, contrast, overflow): `SHOTS=.wizard/<ticket>/shots node .wizard/f42/check.mjs <result.json> <catalog.json>`, with `BASE=<url>` for a local build.
 - A script outside the repo cannot resolve `playwright-core` by name: ESM looks for `node_modules` beside the script. Import it by path: `import { chromium } from "<repo>/node_modules/playwright-core/index.mjs"`, and launch with `{ channel: "chrome" }` as `dc-check.mjs` does.
 - Serve `out/` with `npx serve@latest out -l <port>` started in the background, and stop it by its PID: `kill $(ss -ltnp | grep ":<port> " | grep -o 'pid=[0-9]*' | cut -d= -f2)`. A hook denies `pkill -f`.
 - Block the map tiles (`page.route((u) => u.hostname === "tile.openstreetmap.org", (r) => r.abort())`) so the check does not depend on the tile server.
 - To try a build without population data, set `years` to `[]` in a copy of `public/data/population.json`, `npx next build`, check, then put the copy back and build again.
+
+## Against the reference design
+
+A ticket that changes how a page looks: screenshot the reference HTML in `docs/reference/` (`page.goto("file://<repo>/docs/reference/…")`) and the build at the same width and state (picked, searched, empty), and Read each pair side by side before `code-review`. The reviewer gets only the diff: a `first:` variant that matched nothing (F40) and an underscore clipped by an input of fixed height (F41) showed up only this way.
 
 ## LCP against `main` (SPEC §9.6)
 
@@ -21,6 +26,7 @@ Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playw
 
 ## On the live site
 
+- Wait for the deploy of the last merge: `gh api repos/9GotStory/pa-dashboard/commits/main/check-runs --jq '.check_runs[] | select(.name == "Cloudflare Pages") | .status + " " + .conclusion'` reads `completed success`. Before that, `built_at` is the previous build's both before and after the check.
 - Name the build you checked: read `built_at` in `https://songhealth-dc.pages.dev/data/meta.json` before and after. A merge to `main`, docs-only included, redeploys Cloudflare Pages, and a redeploy can land mid-measurement; when `built_at` changed, check again.
 - `gh` cannot upload images, so the user drags screenshots into the issue comment by hand. Write a placeholder per image in the comment (`[ภาพ <name>.png]`) and save the files in `.wizard/<ticket>/` (gitignored, kept across reboots), not the scratchpad, which `/tmp` loses on reboot.
 
