@@ -8,7 +8,9 @@ import { ArrowRight, ChevronRight } from "lucide-react";
  * art is an abstract picture, not a map, and is shorter on a phone so the
  * heading and the links fit the first screen. From lg, where the art is a
  * tall right column, it carries a large "สอง." for the eye and a tagline a
- * screen reader reads, at its bottom left.
+ * screen reader reads, at its bottom left. Its letter spacing is looser than
+ * V7.6's -.09em, which is set for a narrower font: in Prompt the letters of
+ * "สอง." run into each other at -.09em.
  * While the Hero is on the page, <html> scrolls smoothly unless the person
  * asks for reduced motion: scroll-behavior works only on the element that
  * scrolls, and set here it leaves the other pages and PA as they are.
@@ -75,7 +77,7 @@ export default function Hero({ hasComparison }: { hasComparison: boolean }) {
           <p aria-hidden="true" className="font-prompt text-[128px] leading-[1.15] font-bold tracking-[-.04em] text-dc-highlight-soft">
             สอง<span className="text-dc-highlight-soft/75">.</span>
           </p>
-          <div className="mt-4 h-px w-25 bg-dc-highlight-soft/75" />
+          <div aria-hidden="true" className="mt-4 h-px w-25 bg-dc-highlight-soft/75" />
           <p className="mt-4 max-w-[300px] text-[13px] leading-[1.85] text-dc-highlight-soft/75">
             ข้อมูลท้องถิ่นที่เข้าถึงได้
             <br />
