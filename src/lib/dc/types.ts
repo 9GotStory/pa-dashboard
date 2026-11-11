@@ -107,16 +107,12 @@ export interface LibraryQuery {
   main: string | null; // main_report_id of a หมวด in catalog.json · default null (every หมวด) · null when cat is set
   cat: string | null; // cat_id of a หัวข้อ in catalog.json · default null · wins over main
   q: string; // the search as typed · default ""
-  page: number; // from 1 · default 1
-  size: 10 | 20; // reports per page · default 10
-}
+} // no page/size: the list is not paged, and an old link with them gets the same query as one without (ADR-0013)
 
-/** One page of the report library */
-export interface LibraryPage {
-  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[]; // the page's reports by หัวข้อ and กลุ่ม, in catalog.json order
-  total: number; // the reports that match, on every page
-  page: number; // the page shown: the last one when the query's page is past it
-  pages: number; // at least 1
+/** Every report of the รายงานสุขภาพ page that matches a LibraryQuery */
+export interface LibraryList {
+  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[]; // every matching report by หัวข้อ and กลุ่ม, in catalog.json order
+  total: number; // the reports in groups
 }
 
 export interface Totals {
