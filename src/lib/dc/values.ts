@@ -202,6 +202,11 @@ function rowsIn(block: DcYearBlock, area: string): Cell[][] {
   return block.rows.filter((row) => tambonOf(row[at]) === area);
 }
 
+/** ร้อยละ = R / T × 100 when T > 0, else null: "—" (SCHEMA §4.4) */
+function pctOf(result: number, target: number): number | null {
+  return target > 0 ? (result / target) * 100 : null;
+}
+
 /** Σ target and Σ result over the rows, then ร้อยละ = R / T × 100 when T > 0 (SCHEMA §4.4) */
 function sum(block: DcYearBlock, cols: Columns, rows: Cell[][]): Totals {
   const at = (column: string) => block.headers.indexOf(column);
@@ -213,7 +218,7 @@ function sum(block: DcYearBlock, cols: Columns, rows: Cell[][]): Totals {
     for (const i of targetAt) target += n(row[i]);
     for (const i of resultAt) result += n(row[i]);
   }
-  return { target, result, pct: target > 0 ? (result / target) * 100 : null };
+  return { target, result, pct: pctOf(result, target) };
 }
 
 /**
@@ -291,7 +296,11 @@ function unitRows(block: DcYearBlock, query: Pick<ReportQuery, "area" | "by">, n
   return [...units].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, rows]) => ({ key, name: unit.nameOf(key), rows }));
 }
 
-/** A column that is a count alone, without a เป้าหมาย: ด้าน k of s_aged9 is result{k} (SCHEMA §4.6.7) */
+/**
+ * A column that is a count alone, without a เป้าหมาย: ด้าน k of s_aged9 is
+ * result{k} (SCHEMA §4.6.7), and so is ผลงาน รายไตรมาส k of s_dm_screen and
+ * s_ht_screen (SCHEMA §4.6.8)
+ */
 function countColumns(column: string): Columns {
   return { target: [], result: [column] };
 }
@@ -332,7 +341,7 @@ export function cumulative(block: DcYearBlock, columns: readonly string[], area:
   return columns.map((column) => {
     const result = sum(block, countColumns(column), rows).result;
     sofar += result;
-    return { result, cumulative: sofar, pct: target > 0 ? (sofar / target) * 100 : null };
+    return { result, cumulative: sofar, pct: pctOf(sofar, target) };
   });
 }
 
