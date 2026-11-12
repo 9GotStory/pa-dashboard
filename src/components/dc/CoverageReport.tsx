@@ -292,18 +292,19 @@ function Results(props: {
   const { data, names, query, years, heading } = props;
   const { report } = data;
   const block = yearBlock(data, query.year);
-  const known = block !== null && periods(block, report).length > 0;
+  // Whether a rule of SCHEMA §4.3 finds the table's columns that year
+  const recognised = block !== null && periods(block, report).length > 0;
   const units = block && totalsBy(block, report, query, names);
   const total = block && totals(block, report, query);
   // null: the whole district has no ผลงาน that year, shown as "—" (SPEC §9.4)
   const values = units && total ? { units, total } : null;
-  const figures = block && known && (!values || values.units.length > 0) ? { block, values } : null;
+  const figures = block && recognised && (!values || values.units.length > 0) ? { block, values } : null;
   // Never zeros for what is not there (SPEC §9.4)
   const problem = !block
     ? query.year
       ? `ไม่มีข้อมูลปี ${query.year} ในระบบ`
       : "ยังไม่มีข้อมูลของรายงานนี้ในระบบ"
-    : !known
+    : !recognised
       ? "ไม่รู้จักโครงสร้างตาราง ต้องกำหนด col_target/col_result"
       : `ไม่มีข้อมูลของ${areaLabel(query.area, names)}ในปี ${query.year}`;
   // No year at all: the report has no data yet, so there is no filter to name
@@ -435,17 +436,17 @@ function Figures(props: {
         {values ? (
           <>
             <Surface title={`ร้อยละราย${unitLabel}`}>
-              <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-muted">
-                <Key swatch="h-2 w-4 rounded-sm bg-dc-blue">ร้อยละ</Key>
+              <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+                <Key swatch="h-2 w-4 rounded-sm bg-dc-brand-primary">ร้อยละ</Key>
                 {goal !== null && <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>}
               </p>
               <UnitChart title={`ร้อยละราย${unitLabel}`} units={values.units} goal={goal} />
             </Surface>
             <section className="min-w-0">
-              <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border">
+              <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border-subtle">
                 <table className="w-full border-collapse text-xs tabular-nums">
-                  <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-navy">เป้าหมาย ผลงาน และร้อยละราย{unitLabel}</caption>
-                  <thead className="bg-dc-blue-light text-dc-navy">
+                  <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">เป้าหมาย ผลงาน และร้อยละราย{unitLabel}</caption>
+                  <thead className="bg-dc-highlight-soft text-dc-brand-deep">
                     <tr>
                       <th scope="col" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
                         {unitLabel}
@@ -463,7 +464,7 @@ function Figures(props: {
                   </thead>
                   <tbody className="bg-white">
                     {values.units.map((u) => (
-                      <tr key={u.key} className="border-t border-dc-border">
+                      <tr key={u.key} className="border-t border-dc-border-subtle">
                         <th scope="row" className="px-2 py-2 text-left font-normal whitespace-nowrap sm:px-3">
                           {u.name}
                         </th>
@@ -474,7 +475,7 @@ function Figures(props: {
                     ))}
                   </tbody>
                   <tfoot className="bg-dc-canvas font-bold">
-                    <tr className="border-t-2 border-dc-border">
+                    <tr className="border-t-2 border-dc-border-subtle">
                       <th scope="row" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
                         {totalLabel}
                       </th>

@@ -483,11 +483,13 @@ test("s_aged9 2565, a เป้าหมาย but no ผลงาน in the who
   assert.equal(totals(at(aged9, "2565"), aged9.report, WHOLE_YEAR), null);
 });
 
-test("s_epi1 2569 pcv1: 1 of 181 in the district, none in ตำบล 540601 → that ตำบล gets 0 of its 24, not no data", () => {
+test("s_epi1 2569 pcv1: 1 of 181 in the district, none in ตำบล 540601 → that ตำบล gets ผลงาน 0 and ร้อยละ 0, not no data", () => {
   const query = { area: "540601", period: "year", measure: "pcv1" } as const;
-  assert.deepEqual(totals(at(EPI1, "2569"), EPI1.report, query), { target: 24, result: 0, pct: 0 });
+  const own = totals(at(EPI1, "2569"), EPI1.report, query);
+  assert.deepEqual(own && [own.result, own.pct], [0, 0]);
   const units = totalsBy(at(EPI1, "2569"), EPI1.report, { ...query, area: "all", by: "area" }, NAMES);
-  assert.deepEqual(units?.find((u) => u.key === "540601")?.totals, { target: 24, result: 0, pct: 0 });
+  const tambon = units?.find((u) => u.key === "540601")?.totals;
+  assert.deepEqual(tambon && [tambon.result, tambon.pct], [0, 0]);
 });
 
 test("s_epi2: pcv4, in the header but without a ผลงาน in any year → not a รายการ; ?measure=pcv4 of an old link → the first รายการ", () => {

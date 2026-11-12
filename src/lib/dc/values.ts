@@ -161,11 +161,9 @@ function level(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "p
   return measure !== null ? measured : found.includes("M_A") ? FIXED_COLUMNS.M_A : null;
 }
 
-/** The columns summed into a row's target and result for a period (SCHEMA §4.3), or null when no rule applies */
-function columns(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "period" | "measure">): Columns | null {
-  const { period } = query;
-  const cols = level(block, report, query);
-  if (!cols || period === "year") return cols;
+/** The columns summed into a row's target and result for a period, out of its level's (SCHEMA §4.3) */
+function columns(cols: Columns, period: Period): Columns {
+  if (period === "year") return cols;
   return entry(cols, period.startsWith("q") ? Number(period.slice(1)) - 1 : MONTHS.findIndex((m) => `m${m}` === period));
 }
 
@@ -215,7 +213,7 @@ function collected(block: DcYearBlock, cols: Columns): boolean {
  */
 function collectedColumns(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "period" | "measure">): Columns | null {
   const all = level(block, report, query);
-  return all && collected(block, all) ? columns(block, report, query) : null;
+  return all && collected(block, all) ? columns(all, query.period) : null;
 }
 
 /**
