@@ -100,6 +100,7 @@ export interface ReportQuery {
   period: Period; // default "year"
   measure: string | null; // measure prefix (M_B tables only) whose รายละเอียด is open · default null (ภาพรวม) · CoverageReport (until F62): null = the first measure
   by: "area" | "hosp"; // default "area" · forced to "hosp" when area ≠ "all"
+  domain: number | null; // ด้าน 1–9 of s_aged9 whose รายละเอียด is open · default null (ภาพรวม) · any other value or table = null
 }
 
 /** /reports query: accepted values and defaults */

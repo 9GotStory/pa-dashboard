@@ -112,6 +112,19 @@ export function measureLabel(measure: string): string {
   return measure.toUpperCase().replace(/_/g, "-");
 }
 
+/** The names of the 9 ด้าน of s_aged9 in order: ด้าน k is result{k} (SCHEMA §4.6.7) */
+export const DOMAIN_LABELS = [
+  "การมองเห็น",
+  "การกลั้นปัสสาวะ",
+  "การได้ยิน",
+  "การปฏิบัติกิจวัตรประจำวัน",
+  "ความคิดความจำ",
+  "ภาวะซึมเศร้า (2Q)",
+  "การเคลื่อนไหว",
+  "สุขภาพช่องปาก",
+  "ภาวะขาดสารอาหาร",
+] as const;
+
 /**
  * The periods a block can show (SCHEMA §4.3): ทั้งปี when any rule finds it,
  * quarters with a quarter family or with M_B (the sum of 3 months), months
@@ -250,7 +263,11 @@ export function totalsBy(
   names: Pick<DcCatalog, "areas" | "hospitals">,
 ): UnitTotals[] | null {
   const cols = collectedColumns(block, report, query);
-  if (!cols) return null;
+  return cols && unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, totals: sum(block, cols, rows) }));
+}
+
+/** The rows in an area per tambon or per hospcode (query.by), in code order and named as totalsBy */
+function unitRows(block: DcYearBlock, query: Pick<ReportQuery, "area" | "by">, names: Pick<DcCatalog, "areas" | "hospitals">) {
   const unit =
     query.by === "area"
       ? {
@@ -271,9 +288,34 @@ export function totalsBy(
     if (rows) rows.push(row);
     else units.set(key, [row]);
   }
-  return [...units]
-    .sort(([a], [b]) => (a < b ? -1 : 1))
-    .map(([key, rows]) => ({ key, name: unit.nameOf(key), totals: sum(block, cols, rows) }));
+  return [...units].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, rows]) => ({ key, name: unit.nameOf(key), rows }));
+}
+
+/** A column that is a count alone, without a เป้าหมาย: ด้าน k of s_aged9 is result{k} (SCHEMA §4.6.7) */
+function countColumns(column: string): Columns {
+  return { target: [], result: [column] };
+}
+
+/**
+ * Σ of a count column over the rows of an area (or "all"), as n(v) reads
+ * each cell; null when the whole district's Σ is 0 that year: not collected,
+ * so an area with none in a year the district has data gets 0 (SPEC §9.4)
+ */
+export function count(block: DcYearBlock, column: string, area: string): number | null {
+  const cols = countColumns(column);
+  return collected(block, cols) ? sum(block, cols, rowsIn(block, area)).result : null;
+}
+
+/** count() per tambon or per hospcode (query.by) in the area, in code order and named as totalsBy; null as count */
+export function countsBy(
+  block: DcYearBlock,
+  column: string,
+  query: Pick<ReportQuery, "area" | "by">,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+): { key: string; name: string; count: number }[] | null {
+  const cols = countColumns(column);
+  if (!collected(block, cols)) return null;
+  return unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, count: sum(block, cols, rows).result }));
 }
 
 /** Totals of every block ปี with the same area, period and measure (SCHEMA §4.4), oldest year first */
@@ -310,7 +352,7 @@ export function dataYears(data: DcReportData): string[] {
 }
 
 /**
- * The query of /reports/{id} (?year=&area=&period=&measure=&by=) as a
+ * The query of /reports/{id} (?year=&area=&period=&measure=&by=&domain=) as a
  * ReportQuery for the report's data, with the defaults of SCHEMA §9. A
  * 4-digit year without data is kept, so the page says so instead of showing
  * another year, and year is "" for a report without any data. measure and
@@ -331,14 +373,18 @@ export function reportQuery(
   const area = names.areas.find((a) => a.id === params.get("area"))?.id ?? "all";
   // One ตำบล is compared by หน่วยบริการ only (SPEC §9.4)
   const by = area !== "all" || params.get("by") === "hosp" ? "hosp" : "area";
-  return { year, area, period, measure, by };
+  // The ด้าน 1–9 of s_aged9 alone: result{k} of another table is not a ด้าน (SCHEMA §4.6.7)
+  const asks = params.get("domain");
+  const domain = data.report.source_table === "s_aged9" && asks && /^[1-9]$/.test(asks) ? Number(asks) : null;
+  return { year, area, period, measure, by, domain };
 }
 
-/** The URL query of a ReportQuery, which reportQuery reads back: ?year=&area=&period=&measure=&by= (SPEC §9.4) */
+/** The URL query of a ReportQuery, which reportQuery reads back: ?year=&area=&period=&measure=&by=&domain= (SPEC §9.4) */
 export function reportSearch(query: ReportQuery): string {
   const params = new URLSearchParams({ year: query.year, area: query.area, period: query.period });
   if (query.measure !== null) params.set("measure", query.measure);
   params.set("by", query.by);
+  if (query.domain !== null) params.set("domain", String(query.domain));
   return `?${params}`;
 }
 

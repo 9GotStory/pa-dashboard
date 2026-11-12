@@ -1,11 +1,14 @@
 import type { ReactNode } from "react";
 import type { Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
+import CountChart from "../charts/CountChart";
 import PeriodChart from "../charts/PeriodChart";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
 import UnitChart from "../charts/UnitChart";
+import type { UnitCount } from "./resultsText";
 
-// กราฟ A–C of SPEC §9.4, each in its box with a title and a key.
+// กราฟ A–C of SPEC §9.4 and the counts of a ด้าน, each in its box with a title
+// and a key.
 
 function Surface({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -75,6 +78,15 @@ export function PeriodPanel(props: { year: string; stepName: string; points: { l
         <Key swatch="size-2.5 rounded-sm bg-dc-brand-accent">ผลงาน</Key>
       </p>
       <PeriodChart title={`เป้าหมายและผลงานราย${stepName}`} points={points} />
+    </Surface>
+  );
+}
+
+/** The count of a ด้าน (AGED9) for each ตำบล or หน่วยบริการ (unitLabel): จำนวนรายการ, not a ร้อยละ, so no เกณฑ์ */
+export function CountPanel({ unitLabel, units }: { unitLabel: string; units: UnitCount[] }) {
+  return (
+    <Surface title={`จำนวนราย${unitLabel}`}>
+      <CountChart title={`จำนวนรายการราย${unitLabel}`} units={units} />
     </Surface>
   );
 }

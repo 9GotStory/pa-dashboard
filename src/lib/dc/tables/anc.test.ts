@@ -40,7 +40,7 @@ const NAMES = {
   ],
   hospitals: [],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "area" };
+const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null };
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
@@ -110,7 +110,7 @@ test("แนวโน้ม of a report without the block ปี 2567 → 2567 s
 });
 
 test("?year=2568&area=540606&period=q2&by=hosp → ตำบลสะเอียบ ไตรมาส 2 6/3 by its 3 หน่วยบริการ; its quarters 9/6, 6/3, 5/4, 6/3 sum to its ทั้งปี 26/16", () => {
-  const query: ReportQuery = { year: "2568", area: "540606", period: "q2", measure: null, by: "hosp" };
+  const query: ReportQuery = { year: "2568", area: "540606", period: "q2", measure: null, by: "hosp", domain: null };
   const anc = ancValues(ANC12, query, NAMES, YEARS);
   assert.equal(pair(anc.total), "6/3");
   assert.deepEqual(

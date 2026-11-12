@@ -160,6 +160,44 @@ function EpiLimits() {
   );
 }
 
+function Aged9Method({ report, districtCode }: MethodProps) {
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก · ข้อมูลเป็นทั้งปีอย่างเดียว
+      </li>
+      <li>เป้าหมาย: ผู้สูงอายุ (คอลัมน์ target) · ผลงาน: ผู้สูงอายุที่คัดกรองครบ 9 ด้าน (คอลัมน์ result)</li>
+      <li>
+        ร้อยละความครอบคลุม = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · เป้าหมายเป็น 0 แสดง “—” · ปีที่ผลงานรวมทั้งอำเภอเป็น 0
+        ถือว่าไม่มีข้อมูลปีนั้น แสดง “—” ไม่ใช่ไม่ผ่าน
+        {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
+      </li>
+      <li>
+        ผลการคัดกรองแต่ละด้านคือผลรวมคอลัมน์ result1–result9 ของพื้นที่ เป็นจำนวนรายการ ไม่ใช่จำนวนผู้มีความเสี่ยง ไม่คิดเป็นร้อยละและไม่มีเกณฑ์ ·
+        ด้านที่ผลรวมทั้งอำเภอของปีเป็น 0 แสดง “—”
+      </li>
+    </ul>
+  );
+}
+
+function Aged9Limits() {
+  return (
+    <>
+      <li>
+        ยังไม่แสดงจำนวนปกติและเสี่ยงของแต่ละด้าน (คอลัมน์ result1_1–result9_2 และ result6_3) เพราะด้าน 1 ปกติรวมกับเสี่ยงมากกว่าจำนวนที่คัดกรองด้านนั้น
+        และด้าน 6 มี 2Q+ผิดปกติอยู่นอกผลรวม หน้า HDC ก็แสดงแบบเดียวกัน จึงยังไม่รู้วิธีนับ
+      </li>
+      <li>
+        คำอธิบายของ HDC บอกว่าเป้าหมายคือผู้สูงอายุทั้งหมด แต่หัวตารางบนหน้า HDC เขียนว่าผู้สูงอายุที่ได้รับการคัดกรอง ตัวเลขเข้ากับผู้สูงอายุทั้งหมดมากกว่า
+        แต่ยังไม่ได้ยืนยัน
+      </li>
+      <li>
+        ปี 2565 ผลงานว่างทั้งอำเภอ ความครอบคลุมจึงแสดง “—” แต่รายด้านมีค่า ยกเว้นด้าน 9 ที่ว่างและด้าน 3 ที่มีแค่ 198 รายการ ยังไม่รู้สาเหตุ
+      </li>
+    </>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -169,6 +207,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <ChilddevMethod {...props} />;
     case "epi":
       return <EpiMethod {...props} />;
+    case "aged9":
+      return <Aged9Method {...props} />;
   }
 }
 
@@ -181,5 +221,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return <ChilddevLimits report={report} />;
     case "epi":
       return <EpiLimits />;
+    case "aged9":
+      return <Aged9Limits />;
   }
 }

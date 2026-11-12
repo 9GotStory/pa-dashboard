@@ -59,7 +59,7 @@ const NAMES = {
     { hospcode: "11760", hospname: "หนองเสี้ยว", tambon_id: "540605" },
   ],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "hosp" };
+const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "hosp", domain: null };
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
