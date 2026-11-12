@@ -134,7 +134,7 @@ export interface UnitTotals {
 /** One year of a trend (SCHEMA §4.4) */
 export interface TrendPoint {
   b_year: string;
-  totals: Totals | null; // null = no usable columns that year, shown as "—"
+  totals: Totals | null; // null = no usable columns or no data that year (SPEC §9.4), shown as "—"
 }
 
 /* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.8, §3.8–3.9, §11) ---------- */

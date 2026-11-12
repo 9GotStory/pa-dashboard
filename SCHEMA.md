@@ -998,7 +998,7 @@ export interface UnitTotals {
 /** ค่าของปีหนึ่งในแนวโน้ม (§4.4) */
 export interface TrendPoint {
   b_year: string;
-  totals: Totals | null;         // null = ปีนั้นไม่มีคอลัมน์ที่ใช้ได้ แสดง "—"
+  totals: Totals | null;         // null = ปีนั้นไม่มีคอลัมน์ที่ใช้ได้หรือไม่มีข้อมูล (SPEC §9.4) แสดง "—"
 }
 
 /* ---------- ประชากรทะเบียนราษฎร (เฟส 2 และ Track I, §2.6–2.8, §3.8–3.9, §11) ---------- */

@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { MAINS, MCH, PROMOTION, SERVICE_PLAN, VACCINES } from "./fixtures/catalog-20261104";
 import { HEADERS } from "./fixtures/headers-20261104";
-import type { Cell, DcReport, DcYearBlock, Family, LibraryList, ReportQuery } from "./types";
+import { S_AGED9, S_EPI1, S_EPI2 as S_EPI2_CUT, S_KPI_FOOD } from "./fixtures/reports-20261111";
+import type { Cell, DcReport, DcReportData, DcYearBlock, Family, LibraryList, ReportQuery, TrendPoint } from "./types";
 import {
   dataYears,
   families,
@@ -18,6 +19,7 @@ import {
   periods,
   reportQuery,
   reportSearch,
+  shownMeasures,
   totals,
   totalsBy,
   trend,
@@ -235,10 +237,11 @@ test("q1 on s_dm_screen and s_aged9 → null: without target1–4, result1–4 (
 
 const MONTH_PERIODS = MONTHS.map((m) => `m${m}`);
 
-test("periods: s_kpi_anc12 → ทั้งปี and quarters 1–4; s_epi_complete and s_epi1 → ทั้งปี and the months ต.ค.–ก.ย.", () => {
-  assert.deepEqual(periods(block(HEADERS.s_kpi_anc12), DM_SCREEN), ["year", "q1", "q2", "q3", "q4"]);
-  assert.deepEqual(periods(block(HEADERS.s_epi_complete), DM_SCREEN), ["year", ...MONTH_PERIODS]);
-  assert.deepEqual(periods(block(HEADERS.s_epi1), DM_SCREEN), ["year", ...MONTH_PERIODS]);
+test("periods: s_kpi_anc12 → ทั้งปี and quarters 1–4; s_epi_complete and s_epi1 → ทั้งปี and the months ต.ค.–ก.ย. (each with a ผลงาน in one quarter or month)", () => {
+  const withResult = (table: string, cells: Record<string, Cell>) => block(HEADERS[table], [{ hospcode: "06413", areacode: "54060101", ...cells }]);
+  assert.deepEqual(periods(withResult("s_kpi_anc12", { result2: 1 }), DM_SCREEN), ["year", "q1", "q2", "q3", "q4"]);
+  assert.deepEqual(periods(withResult("s_epi_complete", { result01: 1 }), DM_SCREEN), ["year", ...MONTH_PERIODS]);
+  assert.deepEqual(periods(withResult("s_epi1", { mmr_01: 1 }), DM_SCREEN), ["year", ...MONTH_PERIODS]);
 });
 
 test("periods: s_dental_0_5_cavity_free with b/a, s_dm_screen and s_aged9 → ทั้งปี only", () => {
@@ -339,14 +342,19 @@ test("2 block ปี whose headers differ (2568: mmr1 before target{MM}, no pcv4
   ]);
 });
 
-test("เกณฑ์ of s_epi2: mmr1 → 95 from measure_goals (kpi_epi); pcv4, not in kpi_epi, and no measure → the report's goal 90 (SCHEMA §6)", () => {
+test("เกณฑ์ of s_epi2: mmr1 → 95 from measure_goals (kpi_epi); pcv4, not in kpi_epi → none, not the report's goal 90; no measure → the report's goal 90 (SCHEMA §4.4)", () => {
   assert.equal(goalFor(S_EPI2, "mmr1"), 95);
-  assert.equal(goalFor(S_EPI2, "pcv4"), 90);
+  assert.equal(goalFor(S_EPI2, "pcv4"), null);
   assert.equal(goalFor(S_EPI2, null), 90);
 });
 
-test("เกณฑ์ of a measure named like an Object property (constructor, from ?measure=) → the report's goal, not a function", () => {
-  assert.equal(goalFor(S_EPI2, "constructor"), 90);
+test("เกณฑ์ of s_epi1 in the snapshot: pcv1 → none (PCV is not in kpi_epi), mmr → 95", () => {
+  assert.equal(goalFor(EPI1.report, "pcv1"), null);
+  assert.equal(goalFor(EPI1.report, "mmr"), 95);
+});
+
+test("เกณฑ์ of a measure named like an Object property (constructor, from ?measure=) → none, not a function", () => {
+  assert.equal(goalFor(S_EPI2, "constructor"), null);
 });
 
 test("ร้อยละ 89.999 with เกณฑ์ 90 → not passed: compared before rounding, as PA does", () => {
@@ -364,12 +372,13 @@ test("no ร้อยละ (target 0) or no เกณฑ์ → no verdict: nul
 
 // FEATURES F20: ?year=&area=&period=&measure=&by= of /reports/{id} as a
 // ReportQuery for the report's data (SPEC §9.4, SCHEMA §9). s_epi2 here has
-// 2568 with mmr1 only and 2569 with the real header.
+// 2568 with mmr1 only and 2569 with the real header, where dtp4 and mmr1
+// have a ผลงาน.
 const EPI2_DATA = {
   report: S_EPI2,
   years: [
     block(MMR1_ONLY, [{ hospcode: "06413", areacode: "54060101", target10: 4, mmr1_10: 2 }], "2568"),
-    block(HEADERS.s_epi2, [{ hospcode: "06413", areacode: "54060101", target10: 2, mmr1_10: 1 }], "2569"),
+    block(HEADERS.s_epi2, [{ hospcode: "06413", areacode: "54060101", target10: 2, dtp4_10: 2, mmr1_10: 1 }], "2569"),
   ],
 };
 const query = (search: string) => reportQuery(EPI2_DATA, new URLSearchParams(search), NAMES);
@@ -412,7 +421,7 @@ test("?measure= on a report without measures (s_epi_complete) → null", () => {
 });
 
 test("?period= → kept when the year's columns have it (q2 on s_kpi_anc12, m01 on s_epi_complete), else ทั้งปี (q2 on s_epi_complete, m13)", () => {
-  const row = { hospcode: "06413", areacode: "54060101", target: 1, result: 1 };
+  const row = { hospcode: "06413", areacode: "54060101", target: 1, result: 1, result2: 1, result01: 1 };
   const anc12 = { report: DM_SCREEN, years: [block(HEADERS.s_kpi_anc12, [row])] };
   const complete = { report: DM_SCREEN, years: [block(HEADERS.s_epi_complete, [row])] };
   const period = (data: typeof anc12, search: string) => reportQuery(data, new URLSearchParams(search), NAMES).period;
@@ -440,6 +449,65 @@ test("a ReportQuery → ?year=&area=&period=&measure=&by= in the order of SPEC �
 
 test("a ReportQuery without a measure → no measure in the URL", () => {
   assert.equal(reportSearch({ year: "2569", area: "all", period: "year", measure: null, by: "area" }), "?year=2569&area=all&period=year&by=area");
+});
+
+// FEATURES F50: a รายการ or ตัวชี้วัด whose ผลงาน the whole district lacks for
+// a year has no data that year (SPEC §9.4 "ว่างทั้งปี"), on blocks cut from
+// the snapshot of 11 Nov 2569. The expected values are SCHEMA §4.6's.
+const snapshot = (cut: typeof S_EPI1): DcReportData => ({
+  report: cut.report,
+  years: Object.entries(cut.years).map(([year, rows]) => block(cut.headers, rows, year)),
+});
+const EPI1 = snapshot(S_EPI1);
+const at = (data: DcReportData, year: string) => yearBlock(data, year)!;
+
+test("s_epi1 2568 dtp2, whose ผลงาน the whole district lacks → no data (null), not 0 of 217; 2569 mmr → 181/174", () => {
+  assert.equal(totals(at(EPI1, "2568"), EPI1.report, { area: "all", period: "year", measure: "dtp2" }), null);
+  const mmr = totals(at(EPI1, "2569"), EPI1.report, { area: "all", period: "year", measure: "mmr" });
+  assert.deepEqual(mmr && [mmr.target, mmr.result], [181, 174]);
+});
+
+const EPI2 = snapshot(S_EPI2_CUT);
+/** The years of a trend that have a point: a ร้อยละ to plot */
+const plotted = (points: TrendPoint[]) => points.filter((p) => p.totals?.pct != null).map((p) => p.b_year);
+
+test("trend of s_epi1 dtp2 → a point in 2569 only; of s_epi2 mmr2 → 2568 and 2569 only (no data 2565–2567)", () => {
+  assert.deepEqual(plotted(trend(EPI1, { area: "all", period: "year", measure: "dtp2" })), ["2569"]);
+  const mmr2 = trend(EPI2, { area: "all", period: "year", measure: "mmr2" });
+  assert.deepEqual(mmr2.map((p) => p.totals === null), [true, true, true, false, false]);
+  assert.deepEqual(plotted(mmr2), ["2568", "2569"]);
+});
+
+test("s_aged9 2565, a เป้าหมาย but no ผลงาน in the whole district → no data (null), not 0%", () => {
+  const aged9 = snapshot(S_AGED9);
+  assert.equal(totals(at(aged9, "2565"), aged9.report, WHOLE_YEAR), null);
+});
+
+test("s_epi1 2569 pcv1: 1 of 181 in the district, none in ตำบล 540601 → that ตำบล gets ผลงาน 0 and ร้อยละ 0, not no data", () => {
+  const query = { area: "540601", period: "year", measure: "pcv1" } as const;
+  const own = totals(at(EPI1, "2569"), EPI1.report, query);
+  assert.deepEqual(own && [own.result, own.pct], [0, 0]);
+  const units = totalsBy(at(EPI1, "2569"), EPI1.report, { ...query, area: "all", by: "area" }, NAMES);
+  const tambon = units?.find((u) => u.key === "540601")?.totals;
+  assert.deepEqual(tambon && [tambon.result, tambon.pct], [0, 0]);
+});
+
+test("s_epi2: pcv4, in the header but without a ผลงาน in any year → not a รายการ; ?measure=pcv4 of an old link → the first รายการ", () => {
+  assert.deepEqual(measures(at(EPI2, "2569")), ["mmr2", "pcv4"]);
+  assert.deepEqual(shownMeasures(EPI2, at(EPI2, "2569")), ["mmr2"]);
+  assert.equal(reportQuery(EPI2, new URLSearchParams("measure=pcv4"), NAMES).measure, "mmr2");
+});
+
+test("s_epi1 2568: dtp2, without data that year but with data in 2569 → still a รายการ, so the year shows it as no data", () => {
+  assert.deepEqual(shownMeasures(EPI1, at(EPI1, "2568")), ["mmr", "dtp2", "pcv1"]);
+  assert.equal(reportQuery(EPI1, new URLSearchParams("year=2568&measure=dtp2"), NAMES).measure, "dtp2");
+});
+
+test("s_kpi_food 2569: Q_A in the header but target1–result4 empty in the whole district → ทั้งปี only; ?period=q1 of an old link → ทั้งปี", () => {
+  const food = snapshot(S_KPI_FOOD);
+  assert.deepEqual(families(at(food, "2569"), food.report), ["ANNUAL", "Q_A"]);
+  assert.deepEqual(periods(at(food, "2569"), food.report), ["year"]);
+  assert.equal(reportQuery(food, new URLSearchParams("period=q1"), NAMES).period, "year");
 });
 
 // FEATURES F19, F40: ?main=&cat=&q= of /reports as a LibraryQuery, and the

@@ -9,11 +9,11 @@ import {
   dataYears,
   goalFor,
   measureLabel,
-  measures,
   passes,
   periods,
   reportQuery,
   reportSearch,
+  shownMeasures,
   totals,
   totalsBy,
   trend,
@@ -205,7 +205,7 @@ function Filters({ data, names, query, onApply }: { data: DcReportData; names: N
   const draft = reportQuery(data, new URLSearchParams(picked), names);
   const block = yearBlock(data, draft.year);
   const periodOptions = block ? periods(block, data.report) : [];
-  const measureOptions = block ? measures(block) : [];
+  const measureOptions = block ? shownMeasures(data, block) : [];
   const pick = (name: keyof ReportQuery, value: string) => setPicked({ ...picked, [name]: value });
   return (
     <section aria-labelledby="filters-title" className="border-b border-dc-border bg-dc-blue-light/50 px-4 py-5 sm:px-6 print:hidden">
@@ -292,15 +292,19 @@ function Results(props: {
   const { data, names, query, years, heading } = props;
   const { report } = data;
   const block = yearBlock(data, query.year);
+  // Whether a rule of SCHEMA §4.3 finds the table's columns that year
+  const recognised = block !== null && periods(block, report).length > 0;
   const units = block && totalsBy(block, report, query, names);
   const total = block && totals(block, report, query);
-  const figures = block && units && total && units.length > 0 ? { block, units, total } : null;
+  // null: the whole district has no ผลงาน that year, shown as "—" (SPEC §9.4)
+  const values = units && total ? { units, total } : null;
+  const figures = block && recognised && (!values || values.units.length > 0) ? { block, values } : null;
   // Never zeros for what is not there (SPEC §9.4)
   const problem = !block
     ? query.year
       ? `ไม่มีข้อมูลปี ${query.year} ในระบบ`
       : "ยังไม่มีข้อมูลของรายงานนี้ในระบบ"
-    : !units || !total
+    : !recognised
       ? "ไม่รู้จักโครงสร้างตาราง ต้องกำหนด col_target/col_result"
       : `ไม่มีข้อมูลของ${areaLabel(query.area, names)}ในปี ${query.year}`;
   // No year at all: the report has no data yet, so there is no filter to name
@@ -309,8 +313,9 @@ function Results(props: {
   const totalLabel = `รวม${areaLabel(query.area, names)}`;
 
   const downloadCsv = () => {
-    if (!figures) return;
-    const { block, units, total } = figures;
+    if (!figures?.values) return;
+    const { block } = figures;
+    const { units, total } = figures.values;
     const rows: Cell[][] = [
       ["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"],
       ["รายงาน", `${report.report_name} (${report.opendata_id})`],
@@ -348,7 +353,7 @@ function Results(props: {
           <button
             type="button"
             onClick={downloadCsv}
-            disabled={!figures}
+            disabled={!figures?.values}
             className="min-h-10 flex-1 rounded-md border border-dc-border bg-white px-3 text-xs font-semibold text-dc-navy hover:bg-dc-blue-light disabled:opacity-50 sm:flex-none"
           >
             ดาวน์โหลด CSV
@@ -371,20 +376,23 @@ function Results(props: {
   );
 }
 
-/** ตัวเลขสรุป, กราฟ A–C and the table of a year with data */
+/**
+ * ตัวเลขสรุป, กราฟ A–C and the table of a year with rows; values null when the
+ * whole district has no ผลงาน that year: "—" and the trend alone (SPEC §9.4)
+ */
 function Figures(props: {
   data: DcReportData;
   query: ReportQuery;
   years: string[];
   block: DcYearBlock;
-  units: UnitTotals[];
-  total: Totals;
+  values: { units: UnitTotals[]; total: Totals } | null;
   unitLabel: string;
   totalLabel: string;
 }) {
-  const { data, query, years, block, units, total, unitLabel, totalLabel } = props;
+  const { data, query, years, block, values, unitLabel, totalLabel } = props;
+  const total = values?.total ?? null;
   const goal = goalFor(data.report, query.measure);
-  const passed = passes(total.pct, goal);
+  const passed = passes(total?.pct ?? null, goal);
   // กราฟ C: months when the table has them, else quarters (SCHEMA §4.3)
   const available = periods(block, data.report);
   const months = available.filter((p) => p.startsWith("m"));
@@ -395,9 +403,9 @@ function Figures(props: {
   const byYear = new Map(trend(data, query).map((point) => [point.b_year, point]));
   const trendPoints: TrendPoint[] = years.map((year) => byYear.get(year) ?? { b_year: year, totals: null });
   const tiles: [string, string][] = [
-    ["เป้าหมาย", formatCount(total.target)],
-    ["ผลงาน", formatCount(total.result)],
-    ["ร้อยละ", pctText(total.pct)],
+    ["เป้าหมาย", total ? formatCount(total.target) : "—"],
+    ["ผลงาน", total ? formatCount(total.result) : "—"],
+    ["ร้อยละ", pctText(total?.pct ?? null)],
   ];
   return (
     <div className="px-4 pb-6 sm:px-6">
@@ -410,7 +418,12 @@ function Figures(props: {
         ))}
         <div className="min-w-0 rounded-lg border border-dc-border bg-dc-canvas/40 px-4 py-3">
           <dt className="text-xs text-dc-muted">เกณฑ์ (ร้อยละ)</dt>
-          <dd className="font-prompt text-2xl font-semibold text-dc-blue-dark tabular-nums">{goal === null ? "—" : `≥ ${goal}`}</dd>
+          {/* No เกณฑ์ (PCV is not in kpi_epi): no ผ่าน or ไม่ผ่าน either (SPEC §9.4) */}
+          {goal === null ? (
+            <dd className="font-prompt text-base font-semibold text-dc-brand-deep">ไม่มีเกณฑ์</dd>
+          ) : (
+            <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">≥ {goal}</dd>
+          )}
           {passed !== null && (
             <dd className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-navy ${passed ? "bg-dc-teal/20" : "bg-dc-gold/30"}`}>
               {passed ? "ผ่านเกณฑ์" : "ไม่ผ่านเกณฑ์"}
@@ -420,58 +433,66 @@ function Figures(props: {
       </dl>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Surface title={`ร้อยละราย${unitLabel}`}>
-          <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-muted">
-            <Key swatch="h-2 w-4 rounded-sm bg-dc-blue">ร้อยละ</Key>
-            {goal !== null && <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>}
+        {values ? (
+          <>
+            <Surface title={`ร้อยละราย${unitLabel}`}>
+              <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+                <Key swatch="h-2 w-4 rounded-sm bg-dc-brand-primary">ร้อยละ</Key>
+                {goal !== null && <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>}
+              </p>
+              <UnitChart title={`ร้อยละราย${unitLabel}`} units={values.units} goal={goal} />
+            </Surface>
+            <section className="min-w-0">
+              <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border-subtle">
+                <table className="w-full border-collapse text-xs tabular-nums">
+                  <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">เป้าหมาย ผลงาน และร้อยละราย{unitLabel}</caption>
+                  <thead className="bg-dc-highlight-soft text-dc-brand-deep">
+                    <tr>
+                      <th scope="col" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
+                        {unitLabel}
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
+                        เป้าหมาย
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
+                        ผลงาน
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
+                        ร้อยละ
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white">
+                    {values.units.map((u) => (
+                      <tr key={u.key} className="border-t border-dc-border-subtle">
+                        <th scope="row" className="px-2 py-2 text-left font-normal whitespace-nowrap sm:px-3">
+                          {u.name}
+                        </th>
+                        <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(u.totals.target)}</td>
+                        <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(u.totals.result)}</td>
+                        <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{pctText(u.totals.pct)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="bg-dc-canvas font-bold">
+                    <tr className="border-t-2 border-dc-border-subtle">
+                      <th scope="row" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
+                        {totalLabel}
+                      </th>
+                      <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(values.total.target)}</td>
+                      <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(values.total.result)}</td>
+                      <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{pctText(values.total.pct)}</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </section>
+          </>
+        ) : (
+          <p className="text-sm text-dc-text-secondary lg:col-span-2">
+            ไม่มีข้อมูล{query.measure === null ? "" : `รายการ ${measureLabel(query.measure)} `}ในปีงบประมาณ {query.year}: ผลงานรวมทั้งอำเภอว่างทั้งปี
           </p>
-          <UnitChart title={`ร้อยละราย${unitLabel}`} units={units} goal={goal} />
-        </Surface>
-        <section className="min-w-0">
-          <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border">
-            <table className="w-full border-collapse text-xs tabular-nums">
-              <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-navy">เป้าหมาย ผลงาน และร้อยละราย{unitLabel}</caption>
-              <thead className="bg-dc-blue-light text-dc-navy">
-                <tr>
-                  <th scope="col" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
-                    {unitLabel}
-                  </th>
-                  <th scope="col" className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
-                    เป้าหมาย
-                  </th>
-                  <th scope="col" className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
-                    ผลงาน
-                  </th>
-                  <th scope="col" className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
-                    ร้อยละ
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white">
-                {units.map((u) => (
-                  <tr key={u.key} className="border-t border-dc-border">
-                    <th scope="row" className="px-2 py-2 text-left font-normal whitespace-nowrap sm:px-3">
-                      {u.name}
-                    </th>
-                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(u.totals.target)}</td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(u.totals.result)}</td>
-                    <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{pctText(u.totals.pct)}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot className="bg-dc-canvas font-bold">
-                <tr className="border-t-2 border-dc-border">
-                  <th scope="row" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
-                    {totalLabel}
-                  </th>
-                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(total.target)}</td>
-                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{formatCount(total.result)}</td>
-                  <td className="px-2 py-2 text-right whitespace-nowrap sm:px-3">{pctText(total.pct)}</td>
-                </tr>
-              </tfoot>
-            </table>
-          </div>
-        </section>
+        )}
         <Surface title="แนวโน้มร้อยละรายปี">
           <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-muted">
             <Key swatch="h-0.5 w-4 bg-dc-blue">ร้อยละรายปี</Key>
@@ -479,7 +500,7 @@ function Figures(props: {
           </p>
           <TrendChart title="แนวโน้มร้อยละรายปี" points={trendPoints} goal={goal} />
         </Surface>
-        {stepPoints.length > 0 && (
+        {values && stepPoints.length > 0 && (
           <Surface title={`เป้าหมายและผลงานราย${stepName} ปีงบประมาณ ${query.year}`}>
             <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-muted">
               <Key swatch="size-2.5 rounded-sm bg-dc-navy">เป้าหมาย</Key>

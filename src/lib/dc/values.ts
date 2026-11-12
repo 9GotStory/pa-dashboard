@@ -95,6 +95,18 @@ export function measures(block: DcYearBlock): readonly string[] {
   return found;
 }
 
+/**
+ * The รายการ a page offers for a block ปี: its measures() that have a ผลงาน
+ * in the whole district in some block ปี of the report, in column order. A
+ * measure without one in any year is not a รายการ (SCHEMA §4.2); one without
+ * it this year only is kept and shown as no data.
+ */
+export function shownMeasures(data: DcReportData, block: DcYearBlock): string[] {
+  return measures(block).filter((m) =>
+    data.years.some((b) => measures(b).includes(m) && collected(b, monthColumns(`${m}_`))),
+  );
+}
+
 /** A measure as shown: upper case with "-" for "_" (dtp_hb3 → DTP-HB3) */
 export function measureLabel(measure: string): string {
   return measure.toUpperCase().replace(/_/g, "-");
@@ -103,14 +115,20 @@ export function measureLabel(measure: string): string {
 /**
  * The periods a block can show (SCHEMA §4.3): ทั้งปี when any rule finds it,
  * quarters with a quarter family, months with M_A or M_B; none when no rule
- * applies
+ * applies. Quarters and months only when the whole district has a ผลงาน in
+ * them that year (SPEC §9.4 "ว่างทั้งปี").
  */
 export function periods(block: DcYearBlock, report: DcReport): Period[] {
   const found = families(block, report);
   if (found.length === 0) return [];
   const out: Period[] = ["year"];
-  if (QUARTER_ORDER.some((f) => found.includes(f))) out.push("q1", "q2", "q3", "q4");
-  if (found.includes("M_A") || found.includes("M_B")) out.push(...MONTHS.map((m) => `m${m}` as const));
+  const quarters = QUARTER_ORDER.find((f) => found.includes(f));
+  if (quarters && collected(block, FIXED_COLUMNS[quarters])) out.push("q1", "q2", "q3", "q4");
+  const months = [
+    ...(found.includes("M_A") ? [FIXED_COLUMNS.M_A] : []),
+    ...measures(block).map((m) => monthColumns(`${m}_`)),
+  ];
+  if (months.some((cols) => collected(block, cols))) out.push(...MONTHS.map((m) => `m${m}` as const));
   return out;
 }
 
@@ -120,8 +138,11 @@ function n(v: Cell | undefined): number {
   return Number.isFinite(x) ? x : 0;
 }
 
-/** The columns summed into a row's target and result for a period (SCHEMA §4.3), or null when no rule applies */
-function columns(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "period" | "measure">): Columns | null {
+/**
+ * The columns of the level a period is part of: ทั้งปี, all 4 quarters or all
+ * 12 months (SCHEMA §4.3), or null when no rule applies
+ */
+function level(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "period" | "measure">): Columns | null {
   const { period, measure } = query;
   const found = families(block, report);
   // A selected measure that this year lacks is "—", not another family's value (SCHEMA §4.2)
@@ -135,10 +156,15 @@ function columns(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, 
   }
   if (period.startsWith("q")) {
     const family = QUARTER_ORDER.find((f) => found.includes(f));
-    return family ? entry(FIXED_COLUMNS[family], Number(period.slice(1)) - 1) : null;
+    return family ? FIXED_COLUMNS[family] : null;
   }
-  const cols = measure !== null ? measured : found.includes("M_A") ? FIXED_COLUMNS.M_A : null;
-  return cols && entry(cols, MONTHS.findIndex((m) => `m${m}` === period));
+  return measure !== null ? measured : found.includes("M_A") ? FIXED_COLUMNS.M_A : null;
+}
+
+/** The columns summed into a row's target and result for a period, out of its level's (SCHEMA §4.3) */
+function columns(cols: Columns, period: Period): Columns {
+  if (period === "year") return cols;
+  return entry(cols, period.startsWith("q") ? Number(period.slice(1)) - 1 : MONTHS.findIndex((m) => `m${m}` === period));
 }
 
 /** The columns of quarter or month k alone */
@@ -173,8 +199,28 @@ function sum(block: DcYearBlock, cols: Columns, rows: Cell[][]): Totals {
 }
 
 /**
+ * Whether the rows of the whole district hold a ผลงาน in these columns. HDC
+ * keeps 0 as "" (SCHEMA §4.6.1), so a district total of 0 was not collected:
+ * no data, whatever area is shown (SPEC §9.4 "ว่างทั้งปี").
+ */
+function collected(block: DcYearBlock, cols: Columns): boolean {
+  return sum(block, cols, block.rows).result > 0;
+}
+
+/**
+ * The columns of a period when the whole district has a ผลงาน in its level
+ * that year, else null: no rule applies, or the year has no data
+ */
+function collectedColumns(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "period" | "measure">): Columns | null {
+  const all = level(block, report, query);
+  return all && collected(block, all) ? columns(all, query.period) : null;
+}
+
+/**
  * Target, result and ร้อยละ of the rows in an area (or "all"), summed before
- * dividing (SCHEMA §4.4); null when no rule finds the columns for the period.
+ * dividing (SCHEMA §4.4); null when no rule finds the columns for the period,
+ * or when the whole district has no ผลงาน in its level that year, so an area
+ * with none in a year the district has data gets 0 (SPEC §9.4).
  * As in ReportQuery, measure is one of measures() of the year shown for an
  * M_B report and null otherwise; a block without that measure gives null.
  */
@@ -183,7 +229,7 @@ export function totals(
   report: DcReport,
   query: Pick<ReportQuery, "area" | "period" | "measure">,
 ): Totals | null {
-  const cols = columns(block, report, query);
+  const cols = collectedColumns(block, report, query);
   return cols && sum(block, cols, rowsIn(block, query.area));
 }
 
@@ -198,7 +244,7 @@ export function totalsBy(
   query: Pick<ReportQuery, "area" | "period" | "measure" | "by">,
   names: Pick<DcCatalog, "areas" | "hospitals">,
 ): UnitTotals[] | null {
-  const cols = columns(block, report, query);
+  const cols = collectedColumns(block, report, query);
   if (!cols) return null;
   const unit =
     query.by === "area"
@@ -230,9 +276,14 @@ export function trend(data: DcReportData, query: Pick<ReportQuery, "area" | "per
   return data.years.map((block) => ({ b_year: block.b_year, totals: totals(block, data.report, query) }));
 }
 
-/** เกณฑ์: measure_goals[measure] when kpi_epi has it, otherwise the report's goal (SCHEMA §4.4) */
+/**
+ * เกณฑ์: measure_goals[measure] alone for a รายการ, null when kpi_epi lacks it
+ * (PCV), never the report's goal; the report's goal for a ตัวชี้วัด without
+ * รายการ (SCHEMA §4.4, SPEC §9.4)
+ */
 export function goalFor(report: DcReport, measure: string | null): number | null {
-  return measure !== null && Object.hasOwn(report.measure_goals, measure) ? report.measure_goals[measure] : report.goal;
+  if (measure === null) return report.goal;
+  return Object.hasOwn(report.measure_goals, measure) ? report.measure_goals[measure] : null;
 }
 
 /** pct ≥ goal before rounding, as PA does (SCHEMA §4.4); null when there is no ร้อยละ or no เกณฑ์ */
@@ -268,7 +319,7 @@ export function reportQuery(
   const asked = params.get("year");
   const year = asked && /^\d{4}$/.test(asked) ? asked : (dataYears(data)[0] ?? "");
   const block = yearBlock(data, year);
-  const found = block ? measures(block) : [];
+  const found = block ? shownMeasures(data, block) : [];
   const measure = found.find((m) => m === params.get("measure")) ?? found[0] ?? null;
   const period = (block ? periods(block, data.report) : []).find((p) => p === params.get("period")) ?? "year";
   const area = names.areas.find((a) => a.id === params.get("area"))?.id ?? "all";
