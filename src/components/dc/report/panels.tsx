@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
 import PeriodChart from "../charts/PeriodChart";
 import TrendChart from "../charts/TrendChart";
+import TrendList from "../charts/TrendList";
 import UnitChart from "../charts/UnitChart";
 
 // กราฟ A–C of SPEC §9.4, each in its box with a title and a key.
@@ -42,15 +43,24 @@ export function UnitPanel({ unitLabel, units, goal }: { unitLabel: string; units
   );
 }
 
-/** กราฟ B: ร้อยละ per ปีงบประมาณ over the whole window, with the เกณฑ์ */
+/**
+ * กราฟ B: ร้อยละ per ปีงบประมาณ over the whole window, with the เกณฑ์: a line
+ * from sm up, and on a phone a list of years whose ร้อยละ reads without hover
+ */
 export function TrendPanel({ points, goal }: { points: TrendPoint[]; goal: number | null }) {
   return (
     <Surface title="แนวโน้มร้อยละรายปี">
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
-        <Key swatch="h-0.5 w-4 bg-dc-brand-primary">ร้อยละรายปี</Key>
+        {/* A bar like TrendList's on a phone, the line of TrendChart from sm up */}
+        <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">ร้อยละรายปี</Key>
         <GoalKey goal={goal} />
       </p>
-      <TrendChart title="แนวโน้มร้อยละรายปี" points={points} goal={goal} />
+      <div className="sm:hidden">
+        <TrendList title="แนวโน้มร้อยละรายปี" points={points} goal={goal} />
+      </div>
+      <div className="hidden sm:block">
+        <TrendChart title="แนวโน้มร้อยละรายปี" points={points} goal={goal} />
+      </div>
     </Surface>
   );
 }

@@ -1,9 +1,12 @@
 // Data Center page check (CODING_STANDARDS §4–5, FEATURES F16). After
 // npm run build, opens every built page of /, /reports and /reports/[id] in
 // out/ at 360 px wide and exits 1, naming the page, when a page breaks a rule
-// that shows on the rendered page. The home page and /reports are opened at
-// V7.6's review widths as well, and the check exits 1, naming the width, when
-// one scrolls sideways at one (SPEC §9.1). /reports as built, before any
+// that shows on the rendered page. The home page, /reports and a report of
+// each source table with a page of its own (src/lib/dc/tables/index.ts) are
+// opened at V7.6's review widths as well, and the check exits 1, naming the
+// width, when one scrolls sideways at one (SPEC §9.1). A report that loads
+// the chunk of another table's page exits 1, naming the report and the page
+// (SPEC §9.4, §9.6). /reports as built, before any
 // JavaScript runs, must link every report of the build's catalog.json, and
 // the check exits 1 naming each one it lacks (SPEC §9.3). The home page is
 // opened wide once more, and the check exits 1, naming the area, when its
@@ -15,6 +18,7 @@ import fs from "node:fs";
 import http from "node:http";
 import path from "node:path";
 import { chromium } from "playwright-core";
+import { TABLE_PAGES, tablePage } from "../lib/dc/tables/index.ts";
 
 const OUT = path.resolve("out");
 const WIDTH = 360;
@@ -32,6 +36,9 @@ const AGE_BANDS = 17;
 // How long a ตำบล picked in เลือกตำบล may take to show on the pyramid, in ms.
 // The first pick may land before the page has hydrated.
 const PICK_TIMEOUT = 15_000;
+// The name each table page's view gives itself in its chunk, as its root's
+// data-table-page attribute (src/components/dc/tables/*Page.tsx).
+const PAGE_MARK = /"data-table-page":"([^"]+)"/g;
 // Roles a person operates; each needs a label (CODING_STANDARDS §4). The
 // CamelCase ones are Chrome's own roles for native date, time and colour
 // inputs and <summary>.
@@ -148,10 +155,15 @@ async function unlabelledControls(page) {
   return found;
 }
 
-async function checkPage(browser, url) {
+// The URL paths of the scripts a page requests are added to scripts.
+async function checkPage(browser, url, scripts) {
   const problems = [];
   const page = await browser.newPage({ viewport: { width: WIDTH, height: 800 } });
   try {
+    page.on("request", (req) => {
+      const { pathname } = new URL(req.url());
+      if (pathname.endsWith(".js")) scripts.add(pathname);
+    });
     page.on("pageerror", (err) => problems.push(`error: ${err.message}`));
     page.on("console", (msg) => msg.type() === "error" && problems.push(`error: ${msg.text()}`));
     // Aborted, so a page that breaks the rule never reaches the production GAS.
@@ -200,18 +212,47 @@ async function overflowProblems(browser, url) {
   return problems;
 }
 
+// The reports of this build's catalog.json, in its order.
+function catalogReports() {
+  const file = path.join(OUT, "data", "catalog.json");
+  if (!fs.existsSync(file)) fail("out/ lacks data/catalog.json: run npm run build first");
+  const catalog = JSON.parse(fs.readFileSync(file, "utf8"));
+  return catalog.mains.flatMap((m) => m.topics.flatMap((t) => t.groups.flatMap((g) => g.reports)));
+}
+
+// The table pages whose chunk one of the scripts holds: the views name
+// themselves in it (PAGE_MARK).
+const marks = new Map();
+function pagesIn(scripts) {
+  return new Set(
+    [...scripts].flatMap((src) => {
+      if (!marks.has(src)) {
+        const file = path.join(OUT, src);
+        const text = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
+        marks.set(src, [...text.matchAll(PAGE_MARK)].map((m) => m[1]));
+      }
+      return marks.get(src);
+    }),
+  );
+}
+
+// The problems of a report that loads the chunk of a table page not its own
+// table's (page null for a table without one, which CoverageReport shows),
+// each naming that page: a report loads its own table's page only (SPEC §9.4).
+function foreignChunkProblems(page, scripts) {
+  return [...pagesIn(scripts)]
+    .filter((other) => other !== page)
+    .map((other) => `loads the chunk of the ${other} page, which is not the page of its source table (${page ?? "none yet"})`);
+}
+
 // The reports of this build's catalog.json that out/reports.html, as built,
 // has no /reports/{opendata_id} link to, as problems naming the report: the
 // static HTML lists every report, and the browser filters it once loaded
 // (SPEC §9.3), so a page whose list needs JavaScript fails here.
-function missingReportLinks() {
-  const file = path.join(OUT, "data", "catalog.json");
-  if (!fs.existsSync(file)) fail("out/ lacks data/catalog.json: run npm run build first");
-  const catalog = JSON.parse(fs.readFileSync(file, "utf8"));
+function missingReportLinks(reports) {
   const html = fs.readFileSync(path.join(OUT, "reports.html"), "utf8");
   const linked = new Set([...html.matchAll(/href="\/reports\/([^"?#/]+)"/g)].map((m) => m[1]));
-  return catalog.mains
-    .flatMap((m) => m.topics.flatMap((t) => t.groups.flatMap((g) => g.reports)))
+  return reports
     .filter((r) => !linked.has(r.opendata_id))
     .map((r) => `no link to /reports/${r.opendata_id} in the HTML as built, before JavaScript runs`);
 }
@@ -353,7 +394,15 @@ async function checkPopulation(browser, url, hasAge) {
 const urlPaths = dcPages();
 const shownYear = populationYearShown();
 const hasAge = shownYear?.age.length > 0;
-const unlinked = missingReportLinks();
+const reports = catalogReports();
+const unlinked = missingReportLinks(reports);
+// The page of each report's source table, by its URL path
+const reportPages = new Map(reports.map((r) => [`/reports/${r.opendata_id}`, tablePage(r.source_table)]));
+// The first report of each source table with a page, opened at every review width
+const wideReports = Object.keys(TABLE_PAGES)
+  .map((table) => reports.find((r) => r.source_table === table))
+  .filter(Boolean)
+  .map((r) => `/reports/${r.opendata_id}`);
 const server = await serveOut();
 const origin = `http://127.0.0.1:${server.address().port}`;
 const problems = [];
@@ -361,9 +410,13 @@ let browser;
 try {
   browser = await chromium.launch({ channel: "chrome" });
   for (const urlPath of urlPaths) {
-    for (const problem of await checkPage(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
+    const scripts = new Set();
+    for (const problem of await checkPage(browser, origin + urlPath, scripts)) problems.push(`${urlPath}: ${problem}`);
+    if (reportPages.has(urlPath)) {
+      for (const problem of foreignChunkProblems(reportPages.get(urlPath), scripts)) problems.push(`${urlPath}: ${problem}`);
+    }
   }
-  for (const urlPath of ["/", "/reports"]) {
+  for (const urlPath of ["/", "/reports", ...wideReports]) {
     for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
   for (const problem of unlinked) problems.push(`/reports: ${problem}`);
@@ -387,5 +440,7 @@ const populationResult = !shownYear
     ? "population totals, the ตำบล chart and pyramids agree"
     : "population totals and the ตำบล chart agree";
 console.log(
-  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; / and /reports do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; /reports links every report before JavaScript runs; ${populationResult}`,
+  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports and a report of each of ${wideReports.length} table(s) ` +
+    `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
+    `/reports links every report before JavaScript runs; ${populationResult}`,
 );
