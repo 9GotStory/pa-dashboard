@@ -7,10 +7,10 @@ import UnitTable from "./UnitTable";
 
 /**
  * ตัวเลขสรุป, ร้อยละรายตำบลหรือรายหน่วยบริการ beside its table, แนวโน้ม and
- * เป้าหมาย/ผลงาน รายไตรมาส of a year with a block ปี, as ANC V0.2 lays them
- * out; "—" and the trend alone when the district has no ผลงาน that year
- * (total and units null, SPEC §9.4). children follow in the grid: a page's
- * own panel of the year.
+ * เป้าหมาย/ผลงาน รายไตรมาส (or รายเดือน, stepName) of a year with a block ปี,
+ * as ANC V0.2 lays them out; "—" and the trend alone when the district has no
+ * ผลงาน that year (total and units null, SPEC §9.4). children follow in the
+ * grid: a page's own panel of the year.
  */
 export default function QuarterFigures(props: {
   year: string;
@@ -18,12 +18,13 @@ export default function QuarterFigures(props: {
   goal: number | null;
   units: UnitTotals[] | null;
   trend: TrendPoint[];
-  quarters: { period: Period; totals: Totals | null }[];
+  steps: { period: Period; totals: Totals | null }[];
+  stepName?: "ไตรมาส" | "เดือน";
   unitLabel: string;
   totalLabel: string;
   children?: ReactNode;
 }) {
-  const { year, total, goal, units, trend, quarters, unitLabel, totalLabel, children } = props;
+  const { year, total, goal, units, trend, steps, stepName = "ไตรมาส", unitLabel, totalLabel, children } = props;
   return (
     <div className="px-4 pb-6 sm:px-6">
       <SummaryTiles total={total} goal={goal} />
@@ -38,8 +39,8 @@ export default function QuarterFigures(props: {
           <p className="text-sm text-dc-text-secondary lg:col-span-2">ไม่มีข้อมูลในปีงบประมาณ {year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</p>
         )}
         <TrendPanel points={trend} goal={goal} />
-        {total && quarters.length > 0 && (
-          <PeriodPanel year={year} stepName="ไตรมาส" points={quarters.map((q) => ({ label: PERIOD_LABELS[q.period].short, totals: q.totals }))} />
+        {total && steps.length > 0 && (
+          <PeriodPanel year={year} stepName={stepName} points={steps.map((s) => ({ label: PERIOD_LABELS[s.period].short, totals: s.totals }))} />
         )}
         {children}
       </div>
