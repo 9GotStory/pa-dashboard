@@ -203,11 +203,11 @@ const EPI5 = snapshot(S_EPI5_2569);
 const EPI2_YEARS = snapshot(S_EPI2);
 
 /** A row of ภาพรวม as "label เป้าหมาย/ผลงาน ร้อยละ เกณฑ์ ผลประเมิน" */
-const line = (r: ReturnType<typeof epiValues>["rows"][number]) => `${r.label} ${pair(r.total)} ${r.total?.pct?.toFixed(2)} ${r.goal} ${r.passed}`;
+const overviewLine = (r: ReturnType<typeof epiValues>["rows"][number]) => `${r.label} ${pair(r.total)} ${r.total?.pct?.toFixed(2)} ${r.goal} ${r.passed}`;
 
 test("s_epi2 2569 ภาพรวม → DTP4, OPV4, JE2, MMR1, MMR2 at 205 in header order, no PCV4 (empty every year) · เกณฑ์ 90, and 95 for MMR1/MMR2", () => {
   const { rows } = epiValues(EPI2, OVERVIEW_2569, NAMES, YEARS);
-  assert.deepEqual(rows.map(line), [
+  assert.deepEqual(rows.map(overviewLine), [
     "DTP4 205/192 93.66 90 true",
     "OPV4 205/188 91.71 90 true",
     "JE2 205/190 92.68 90 true",
@@ -230,11 +230,11 @@ test("s_epi2 MMR2 → no data 2565–2567 (—) and a trend of 2568–2569 alone
 });
 
 test("s_epi3 2569 → JE3 226/207 (91.59%) and MMR2 226/215 (95.13%), เกณฑ์ 90 both, ผ่าน", () => {
-  assert.deepEqual(epiValues(EPI3, OVERVIEW_2569, NAMES, YEARS).rows.map(line), ["JE3 226/207 91.59 90 true", "MMR2 226/215 95.13 90 true"]);
+  assert.deepEqual(epiValues(EPI3, OVERVIEW_2569, NAMES, YEARS).rows.map(overviewLine), ["JE3 226/207 91.59 90 true", "MMR2 226/215 95.13 90 true"]);
 });
 
 test("s_epi5 2569 → DTP5 260/245 (94.23%) and OPV5 260/242 (93.08%), เกณฑ์ 90 both, ผ่าน", () => {
-  assert.deepEqual(epiValues(EPI5, OVERVIEW_2569, NAMES, YEARS).rows.map(line), ["DTP5 260/245 94.23 90 true", "OPV5 260/242 93.08 90 true"]);
+  assert.deepEqual(epiValues(EPI5, OVERVIEW_2569, NAMES, YEARS).rows.map(overviewLine), ["DTP5 260/245 94.23 90 true", "OPV5 260/242 93.08 90 true"]);
 });
 
 test("s_epi3 ?measure=je3 → รายละเอียด JE3 straight away, by ตำบล adding up to 226/207 · ?measure=dtp5 (s_epi5's) → ภาพรวม", () => {

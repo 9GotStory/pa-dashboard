@@ -1,6 +1,6 @@
 import type { tablePage } from "@/lib/dc/tables";
 import type { DcReport } from "@/lib/dc/types";
-import { measureLabel } from "@/lib/dc/values";
+import { goalFor, measureLabel } from "@/lib/dc/values";
 
 // วิธีคำนวณ of เกี่ยวกับรายงานนี้ for each page of a source table (SPEC §9.4):
 // the rows taken, what เป้าหมาย and ผลงาน mean (SCHEMA §4.6) and the page's
@@ -95,14 +95,10 @@ function ChilddevLimits({ report }: { report: DcReport }) {
   );
 }
 
-/**
- * เป้าหมาย of each table, the vaccine each รายการ is in header order where
- * HDC's page names it, and the รายการ without a เกณฑ์ (SCHEMA §4.6.4)
- */
-const EPI_MEANINGS: Record<string, { target: string; doses?: Record<string, string>; noGoal?: string }> = {
+/** เป้าหมาย of each table, and the vaccine each รายการ is in header order where HDC's page names it (SCHEMA §4.6.4) */
+const EPI_MEANINGS: Record<string, { target: string; doses?: Record<string, string> }> = {
   s_epi1: {
     target: "เด็กอายุครบ 1 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด (Type area 1 และ 3)",
-    noGoal: "PCV",
     doses: {
       bcg: "BCG แรกเกิด",
       dtp_hb3: "DTP 6 เดือน",
@@ -136,6 +132,8 @@ const EPI_MEANINGS: Record<string, { target: string; doses?: Record<string, stri
 
 function EpiMethod({ report, districtCode }: MethodProps) {
   const meaning = EPI_MEANINGS[report.source_table];
+  // The รายการ that kpi_epi gives no เกณฑ์ (SCHEMA §4.4): PCV1–3 of s_epi1
+  const withoutGoal = Object.keys(meaning?.doses ?? {}).filter((measure) => goalFor(report, measure) === null);
   return (
     <ul className="list-disc pl-4">
       <li>
@@ -158,21 +156,21 @@ function EpiMethod({ report, districtCode }: MethodProps) {
       </li>
       <li>
         เกณฑ์ของแต่ละรายการตาม PA Dashboard ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
-        {meaning?.noGoal && ` · รายการที่ไม่มีเกณฑ์ (${meaning.noGoal}) ไม่มีผลประเมิน`}
+        {withoutGoal.length > 0 && ` · รายการที่ไม่มีเกณฑ์ (${withoutGoal.map(measureLabel).join(", ")}) ไม่มีผลประเมิน`}
       </li>
     </ul>
   );
 }
 
-/** The pairing of columns with vaccines within a group of equal numbers, which s_epi1 alone infers (SCHEMA §4.6.4) */
+/** The pairing of columns with vaccines that a table infers (SCHEMA §4.6.4): s_epi1 alone, as s_epi2's 6 are matched by their numbers */
+const EPI_INFERRED: Record<string, string> = {
+  s_epi1:
+    "หน้า HDC ยืนยันชื่อวัคซีนของคอลัมน์ได้เป็นกลุ่มที่ตัวเลขเท่ากัน การจับคู่คอลัมน์กับวัคซีนภายในกลุ่ม (BCG กับ ROTA1, DTP2 กับ HBV4, DTP1 DTP-HB3 HBV2 HBV3 HIB1 HIB2 และ OPV3 และลำดับของ PCV1–3) จึงอนุมานจากชื่อคอลัมน์",
+};
+
 function EpiLimits({ report }: { report: DcReport }) {
-  if (report.source_table !== "s_epi1") return null;
-  return (
-    <li>
-      หน้า HDC ยืนยันชื่อวัคซีนของคอลัมน์ได้เป็นกลุ่มที่ตัวเลขเท่ากัน การจับคู่คอลัมน์กับวัคซีนภายในกลุ่ม (BCG กับ ROTA1, DTP2 กับ HBV4, DTP1 DTP-HB3 HBV2 HBV3
-      HIB1 HIB2 และ OPV3 และลำดับของ PCV1–3) จึงอนุมานจากชื่อคอลัมน์
-    </li>
-  );
+  const inferred = EPI_INFERRED[report.source_table];
+  return inferred ? <li>{inferred}</li> : null;
 }
 
 function Aged9Method({ report, districtCode }: MethodProps) {

@@ -4,8 +4,8 @@ import type { Cell, DcReport } from "../types";
 // snapshot built on 12 Nov 2569 (meta.json latest_date_com 202611120605),
 // whose blocks ปี 2569 (max_date_com 202611111728) give the district totals
 // SCHEMA §4.6.4 was checked against. The block 2569 with every row, cut to
-// hospcode, areacode, target{MM} and each measure's {measure}_{MM} (s_epi2
-// drops its ip column); a row lists only its cells that are not "" (HDC keeps
+// hospcode, areacode, target{MM} and each measure's {measure}_{MM}, s_epi2's
+// pcv4 included (no ip); a row lists only its cells that are not "" (HDC keeps
 // 0 as "", SCHEMA §4.6.1). headers keeps the real order of the columns kept.
 // reports-20261111.ts has 2565–2569 of s_epi2's mmr2 and pcv4.
 

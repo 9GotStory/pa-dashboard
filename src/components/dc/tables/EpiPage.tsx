@@ -28,7 +28,8 @@ const FIELDS: (keyof ReportQuery)[] = ["year", "area", "period"];
  * with a ช่องค้นหา for the 20 of s_epi1, without one for s_epi2, and การ์ดคู่
  * for the 2 of s_epi3 and of s_epi5
  */
-const LAYOUTS: Record<string, "search" | "table" | "cards"> = { s_epi1: "search", s_epi2: "table", s_epi3: "cards", s_epi5: "cards" };
+type Layout = "search" | "table" | "cards";
+const LAYOUTS: Record<string, Layout> = { s_epi1: "search", s_epi2: "table", s_epi3: "cards", s_epi5: "cards" };
 
 /**
  * ผลรายงาน of s_epi1, s_epi2, s_epi3 and s_epi5 after EPI1 V0.4.2 (SPEC
@@ -97,7 +98,7 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
  * layout "cards"; headingRef and buttonProps are useDetail's
  */
 function Overview(props: {
-  layout: (typeof LAYOUTS)[string];
+  layout: Layout;
   rows: Values["rows"];
   open: string | null;
   headingRef: RefObject<HTMLHeadingElement | null>;
