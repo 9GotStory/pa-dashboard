@@ -5,6 +5,8 @@
 export const TABLE_PAGES = {
   s_kpi_anc12: "anc",
   s_anc5: "anc",
+  s_kpi_childdev4: "childdev",
+  s_kpi_childdev2: "childdev",
 } as const;
 
 /** The page of a source table, null for a table without one yet (CoverageReport until F62) */

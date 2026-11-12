@@ -41,10 +41,47 @@ function AncMethod({ report, districtCode }: MethodProps) {
   );
 }
 
+/** เป้าหมาย (B) and ผลงาน (A) of s_kpi_childdev4 and s_kpi_childdev2 as HDC's page heads them (SCHEMA §4.6.3) */
+const CHILDDEV_MEANINGS: Record<string, { target: string; result: string }> = {
+  s_kpi_childdev4: {
+    target: "เด็กไทยอายุ 9, 18, 30, 42 และ 60 เดือนทุกคนที่อยู่อาศัยในพื้นที่รับผิดชอบ",
+    result: "เด็กตามเป้าหมายที่ได้รับการตรวจคัดกรองและมีพัฒนาการสมวัย ครั้งแรกและหลังการติดตาม (1B260)",
+  },
+  s_kpi_childdev2: {
+    target: "เด็กไทยอายุ 9, 18, 30, 42 และ 60 เดือนที่ได้รับการตรวจคัดกรองพัฒนาการจริง",
+    result: "เด็กตามเป้าหมายที่มีพัฒนาการสงสัยล่าช้าครั้งแรกและส่งต่อทันที (1B261 + 1B262)",
+  },
+};
+
+function ChilddevMethod({ report, districtCode }: MethodProps) {
+  const meaning = CHILDDEV_MEANINGS[report.source_table];
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถวที่ areacode ขึ้นต้นด้วย {districtCode} ตารางนี้มีหนึ่งแถวต่อหน่วยบริการ และ areacode คือตำบลที่ตั้งของหน่วยบริการ (อนุมาน)
+        จึงแสดงทั้งอำเภอรายหน่วยบริการ ไม่มีตัวกรองตำบล
+      </li>
+      {meaning && (
+        <>
+          <li>เป้าหมาย (B ของ HDC): {meaning.target}</li>
+          <li>ผลงาน (A ของ HDC): {meaning.result}</li>
+        </>
+      )}
+      <li>
+        ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละหน่วยบริการ · เป้าหมายเป็น 0 แสดง “—”
+        {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
+      </li>
+      <li>ตารางมีแต่รายไตรมาส (target1–4 และ result1–4) ทั้งปีจึงเป็นผลรวม 4 ไตรมาส</li>
+    </ul>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
     case "anc":
       return <AncMethod {...props} />;
+    case "childdev":
+      return <ChilddevMethod {...props} />;
   }
 }

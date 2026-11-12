@@ -36,6 +36,13 @@ function related(all: Entry[], here: Entry): Entry[] {
 /** Tables whose ทั้งปี differs from PA's, which เกี่ยวกับรายงานนี้ must say (SCHEMA §4.3) */
 const QUARTERS_UNLIKE_PA = ["s_kpi_childdev4", "s_kpi_childdev2"];
 
+/** ไตรมาส 4 that is low most years for a reason not known yet (SCHEMA §4.6.3) */
+const LOW_QUARTER_4: Record<string, string> = {
+  s_kpi_childdev4:
+    "ร้อยละไตรมาส 4 ต่ำกว่าไตรมาสอื่นเกือบทุกปี และปี 2569 ทั้งจังหวัดแพร่ก็ต่ำ จึงเป็นรูปแบบของข้อมูล HDC ไม่ใช่ข้อมูลของอำเภอสองที่ยังไม่ครบ ยังไม่รู้สาเหตุ",
+  s_kpi_childdev2: "เป้าหมายไตรมาส 4 (เด็กที่ได้รับการคัดกรอง) น้อยกว่าไตรมาสอื่นเกือบทุกปี ยังไม่รู้สาเหตุ",
+};
+
 export function generateStaticParams() {
   return entries(readCatalog()).map((e) => ({ id: e.report.opendata_id }));
 }
@@ -176,6 +183,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 {QUARTERS_UNLIKE_PA.includes(report.source_table) && (
                   <li>ทั้งปีคือผลรวม 4 ไตรมาสตามข้อมูล HDC ส่วน PA Dashboard รวม 3 ไตรมาสตามรอบประเมิน ตัวเลขทั้งปีจึงต่างจาก PA</li>
                 )}
+                {Object.hasOwn(LOW_QUARTER_4, report.source_table) && <li>{LOW_QUARTER_4[report.source_table]}</li>}
               </ul>
             </div>
           </div>

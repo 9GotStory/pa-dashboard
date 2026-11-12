@@ -17,6 +17,7 @@ const loading = () => <ReportStatus>กำลังโหลดข้อมู�
 // dynamic import of a Client Component is not code split (ADR-0015).
 const PAGES: Record<Page, ComponentType<Props>> = {
   anc: dynamic(() => import("./AncPage"), { loading }),
+  childdev: dynamic(() => import("./ChilddevPage"), { loading }),
 };
 const Coverage = dynamic(() => import("../CoverageReport"), { loading });
 
