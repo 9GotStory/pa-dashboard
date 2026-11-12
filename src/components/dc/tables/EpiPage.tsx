@@ -2,11 +2,10 @@
 
 import { ChevronRight, Search } from "lucide-react";
 import { useState, type RefObject } from "react";
-import { formatCount } from "@/lib/dc/format";
 import { epiValues, findMeasures } from "@/lib/dc/tables/epi";
 import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
 import Detail, { useDetail } from "../report/Detail";
-import { PERIOD_LABELS, describe, goalText, passText, pctText } from "../report/labels";
+import { PERIOD_LABELS, countText, describe, goalText, passText, pctText } from "../report/labels";
 import { PeriodPanel, TrendPanel, UnitPanel } from "../report/panels";
 import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
@@ -42,7 +41,7 @@ export default function EpiPage({ id, names, years }: { id: string; names: Names
 function Epi({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query: asked, search, apply, push, heading } = useReportQuery(data, names);
   const { query, block, rows, detail } = epiValues(data, asked, names, years);
-  const { overview, heading: detailHeading, button, close } = useDetail(query.measure, (measure) => push({ ...query, measure }));
+  const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.measure, (measure) => push({ ...query, measure }));
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
@@ -57,11 +56,11 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
       <ReportFilters key={search} data={data} names={names} query={query} onApply={apply} fields={FIELDS} />
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         {/* The CSV of what is shown: the รายการ of ภาพรวม, or the unit table of the รายการ open */}
-        <ReportActions csv={!block ? null : detail ? csv : measuresCsv(data.report, query, summary, block.max_date_com, rows)} />
+        <ReportActions csv={!block ? null : detail ? csv : measuresCsv(data.report, query.year, summary, block.max_date_com, rows)} />
       </ResultsHeader>
       {block ? (
         <div className="px-4 pb-6 sm:px-6">
-          <Overview rows={rows} open={query.measure} headingRef={overview} button={button} />
+          <Overview rows={rows} open={query.measure} headingRef={overviewHeading} buttonProps={buttonProps} />
           <Detail
             headingRef={detailHeading}
             onClose={close}
@@ -81,15 +80,15 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
 
 /**
  * ภาพรวมการได้รับวัคซีน: the รายการ found by the search, as a table from md
- * and a list of buttons below it; headingRef and button are useDetail's
+ * and a list of buttons below it; headingRef and buttonProps are useDetail's
  */
 function Overview(props: {
   rows: Values["rows"];
   open: string | null;
   headingRef: RefObject<HTMLHeadingElement | null>;
-  button: ReturnType<typeof useDetail>["button"];
+  buttonProps: ReturnType<typeof useDetail>["buttonProps"];
 }) {
-  const { rows, open, headingRef, button } = props;
+  const { rows, open, headingRef, buttonProps } = props;
   const [search, setSearch] = useState("");
   const found = findMeasures(rows, search);
   return (
@@ -132,7 +131,7 @@ function Overview(props: {
             {found.map((r) => (
               <li key={r.measure} className="border-t border-dc-border-subtle">
                 <button
-                  {...button(r.measure)}
+                  {...buttonProps(r.measure)}
                   className={`block w-full px-4 py-3.5 text-left hover:bg-dc-surface-muted ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
                 >
                   <span className="flex items-center justify-between gap-2">
@@ -145,7 +144,7 @@ function Overview(props: {
                   </span>
                   <span className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 text-[11px] text-dc-text-secondary">
                     <span>
-                      ผลงาน {r.total ? formatCount(r.total.result) : "—"} / เป้าหมาย {r.total ? formatCount(r.total.target) : "—"} · เกณฑ์{" "}
+                      ผลงาน {countText(r.total?.result ?? null)} / เป้าหมาย {countText(r.total?.target ?? null)} · เกณฑ์{" "}
                       {goalText(r.goal)}
                     </span>
                     <span className="inline-flex items-center font-semibold text-dc-brand-primary">
@@ -187,15 +186,15 @@ function Overview(props: {
                   <tr key={r.measure} className={`border-t border-dc-border-subtle ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}>
                     <th scope="row" className="px-4 py-2.5 text-left">
                       <button
-                        {...button(r.measure)}
+                        {...buttonProps(r.measure)}
                         aria-label={`ดูรายละเอียดวัคซีน ${r.label}`}
                         className="rounded-sm text-[13px] font-semibold text-dc-brand-deep underline-offset-4 hover:underline"
                       >
                         {r.label}
                       </button>
                     </th>
-                    <td className="px-3 py-2.5 text-right">{r.total ? formatCount(r.total.target) : "—"}</td>
-                    <td className="px-3 py-2.5 text-right">{r.total ? formatCount(r.total.result) : "—"}</td>
+                    <td className="px-3 py-2.5 text-right">{countText(r.total?.target ?? null)}</td>
+                    <td className="px-3 py-2.5 text-right">{countText(r.total?.result ?? null)}</td>
                     <td className="px-3 py-2.5">
                       <span className="flex min-w-36 items-center gap-2">
                         <PctBar pct={r.total?.pct ?? null} passed={r.passed} />
@@ -217,12 +216,16 @@ function Overview(props: {
   );
 }
 
-/** ร้อยละ as a bar of 0–100: green when ผ่าน, gold when ไม่ผ่าน, grey without a เกณฑ์; none without a ร้อยละ */
+/** The colour of ผลประเมิน: green when ผ่าน, gold when ไม่ผ่าน, grey without one */
+function verdictFill(passed: boolean | null): string {
+  return passed === null ? "bg-dc-text-secondary/50" : passed ? "bg-dc-brand-accent" : "bg-dc-gold";
+}
+
+/** ร้อยละ as a bar of 0–100 in the colour of its ผลประเมิน; none without a ร้อยละ */
 function PctBar({ pct, passed }: { pct: number | null; passed: boolean | null }) {
-  const fill = passed === null ? "bg-dc-text-secondary/50" : passed ? "bg-dc-brand-accent" : "bg-dc-gold";
   return (
     <span aria-hidden="true" className="block h-2 w-full flex-1 overflow-hidden rounded-full bg-dc-surface-muted">
-      {pct !== null && <span className={`block h-full rounded-full ${fill}`} style={{ width: `${Math.min(pct, 100)}%` }} />}
+      {pct !== null && <span className={`block h-full rounded-full ${verdictFill(passed)}`} style={{ width: `${Math.min(pct, 100)}%` }} />}
     </span>
   );
 }
@@ -232,7 +235,7 @@ function Verdict({ passed }: { passed: boolean | null }) {
   if (passed === null) return <span className="text-dc-text-secondary">{passText(passed)}</span>;
   return (
     <span className="inline-flex shrink-0 items-center gap-1.5 text-xs font-semibold whitespace-nowrap text-dc-brand-deep">
-      <i aria-hidden="true" className={`inline-block size-2 rounded-full ${passed ? "bg-dc-brand-accent" : "bg-dc-gold"}`} />
+      <i aria-hidden="true" className={`inline-block size-2 rounded-full ${verdictFill(passed)}`} />
       {passText(passed)}
     </span>
   );
@@ -245,7 +248,7 @@ function Verdict({ passed }: { passed: boolean | null }) {
  */
 function MeasureFigures(props: { detail: NonNullable<Values["detail"]>; year: string; unitLabel: string; totalLabel: string }) {
   const { detail, year, unitLabel, totalLabel } = props;
-  const { label, total, goal, units, trend, steps } = detail;
+  const { label, total, goal, units, trend, byQuarter, steps } = detail;
   return (
     <>
       <SummaryTiles total={total} goal={goal} />
@@ -264,7 +267,7 @@ function MeasureFigures(props: { detail: NonNullable<Values["detail"]>; year: st
         {total && steps.length > 0 && (
           <PeriodPanel
             year={year}
-            stepName={steps[0].period.startsWith("q") ? "ไตรมาส" : "เดือน"}
+            stepName={byQuarter ? "ไตรมาส" : "เดือน"}
             points={steps.map((s) => ({ label: PERIOD_LABELS[s.period].short, totals: s.totals }))}
           />
         )}

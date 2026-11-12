@@ -45,7 +45,7 @@ export function resultsText(
  */
 export function measuresCsv(
   report: DcReport,
-  query: ReportQuery,
+  year: string,
   summary: string,
   dateCom: string,
   rows: { label: string; total: Totals | null; goal: number | null; passed: boolean | null }[],
@@ -53,7 +53,7 @@ export function measuresCsv(
   return () =>
     reportCsv({
       report,
-      year: query.year,
+      year,
       filters: summary,
       dateCom,
       table: [

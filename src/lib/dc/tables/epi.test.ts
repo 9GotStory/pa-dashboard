@@ -150,8 +150,9 @@ test("รายละเอียด MMR 2569 ทั้งปี → เป้�
 test("รายละเอียด MMR 2569 ไตรมาส 2 → 39/37 and รายไตรมาส: ไตรมาส 1 = ต.ค.–ธ.ค. 48/47 (B of SCHEMA §4.6.4: 48/39/43/51), the 4 summing to ทั้งปี 181/174", () => {
   const { detail } = epiValues(EPI1, { ...OVERVIEW_2569, period: "q2", measure: "mmr" }, NAMES, YEARS);
   assert.equal(pair(detail!.total), "39/37");
+  assert.equal(detail?.byQuarter, true);
   assert.deepEqual(
-    detail?.steps.map((s) => `${s.period} ${pair(s.totals)}`),
+    detail.steps.map((s) => `${s.period} ${pair(s.totals)}`),
     ["q1 48/47", "q2 39/37", "q3 43/40", "q4 51/50"],
   );
   const sum = detail!.steps.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), { target: 0, result: 0 });
@@ -161,7 +162,8 @@ test("รายละเอียด MMR 2569 ไตรมาส 2 → 39/37 and
 test("รายละเอียด MMR 2569 เดือนมีนาคม → 14/12, steps still by เดือน", () => {
   const { detail } = epiValues(EPI1, { ...OVERVIEW_2569, period: "m03", measure: "mmr" }, NAMES, YEARS);
   assert.equal(pair(detail!.total), "14/12");
-  assert.equal(detail?.steps.length, 12);
+  assert.equal(detail?.byQuarter, false);
+  assert.equal(detail.steps.length, 12);
 });
 
 test("ตำบลบ้านหนุน → รายละเอียด by หน่วยบริการ, adding up to the ตำบล's 24/24 · ?by=hosp on ทั้งอำเภอ → still by ตำบล (no เปรียบเทียบตาม)", () => {

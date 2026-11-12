@@ -12,41 +12,43 @@ const DETAIL_ID = "report-detail";
  * The state of a page's รายละเอียด: shown is the item open (null: ภาพรวม)
  * and show pushes the query that opens another or closes it, so back and
  * forward go through them. Opening moves focus to the heading of the
- * รายละเอียด and closing to that of ภาพรวม (overview) once the page shows
- * it; a link that opens one straight away, back and forward leave focus be.
+ * รายละเอียด (detailHeading) and closing to that of ภาพรวม (overviewHeading)
+ * once the page shows it; a link that opens one straight away, back and
+ * forward leave focus be.
  */
 export function useDetail(shown: string | null, show: (item: string | null) => void) {
-  const overview = useRef<HTMLHeadingElement>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
+  const overviewHeading = useRef<HTMLHeadingElement>(null);
+  const detailHeading = useRef<HTMLHeadingElement>(null);
   // Where focus goes once the page shows what was asked: set by open and close only
   const moving = useRef<RefObject<HTMLHeadingElement | null>>(null);
   useEffect(() => {
-    if (moving.current) focus(moving.current.current);
+    if (moving.current) scrollToAndFocus(moving.current.current);
     moving.current = null;
   }, [shown]);
   const move = (to: RefObject<HTMLHeadingElement | null>, item: string | null) => {
     // The item shown already: no change of URL for the effect to see
-    if (item === shown) return focus(to.current);
+    if (item === shown) return scrollToAndFocus(to.current);
     moving.current = to;
     show(item);
   };
   return {
     /** For the heading of ภาพรวม, where focus goes back on close */
-    overview,
-    heading,
+    overviewHeading,
+    /** For the heading of the รายละเอียด, where focus goes on open */
+    detailHeading,
     /** The props of the real <button> that opens item (SPEC §9.4) */
-    button: (item: string) => ({
+    buttonProps: (item: string) => ({
       type: "button" as const,
       "aria-expanded": item === shown,
       "aria-controls": DETAIL_ID,
-      onClick: () => move(heading, item),
+      onClick: () => move(detailHeading, item),
     }),
-    close: () => move(overview, null),
+    close: () => move(overviewHeading, null),
   };
 }
 
 /** Scrolls to the section a heading opens, with what is above the heading in it, and focuses the heading */
-function focus(heading: HTMLHeadingElement | null) {
+function scrollToAndFocus(heading: HTMLHeadingElement | null) {
   heading?.closest("section")?.scrollIntoView({ block: "start" });
   heading?.focus({ preventScroll: true });
 }
@@ -54,7 +56,7 @@ function focus(heading: HTMLHeadingElement | null) {
 /**
  * Where the รายละเอียด of useDetail goes: always on the page, as the buttons
  * of ภาพรวม point at it, and empty for ภาพรวม (title null). Its heading
- * (useDetail's heading) takes focus without a ring, as no key put it there;
+ * (useDetail's detailHeading) takes focus without a ring, as no key put it there;
  * ปิดรายละเอียด (useDetail's close) goes back to ภาพรวม.
  */
 export default function Detail(props: {

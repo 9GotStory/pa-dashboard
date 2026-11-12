@@ -1,9 +1,9 @@
-import { formatPct } from "@/lib/dc/format";
+import { formatCount, formatPct } from "@/lib/dc/format";
 import type { DcCatalog, Period, ReportQuery } from "@/lib/dc/types";
 import { measureLabel } from "@/lib/dc/values";
 
 // The words the report pages share: the names of ช่วงเวลา and เปรียบเทียบตาม,
-// ร้อยละ as shown, and the filters in one line.
+// counts, ร้อยละ, เกณฑ์ and ผลประเมิน as shown, and the filters in one line.
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
 
@@ -30,6 +30,11 @@ export const PERIOD_LABELS: Record<Period, { name: string; short: string }> = {
 
 /** What เปรียบเทียบตาม compares by */
 export const UNIT_LABELS: Record<ReportQuery["by"], string> = { area: "ตำบล", hosp: "หน่วยบริการ" };
+
+/** เป้าหมาย or ผลงาน as shown, "—" without data (SPEC §9.4) */
+export function countText(n: number | null): string {
+  return n === null ? "—" : formatCount(n);
+}
 
 /** ร้อยละ as shown, "—" when the เป้าหมาย is 0 (SPEC §9.4) */
 export function pctText(pct: number | null): string {
