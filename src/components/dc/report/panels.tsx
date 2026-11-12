@@ -24,13 +24,18 @@ function Key({ swatch, children }: { swatch: string; children: ReactNode }) {
   );
 }
 
+/** The dashed เกณฑ์ line of กราฟ A and B; nothing when the รายการ has no เกณฑ์ */
+function GoalKey({ goal }: { goal: number | null }) {
+  return goal === null ? null : <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>;
+}
+
 /** กราฟ A: ร้อยละ of each ตำบล or หน่วยบริการ (unitLabel), with the เกณฑ์ */
 export function UnitPanel({ unitLabel, units, goal }: { unitLabel: string; units: UnitTotals[]; goal: number | null }) {
   return (
     <Surface title={`ร้อยละราย${unitLabel}`}>
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
         <Key swatch="h-2 w-4 rounded-sm bg-dc-brand-primary">ร้อยละ</Key>
-        {goal !== null && <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>}
+        <GoalKey goal={goal} />
       </p>
       <UnitChart title={`ร้อยละราย${unitLabel}`} units={units} goal={goal} />
     </Surface>
@@ -43,7 +48,7 @@ export function TrendPanel({ points, goal }: { points: TrendPoint[]; goal: numbe
     <Surface title="แนวโน้มร้อยละรายปี">
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
         <Key swatch="h-0.5 w-4 bg-dc-brand-primary">ร้อยละรายปี</Key>
-        {goal !== null && <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>}
+        <GoalKey goal={goal} />
       </p>
       <TrendChart title="แนวโน้มร้อยละรายปี" points={points} goal={goal} />
     </Surface>
