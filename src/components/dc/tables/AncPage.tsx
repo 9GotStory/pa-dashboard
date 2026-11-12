@@ -1,17 +1,15 @@
 "use client";
 
-import { reportCsv } from "@/lib/dc/csv";
 import { ancValues } from "@/lib/dc/tables/anc";
 import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
-import { PERIOD_LABELS, UNIT_LABELS, areaLabel, describe, pctText } from "../report/labels";
-import { PeriodPanel, TrendPanel, UnitPanel } from "../report/panels";
+import { areaLabel } from "../report/labels";
+import QuarterFigures from "../report/QuarterFigures";
 import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
-import SummaryTiles from "../report/SummaryTiles";
-import UnitTable from "../report/UnitTable";
+import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
@@ -35,28 +33,13 @@ export default function AncPage({ id, names, years }: { id: string; names: Names
 
 function Anc({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
-  const anc = ancValues(data, query, names, years);
-  const { report } = data;
-  // No year at all: the report has no data yet, so there is no filter to name
-  const summary = query.year ? describe(query, names) : "";
-  const unitLabel = UNIT_LABELS[query.by];
-  const totalLabel = `รวม${areaLabel(query.area, names)}`;
-  const { block, total, units } = anc;
-  const csv =
-    block && total && units
-      ? () =>
-          reportCsv({
-            report,
-            year: query.year,
-            filters: summary,
-            dateCom: block.max_date_com,
-            table: [
-              [unitLabel, "เป้าหมาย", "ผลงาน", "ร้อยละ"],
-              ...units.map((u) => [u.name, u.totals.target, u.totals.result, pctText(u.totals.pct)]),
-              [totalLabel, total.target, total.result, pctText(total.pct)],
-            ],
-          })
-      : null;
+  const { block, total, goal, units, trend, quarters } = ancValues(data, query, names, years);
+  const { summary, unitLabel, totalLabel, csv } = resultsText(
+    data.report,
+    query,
+    names,
+    block && total && units ? { dateCom: block.max_date_com, units, total } : null,
+  );
 
   return (
     <>
@@ -70,34 +53,8 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
       ) : units?.length === 0 ? (
         <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
       ) : (
-        <Figures anc={anc} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />
+        <QuarterFigures {...{ total, goal, units, trend, quarters, unitLabel, totalLabel }} year={query.year} />
       )}
     </>
-  );
-}
-
-/** ตัวเลขสรุป, the charts and the table of a year with a block ปี; "—" and the trend alone when the district has no ผลงาน that year (SPEC §9.4) */
-function Figures(props: { anc: ReturnType<typeof ancValues>; year: string; unitLabel: string; totalLabel: string }) {
-  const { anc, year, unitLabel, totalLabel } = props;
-  const { total, units, goal, trend, quarters } = anc;
-  return (
-    <div className="px-4 pb-6 sm:px-6">
-      <SummaryTiles total={total} goal={goal} />
-
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {total && units ? (
-          <>
-            <UnitPanel unitLabel={unitLabel} units={units} goal={goal} />
-            <UnitTable unitLabel={unitLabel} units={units} total={total} totalLabel={totalLabel} />
-          </>
-        ) : (
-          <p className="text-sm text-dc-text-secondary lg:col-span-2">ไม่มีข้อมูลในปีงบประมาณ {year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</p>
-        )}
-        <TrendPanel points={trend} goal={goal} />
-        {total && quarters.length > 0 && (
-          <PeriodPanel year={year} stepName="ไตรมาส" points={quarters.map((q) => ({ label: PERIOD_LABELS[q.period].short, totals: q.totals }))} />
-        )}
-      </div>
-    </div>
   );
 }

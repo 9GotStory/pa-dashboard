@@ -1,9 +1,8 @@
 "use client";
 
-import { reportCsv } from "@/lib/dc/csv";
 import type { DcCatalog, DcReportData, DcYearBlock, ReportQuery, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
 import { goalFor, measureLabel, periods, totals, totalsBy, trend, yearBlock } from "@/lib/dc/values";
-import { PERIOD_LABELS, UNIT_LABELS, areaLabel, describe, pctText } from "./report/labels";
+import { PERIOD_LABELS, areaLabel } from "./report/labels";
 import { PeriodPanel, TrendPanel, UnitPanel } from "./report/panels";
 import ReportActions from "./report/ReportActions";
 import ReportFilters from "./report/ReportFilters";
@@ -12,6 +11,7 @@ import ReportStatus, { NoYear } from "./report/ReportStatus";
 import ResultsHeader from "./report/ResultsHeader";
 import SummaryTiles from "./report/SummaryTiles";
 import UnitTable from "./report/UnitTable";
+import { resultsText } from "./report/resultsText";
 import { useReportQuery } from "./report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
@@ -37,25 +37,12 @@ function Coverage({ data, names, years }: { data: DcReportData; names: Names; ye
   // null: the whole district has no ผลงาน that year, shown as "—" (SPEC §9.4)
   const values = units && total ? { units, total } : null;
   const figures = block && recognised && (!values || values.units.length > 0) ? { block, values } : null;
-  // No year at all: the report has no data yet, so there is no filter to name
-  const summary = query.year ? describe(query, names) : "";
-  const unitLabel = UNIT_LABELS[query.by];
-  const totalLabel = `รวม${areaLabel(query.area, names)}`;
-  const shown = figures?.values && { block: figures.block, ...figures.values };
-  const csv = shown
-    ? () =>
-        reportCsv({
-          report,
-          year: query.year,
-          filters: summary,
-          dateCom: shown.block.max_date_com,
-          table: [
-            [unitLabel, "เป้าหมาย", "ผลงาน", "ร้อยละ"],
-            ...shown.units.map((u) => [u.name, u.totals.target, u.totals.result, pctText(u.totals.pct)]),
-            [totalLabel, shown.total.target, shown.total.result, pctText(shown.total.pct)],
-          ],
-        })
-    : null;
+  const { summary, unitLabel, totalLabel, csv } = resultsText(
+    report,
+    query,
+    names,
+    figures?.values ? { dateCom: figures.block.max_date_com, ...figures.values } : null,
+  );
 
   return (
     <>
