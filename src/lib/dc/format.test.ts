@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { csvFileName, formatBuildTime, formatCount, formatPct, formatThaiDate, toCsv } from "./format";
+import { formatBuildTime, formatCount, formatPct, formatThaiDate } from "./format";
 
 // FEATURES F15: the display helpers that must print what PA prints, checked
 // against PA's own output (CODING_STANDARDS §5).
@@ -19,25 +19,6 @@ test("date_com 20261102210446 (14 digits, s_epi1) → the seconds left out as PA
 
 test("max_date_com \"\" (a block ปี without rows, SCHEMA §3.2) → \"\" without throwing", () => {
   assert.equal(formatThaiDate(""), "");
-});
-
-// FEATURES F20: the CSV download of the report page (SPEC §9.4).
-
-test("CSV → UTF-8 BOM first, CRLF between lines, every cell in quotes with \" doubled (Excel reads Thai and commas right)", () => {
-  assert.equal(toCsv([["ตำบล", "เป้าหมาย"], ["บ้านหนุน", 12], ["ชื่อ \"ย่อ\", ยาว", ""]]), '\uFEFF"ตำบล","เป้าหมาย"\r\n"บ้านหนุน","12"\r\n"ชื่อ ""ย่อ"", ยาว",""');
-});
-
-test("CSV cells starting with = + - @ tab or CR, after spaces too as in R6 → ' put first so Excel keeps them as text; — and 1-2 untouched", () => {
-  assert.equal(
-    toCsv([["=SUM(A1)", "+1", "-1", "@A1", "\tx", "\rx", " =1", "—", "1-2"]]),
-    '\uFEFF"\'=SUM(A1)","\'+1","\'-1","\'@A1","\'\tx","\'\rx","\' =1","—","1-2"',
-  );
-});
-
-test("CSV file name → SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv (SPEC §9.4), the id in its own letter case (SCHEMA §3)", () => {
-  assert.equal(csvFileName({ source_table: "s_epi_complete", opendata_id: "28dd2c7955ce926456240b2ff0100bde" }, "2569"), "SHDC-s_epi_complete-28dd2c79-2569.csv");
-  // A real HDC id in mixed case (SCHEMA §5.2), from the catalog export of 30 Oct 2569
-  assert.equal(csvFileName({ source_table: "s_child_mom_hepb", opendata_id: "Qe95V9DKGQYy5ij" }, "2568"), "SHDC-s_child_mom_hepb-Qe95V9DK-2568.csv");
 });
 
 test("เป้าหมาย and ผลงาน → Thai grouping with commas: 1234567 → \"1,234,567\", 0 → \"0\"", () => {

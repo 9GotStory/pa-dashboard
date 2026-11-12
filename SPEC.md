@@ -503,9 +503,10 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `src/lib/dc/client.ts` | `fetch('/data/reports/{id}.json')` + cache ในหน่วยความจำของหน้า | เบราว์เซอร์ |
 | `src/lib/dc/values.ts` | ฟังก์ชันคำนวณล้วนตาม SCHEMA §4 (ไม่ import React, ไม่แตะ DOM) | เบราว์เซอร์ + เทสต์ |
 | `src/lib/dc/format.ts` | `formatPct` (สำเนาจาก PA) และ `formatThaiDate` (แปลง `date_com` 12–14 หลักเป็นวันที่ไทย ผลเหมือน PA) ไม่ import ไฟล์ PA | เบราว์เซอร์ + เทสต์ |
+| `src/lib/dc/csv.ts` (Track J) | `reportCsv`: ไฟล์ CSV ของหน้ารายงาน (บรรทัดหัว, BOM, CRLF, กันสูตร, ชื่อไฟล์ §9.4) ที่ชิ้นส่วน CSV ของทุกหน้าใช้ แยกจาก `format.ts` ซึ่งหน้าแรกโหลดด้วย | เบราว์เซอร์ + เทสต์ |
 | `src/lib/dc/fonts.ts` | Prompt/Sarabun น้ำหนักเดียวกับ `src/lib/fonts.ts` ของ PA แต่ไม่ preload (§4) | build |
 | `src/lib/dc/population.ts` (เฟส 2) | ฟังก์ชันล้วนของประชากรทะเบียนราษฎร: อ่านและตรวจไฟล์ของ stat.bora (SCHEMA §11.1–11.2) และคำนวณส่วนประชากรของหน้าแรก (SCHEMA §11.3) ไม่ import React ไม่แตะ DOM ไม่ `fetch` | เบราว์เซอร์ของ `/sync` + build + เทสต์ |
-| `src/lib/dc/values.test.ts`, `format.test.ts`, `population.test.ts` | เทสต์ด้วย `node:test` ผ่าน `tsx` | เทสต์ |
+| `src/lib/dc/values.test.ts`, `format.test.ts`, `csv.test.ts`, `population.test.ts` | เทสต์ด้วย `node:test` ผ่าน `tsx` | เทสต์ |
 | `src/components/dc/*` | masthead, footer, แผนที่ (dynamic import), ตัวกรอง, กราฟ SVG, ตาราง | เบราว์เซอร์ |
 | `src/lib/dc/tables/index.ts` (Track J) | รายการตารางต้นทางที่มีหน้า (`source_table` → หน้า) ไม่ import React ตัวเลือกหน้าใช้เลือกหน้า และตั้งแต่ F62 build กับ `dc:check` ใช้หารายงานที่รอวิเคราะห์ (§5.2) | ทั้งสองฝั่ง |
 | `src/lib/dc/tables/{หน้า}.ts` + `{หน้า}.test.ts` (Track J) | ชั้นข้อมูลของหน้ารายตาราง: ฟังก์ชันเดียว snapshot ของรายงาน + `ReportQuery` → ค่าทุกตัวที่หน้าใช้ เรียก `values.ts` ไม่ import React ไม่แตะ DOM · เทสต์ด้วย fixture ที่ตัดจาก snapshot จริงใน `src/lib/dc/fixtures/` ค่าคาดหวังจาก SCHEMA §4.6 | เบราว์เซอร์ + เทสต์ |

@@ -1,9 +1,6 @@
-import type { Cell, DcReport } from "./types";
-
 // What PA prints for a percentage and for date_com, written again here
 // because Data Center code does not import PA files (CODING_STANDARDS §4),
-// the CSV download of the report page, and the build time that the footer
-// and the home page show.
+// and the build time that the footer and the home page show.
 
 /**
  * A percentage with 2 decimals (a copy of PA's formatPct). toFixed rounds
@@ -55,24 +52,4 @@ const thaiTime = new Intl.DateTimeFormat("th-TH", {
  */
 export function formatBuildTime(iso: string): string {
   return thaiTime.format(new Date(iso)) + " น.";
-}
-
-/**
- * Rows as the CSV text of the report page's download (SPEC §9.4): a UTF-8
- * BOM so Excel reads Thai, CRLF line ends, every cell quoted, and a ' before
- * a cell that a spreadsheet would run as a formula (R6's rule: = + - @ tab
- * or CR, after any spaces)
- */
-export function toCsv(rows: Cell[][]): string {
-  const cell = (v: Cell) => {
-    const text = String(v);
-    const safe = /^\s*[=+\-@\t\r]/.test(text) ? "'" + text : text;
-    return `"${safe.replaceAll('"', '""')}"`;
-  };
-  return "\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n");
-}
-
-/** SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv: one table can hold several reports (SPEC §9.4) */
-export function csvFileName(report: Pick<DcReport, "source_table" | "opendata_id">, year: string): string {
-  return `SHDC-${report.source_table}-${report.opendata_id.slice(0, 8)}-${year}.csv`;
 }
