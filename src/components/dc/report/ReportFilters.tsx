@@ -39,7 +39,7 @@ function Select(props: {
  * The form of SPEC §9.4, with the fields a page asks for (all by default; a
  * table of one row per หน่วยบริการ has no พื้นที่, for one). Its choices are
  * worked into a query the same way as the URL's, so ช่วงเวลา and รายการวัคซีน
- * follow the year picked; แสดงผล applies them. Key it on the URL's query so
+ * follow the year picked; แสดงผล applies them, keeping the ด้าน open. Key it on the URL's query so
  * it shows what the results show.
  */
 export default function ReportFilters(props: {
@@ -58,6 +58,7 @@ export default function ReportFilters(props: {
     period: query.period,
     measure: query.measure ?? "",
     by: query.by,
+    domain: query.domain === null ? "" : String(query.domain),
   }));
   if (years.length === 0) return null;
   const draft = reportQuery(data, new URLSearchParams(picked), names);

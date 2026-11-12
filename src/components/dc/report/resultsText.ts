@@ -1,5 +1,5 @@
 import { reportCsv } from "@/lib/dc/csv";
-import type { DcCatalog, DcReport, ReportQuery, Totals, UnitTotals } from "@/lib/dc/types";
+import type { Cell, DcCatalog, DcReport, ReportQuery, Totals, UnitTotals } from "@/lib/dc/types";
 import { UNIT_LABELS, areaLabel, describe, goalText, passText, pctText } from "./labels";
 
 /**
@@ -28,14 +28,19 @@ export function resultsText(
           part: page.part,
           filters: summary,
           dateCom: shown.dateCom,
-          table: [
-            [unitLabel, "เป้าหมาย", "ผลงาน", "ร้อยละ"],
-            ...shown.units.map((u) => [u.name, u.totals.target, u.totals.result, pctText(u.totals.pct)]),
-            [totalLabel, shown.total.target, shown.total.result, pctText(shown.total.pct)],
-          ],
+          table: unitTable(unitLabel, shown.units, shown.total, totalLabel),
         })
     : null;
   return { summary, unitLabel, totalLabel, csv };
+}
+
+/** The unit table of results as CSV rows: เป้าหมาย, ผลงาน and ร้อยละ of each ตำบล or หน่วยบริการ, then the total row */
+export function unitTable(unitLabel: string, units: UnitTotals[], total: Totals, totalLabel: string): Cell[][] {
+  return [
+    [unitLabel, "เป้าหมาย", "ผลงาน", "ร้อยละ"],
+    ...units.map((u) => [u.name, u.totals.target, u.totals.result, pctText(u.totals.pct)]),
+    [totalLabel, total.target, total.result, pctText(total.pct)],
+  ];
 }
 
 /**

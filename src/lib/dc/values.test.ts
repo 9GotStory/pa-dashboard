@@ -384,11 +384,11 @@ const EPI2_DATA = {
 const query = (search: string) => reportQuery(EPI2_DATA, new URLSearchParams(search), NAMES);
 
 test("no query on s_epi2 → the latest ปีงบประมาณ, ทั้งอำเภอ, ทั้งปี, no measure (ภาพรวม), by area (the defaults of SCHEMA §9)", () => {
-  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: null, by: "area" });
+  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null });
 });
 
 test("?year=2560, a year without data → kept as 2560 with no measure, so the page says ไม่มีข้อมูลปี 2560 ในระบบ instead of another year", () => {
-  assert.deepEqual(query("year=2560"), { year: "2560", area: "all", period: "year", measure: null, by: "area" });
+  assert.deepEqual(query("year=2560"), { year: "2560", area: "all", period: "year", measure: null, by: "area", domain: null });
 });
 
 test("a block ปี without rows (the id filter left none, SCHEMA §3.2) → not a year with data: not offered, not the default, and no block for it", () => {
@@ -429,7 +429,7 @@ test("?period= → kept when the year's columns have it (q2 on s_kpi_anc12, m01 
 });
 
 test("?area=540601 → that ตำบล, compared by หน่วยบริการ even with by=area (SPEC §9.4); a code not in areas → ทั้งอำเภอ", () => {
-  assert.deepEqual(query("area=540601&by=area"), { year: "2569", area: "540601", period: "year", measure: null, by: "hosp" });
+  assert.deepEqual(query("area=540601&by=area"), { year: "2569", area: "540601", period: "year", measure: null, by: "hosp", domain: null });
   assert.equal(query("area=540699").area, "all");
 });
 
@@ -439,13 +439,38 @@ test("?by=hosp → by หน่วยบริการ for ทั้งอำ�
 });
 
 test("a ReportQuery → ?year=&area=&period=&measure=&by= in the order of SPEC §9.4, which reportQuery reads back as the same query", () => {
-  const q = { year: "2568", area: "540601", period: "m11", measure: "mmr1", by: "hosp" } as const;
+  const q = { year: "2568", area: "540601", period: "m11", measure: "mmr1", by: "hosp", domain: null } as const;
   assert.equal(reportSearch(q), "?year=2568&area=540601&period=m11&measure=mmr1&by=hosp");
   assert.deepEqual(reportQuery(EPI2_DATA, new URLSearchParams(reportSearch(q)), NAMES), q);
 });
 
+// FEATURES F57: ?domain= opens the รายละเอียด of a ด้าน of s_aged9 (SPEC §9.4, SCHEMA §9)
+const aged9Query = (search: string) => reportQuery(snapshot(S_AGED9), new URLSearchParams(search), NAMES);
+
+test("?domain=8 on s_aged9 → ด้าน 8; 1 and 9 too; 0, 10, 12, 08 and 8.0 → null (ภาพรวม)", () => {
+  assert.equal(aged9Query("domain=8").domain, 8);
+  assert.deepEqual(["1", "9"].map((d) => aged9Query(`domain=${d}`).domain), [1, 9]);
+  assert.deepEqual(["0", "10", "12", "08", "8.0"].map((d) => aged9Query(`domain=${d}`).domain), [null, null, null, null, null]);
+});
+
+test("?domain=8 on another table (s_epi2) → null", () => {
+  assert.equal(query("domain=8").domain, null);
+});
+
+test("s_aged9: ?area=540608&by=area → by หน่วยบริการ; ทั้งอำเภอ ?by=hosp → by หน่วยบริการ (SPEC §9.4 ตัวกรอง)", () => {
+  assert.equal(aged9Query("area=540608&by=area").by, "hosp");
+  assert.equal(aged9Query("by=hosp").by, "hosp");
+  assert.equal(aged9Query("").by, "area");
+});
+
+test("a ReportQuery with a ด้าน → ?domain= after by, which reportQuery reads back as the same query", () => {
+  const q = { year: "2565", area: "540608", period: "year", measure: null, by: "hosp", domain: 8 } as const;
+  assert.equal(reportSearch(q), "?year=2565&area=540608&period=year&by=hosp&domain=8");
+  assert.deepEqual(aged9Query(reportSearch(q).slice(1)), q);
+});
+
 test("a ReportQuery without a measure → no measure in the URL", () => {
-  assert.equal(reportSearch({ year: "2569", area: "all", period: "year", measure: null, by: "area" }), "?year=2569&area=all&period=year&by=area");
+  assert.equal(reportSearch({ year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null }), "?year=2569&area=all&period=year&by=area");
 });
 
 // FEATURES F50: a รายการ or ตัวชี้วัด whose ผลงาน the whole district lacks for

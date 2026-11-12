@@ -1,6 +1,6 @@
 import { formatCount, formatPct } from "@/lib/dc/format";
 import type { DcCatalog, Period, ReportQuery } from "@/lib/dc/types";
-import { measureLabel } from "@/lib/dc/values";
+import { DOMAIN_LABELS, measureLabel } from "@/lib/dc/values";
 
 // The words the report pages share: the names of ช่วงเวลา and เปรียบเทียบตาม,
 // counts, ร้อยละ, เกณฑ์ and ผลประเมิน as shown, and the filters in one line.
@@ -58,7 +58,7 @@ export function passText(passed: boolean | null): string {
 /**
  * The filters in one line, for the results, the CSV and screen readers: the
  * fields of the page's form (all by default, as ReportFilters) and the
- * รายการ open
+ * รายการ or ด้าน open
  */
 export function describe(q: ReportQuery, names: Names, fields?: (keyof ReportQuery)[]): string {
   const has = (field: keyof ReportQuery) => !fields || fields.includes(field);
@@ -67,6 +67,7 @@ export function describe(q: ReportQuery, names: Names, fields?: (keyof ReportQue
     ...(has("area") ? [areaLabel(q.area, names)] : []),
     ...(has("period") ? [PERIOD_LABELS[q.period].name] : []),
     ...(q.measure === null ? [] : [`รายการ ${measureLabel(q.measure)}`]),
+    ...(q.domain === null ? [] : [`ด้าน${DOMAIN_LABELS[q.domain - 1]}`]),
     ...(has("by") ? [`เปรียบเทียบราย${UNIT_LABELS[q.by]}`] : []),
   ].join(" · ");
 }

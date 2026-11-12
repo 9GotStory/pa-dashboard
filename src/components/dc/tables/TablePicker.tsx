@@ -19,6 +19,7 @@ const PAGES: Record<Page, ComponentType<Props>> = {
   anc: dynamic(() => import("./AncPage"), { loading }),
   childdev: dynamic(() => import("./ChilddevPage"), { loading }),
   epi: dynamic(() => import("./EpiPage"), { loading }),
+  aged9: dynamic(() => import("./Aged9Page"), { loading }),
 };
 const Coverage = dynamic(() => import("../CoverageReport"), { loading });
 
