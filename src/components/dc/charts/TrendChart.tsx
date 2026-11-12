@@ -8,15 +8,19 @@ const PLOT_HEIGHT = HEIGHT - PLOT_TOP - 34;
 const PLOT_X = 12;
 const PLOT_WIDTH = 86;
 
+/** The top of the ร้อยละ scale: 100, or the next 25 above the highest ร้อยละ when one passes 100 */
+export function trendTop(pcts: (number | null)[]): number {
+  return Math.max(100, Math.ceil(Math.max(0, ...pcts.map((v) => v ?? 0)) / 25) * 25);
+}
+
 /**
  * กราฟ B (SPEC §9.4): ร้อยละ per ปีงบประมาณ with the เกณฑ์ as a dashed line,
  * after R6's ncd view. A year without a value is "—" and breaks the line
- * (SCHEMA §4.2). The scale is 0–100, or up to the next 25 above the highest
- * ร้อยละ when one passes 100.
+ * (SCHEMA §4.2). The scale is 0–trendTop.
  */
 export default function TrendChart({ title, points, goal }: { title: string; points: TrendPoint[]; goal: number | null }) {
   const pcts = points.map((p) => p.totals?.pct ?? null);
-  const top = Math.max(100, Math.ceil(Math.max(0, ...pcts.map((v) => v ?? 0)) / 25) * 25);
+  const top = trendTop(pcts);
   const ticks = Array.from({ length: top / 25 + 1 }, (_, k) => k * 25);
   const x = (i: number) => ((i + 0.5) / points.length) * 100;
   const y = (v: number) => (1 - v / top) * 100;

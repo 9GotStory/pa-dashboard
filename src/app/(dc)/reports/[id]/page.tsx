@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import CoverageReport from "@/components/dc/CoverageReport";
+import { TableMethod } from "@/components/dc/tables/methods";
+import TablePicker from "@/components/dc/tables/TablePicker";
 import { formatThaiDate } from "@/lib/dc/format";
 import { readCatalog } from "@/lib/dc/snapshot";
+import { tablePage } from "@/lib/dc/tables";
 import type { DcCatalog, DcReport } from "@/lib/dc/types";
 
 // The report page (SPEC §9.4): one page per report in catalog.json, and 404
@@ -56,6 +58,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const openData = `https://opendata.moph.go.th/th/services/summary-table/${report.main_report_id}/${report.source_table}/${report.opendata_id}`;
   const latest = report.years.reduce((max, y) => (y.max_date_com > max ? y.max_date_com : max), "");
   const others = related(all, here);
+  // The page of the report's source table, or none yet: CoverageReport for a coverage report (ADR-0015)
+  const page = tablePage(report.source_table);
   const crumbs = [
     { label: "รายงานสุขภาพ", href: "/reports" },
     { label: main.main_report_name, href: `/reports?main=${main.main_report_id}` },
@@ -97,10 +101,15 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       </header>
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border bg-white print:border-0">
-        {report.report_type === "coverage" ? (
-          <CoverageReport id={report.opendata_id} names={{ areas: catalog.areas, hospitals: catalog.hospitals }} years={catalog.meta.years} />
+        {page || report.report_type === "coverage" ? (
+          <TablePicker
+            id={report.opendata_id}
+            sourceTable={report.source_table}
+            names={{ areas: catalog.areas, hospitals: catalog.hospitals }}
+            years={catalog.meta.years}
+          />
         ) : (
-          // workload, empty or anything else: not shown in phase 1 (SPEC §9.4)
+          // workload, empty or anything else of a table without a page: not shown (SPEC §9.4)
           <section aria-labelledby="unsupported-title" className="px-4 py-10 text-center sm:px-6">
             <h2 id="unsupported-title" className="font-prompt text-lg font-semibold text-dc-navy">
               ยังไม่รองรับรูปแบบรายงานนี้
@@ -143,16 +152,25 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </dl>
             </div>
             <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4 text-xs leading-relaxed">
-              {/* The coverage method only: another report_type has no page of its own yet */}
-              {report.report_type === "coverage" && (
+              {page ? (
                 <>
                   <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-navy">วิธีคำนวณ</h3>
-                  <p className="mb-3">
-                    รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
-                    แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
-                    {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
-                  </p>
+                  <div className="mb-3">
+                    <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
+                  </div>
                 </>
+              ) : (
+                // The coverage method of CoverageReport; another report_type has no page of its own yet
+                report.report_type === "coverage" && (
+                  <>
+                    <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-navy">วิธีคำนวณ</h3>
+                    <p className="mb-3">
+                      รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
+                      แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
+                      {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
+                    </p>
+                  </>
+                )
               )}
               <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">ข้อจำกัด</h3>
               <ul className="mt-1 list-disc pl-4">
