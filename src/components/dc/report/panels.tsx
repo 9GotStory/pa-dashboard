@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
-import type { Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
+import { formatCount } from "@/lib/dc/format";
+import type { Period, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
 import CountChart from "../charts/CountChart";
 import PeriodChart from "../charts/PeriodChart";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
 import UnitChart from "../charts/UnitChart";
+import { PERIOD_LABELS, pctText } from "./labels";
 import type { UnitCount } from "./resultsText";
 
 // กราฟ A–C of SPEC §9.4 and the counts of a ด้าน, each in its box with a title
@@ -78,6 +80,74 @@ export function PeriodPanel(props: { year: string; stepName: string; points: { l
         <Key swatch="size-2.5 rounded-sm bg-dc-brand-accent">ผลงาน</Key>
       </p>
       <PeriodChart title={`เป้าหมายและผลงานราย${stepName}`} points={points} />
+    </Surface>
+  );
+}
+
+/**
+ * ร้อยละสะสมรายไตรมาส (SPEC §9.4) of a year with ผลงาน รายไตรมาส but no
+ * เป้าหมาย รายไตรมาส: กราฟ B's line and phone list over ไตรมาส 1–4 in place
+ * of years, each ผลงานสะสม against the ทั้งปี target, with the เกณฑ์; then
+ * each ไตรมาส's ผลงาน, ผลงานสะสม and ร้อยละสะสม in a table
+ */
+export function CumulativePanel(props: {
+  year: string;
+  target: number;
+  goal: number | null;
+  quarters: { period: Period; result: number; cumulative: number; pct: number | null }[];
+}) {
+  const { year, target, goal, quarters } = props;
+  const points: TrendPoint[] = quarters.map((q) => ({
+    b_year: PERIOD_LABELS[q.period].short,
+    totals: { target, result: q.cumulative, pct: q.pct },
+  }));
+  return (
+    <Surface title={`ร้อยละสะสมรายไตรมาส ปีงบประมาณ ${year}`}>
+      <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+        <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">ร้อยละสะสม</Key>
+        <GoalKey goal={goal} />
+      </p>
+      <div className="sm:hidden">
+        <TrendList title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} />
+      </div>
+      <div className="hidden sm:block">
+        <TrendChart title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} />
+      </div>
+      <div role="region" tabIndex={0} aria-label="ตารางรายไตรมาส (เลื่อนดูแนวนอนได้)" className="mt-3 overflow-x-auto">
+        <table className="w-full border-collapse text-xs tabular-nums">
+          <caption className="pb-2 text-left text-[11px] text-dc-text-secondary">
+            ผลงานรายไตรมาสและร้อยละสะสม (ผลงานสะสม ÷ เป้าหมายทั้งปี {formatCount(target)})
+          </caption>
+          <thead className="bg-dc-highlight-soft text-dc-brand-deep">
+            <tr>
+              <th scope="col" className="px-2 py-2 text-left whitespace-nowrap">
+                ไตรมาส
+              </th>
+              <th scope="col" className="px-2 py-2 text-right whitespace-nowrap">
+                ผลงาน
+              </th>
+              <th scope="col" className="px-2 py-2 text-right whitespace-nowrap">
+                ผลงานสะสม
+              </th>
+              <th scope="col" className="px-2 py-2 text-right whitespace-nowrap">
+                ร้อยละสะสม
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {quarters.map((q) => (
+              <tr key={q.period} className="border-t border-dc-border-subtle">
+                <th scope="row" className="px-2 py-2 text-left font-normal whitespace-nowrap">
+                  {PERIOD_LABELS[q.period].short}
+                </th>
+                <td className="px-2 py-2 text-right whitespace-nowrap">{formatCount(q.result)}</td>
+                <td className="px-2 py-2 text-right whitespace-nowrap">{formatCount(q.cumulative)}</td>
+                <td className="px-2 py-2 text-right whitespace-nowrap">{pctText(q.pct)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </Surface>
   );
 }

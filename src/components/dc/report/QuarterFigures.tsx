@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import type { Period, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
 import { PERIOD_LABELS } from "./labels";
 import { PeriodPanel, TrendPanel, UnitPanel } from "./panels";
@@ -8,7 +9,8 @@ import UnitTable from "./UnitTable";
  * ตัวเลขสรุป, ร้อยละรายตำบลหรือรายหน่วยบริการ beside its table, แนวโน้ม and
  * เป้าหมาย/ผลงาน รายไตรมาส of a year with a block ปี, as ANC V0.2 lays them
  * out; "—" and the trend alone when the district has no ผลงาน that year
- * (total and units null, SPEC §9.4)
+ * (total and units null, SPEC §9.4). children follow in the grid: a page's
+ * own panel of the year.
  */
 export default function QuarterFigures(props: {
   year: string;
@@ -19,8 +21,9 @@ export default function QuarterFigures(props: {
   quarters: { period: Period; totals: Totals | null }[];
   unitLabel: string;
   totalLabel: string;
+  children?: ReactNode;
 }) {
-  const { year, total, goal, units, trend, quarters, unitLabel, totalLabel } = props;
+  const { year, total, goal, units, trend, quarters, unitLabel, totalLabel, children } = props;
   return (
     <div className="px-4 pb-6 sm:px-6">
       <SummaryTiles total={total} goal={goal} />
@@ -38,6 +41,7 @@ export default function QuarterFigures(props: {
         {total && quarters.length > 0 && (
           <PeriodPanel year={year} stepName="ไตรมาส" points={quarters.map((q) => ({ label: PERIOD_LABELS[q.period].short, totals: q.totals }))} />
         )}
+        {children}
       </div>
     </div>
   );

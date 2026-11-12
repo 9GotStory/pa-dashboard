@@ -318,6 +318,24 @@ export function countsBy(
   return unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, count: sum(block, cols, rows).result }));
 }
 
+/**
+ * ร้อยละสะสม (SPEC §9.4) of ผลงาน columns in order that have no เป้าหมาย of
+ * their own, as result1–4 of s_dm_screen and s_ht_screen (SCHEMA §4.6.8): for
+ * each, its ผลงาน and the Σ of it and those before it over the rows of an
+ * area, as n(v) reads each cell, ÷ the เป้าหมาย of the area × 100; pct null
+ * when that is 0. An empty column adds 0, so the last is the ทั้งปี ร้อยละ
+ * when the columns add up to result.
+ */
+export function cumulative(block: DcYearBlock, columns: readonly string[], area: string, target: number) {
+  const rows = rowsIn(block, area);
+  let sofar = 0;
+  return columns.map((column) => {
+    const result = sum(block, countColumns(column), rows).result;
+    sofar += result;
+    return { result, cumulative: sofar, pct: target > 0 ? (sofar / target) * 100 : null };
+  });
+}
+
 /** Totals of every block ปี with the same area, period and measure (SCHEMA §4.4), oldest year first */
 export function trend(data: DcReportData, query: Pick<ReportQuery, "area" | "period" | "measure">): TrendPoint[] {
   return data.years.map((block) => ({ b_year: block.b_year, totals: totals(block, data.report, query) }));
