@@ -237,11 +237,11 @@ test("q1 on s_dm_screen and s_aged9 → null: without target1–4, result1–4 (
 
 const MONTH_PERIODS = MONTHS.map((m) => `m${m}`);
 
-test("periods: s_kpi_anc12 → ทั้งปี and quarters 1–4; s_epi_complete and s_epi1 → ทั้งปี and the months ต.ค.–ก.ย. (each with a ผลงาน in one quarter or month)", () => {
+test("periods: s_kpi_anc12 → ทั้งปี and quarters 1–4; s_epi_complete → ทั้งปี and the months ต.ค.–ก.ย.; s_epi1 (M_B) → ทั้งปี, quarters of 3 months and the months (SCHEMA §4.3; each with a ผลงาน in one quarter or month)", () => {
   const withResult = (table: string, cells: Record<string, Cell>) => block(HEADERS[table], [{ hospcode: "06413", areacode: "54060101", ...cells }]);
   assert.deepEqual(periods(withResult("s_kpi_anc12", { result2: 1 }), DM_SCREEN), ["year", "q1", "q2", "q3", "q4"]);
   assert.deepEqual(periods(withResult("s_epi_complete", { result01: 1 }), DM_SCREEN), ["year", ...MONTH_PERIODS]);
-  assert.deepEqual(periods(withResult("s_epi1", { mmr_01: 1 }), DM_SCREEN), ["year", ...MONTH_PERIODS]);
+  assert.deepEqual(periods(withResult("s_epi1", { mmr_01: 1 }), DM_SCREEN), ["year", "q1", "q2", "q3", "q4", ...MONTH_PERIODS]);
 });
 
 test("periods: s_dental_0_5_cavity_free with b/a, s_dm_screen and s_aged9 → ทั้งปี only", () => {
@@ -383,12 +383,8 @@ const EPI2_DATA = {
 };
 const query = (search: string) => reportQuery(EPI2_DATA, new URLSearchParams(search), NAMES);
 
-test("no query on s_epi2 → the latest ปีงบประมาณ, ทั้งอำเภอ, ทั้งปี, that year's first measure dtp4, by area (the defaults of SCHEMA §9)", () => {
-  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: "dtp4", by: "area" });
-});
-
-test("?year=2568 → 2568, and its measure default comes from 2568's own columns: mmr1, not dtp4 of 2569", () => {
-  assert.deepEqual(query("year=2568"), { year: "2568", area: "all", period: "year", measure: "mmr1", by: "area" });
+test("no query on s_epi2 → the latest ปีงบประมาณ, ทั้งอำเภอ, ทั้งปี, no measure (ภาพรวม), by area (the defaults of SCHEMA §9)", () => {
+  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: null, by: "area" });
 });
 
 test("?year=2560, a year without data → kept as 2560 with no measure, so the page says ไม่มีข้อมูลปี 2560 ในระบบ instead of another year", () => {
@@ -409,10 +405,11 @@ test("years with data → latest first, as the ปีงบประมาณ op
   assert.deepEqual(dataYears(EPI2_DATA), ["2569", "2568"]);
 });
 
-test("?measure=mmr1 → mmr1; pcv4 in 2568, whose columns lack it, or MMR1 in another letter case → that year's first measure", () => {
+test("?measure=mmr1 → mmr1, also in 2568, whose columns have it; pcv4 in 2568, whose columns lack it, or MMR1 in another letter case → no measure (ภาพรวม, SPEC §9.4)", () => {
   assert.equal(query("measure=mmr1").measure, "mmr1");
-  assert.equal(query("year=2568&measure=pcv4").measure, "mmr1");
-  assert.equal(query("measure=MMR1").measure, "dtp4");
+  assert.equal(query("year=2568&measure=mmr1").measure, "mmr1");
+  assert.equal(query("year=2568&measure=pcv4").measure, null);
+  assert.equal(query("measure=MMR1").measure, null);
 });
 
 test("?measure= on a report without measures (s_epi_complete) → null", () => {
@@ -432,7 +429,7 @@ test("?period= → kept when the year's columns have it (q2 on s_kpi_anc12, m01 
 });
 
 test("?area=540601 → that ตำบล, compared by หน่วยบริการ even with by=area (SPEC §9.4); a code not in areas → ทั้งอำเภอ", () => {
-  assert.deepEqual(query("area=540601&by=area"), { year: "2569", area: "540601", period: "year", measure: "dtp4", by: "hosp" });
+  assert.deepEqual(query("area=540601&by=area"), { year: "2569", area: "540601", period: "year", measure: null, by: "hosp" });
   assert.equal(query("area=540699").area, "all");
 });
 
@@ -492,10 +489,10 @@ test("s_epi1 2569 pcv1: 1 of 181 in the district, none in ตำบล 540601 �
   assert.deepEqual(tambon && [tambon.result, tambon.pct], [0, 0]);
 });
 
-test("s_epi2: pcv4, in the header but without a ผลงาน in any year → not a รายการ; ?measure=pcv4 of an old link → the first รายการ", () => {
+test("s_epi2: pcv4, in the header but without a ผลงาน in any year → not a รายการ; ?measure=pcv4 of an old link → no measure (ภาพรวม, SPEC §9.4)", () => {
   assert.deepEqual(measures(at(EPI2, "2569")), ["mmr2", "pcv4"]);
   assert.deepEqual(shownMeasures(EPI2, at(EPI2, "2569")), ["mmr2"]);
-  assert.equal(reportQuery(EPI2, new URLSearchParams("measure=pcv4"), NAMES).measure, "mmr2");
+  assert.equal(reportQuery(EPI2, new URLSearchParams("measure=pcv4"), NAMES).measure, null);
 });
 
 test("s_epi1 2568: dtp2, without data that year but with data in 2569 → still a รายการ, so the year shows it as no data", () => {

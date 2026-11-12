@@ -41,3 +41,9 @@ test("CSV file name → SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv 
   // A real HDC id in mixed case (SCHEMA §5.2), from the catalog export of 30 Oct 2569
   assert.equal(name({ source_table: "s_child_mom_hepb", opendata_id: "Qe95V9DKGQYy5ij" }, "2568"), "SHDC-s_child_mom_hepb-Qe95V9DK-2568.csv");
 });
+
+test("CSV of an open รายละเอียด → -{measure} or -domain{1–9} before .csv (SPEC §9.4): SHDC-s_epi1-c88658f4-2569-mmr.csv", () => {
+  const report = { report_name: "", source_table: "s_epi1", opendata_id: "c88658f4d09acb8c76e6c06ffb58ebaf" };
+  assert.equal(reportCsv({ report, year: "2569", part: "mmr", filters: "", dateCom: "", table: [] }).name, "SHDC-s_epi1-c88658f4-2569-mmr.csv");
+  assert.equal(reportCsv({ report, year: "2569", filters: "", dateCom: "", table: [] }).name, "SHDC-s_epi1-c88658f4-2569.csv");
+});

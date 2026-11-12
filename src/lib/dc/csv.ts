@@ -23,20 +23,22 @@ function toCsv(rows: Cell[][]): string {
  * the report with its opendata_id, the filters, the source with its date)
  * and a blank line before the table shown. Named
  * SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv, as one table can
- * hold several reports.
+ * hold several reports, with -{part} before .csv for an open รายละเอียด.
  */
 export function reportCsv(csv: {
   report: Pick<DcReport, "report_name" | "source_table" | "opendata_id">;
   year: string;
+  /** The รายละเอียด open: its measure or domain{1–9} */
+  part?: string;
   /** The filters in one line, as the results show them */
   filters: string;
   /** max_date_com of the year shown */
   dateCom: string;
   table: Cell[][];
 }): { name: string; text: string } {
-  const { report, year, filters, dateCom, table } = csv;
+  const { report, year, part, filters, dateCom, table } = csv;
   return {
-    name: `SHDC-${report.source_table}-${report.opendata_id.slice(0, 8)}-${year}.csv`,
+    name: `SHDC-${report.source_table}-${report.opendata_id.slice(0, 8)}-${year}${part ? `-${part}` : ""}.csv`,
     text: toCsv([
       ["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"],
       ["รายงาน", `${report.report_name} (${report.opendata_id})`],

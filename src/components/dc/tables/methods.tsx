@@ -94,6 +94,35 @@ function ChilddevLimits({ report }: { report: DcReport }) {
   );
 }
 
+function EpiMethod({ report, districtCode }: MethodProps) {
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก · ทั้งอำเภอเปรียบเทียบรายตำบล
+        เลือกตำบลเปรียบเทียบรายหน่วยบริการ
+      </li>
+      {report.source_table === "s_epi1" && (
+        <li>เป้าหมาย: เด็กอายุครบ 1 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด (Type area 1 และ 3) คอลัมน์ target ของแต่ละเดือน</li>
+      )}
+      <li>ผลงาน: เด็กตามเป้าหมายที่ได้รับวัคซีนรายการนั้น คอลัมน์ {"{รายการ}_{เดือน}"} ทั้งปีคือผลรวม 12 เดือน และไตรมาสคือผลรวม 3 เดือน (ไตรมาส 1 = ต.ค.–ธ.ค.)</li>
+      <li>
+        ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · เป้าหมายเป็น 0 แสดง “—” · รายการที่ผลงานรวมทั้งอำเภอของปีเป็น 0
+        ถือว่าไม่มีข้อมูลปีนั้น แสดง “—”
+      </li>
+      <li>เกณฑ์ของแต่ละรายการตาม PA Dashboard ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์ · รายการที่ไม่มีเกณฑ์ (PCV) ไม่มีผลประเมิน</li>
+    </ul>
+  );
+}
+
+function EpiLimits() {
+  return (
+    <li>
+      หน้า HDC ยืนยันชื่อวัคซีนของคอลัมน์ได้เป็นกลุ่มที่ตัวเลขเท่ากัน การจับคู่คอลัมน์กับวัคซีนภายในกลุ่ม (BCG กับ ROTA1, DTP2 กับ HBV4, DTP1 DTP-HB3 HBV2 HBV3
+      HIB1 HIB2 และ OPV3 และลำดับของ PCV1–3) จึงอนุมานจากชื่อคอลัมน์
+    </li>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -101,6 +130,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <AncMethod {...props} />;
     case "childdev":
       return <ChilddevMethod {...props} />;
+    case "epi":
+      return <EpiMethod {...props} />;
   }
 }
 
@@ -111,5 +142,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return null;
     case "childdev":
       return <ChilddevLimits report={report} />;
+    case "epi":
+      return <EpiLimits />;
   }
 }

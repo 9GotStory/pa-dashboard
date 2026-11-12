@@ -102,7 +102,7 @@ export default function ReportFilters(props: {
             <Select
               name="measure"
               label="รายการวัคซีน"
-              value={draft.measure ?? ""}
+              value={draft.measure ?? measureOptions[0]}
               options={measureOptions.map((m) => [m, measureLabel(m)])}
               onPick={pick}
             />
