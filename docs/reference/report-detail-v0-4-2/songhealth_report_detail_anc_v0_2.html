@@ -1,0 +1,1281 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#153d32">
+<meta name="description" content="Song Health Data Center - Report Detail V0.2 ANC12, original presentation refined" />
+<title>รายงานฝากครรภ์ 12 สัปดาห์ — Report Detail V0.2</title>
+<style>/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: "Noto Sans Thai",Tahoma,system-ui,sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+    --color-white: #fff;
+    --spacing: 0.25rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: calc(1 / 0.75);
+    --text-sm: 0.875rem;
+    --text-sm--line-height: calc(1.25 / 0.875);
+    --text-base: 1rem;
+    --text-base--line-height: calc(1.5 / 1);
+    --text-lg: 1.125rem;
+    --text-lg--line-height: calc(1.75 / 1.125);
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --tracking-tight: -0.025em;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-relaxed: 1.625;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+    --color-brand-deep: #153d32;
+    --color-brand-primary: #155f4b;
+    --color-brand-accent: #198467;
+    --color-canvas: #f8f9f6;
+    --color-text-secondary: #5d7164;
+    --color-border-subtle: #e0e8df;
+    --color-border-strong: #9bae9f;
+    --color-surface-muted: #eef3ed;
+    --color-graph-navy: #254b43;
+    --color-graph-gold: #d79b32;
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden="until-found"])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .pointer-events-none {
+    pointer-events: none;
+  }
+  .absolute {
+    position: absolute;
+  }
+  .relative {
+    position: relative;
+  }
+  .top-3 {
+    top: calc(var(--spacing) * 3);
+  }
+  .right-2\.5 {
+    right: calc(var(--spacing) * 2.5);
+  }
+  .col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+  .mx-auto {
+    margin-inline: auto;
+  }
+  .mt-0\.5 {
+    margin-top: calc(var(--spacing) * 0.5);
+  }
+  .mt-1 {
+    margin-top: calc(var(--spacing) * 1);
+  }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-3 {
+    margin-top: calc(var(--spacing) * 3);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .mt-5 {
+    margin-top: calc(var(--spacing) * 5);
+  }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .mb-1\.5 {
+    margin-bottom: calc(var(--spacing) * 1.5);
+  }
+  .mb-2 {
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+  .mb-4 {
+    margin-bottom: calc(var(--spacing) * 4);
+  }
+  .mb-5 {
+    margin-bottom: calc(var(--spacing) * 5);
+  }
+  .block {
+    display: block;
+  }
+  .flex {
+    display: flex;
+  }
+  .grid {
+    display: grid;
+  }
+  .hidden {
+    display: none;
+  }
+  .inline-flex {
+    display: inline-flex;
+  }
+  .h-0 {
+    height: calc(var(--spacing) * 0);
+  }
+  .h-0\.5 {
+    height: calc(var(--spacing) * 0.5);
+  }
+  .h-1\.5 {
+    height: calc(var(--spacing) * 1.5);
+  }
+  .h-2\.5 {
+    height: calc(var(--spacing) * 2.5);
+  }
+  .h-3 {
+    height: calc(var(--spacing) * 3);
+  }
+  .h-3\.5 {
+    height: calc(var(--spacing) * 3.5);
+  }
+  .h-4 {
+    height: calc(var(--spacing) * 4);
+  }
+  .h-5 {
+    height: calc(var(--spacing) * 5);
+  }
+  .h-10 {
+    height: calc(var(--spacing) * 10);
+  }
+  .h-\[70px\] {
+    height: 70px;
+  }
+  .h-auto {
+    height: auto;
+  }
+  .min-h-9 {
+    min-height: calc(var(--spacing) * 9);
+  }
+  .min-h-10 {
+    min-height: calc(var(--spacing) * 10);
+  }
+  .min-h-screen {
+    min-height: 100vh;
+  }
+  .w-0 {
+    width: calc(var(--spacing) * 0);
+  }
+  .w-1\.5 {
+    width: calc(var(--spacing) * 1.5);
+  }
+  .w-2\.5 {
+    width: calc(var(--spacing) * 2.5);
+  }
+  .w-3 {
+    width: calc(var(--spacing) * 3);
+  }
+  .w-3\.5 {
+    width: calc(var(--spacing) * 3.5);
+  }
+  .w-4 {
+    width: calc(var(--spacing) * 4);
+  }
+  .w-5 {
+    width: calc(var(--spacing) * 5);
+  }
+  .w-10 {
+    width: calc(var(--spacing) * 10);
+  }
+  .w-full {
+    width: 100%;
+  }
+  .max-w-\[950px\] {
+    max-width: 950px;
+  }
+  .max-w-\[1240px\] {
+    max-width: 1240px;
+  }
+  .min-w-0 {
+    min-width: calc(var(--spacing) * 0);
+  }
+  .min-w-\[340px\] {
+    min-width: 340px;
+  }
+  .flex-1 {
+    flex: 1;
+  }
+  .shrink-0 {
+    flex-shrink: 0;
+  }
+  .border-collapse {
+    border-collapse: collapse;
+  }
+  .appearance-none {
+    appearance: none;
+  }
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-cols-\[75px_minmax\(0\,1fr\)_54px\] {
+    grid-template-columns: 75px minmax(0,1fr) 54px;
+  }
+  .grid-cols-\[auto_minmax\(0\,1fr\)\] {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+  .flex-col {
+    flex-direction: column;
+  }
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+  .items-baseline {
+    align-items: baseline;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .items-end {
+    align-items: flex-end;
+  }
+  .items-start {
+    align-items: flex-start;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .gap-1 {
+    gap: calc(var(--spacing) * 1);
+  }
+  .gap-1\.5 {
+    gap: calc(var(--spacing) * 1.5);
+  }
+  .gap-2 {
+    gap: calc(var(--spacing) * 2);
+  }
+  .gap-2\.5 {
+    gap: calc(var(--spacing) * 2.5);
+  }
+  .gap-3 {
+    gap: calc(var(--spacing) * 3);
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
+  }
+  .gap-x-2 {
+    column-gap: calc(var(--spacing) * 2);
+  }
+  .gap-x-3 {
+    column-gap: calc(var(--spacing) * 3);
+  }
+  .gap-x-4 {
+    column-gap: calc(var(--spacing) * 4);
+  }
+  .gap-y-1 {
+    row-gap: calc(var(--spacing) * 1);
+  }
+  .gap-y-2 {
+    row-gap: calc(var(--spacing) * 2);
+  }
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  .overflow-visible {
+    overflow: visible;
+  }
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
+  .rounded-\[3px\] {
+    border-radius: 3px;
+  }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
+  }
+  .rounded-lg {
+    border-radius: var(--radius-lg);
+  }
+  .rounded-md {
+    border-radius: var(--radius-md);
+  }
+  .rounded-sm {
+    border-radius: var(--radius-sm);
+  }
+  .rounded-xl {
+    border-radius: var(--radius-xl);
+  }
+  .border {
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+  }
+  .border-y {
+    border-block-style: var(--tw-border-style);
+    border-block-width: 1px;
+  }
+  .border-t {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+  }
+  .border-t-2 {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 2px;
+  }
+  .border-b {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+  }
+  .border-b-2 {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 2px;
+  }
+  .border-l-4 {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 4px;
+  }
+  .border-dashed {
+    --tw-border-style: dashed;
+    border-style: dashed;
+  }
+  .border-\[\#b6cfc0\] {
+    border-color: #b6cfc0;
+  }
+  .border-border-subtle {
+    border-color: var(--color-border-subtle);
+  }
+  .border-brand-accent {
+    border-color: var(--color-brand-accent);
+  }
+  .border-graph-gold {
+    border-color: var(--color-graph-gold);
+  }
+  .border-l-brand-accent {
+    border-left-color: var(--color-brand-accent);
+  }
+  .bg-\[\#9de6bc\] {
+    background-color: #9de6bc;
+  }
+  .bg-\[\#dcefe2\] {
+    background-color: #dcefe2;
+  }
+  .bg-\[\#edf3ee\] {
+    background-color: #edf3ee;
+  }
+  .bg-\[\#edf5ef\] {
+    background-color: #edf5ef;
+  }
+  .bg-\[\#eef5ef\] {
+    background-color: #eef5ef;
+  }
+  .bg-\[\#fff1d7\] {
+    background-color: #fff1d7;
+  }
+  .bg-brand-accent {
+    background-color: var(--color-brand-accent);
+  }
+  .bg-brand-deep {
+    background-color: var(--color-brand-deep);
+  }
+  .bg-brand-primary {
+    background-color: var(--color-brand-primary);
+  }
+  .bg-canvas {
+    background-color: var(--color-canvas);
+  }
+  .bg-canvas\/45 {
+    background-color: color-mix(in srgb, #f8f9f6 45%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-canvas) 45%, transparent);
+    }
+  }
+  .bg-canvas\/60 {
+    background-color: color-mix(in srgb, #f8f9f6 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-canvas) 60%, transparent);
+    }
+  }
+  .bg-canvas\/75 {
+    background-color: color-mix(in srgb, #f8f9f6 75%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-canvas) 75%, transparent);
+    }
+  }
+  .bg-graph-navy {
+    background-color: var(--color-graph-navy);
+  }
+  .bg-surface-muted\/55 {
+    background-color: color-mix(in srgb, #eef3ed 55%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-surface-muted) 55%, transparent);
+    }
+  }
+  .bg-white {
+    background-color: var(--color-white);
+  }
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
+  .px-2 {
+    padding-inline: calc(var(--spacing) * 2);
+  }
+  .px-3 {
+    padding-inline: calc(var(--spacing) * 3);
+  }
+  .px-3\.5 {
+    padding-inline: calc(var(--spacing) * 3.5);
+  }
+  .px-4 {
+    padding-inline: calc(var(--spacing) * 4);
+  }
+  .px-5 {
+    padding-inline: calc(var(--spacing) * 5);
+  }
+  .py-0\.5 {
+    padding-block: calc(var(--spacing) * 0.5);
+  }
+  .py-2 {
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .py-2\.5 {
+    padding-block: calc(var(--spacing) * 2.5);
+  }
+  .py-3 {
+    padding-block: calc(var(--spacing) * 3);
+  }
+  .py-3\.5 {
+    padding-block: calc(var(--spacing) * 3.5);
+  }
+  .py-4 {
+    padding-block: calc(var(--spacing) * 4);
+  }
+  .py-5 {
+    padding-block: calc(var(--spacing) * 5);
+  }
+  .py-7 {
+    padding-block: calc(var(--spacing) * 7);
+  }
+  .py-\[7px\] {
+    padding-block: 7px;
+  }
+  .pt-3 {
+    padding-top: calc(var(--spacing) * 3);
+  }
+  .pt-4 {
+    padding-top: calc(var(--spacing) * 4);
+  }
+  .pt-5 {
+    padding-top: calc(var(--spacing) * 5);
+  }
+  .pt-6 {
+    padding-top: calc(var(--spacing) * 6);
+  }
+  .pr-8 {
+    padding-right: calc(var(--spacing) * 8);
+  }
+  .pb-3 {
+    padding-bottom: calc(var(--spacing) * 3);
+  }
+  .pb-6 {
+    padding-bottom: calc(var(--spacing) * 6);
+  }
+  .pb-14 {
+    padding-bottom: calc(var(--spacing) * 14);
+  }
+  .pl-3 {
+    padding-left: calc(var(--spacing) * 3);
+  }
+  .text-left {
+    text-align: left;
+  }
+  .text-right {
+    text-align: right;
+  }
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+  .text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
+  }
+  .text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+  .text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+  }
+  .text-\[10px\] {
+    font-size: 10px;
+  }
+  .text-\[11px\] {
+    font-size: 11px;
+  }
+  .text-\[12px\] {
+    font-size: 12px;
+  }
+  .text-\[13px\] {
+    font-size: 13px;
+  }
+  .text-\[15px\] {
+    font-size: 15px;
+  }
+  .text-\[23px\] {
+    font-size: 23px;
+  }
+  .text-\[26px\] {
+    font-size: 26px;
+  }
+  .leading-relaxed {
+    --tw-leading: var(--leading-relaxed);
+    line-height: var(--leading-relaxed);
+  }
+  .leading-snug {
+    --tw-leading: var(--leading-snug);
+    line-height: var(--leading-snug);
+  }
+  .leading-tight {
+    --tw-leading: var(--leading-tight);
+    line-height: var(--leading-tight);
+  }
+  .font-bold {
+    --tw-font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold);
+  }
+  .font-medium {
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+  }
+  .font-normal {
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+  }
+  .font-semibold {
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+  .tracking-tight {
+    --tw-tracking: var(--tracking-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+  .break-all {
+    word-break: break-all;
+  }
+  .whitespace-nowrap {
+    white-space: nowrap;
+  }
+  .text-\[\#9a6b24\] {
+    color: #9a6b24;
+  }
+  .text-\[\#9de6bc\] {
+    color: #9de6bc;
+  }
+  .text-\[\#92630e\] {
+    color: #92630e;
+  }
+  .text-\[\#236647\] {
+    color: #236647;
+  }
+  .text-\[\#486655\] {
+    color: #486655;
+  }
+  .text-\[\#956723\] {
+    color: #956723;
+  }
+  .text-border-strong {
+    color: var(--color-border-strong);
+  }
+  .text-brand-accent {
+    color: var(--color-brand-accent);
+  }
+  .text-brand-deep {
+    color: var(--color-brand-deep);
+  }
+  .text-brand-primary {
+    color: var(--color-brand-primary);
+  }
+  .text-text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-white {
+    color: var(--color-white);
+  }
+  .text-white\/50 {
+    color: color-mix(in srgb, #fff 50%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-white) 50%, transparent);
+    }
+  }
+  .text-white\/80 {
+    color: color-mix(in srgb, #fff 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-white) 80%, transparent);
+    }
+  }
+  .tabular-nums {
+    --tw-numeric-spacing: tabular-nums;
+    font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
+  }
+  .underline {
+    text-decoration-line: underline;
+  }
+  .underline-offset-2 {
+    text-underline-offset: 2px;
+  }
+  .underline-offset-4 {
+    text-underline-offset: 4px;
+  }
+  .antialiased {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .shadow-sm {
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .outline-none {
+    --tw-outline-style: none;
+    outline-style: none;
+  }
+  .hover\:bg-brand-deep {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-brand-deep);
+      }
+    }
+  }
+  .hover\:bg-surface-muted {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-surface-muted);
+      }
+    }
+  }
+  .hover\:text-brand-primary {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-brand-primary);
+      }
+    }
+  }
+  .hover\:text-white {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-white);
+      }
+    }
+  }
+  .hover\:underline {
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-line: underline;
+      }
+    }
+  }
+  .focus\:border-brand-accent {
+    &:focus {
+      border-color: var(--color-brand-accent);
+    }
+  }
+  .focus\:ring-2 {
+    &:focus {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .focus\:ring-brand-accent\/20 {
+    &:focus {
+      --tw-ring-color: color-mix(in srgb, #198467 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--color-brand-accent) 20%, transparent);
+      }
+    }
+  }
+  .focus-visible\:outline-3 {
+    &:focus-visible {
+      outline-style: var(--tw-outline-style);
+      outline-width: 3px;
+    }
+  }
+  .focus-visible\:outline-brand-accent {
+    &:focus-visible {
+      outline-color: var(--color-brand-accent);
+    }
+  }
+  .sm\:flex-none {
+    @media (width >= 40rem) {
+      flex: none;
+    }
+  }
+  .sm\:grid-cols-\[95px_minmax\(0\,1fr\)_59px\] {
+    @media (width >= 40rem) {
+      grid-template-columns: 95px minmax(0,1fr) 59px;
+    }
+  }
+  .sm\:flex-row {
+    @media (width >= 40rem) {
+      flex-direction: row;
+    }
+  }
+  .sm\:items-center {
+    @media (width >= 40rem) {
+      align-items: center;
+    }
+  }
+  .sm\:items-end {
+    @media (width >= 40rem) {
+      align-items: flex-end;
+    }
+  }
+  .sm\:justify-between {
+    @media (width >= 40rem) {
+      justify-content: space-between;
+    }
+  }
+  .sm\:gap-3 {
+    @media (width >= 40rem) {
+      gap: calc(var(--spacing) * 3);
+    }
+  }
+  .sm\:p-5 {
+    @media (width >= 40rem) {
+      padding: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:px-5 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:px-6 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:px-7 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 7);
+    }
+  }
+  .sm\:px-8 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:py-5 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:py-6 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:pt-5 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:pt-6 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:pt-8 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:pb-7 {
+    @media (width >= 40rem) {
+      padding-bottom: calc(var(--spacing) * 7);
+    }
+  }
+  .sm\:text-base {
+    @media (width >= 40rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+  }
+  .sm\:text-xs {
+    @media (width >= 40rem) {
+      font-size: var(--text-xs);
+      line-height: var(--tw-leading, var(--text-xs--line-height));
+    }
+  }
+  .sm\:text-\[28px\] {
+    @media (width >= 40rem) {
+      font-size: 28px;
+    }
+  }
+  .sm\:text-\[29px\] {
+    @media (width >= 40rem) {
+      font-size: 29px;
+    }
+  }
+  .md\:col-span-1 {
+    @media (width >= 48rem) {
+      grid-column: span 1 / span 1;
+    }
+  }
+  .md\:grid-cols-2 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .md\:grid-cols-3 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .lg\:flex {
+    @media (width >= 64rem) {
+      display: flex;
+    }
+  }
+  .lg\:hidden {
+    @media (width >= 64rem) {
+      display: none;
+    }
+  }
+  .lg\:grid-cols-2 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .lg\:grid-cols-4 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .lg\:grid-cols-\[1fr_1\.25fr_1\.45fr_1\.15fr_auto\] {
+    @media (width >= 64rem) {
+      grid-template-columns: 1fr 1.25fr 1.45fr 1.15fr auto;
+    }
+  }
+  .print\:hidden {
+    @media print {
+      display: none;
+    }
+  }
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ordinal {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-slashed-zero {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-figure {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-spacing {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-fraction {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-border-style: solid;
+      --tw-leading: initial;
+      --tw-font-weight: initial;
+      --tw-tracking: initial;
+      --tw-ordinal: initial;
+      --tw-slashed-zero: initial;
+      --tw-numeric-figure: initial;
+      --tw-numeric-spacing: initial;
+      --tw-numeric-fraction: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-outline-style: solid;
+    }
+  }
+}
+</style>
+</head>
+<body class="min-h-screen bg-canvas font-sans text-brand-deep antialiased">
+<svg xmlns="http://www.w3.org/2000/svg" class="absolute h-0 w-0 overflow-hidden" aria-hidden="true">
+ <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m12 19-7-7 7-7M5 12h14"/></symbol>
+ <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+ <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M8 3v4m8-4v4M3 10h18"/></symbol>
+ <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"/></symbol>
+ <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v7H6z"/></symbol>
+ <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 11v6m0-10h.01"/></symbol>
+ <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+ <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></symbol>
+ <symbol id="i-activity" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+ <symbol id="i-external" viewBox="0 0 24 24"><path d="M13 5h6v6m0-6-9 9"/><path d="M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"/></symbol>
+</svg>
+<div class="bg-brand-deep text-white print:hidden">
+ <div class="mx-auto flex min-h-9 max-w-[1240px] flex-wrap items-center justify-between gap-2 px-4 py-2 text-[11px] sm:px-8">
+  <span class="inline-flex items-center gap-2 font-medium"><span class="h-1.5 w-1.5 rounded-full bg-[#9de6bc]"></span>DESIGN REVIEW V0.2 <span class="text-white/50">/</span><span class="font-normal text-white/80">คงการนำเสนอหน้าเดิม · ปรับรายละเอียด</span></span>
+  <a href="https://songhealth-dc.pages.dev/reports/1c1b8e24aff59258a806f122e264031e" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 text-white/80 underline-offset-4 hover:text-white hover:underline"><svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-external"/></svg>เปิดหน้า Production เพื่อเปรียบเทียบ</a>
+ </div>
+</div>
+<header class="border-b border-border-subtle bg-white print:hidden">
+ <div class="mx-auto flex h-[70px] max-w-[1240px] items-center justify-between gap-3 px-4 sm:px-8">
+  <a href="https://songhealth-dc.pages.dev/" class="flex min-w-0 items-center gap-3" aria-label="หน้าแรก Song Health Data Center">
+   <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-deep text-lg font-bold tracking-tight text-white">S<span class="text-[#9de6bc]">+</span></div>
+   <div class="min-w-0"><div class="truncate text-[15px] font-bold tracking-tight text-brand-deep sm:text-base">Song Health Data Center</div><div class="truncate text-[10px] text-text-secondary sm:text-xs">ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</div></div>
+  </a>
+  <nav aria-label="เมนูหลัก" class="hidden items-center gap-1 lg:flex">
+   <a href="https://songhealth-dc.pages.dev/" class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary">หน้าแรก</a>
+   <a href="https://songhealth-dc.pages.dev/#district" class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary">ข้อมูลพื้นที่</a>
+   <a href="https://songhealth-dc.pages.dev/#population" class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary">โครงสร้างประชากร</a>
+   <a href="https://songhealth-dc.pages.dev/reports" class="border-b-2 border-brand-accent px-3 py-2 text-[13px] font-semibold text-brand-primary">รายงานสุขภาพ</a>
+   <a href="https://songhealth-dc.pages.dev/pa" class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary">PA Dashboard</a>
+  </nav>
+  <button id="menu-button" type="button" aria-label="เปิดเมนู" aria-expanded="false" aria-controls="mobile-nav" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-subtle text-brand-primary hover:bg-surface-muted lg:hidden"><svg class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-menu"/></svg></button>
+ </div>
+ <nav id="mobile-nav" aria-label="เมนูหลักมือถือ" class="hidden border-t border-border-subtle bg-white px-4 py-3 sm:px-8 lg:hidden">
+  <a href="https://songhealth-dc.pages.dev/" class="block py-2 text-sm">หน้าแรก</a>
+  <a href="https://songhealth-dc.pages.dev/#district" class="block py-2 text-sm">ข้อมูลพื้นที่</a>
+  <a href="https://songhealth-dc.pages.dev/reports" class="block py-2 text-sm font-semibold text-brand-primary">รายงานสุขภาพ</a>
+  <a href="https://songhealth-dc.pages.dev/pa" class="block py-2 text-sm">PA Dashboard</a>
+ </nav>
+</header>
+<main class="mx-auto max-w-[1240px] px-4 pb-14 pt-6 sm:px-8 sm:pt-8">
+ <nav aria-label="ลำดับหน้าของรายงาน" class="mb-4 print:hidden"><ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-secondary"><li><a href="https://songhealth-dc.pages.dev/reports" class="font-semibold text-brand-primary hover:underline">รายงานสุขภาพ</a></li><li aria-hidden="true">/</li><li>ส่งเสริมป้องกัน</li><li aria-hidden="true">/</li><li>อนามัยแม่และเด็ก</li></ol></nav>
+ <section class="mb-5 overflow-hidden rounded-xl border border-border-subtle border-l-4 border-l-brand-accent bg-white px-5 py-5 sm:px-7 sm:py-6">
+  <p class="mb-2 text-xs font-semibold text-brand-accent">อนามัยแม่และเด็ก</p>
+  <h1 class="max-w-[950px] text-[23px] font-semibold leading-snug tracking-tight text-brand-deep sm:text-[28px]">ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์</h1>
+  <div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border-subtle pt-3 text-xs text-text-secondary"><span>อำเภอสอง จังหวัดแพร่</span><span class="text-border-strong">•</span><span>ข้อมูล HDC Open Data</span><span class="text-border-strong">•</span><span>รายงานความครอบคลุม</span></div>
+ </section>
+ <div class="mb-4 flex items-start gap-2 rounded-lg bg-[#edf5ef] px-4 py-3 text-[11px] leading-relaxed text-[#486655] print:hidden"><svg class="mt-0.5 h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-info"/></svg><p><strong>ต้นแบบเพื่อพิจารณาการออกแบบ</strong> — โครงสร้างกราฟและตารางคงตาม Source Code หน้าเดิม ตัวเลขรวมคำนวณจากชีต PA-Data ปี 2565–2569 ที่ตรวจสอบแล้ว ไม่ใช่การดึง Snapshot จากหน้าเว็บ Production ณ ขณะเปิดต้นแบบ</p></div>
+ <article class="min-w-0 overflow-hidden rounded-xl border border-border-subtle bg-white">
+  <section aria-labelledby="filters-heading" class="border-b border-border-subtle bg-surface-muted/55 px-4 py-4 sm:px-6 sm:py-5 print:hidden">
+   <div class="flex flex-wrap items-baseline justify-between gap-2"><h2 id="filters-heading" class="text-[15px] font-semibold text-brand-deep">ตัวกรองรายงาน</h2><p class="text-xs text-text-secondary">เลือกเงื่อนไขแล้วกดแสดงผล</p></div>
+   <form id="filter-form" class="mt-4 grid grid-cols-2 items-end gap-3 md:grid-cols-3 lg:grid-cols-[1fr_1.25fr_1.45fr_1.15fr_auto]"></form>
+  </section>
+  <section class="px-4 pb-6 pt-5 sm:px-6 sm:pb-7 sm:pt-6" aria-labelledby="results-heading">
+   <div class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div class="min-w-0"><h2 id="results-heading" tabindex="-1" class="text-lg font-semibold text-brand-deep">ผลรายงาน</h2><p id="context" class="mt-1 text-xs text-text-secondary" aria-live="polite"></p><p id="source-date" class="mt-1 inline-flex items-center gap-1.5 text-[11px] text-text-secondary"></p></div>
+    <div class="flex items-center gap-2 print:hidden"><button id="csv-button" type="button" class="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-subtle bg-white px-3.5 py-2 text-xs font-semibold text-brand-deep hover:bg-surface-muted sm:flex-none"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-download"/></svg>ดาวน์โหลด CSV</button><button id="print-button" type="button" class="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-subtle bg-white px-3.5 py-2 text-xs font-semibold text-brand-deep hover:bg-surface-muted sm:flex-none"><svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><use href="#i-print"/></svg>พิมพ์รายงาน</button></div>
+   </div>
+   <dl id="kpi-grid" class="grid grid-cols-2 gap-2.5 sm:gap-3 lg:grid-cols-4"></dl>
+   <div class="mt-5 grid gap-4 lg:grid-cols-2">
+    <section class="min-w-0 rounded-xl border border-border-subtle bg-white p-4 sm:p-5" aria-labelledby="unit-title"><div class="flex flex-wrap items-baseline justify-between gap-2"><h3 id="unit-title" class="text-[15px] font-semibold text-brand-deep">ร้อยละรายตำบล</h3><span id="unit-meta" class="text-[11px] text-text-secondary"></span></div><div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-secondary"><span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-4 rounded-[3px] bg-brand-primary"></span>ร้อยละ</span><span class="inline-flex items-center gap-1.5"><span class="w-4 border-t-2 border-dashed border-graph-gold"></span>เกณฑ์ 75%</span></div><div id="unit-chart" class="mt-5"></div></section>
+    <section class="min-w-0 overflow-hidden rounded-xl border border-border-subtle bg-white" aria-labelledby="table-title"><div class="px-4 pb-3 pt-4 sm:px-5 sm:pt-5"><h3 id="table-title" class="text-[15px] font-semibold text-brand-deep">เป้าหมาย ผลงาน และร้อยละรายตำบล</h3><p class="mt-1 text-[11px] text-text-secondary">แสดงค่าจำนวนและร้อยละจากผลรวมของพื้นที่</p></div><div id="unit-table" role="region" tabindex="0" aria-label="ตารางรายพื้นที่ เลื่อนแนวนอนได้" class="w-full overflow-x-auto"></div></section>
+    <section class="min-w-0 rounded-xl border border-border-subtle bg-white p-4 sm:p-5" aria-labelledby="trend-title"><div class="flex flex-wrap items-baseline justify-between gap-2"><h3 id="trend-title" class="text-[15px] font-semibold text-brand-deep">แนวโน้มร้อยละรายปี</h3><span class="text-[11px] text-text-secondary">ปีงบประมาณ 2565–2569</span></div><div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-secondary"><span class="inline-flex items-center gap-1.5"><span class="h-0.5 w-4 bg-brand-primary"></span>ร้อยละรายปี</span><span class="inline-flex items-center gap-1.5"><span class="w-4 border-t-2 border-dashed border-graph-gold"></span>เกณฑ์ 75%</span></div><div id="trend-chart" class="mt-4"></div></section>
+    <section class="min-w-0 rounded-xl border border-border-subtle bg-white p-4 sm:p-5" aria-labelledby="period-title"><div class="flex flex-wrap items-baseline justify-between gap-2"><h3 id="period-title" class="text-[15px] font-semibold text-brand-deep">เป้าหมายและผลงานรายไตรมาส</h3><span id="period-meta" class="text-[11px] text-text-secondary"></span></div><div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-text-secondary"><span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-graph-navy"></span>เป้าหมาย</span><span class="inline-flex items-center gap-1.5"><span class="h-2.5 w-2.5 rounded-sm bg-brand-accent"></span>ผลงาน</span></div><div id="period-chart" class="mt-4"></div></section>
+   </div>
+  </section>
+  <section class="border-t border-border-subtle bg-canvas/60 px-4 py-5 sm:px-6" aria-labelledby="about-title"><h2 id="about-title" class="text-[15px] font-semibold text-brand-deep">เกี่ยวกับรายงานนี้</h2><div class="mt-3 grid gap-4 text-xs leading-relaxed md:grid-cols-2"><div class="rounded-lg border border-border-subtle bg-white p-4"><h3 class="mb-2 font-semibold text-brand-deep">แหล่งข้อมูล</h3><dl class="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-2"><dt class="text-text-secondary">ตารางต้นทาง</dt><dd>s_kpi_anc12</dd><dt class="text-text-secondary">รหัสรายงาน</dt><dd class="break-all text-[11px]">1c1b8e24aff59258a806f122e264031e</dd><dt class="text-text-secondary">ช่วงปีที่แสดง</dt><dd>2565–2569</dd><dt class="text-text-secondary">ต้นทาง</dt><dd><a class="font-medium text-brand-primary underline underline-offset-2" href="https://hdc.moph.go.th/pre/public/standard-report-detail/1c1b8e24aff59258a806f122e264031e?subcatalogId=1ed90bc32310b503b7ca9b32af425ae5" target="_blank" rel="noopener noreferrer">HDC</a> · <a class="font-medium text-brand-primary underline underline-offset-2" href="https://opendata.moph.go.th/" target="_blank" rel="noopener noreferrer">HDC Open Data</a></dd></dl></div><div class="rounded-lg border border-border-subtle bg-white p-4"><h3 class="mb-2 font-semibold text-brand-deep">วิธีคำนวณและข้อจำกัด</h3><p>ร้อยละ = (ผลรวมผลงาน ÷ ผลรวมเป้าหมาย) × 100 ไม่ใช่ค่าเฉลี่ยร้อยละของแต่ละหน่วยบริการ ใช้เกณฑ์ผ่านที่ 75%</p><p class="mt-2 text-text-secondary">กรณีเป้าหมายเป็นศูนย์จะแสดง “—” ไม่แสดง 0% และการเทียบข้อมูลข้ามปีต้องคำนึงถึงนิยาม HDC ที่อาจเปลี่ยนแปลงได้</p></div></div></section>
+ </article>
+ <section class="mt-6 border-t border-border-subtle pt-5 print:hidden" aria-labelledby="related-title"><div class="flex flex-wrap items-center justify-between gap-3"><div><h2 id="related-title" class="text-[15px] font-semibold text-brand-deep">รายงานที่เกี่ยวข้อง</h2><p class="mt-1 text-xs text-text-secondary">สำรวจรายงานเพิ่มเติมในหัวข้ออนามัยแม่และเด็ก</p></div><a href="https://songhealth-dc.pages.dev/reports" class="inline-flex items-center gap-2 text-xs font-semibold text-brand-primary hover:underline">ดูรายงานสุขภาพทั้งหมด <span aria-hidden="true">→</span></a></div></section>
+</main>
+<footer class="border-t border-border-subtle bg-white py-7 print:hidden"><div class="mx-auto flex max-w-[1240px] flex-col gap-2 px-4 text-xs text-text-secondary sm:flex-row sm:items-center sm:justify-between sm:px-8"><div><strong class="text-brand-deep">Song Health Data Center</strong> · สำนักงานสาธารณสุขอำเภอสอง จังหวัดแพร่</div><div>Report Detail V0.2 — Original Presentation, Refined Experience · ไม่ใช่ Production</div></div></footer>
+<script>
+const RAW = {"2565":[{"area":"540601","hosp":"06413","v":[5,2,1,1,0,0,1,0,3,1]},{"area":"540601","hosp":"11170","v":[9,7,3,2,5,5,0,0,1,0]},{"area":"540602","hosp":"06415","v":[4,1,2,1,1,0,1,0,0,0]},{"area":"540602","hosp":"11170","v":[8,7,2,1,2,2,2,2,2,2]},{"area":"540603","hosp":"06416","v":[3,2,1,1,0,0,2,1,0,0]},{"area":"540603","hosp":"06417","v":[7,6,3,3,2,1,0,0,2,2]},{"area":"540603","hosp":"06418","v":[12,7,3,3,1,1,4,3,4,0]},{"area":"540604","hosp":"06419","v":[11,6,3,2,2,1,2,1,4,2]},{"area":"540604","hosp":"06420","v":[1,1,1,1,0,0,0,0,0,0]},{"area":"540604","hosp":"10368","v":[7,5,0,0,3,3,1,1,3,1]},{"area":"540605","hosp":"06421","v":[9,7,0,0,2,1,2,1,5,5]},{"area":"540605","hosp":"06422","v":[2,1,0,0,0,0,1,1,1,0]},{"area":"540605","hosp":"11760","v":[6,4,1,1,2,2,1,0,2,1]},{"area":"540606","hosp":"06423","v":[15,11,3,1,2,2,6,5,4,3]},{"area":"540606","hosp":"06425","v":[2,1,0,0,1,1,0,0,1,0]},{"area":"540607","hosp":"06426","v":[4,4,1,1,0,0,2,2,1,1]},{"area":"540608","hosp":"06414","v":[11,9,2,1,2,2,5,4,2,2]}],"2566":[{"area":"540601","hosp":"06413","v":[4,4,0,0,1,1,2,2,1,1]},{"area":"540601","hosp":"11170","v":[13,10,2,1,6,6,1,1,4,2]},{"area":"540602","hosp":"06415","v":[6,3,0,0,3,1,1,1,2,1]},{"area":"540602","hosp":"11170","v":[8,7,4,4,0,0,3,2,1,1]},{"area":"540603","hosp":"06416","v":[1,1,0,0,1,1,0,0,0,0]},{"area":"540603","hosp":"06417","v":[5,5,2,2,1,1,1,1,1,1]},{"area":"540603","hosp":"06418","v":[11,7,3,2,4,3,0,0,4,2]},{"area":"540604","hosp":"06419","v":[14,9,3,1,5,3,2,2,4,3]},{"area":"540604","hosp":"06420","v":[1,1,1,1,0,0,0,0,0,0]},{"area":"540604","hosp":"10368","v":[25,22,4,4,3,2,11,11,7,5]},{"area":"540605","hosp":"06421","v":[7,7,5,5,0,0,0,0,2,2]},{"area":"540605","hosp":"06422","v":[2,2,0,0,0,0,0,0,2,2]},{"area":"540605","hosp":"11760","v":[2,2,1,1,1,1,0,0,0,0]},{"area":"540606","hosp":"06423","v":[6,6,1,1,3,3,1,1,1,1]},{"area":"540606","hosp":"06424","v":[2,1,0,0,0,0,0,0,2,1]},{"area":"540607","hosp":"06426","v":[3,3,0,0,1,1,1,1,1,1]},{"area":"540608","hosp":"06414","v":[7,5,0,0,1,1,4,3,2,1]}],"2567":[{"area":"540601","hosp":"06413","v":[4,3,0,0,1,0,3,3,0,0]},{"area":"540601","hosp":"11170","v":[6,4,1,1,2,1,2,2,1,0]},{"area":"540602","hosp":"06415","v":[3,2,2,2,0,0,1,0,0,0]},{"area":"540602","hosp":"11170","v":[7,6,0,0,2,1,3,3,2,2]},{"area":"540603","hosp":"06416","v":[2,1,1,1,0,0,1,0,0,0]},{"area":"540603","hosp":"06417","v":[1,0,0,0,0,0,1,0,0,0]},{"area":"540603","hosp":"06418","v":[9,5,2,2,3,1,3,2,1,0]},{"area":"540604","hosp":"06419","v":[13,6,3,1,3,1,3,1,4,3]},{"area":"540604","hosp":"10368","v":[7,6,3,2,1,1,2,2,1,1]},{"area":"540605","hosp":"06421","v":[7,4,2,2,3,1,1,0,1,1]},{"area":"540605","hosp":"06422","v":[6,6,1,1,2,2,2,2,1,1]},{"area":"540605","hosp":"11760","v":[4,3,1,1,1,1,1,0,1,1]},{"area":"540606","hosp":"06423","v":[8,5,1,1,2,2,2,1,3,1]},{"area":"540606","hosp":"06424","v":[2,2,1,1,0,0,0,0,1,1]},{"area":"540607","hosp":"06426","v":[2,2,1,1,1,1,0,0,0,0]},{"area":"540608","hosp":"06414","v":[14,7,3,1,5,2,4,2,2,2]}],"2568":[{"area":"540601","hosp":"06413","v":[5,5,3,3,0,0,1,1,1,1]},{"area":"540601","hosp":"11170","v":[7,7,2,2,3,3,0,0,2,2]},{"area":"540602","hosp":"06415","v":[11,6,0,0,2,0,1,1,8,5]},{"area":"540602","hosp":"11170","v":[8,4,1,1,1,0,1,0,5,3]},{"area":"540603","hosp":"06416","v":[1,0,1,0,0,0,0,0,0,0]},{"area":"540603","hosp":"06417","v":[3,3,1,1,0,0,0,0,2,2]},{"area":"540603","hosp":"06418","v":[17,11,3,2,7,4,5,4,2,1]},{"area":"540604","hosp":"06419","v":[10,6,2,2,1,1,3,2,4,1]},{"area":"540604","hosp":"10368","v":[13,7,4,2,4,2,2,1,3,2]},{"area":"540605","hosp":"06421","v":[5,4,2,2,0,0,1,1,2,1]},{"area":"540605","hosp":"06422","v":[1,0,0,0,0,0,0,0,1,0]},{"area":"540605","hosp":"11760","v":[3,3,1,1,0,0,1,1,1,1]},{"area":"540606","hosp":"06423","v":[16,9,7,4,2,1,2,2,5,2]},{"area":"540606","hosp":"06424","v":[2,1,0,0,1,0,1,1,0,0]},{"area":"540606","hosp":"06425","v":[8,6,2,2,3,2,2,1,1,1]},{"area":"540607","hosp":"06426","v":[3,1,0,0,0,0,2,1,1,0]},{"area":"540608","hosp":"06414","v":[11,8,4,4,2,1,2,2,3,1]}],"2569":[{"area":"540601","hosp":"06413","v":[9,7,1,1,2,2,4,3,2,1]},{"area":"540601","hosp":"11170","v":[5,5,2,2,0,0,3,3,0,0]},{"area":"540602","hosp":"06415","v":[5,4,2,2,0,0,1,1,2,1]},{"area":"540602","hosp":"11170","v":[1,1,0,0,1,1,0,0,0,0]},{"area":"540603","hosp":"06416","v":[5,5,0,0,2,2,1,1,2,2]},{"area":"540603","hosp":"06418","v":[10,7,2,2,1,1,2,1,5,3]},{"area":"540604","hosp":"06419","v":[6,3,1,1,1,0,1,1,3,1]},{"area":"540604","hosp":"10368","v":[8,7,1,1,4,4,3,2,0,0]},{"area":"540605","hosp":"06422","v":[3,3,1,1,0,0,1,1,1,1]},{"area":"540605","hosp":"11760","v":[3,2,1,1,0,0,1,1,1,0]},{"area":"540606","hosp":"06423","v":[14,9,7,5,3,1,2,1,2,2]},{"area":"540606","hosp":"06424","v":[4,3,2,2,0,0,1,1,1,0]},{"area":"540606","hosp":"06425","v":[4,4,0,0,1,1,2,2,1,1]},{"area":"540607","hosp":"06426","v":[1,1,0,0,1,1,0,0,0,0]},{"area":"540608","hosp":"06414","v":[6,5,2,2,1,1,1,1,2,1]}]};
+const AREAS={"540601":"บ้านหนุน","540602":"บ้านกลาง","540603":"ห้วยหม้าย","540604":"เตาปูน","540605":"หัวเมือง","540606":"สะเอียบ","540607":"แดนชุมพล","540608":"ทุ่งน้าว"};
+const HOSP={"06413":"บ้านหนุน","06414":"ทุ่งน้าว","06415":"วังดิน","06416":"ลูนิเกตุ","06417":"ห้วยขอน","06418":"ห้วยหม้าย","06419":"เตาปูน","06420":"นาไร่เดียว","06421":"หัวเมือง","06422":"วังฟ่อน","06423":"สะเอียบ","06424":"ป่าเลา","06425":"นาหลวง","06426":"แดนชุมพล","10368":"แม่แรม","11170":"สอง","11760":"หนองเสี้ยว"};
+const DATES={"2565":"202211161356","2566":"202311061201","2567":"202411161412","2568":"202511162012","2569":"202611081849"};
+const YEARS=Object.keys(RAW).sort(); const REGION_IDS=Object.keys(AREAS);
+const fmt=v=>new Intl.NumberFormat('th-TH').format(v);const formatPct=v=>v===null?'—':new Intl.NumberFormat('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);const pct=(t,r)=>t>0?100*r/t:null;
+const icon=(name,cl='h-4 w-4')=>`<svg class="${cl}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><use href="#i-${name}"/></svg>`;
+const escapeHtml=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const areaName=a=>a==='all'?'ทั้งอำเภอ':'ตำบล'+AREAS[a];
+const periodName=p=>p==='year'?'ทั้งปี':`ไตรมาส ${p.slice(1)}`;
+const getQuery=()=>{let p=new URLSearchParams(location.search),year=YEARS.includes(p.get('year'))?p.get('year'):'2569',area=REGION_IDS.includes(p.get('area'))?p.get('area'):'all',period=['year','q1','q2','q3','q4'].includes(p.get('period'))?p.get('period'):'year',by=p.get('by')==='hosp'||area!=='all'?'hosp':'area';return {year,area,period,by}};
+let state=getQuery();
+function totalFor(records,period='year'){let target=0,result=0;for(let r of records){let k=period==='year'?0:Number(period.slice(1))*2;target+=r.v[k];result+=r.v[k+1]}return {target,result,pct:pct(target,result)}}
+function rowsFor(y,a){return (RAW[y]||[]).filter(r=>a==='all'||r.area===a)}
+function totalsBy(rows,by,period){let map=new Map();for(let r of rows){let key=by==='area'?r.area:r.hosp;if(!map.has(key))map.set(key,[]);map.get(key).push(r)}return [...map.entries()].sort((a,b)=>a[0].localeCompare(b[0])).map(([key,records])=>({...totalFor(records,period),key,name:by==='area'?AREAS[key]:(HOSP[key]||key)}))}
+function dateText(d){let y=+d.slice(0,4),m=+d.slice(4,6)-1,day=+d.slice(6,8),hh=d.slice(8,10),mm=d.slice(10,12),dd=new Date(y,m,day);return dd.toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})+` เวลา ${hh}:${mm} น.`}
+function filterField(id,label,opts,value){return `<label class="block min-w-0"><span class="mb-1.5 block text-xs font-semibold text-brand-deep">${label}</span><span class="relative block"><select id="f-${id}" name="${id}" class="h-10 w-full appearance-none rounded-lg border border-border-subtle bg-white py-2 pl-3 pr-8 text-[12px] font-medium text-brand-deep outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20">${opts.map(([v,t,d])=>`<option value="${v}" ${v===value?'selected':''} ${d?'disabled':''}>${escapeHtml(t)}</option>`).join('')}</select>${icon('chevron','pointer-events-none absolute right-2.5 top-3 h-4 w-4 text-text-secondary')}</span></label>`}
+function renderForm(){let a=state.area;document.getElementById('filter-form').innerHTML=filterField('year','ปีงบประมาณ',YEARS.slice().reverse().map(y=>[y,y]),state.year)+filterField('area','พื้นที่',[['all','ทั้งอำเภอสอง'],...REGION_IDS.map(k=>[k,'ตำบล'+AREAS[k]])],state.area)+filterField('period','ช่วงเวลา',[['year','ทั้งปี'],...Array.from({length:4},(_,i)=>['q'+(i+1),'ไตรมาส '+(i+1)])],state.period)+filterField('by','เปรียบเทียบตาม',[['area','ตำบล',a!=='all'],['hosp','หน่วยบริการ']],state.by)+`<button class="col-span-2 flex h-10 items-center justify-center rounded-lg bg-brand-primary px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-brand-deep focus-visible:outline-3 focus-visible:outline-brand-accent md:col-span-1" type="submit">แสดงผล</button>`;
+ document.getElementById('f-area').addEventListener('change',e=>{let s=document.getElementById('f-by');if(e.target.value!=='all'){s.value='hosp';s.querySelector('[value="area"]').disabled=true}else{s.querySelector('[value="area"]').disabled=false}})}
+function kpiTile(label,value,desc,extra=''){return `<div class="min-w-0 rounded-lg border border-border-subtle bg-canvas/75 px-4 py-3.5 sm:px-5"><dt class="text-xs text-text-secondary">${label}</dt><dd class="mt-1 text-[26px] font-semibold leading-tight tracking-tight text-brand-deep tabular-nums sm:text-[29px]">${value}</dd><p class="mt-1 text-[11px] text-text-secondary">${desc}</p>${extra}</div>`}
+function renderKpi(t){let passed=t.pct!==null&&t.pct>=75;document.getElementById('kpi-grid').innerHTML=kpiTile('เป้าหมาย',fmt(t.target),'คน')+kpiTile('ผลงาน',fmt(t.result),'คน')+kpiTile('ร้อยละ',formatPct(t.pct)+'%','ผลการดำเนินงาน')+kpiTile('เกณฑ์ (ร้อยละ)','≥ 75', 'ตามเกณฑ์รายงาน',t.pct!==null?`<div class="mt-2 inline-flex items-center gap-1 rounded-md ${passed?'bg-[#dcefe2] text-[#236647]':'bg-[#fff1d7] text-[#92630e]'} px-2 py-0.5 text-[11px] font-semibold">${passed?icon('check','h-3 w-3'):icon('info','h-3 w-3')}${passed?'ผ่านเกณฑ์':'ไม่ผ่านเกณฑ์'}</div>`:'')}
+function renderUnitChart(units){let target=document.getElementById('unit-chart');document.getElementById('unit-title').textContent=`ร้อยละราย${state.by==='area'?'ตำบล':'หน่วยบริการ'}`;document.getElementById('unit-meta').textContent=`${units.length} ${state.by==='area'?'ตำบล':'หน่วยบริการ'}`;if(!units.length){target.textContent='ไม่มีข้อมูล';return}target.innerHTML=`<div role="img" aria-label="กราฟเปรียบเทียบร้อยละรายพื้นที่และเส้นเกณฑ์ 75 เปอร์เซ็นต์">${units.map(u=>{let p=u.pct===null?0:Math.min(100,Math.max(0,u.pct));return `<div class="grid grid-cols-[75px_minmax(0,1fr)_54px] items-center gap-2 py-[7px] sm:grid-cols-[95px_minmax(0,1fr)_59px] sm:gap-3"><span class="truncate text-[11px] text-brand-deep" title="${escapeHtml(u.name)}">${escapeHtml(u.name)}</span><svg viewBox="0 0 100 11" preserveAspectRatio="none" class="h-3.5 w-full overflow-visible" aria-hidden="true"><rect x="0" y="1" width="100" height="9" rx="2.5" fill="#eef3ed"/><rect x="0" y="1" width="${p}" height="9" rx="2.5" fill="#198467"/><line x1="75" x2="75" y1="0" y2="11" stroke="#d79b32" stroke-width="1.3" stroke-dasharray="2 1.5"/></svg><span class="text-right text-[11px] font-semibold tabular-nums ${u.pct!==null&&u.pct>=75?'text-brand-primary':'text-[#9a6b24]'}">${formatPct(u.pct)}${u.pct===null?'':'%'}</span></div>`}).join('')}</div>`;}
+function renderTable(units,total){let el=document.getElementById('unit-table'),txt=state.by==='area'?'ตำบล':'หน่วยบริการ';document.getElementById('table-title').textContent=`เป้าหมาย ผลงาน และร้อยละราย${txt}`;let td='px-3 py-2.5 text-right whitespace-nowrap tabular-nums', th='px-3 py-2.5 text-left font-medium whitespace-nowrap';el.innerHTML=`<table class="w-full min-w-[340px] border-collapse text-[12px]"><thead class="border-y border-border-subtle bg-[#edf3ee] text-brand-deep"><tr><th scope="col" class="${th}">${txt}</th><th scope="col" class="${td}">เป้าหมาย</th><th scope="col" class="${td}">ผลงาน</th><th scope="col" class="${td}">ร้อยละ</th></tr></thead><tbody>${units.map((u,i)=>`<tr class="border-b border-border-subtle ${i%2===1?'bg-canvas/45':'bg-white'}"><th scope="row" class="${th}">${escapeHtml(u.name)}</th><td class="${td}">${fmt(u.target)}</td><td class="${td}">${fmt(u.result)}</td><td class="${td} font-semibold ${u.pct!==null&&u.pct<75?'text-[#956723]':'text-brand-primary'}">${formatPct(u.pct)}</td></tr>`).join('')}</tbody><tfoot class="border-t-2 border-[#b6cfc0] bg-[#eef5ef] font-semibold text-brand-deep"><tr><th scope="row" class="${th}">รวม${areaName(state.area)}</th><td class="${td}">${fmt(total.target)}</td><td class="${td}">${fmt(total.result)}</td><td class="${td}">${formatPct(total.pct)}</td></tr></tfoot></table>`;}
+function trendSvg(points){
+ const width=Math.max(245,document.getElementById('trend-chart').clientWidth||450),height=245,left=36,right=10,top=36,bottom=34,plotW=width-left-right,plotH=height-top-bottom;
+ const scaleY=v=>top+(100-v)/100*plotH, x=i=>left+plotW*(i+0.5)/points.length;
+ let s=`<svg viewBox="0 0 ${width} ${height}" class="h-auto w-full" role="img" aria-label="แนวโน้มร้อยละรายปีงบประมาณ 2565 ถึง 2569 พร้อมตัวเลขกำกับทุกปี">`;
+ for(let tick of [0,25,50,75,100]){let y=scaleY(tick);s+=`<line x1="${left}" x2="${width-right}" y1="${y}" y2="${y}" stroke="#e4ece4" stroke-width="1"/><text x="${left-8}" y="${y+4}" font-size="11" fill="#829187" text-anchor="end">${tick}</text>`}
+ s+=`<line x1="${left}" x2="${width-right}" y1="${scaleY(75)}" y2="${scaleY(75)}" stroke="#d79b32" stroke-dasharray="7 6" stroke-width="2"/>`;
+ let coords=points.filter(p=>p.pct!==null).map(p=>`${x(points.indexOf(p))},${scaleY(p.pct)}`).join(' ');
+ s+=`<polyline points="${coords}" fill="none" stroke="#198467" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>`;
+ points.forEach((p,i)=>{let xx=x(i),yy=p.pct===null?scaleY(0):scaleY(p.pct);
+  s+=`<text x="${xx}" y="${height-12}" font-size="11" fill="#52685b" text-anchor="middle">${p.year}</text>`;
+  if(p.pct!==null){s+=`<circle cx="${xx}" cy="${yy}" r="4.5" fill="white" stroke="#198467" stroke-width="2.5"/><text x="${xx}" y="${Math.max(15,yy-12)}" font-size="11" font-weight="600" fill="#153d32" paint-order="stroke" stroke="white" stroke-width="4" stroke-linejoin="round" text-anchor="middle">${formatPct(p.pct)}</text><title>ปี ${p.year} ${formatPct(p.pct)}% (${p.result}/${p.target})</title>`}
+ });return s+'</svg>'
+}
+function periodSvg(year,area){
+ const qs=Array.from({length:4},(_,i)=>totalFor(rowsFor(year,area),`q${i+1}`));
+ const max=Math.max(5,...qs.flatMap(q=>[q.target,q.result])),axis=Math.ceil(max/5)*5;
+ const w=Math.max(245,document.getElementById('period-chart').clientWidth||450),h=245,l=36,r=9,t=36,b=37,pw=w-l-r,ph=h-t-b,y=n=>t+ph*(1-n/axis),yy=y(0),slot=pw/4,bw=Math.min(23,slot*.25),gap=4;
+ let html=`<svg viewBox="0 0 ${w} ${h}" class="h-auto w-full" role="img" aria-label="เป้าหมายและผลงานรายไตรมาส ทั้งสี่ไตรมาส พร้อมจำนวนกำกับกราฟ">`;
+ for(let v of [0,axis/2,axis]){let yp=y(v);html+=`<line x1="${l}" x2="${w-r}" y1="${yp}" y2="${yp}" stroke="#e4ece4" stroke-width="1"/><text x="${l-8}" y="${yp+4}" text-anchor="end" font-size="11" fill="#829187">${fmt(v)}</text>`}
+ qs.forEach((q,i)=>{let cx=l+(i+0.5)*slot,x1=cx-gap/2-bw,x2=cx+gap/2,y1=y(q.target),y2=y(q.result);
+  html+=`<rect x="${x1}" y="${y1}" width="${bw}" height="${yy-y1}" rx="2.5" fill="#254b43"/><rect x="${x2}" y="${y2}" width="${bw}" height="${yy-y2}" rx="2.5" fill="#198467"/><text x="${x1+bw/2}" y="${Math.max(15,y1-7)}" text-anchor="middle" font-size="11" fill="#254b43" font-weight="600">${fmt(q.target)}</text><text x="${x2+bw/2}" y="${Math.max(15,y2-7)}" text-anchor="middle" font-size="11" fill="#198467" font-weight="600">${fmt(q.result)}</text><text x="${cx}" y="${h-12}" text-anchor="middle" font-size="11" fill="#52685b">ไตรมาส ${i+1}</text>`
+ });return html+'</svg>'
+}
+function render(){renderForm();let records=rowsFor(state.year,state.area),t=totalFor(records,state.period),units=totalsBy(records,state.by,state.period);document.getElementById('context').textContent=`ปีงบประมาณ ${state.year} · ${areaName(state.area)} · ${periodName(state.period)} · เปรียบเทียบราย${state.by==='area'?'ตำบล':'หน่วยบริการ'}`;document.getElementById('source-date').innerHTML=icon('calendar','h-3.5 w-3.5')+`วันที่ข้อมูล ${dateText(DATES[state.year])}`;renderKpi(t);renderUnitChart(units);renderTable(units,t);let trend=YEARS.map(year=>({...totalFor(rowsFor(year,state.area),state.period),year}));document.getElementById('trend-chart').innerHTML=trendSvg(trend);document.getElementById('period-meta').textContent=`ปีงบประมาณ ${state.year} · ${areaName(state.area)}`;document.getElementById('period-chart').innerHTML=periodSvg(state.year,state.area);}
+document.getElementById('filter-form').addEventListener('submit',e=>{e.preventDefault();let f=e.currentTarget,next={year:f.querySelector('#f-year').value,area:f.querySelector('#f-area').value,period:f.querySelector('#f-period').value,by:f.querySelector('#f-by').value};if(next.area!=='all')next.by='hosp';state=next;let url=new URL(location.href);url.search=new URLSearchParams(next).toString();try{history.pushState({},'',url.pathname+url.search)}catch(err){}render();document.getElementById('results-heading').focus({preventScroll:true})});
+window.addEventListener('popstate',()=>{state=getQuery();render()});
+document.getElementById('menu-button').addEventListener('click',e=>{let n=document.getElementById('mobile-nav'),open=n.classList.toggle('hidden')===false;e.currentTarget.setAttribute('aria-expanded',open?'true':'false')});
+function csvSafe(v){let s=String(v);return '"'+(/^[\s]*[=+\-@\t\r]/.test(s)?"'"+s:s).replaceAll('"','""')+'"'}
+document.getElementById('csv-button').addEventListener('click',()=>{let records=rowsFor(state.year,state.area),u=totalsBy(records,state.by,state.period),t=totalFor(records,state.period),label=state.by==='area'?'ตำบล':'หน่วยบริการ',lines=[["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"],["รายงาน","ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์"],["ตัวกรอง",`ปี ${state.year} · ${areaName(state.area)} · ${periodName(state.period)}`],["แหล่งข้อมูล","PA-Data (ต้นแบบจากตาราง s_kpi_anc12)"],[],[label,"เป้าหมาย","ผลงาน","ร้อยละ"],...u.map(x=>[x.name,x.target,x.result,formatPct(x.pct)]),[`รวม${areaName(state.area)}`,t.target,t.result,formatPct(t.pct)]];let csv='\ufeff'+lines.map(row=>row.map(csvSafe).join(',')).join('\r\n'),url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'})),a=document.createElement('a');a.href=url;a.download=`SHDC-s_kpi_anc12-${state.year}-${state.area}-${state.period}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)});
+document.getElementById('print-button').addEventListener('click',()=>window.print());
+let resizeTimer;window.addEventListener('resize',()=>{clearTimeout(resizeTimer);resizeTimer=setTimeout(()=>{let pts=YEARS.map(year=>({...totalFor(rowsFor(year,state.area),state.period),year}));document.getElementById('trend-chart').innerHTML=trendSvg(pts);document.getElementById('period-chart').innerHTML=periodSvg(state.year,state.area)},100)});
+render();
+</script>
+</body>
+</html>

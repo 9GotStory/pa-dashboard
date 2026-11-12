@@ -94,6 +94,7 @@ Read these on demand. Don't `@`-import them: imports load into every session at 
 - docs/reference/song-health-data-center-review-03-epi-real-response-r6.html: R6 UI mockup (its numbers are fake)
 - docs/reference/v7-6/: V7.6 visual and UX baseline for redesigning Data Center pages. SPEC §9.1–9.2 is the contract; design.md and the HTML are the look reference (mock data), not production source
 - docs/reference/reports-v1-4/: V1.4 visual and UX baseline for `/reports` (ADR-0013). SPEC §9.3 is the contract; the handoff and the HTML are the look reference (fixture data), not production source
+- docs/reference/report-detail-v0-4-2/: V0.4.2 visual and UX baseline for `/reports/{id}` (ADR-0015): ANC V0.2, EPI1, AGED9. SPEC §9.4 is the contract; the notes, HTML and screenshots are the look reference (numbers read from PA-Data while drafting), not production source
 
 ## Agent skills
 

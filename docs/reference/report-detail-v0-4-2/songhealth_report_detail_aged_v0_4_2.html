@@ -1,0 +1,1533 @@
+<!DOCTYPE html>
+
+<html lang="th"><head><meta charset="utf-8"/><meta content="width=device-width, initial-scale=1" name="viewport"/><meta content="#153d32" name="theme-color"/><title>การคัดกรองผู้สูงอายุ 9 ด้าน · Song Health V0.4.2</title><style>/*! tailwindcss v4.1.10 | MIT License | https://tailwindcss.com */
+@layer properties;
+@layer theme, base, components, utilities;
+@layer theme {
+  :root, :host {
+    --font-sans: "Noto Sans Thai",Tahoma,system-ui,sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+      "Courier New", monospace;
+    --color-white: #fff;
+    --spacing: 0.25rem;
+    --text-xs: 0.75rem;
+    --text-xs--line-height: calc(1 / 0.75);
+    --text-sm: 0.875rem;
+    --text-sm--line-height: calc(1.25 / 0.875);
+    --text-base: 1rem;
+    --text-base--line-height: calc(1.5 / 1);
+    --text-lg: 1.125rem;
+    --text-lg--line-height: calc(1.75 / 1.125);
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+    --tracking-tight: -0.025em;
+    --leading-tight: 1.25;
+    --leading-snug: 1.375;
+    --leading-relaxed: 1.625;
+    --radius-sm: 0.25rem;
+    --radius-md: 0.375rem;
+    --radius-lg: 0.5rem;
+    --radius-xl: 0.75rem;
+    --default-font-family: var(--font-sans);
+    --default-mono-font-family: var(--font-mono);
+    --color-brand-deep: #153d32;
+    --color-brand-primary: #155f4b;
+    --color-brand-accent: #198467;
+    --color-canvas: #f8f9f6;
+    --color-text-secondary: #5d7164;
+    --color-border-subtle: #e0e8df;
+    --color-border-strong: #9bae9f;
+    --color-surface-muted: #eef3ed;
+    --color-graph-navy: #254b43;
+    --color-graph-gold: #d79b32;
+  }
+}
+@layer base {
+  *, ::after, ::before, ::backdrop, ::file-selector-button {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    border: 0 solid;
+  }
+  html, :host {
+    line-height: 1.5;
+    -webkit-text-size-adjust: 100%;
+    tab-size: 4;
+    font-family: var(--default-font-family, ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji");
+    font-feature-settings: var(--default-font-feature-settings, normal);
+    font-variation-settings: var(--default-font-variation-settings, normal);
+    -webkit-tap-highlight-color: transparent;
+  }
+  hr {
+    height: 0;
+    color: inherit;
+    border-top-width: 1px;
+  }
+  abbr:where([title]) {
+    -webkit-text-decoration: underline dotted;
+    text-decoration: underline dotted;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-size: inherit;
+    font-weight: inherit;
+  }
+  a {
+    color: inherit;
+    -webkit-text-decoration: inherit;
+    text-decoration: inherit;
+  }
+  b, strong {
+    font-weight: bolder;
+  }
+  code, kbd, samp, pre {
+    font-family: var(--default-mono-font-family, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+    font-feature-settings: var(--default-mono-font-feature-settings, normal);
+    font-variation-settings: var(--default-mono-font-variation-settings, normal);
+    font-size: 1em;
+  }
+  small {
+    font-size: 80%;
+  }
+  sub, sup {
+    font-size: 75%;
+    line-height: 0;
+    position: relative;
+    vertical-align: baseline;
+  }
+  sub {
+    bottom: -0.25em;
+  }
+  sup {
+    top: -0.5em;
+  }
+  table {
+    text-indent: 0;
+    border-color: inherit;
+    border-collapse: collapse;
+  }
+  :-moz-focusring {
+    outline: auto;
+  }
+  progress {
+    vertical-align: baseline;
+  }
+  summary {
+    display: list-item;
+  }
+  ol, ul, menu {
+    list-style: none;
+  }
+  img, svg, video, canvas, audio, iframe, embed, object {
+    display: block;
+    vertical-align: middle;
+  }
+  img, video {
+    max-width: 100%;
+    height: auto;
+  }
+  button, input, select, optgroup, textarea, ::file-selector-button {
+    font: inherit;
+    font-feature-settings: inherit;
+    font-variation-settings: inherit;
+    letter-spacing: inherit;
+    color: inherit;
+    border-radius: 0;
+    background-color: transparent;
+    opacity: 1;
+  }
+  :where(select:is([multiple], [size])) optgroup {
+    font-weight: bolder;
+  }
+  :where(select:is([multiple], [size])) optgroup option {
+    padding-inline-start: 20px;
+  }
+  ::file-selector-button {
+    margin-inline-end: 4px;
+  }
+  ::placeholder {
+    opacity: 1;
+  }
+  @supports (not (-webkit-appearance: -apple-pay-button))  or (contain-intrinsic-size: 1px) {
+    ::placeholder {
+      color: currentcolor;
+      @supports (color: color-mix(in lab, red, red)) {
+        color: color-mix(in oklab, currentcolor 50%, transparent);
+      }
+    }
+  }
+  textarea {
+    resize: vertical;
+  }
+  ::-webkit-search-decoration {
+    -webkit-appearance: none;
+  }
+  ::-webkit-date-and-time-value {
+    min-height: 1lh;
+    text-align: inherit;
+  }
+  ::-webkit-datetime-edit {
+    display: inline-flex;
+  }
+  ::-webkit-datetime-edit-fields-wrapper {
+    padding: 0;
+  }
+  ::-webkit-datetime-edit, ::-webkit-datetime-edit-year-field, ::-webkit-datetime-edit-month-field, ::-webkit-datetime-edit-day-field, ::-webkit-datetime-edit-hour-field, ::-webkit-datetime-edit-minute-field, ::-webkit-datetime-edit-second-field, ::-webkit-datetime-edit-millisecond-field, ::-webkit-datetime-edit-meridiem-field {
+    padding-block: 0;
+  }
+  :-moz-ui-invalid {
+    box-shadow: none;
+  }
+  button, input:where([type="button"], [type="reset"], [type="submit"]), ::file-selector-button {
+    appearance: button;
+  }
+  ::-webkit-inner-spin-button, ::-webkit-outer-spin-button {
+    height: auto;
+  }
+  [hidden]:where(:not([hidden="until-found"])) {
+    display: none !important;
+  }
+}
+@layer utilities {
+  .pointer-events-none {
+    pointer-events: none;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
+  }
+  .absolute {
+    position: absolute;
+  }
+  .relative {
+    position: relative;
+  }
+  .inset-y-0 {
+    inset-block: calc(var(--spacing) * 0);
+  }
+  .top-0 {
+    top: calc(var(--spacing) * 0);
+  }
+  .top-3 {
+    top: calc(var(--spacing) * 3);
+  }
+  .right-2\.5 {
+    right: calc(var(--spacing) * 2.5);
+  }
+  .bottom-0 {
+    bottom: calc(var(--spacing) * 0);
+  }
+  .left-3 {
+    left: calc(var(--spacing) * 3);
+  }
+  .col-span-2 {
+    grid-column: span 2 / span 2;
+  }
+  .mx-auto {
+    margin-inline: auto;
+  }
+  .mt-0\.5 {
+    margin-top: calc(var(--spacing) * 0.5);
+  }
+  .mt-1 {
+    margin-top: calc(var(--spacing) * 1);
+  }
+  .mt-1\.5 {
+    margin-top: calc(var(--spacing) * 1.5);
+  }
+  .mt-2 {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  .mt-3 {
+    margin-top: calc(var(--spacing) * 3);
+  }
+  .mt-4 {
+    margin-top: calc(var(--spacing) * 4);
+  }
+  .mt-5 {
+    margin-top: calc(var(--spacing) * 5);
+  }
+  .mt-6 {
+    margin-top: calc(var(--spacing) * 6);
+  }
+  .mr-1 {
+    margin-right: calc(var(--spacing) * 1);
+  }
+  .mb-1\.5 {
+    margin-bottom: calc(var(--spacing) * 1.5);
+  }
+  .mb-2 {
+    margin-bottom: calc(var(--spacing) * 2);
+  }
+  .mb-3 {
+    margin-bottom: calc(var(--spacing) * 3);
+  }
+  .mb-4 {
+    margin-bottom: calc(var(--spacing) * 4);
+  }
+  .mb-5 {
+    margin-bottom: calc(var(--spacing) * 5);
+  }
+  .ml-1 {
+    margin-left: calc(var(--spacing) * 1);
+  }
+  .block {
+    display: block;
+  }
+  .contents {
+    display: contents;
+  }
+  .flex {
+    display: flex;
+  }
+  .grid {
+    display: grid;
+  }
+  .hidden {
+    display: none;
+  }
+  .inline-block {
+    display: inline-block;
+  }
+  .inline-flex {
+    display: inline-flex;
+  }
+  .size-2 {
+    width: calc(var(--spacing) * 2);
+    height: calc(var(--spacing) * 2);
+  }
+  .size-2\.5 {
+    width: calc(var(--spacing) * 2.5);
+    height: calc(var(--spacing) * 2.5);
+  }
+  .size-4 {
+    width: calc(var(--spacing) * 4);
+    height: calc(var(--spacing) * 4);
+  }
+  .h-0 {
+    height: calc(var(--spacing) * 0);
+  }
+  .h-0\.5 {
+    height: calc(var(--spacing) * 0.5);
+  }
+  .h-1\.5 {
+    height: calc(var(--spacing) * 1.5);
+  }
+  .h-2 {
+    height: calc(var(--spacing) * 2);
+  }
+  .h-2\.5 {
+    height: calc(var(--spacing) * 2.5);
+  }
+  .h-3\.5 {
+    height: calc(var(--spacing) * 3.5);
+  }
+  .h-4 {
+    height: calc(var(--spacing) * 4);
+  }
+  .h-5 {
+    height: calc(var(--spacing) * 5);
+  }
+  .h-10 {
+    height: calc(var(--spacing) * 10);
+  }
+  .h-\[11px\] {
+    height: 11px;
+  }
+  .h-\[41px\] {
+    height: 41px;
+  }
+  .h-\[70px\] {
+    height: 70px;
+  }
+  .h-auto {
+    height: auto;
+  }
+  .h-full {
+    height: 100%;
+  }
+  .min-h-9 {
+    min-height: calc(var(--spacing) * 9);
+  }
+  .min-h-10 {
+    min-height: calc(var(--spacing) * 10);
+  }
+  .min-h-screen {
+    min-height: 100vh;
+  }
+  .w-0 {
+    width: calc(var(--spacing) * 0);
+  }
+  .w-1\.5 {
+    width: calc(var(--spacing) * 1.5);
+  }
+  .w-2\.5 {
+    width: calc(var(--spacing) * 2.5);
+  }
+  .w-3\.5 {
+    width: calc(var(--spacing) * 3.5);
+  }
+  .w-4 {
+    width: calc(var(--spacing) * 4);
+  }
+  .w-5 {
+    width: calc(var(--spacing) * 5);
+  }
+  .w-10 {
+    width: calc(var(--spacing) * 10);
+  }
+  .w-full {
+    width: 100%;
+  }
+  .max-w-\[115px\] {
+    max-width: 115px;
+  }
+  .max-w-\[870px\] {
+    max-width: 870px;
+  }
+  .max-w-\[930px\] {
+    max-width: 930px;
+  }
+  .max-w-\[950px\] {
+    max-width: 950px;
+  }
+  .max-w-\[1240px\] {
+    max-width: 1240px;
+  }
+  .min-w-0 {
+    min-width: calc(var(--spacing) * 0);
+  }
+  .min-w-\[54px\] {
+    min-width: 54px;
+  }
+  .min-w-\[135px\] {
+    min-width: 135px;
+  }
+  .min-w-\[340px\] {
+    min-width: 340px;
+  }
+  .min-w-\[350px\] {
+    min-width: 350px;
+  }
+  .min-w-\[590px\] {
+    min-width: 590px;
+  }
+  .min-w-\[670px\] {
+    min-width: 670px;
+  }
+  .flex-1 {
+    flex: 1;
+  }
+  .shrink-0 {
+    flex-shrink: 0;
+  }
+  .border-collapse {
+    border-collapse: collapse;
+  }
+  .cursor-pointer {
+    cursor: pointer;
+  }
+  .appearance-none {
+    appearance: none;
+  }
+  .grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .grid-cols-\[48px_minmax\(0\,1fr\)_62px\] {
+    grid-template-columns: 48px minmax(0,1fr) 62px;
+  }
+  .grid-cols-\[75px_minmax\(0\,1fr\)_54px\] {
+    grid-template-columns: 75px minmax(0,1fr) 54px;
+  }
+  .grid-cols-\[95px_minmax\(0\,1fr\)_73px\] {
+    grid-template-columns: 95px minmax(0,1fr) 73px;
+  }
+  .grid-cols-\[auto_minmax\(0\,1fr\)\] {
+    grid-template-columns: auto minmax(0,1fr);
+  }
+  .grid-cols-\[minmax\(0\,1fr\)_92px\] {
+    grid-template-columns: minmax(0,1fr) 92px;
+  }
+  .flex-col {
+    flex-direction: column;
+  }
+  .flex-wrap {
+    flex-wrap: wrap;
+  }
+  .items-baseline {
+    align-items: baseline;
+  }
+  .items-center {
+    align-items: center;
+  }
+  .items-end {
+    align-items: flex-end;
+  }
+  .items-start {
+    align-items: flex-start;
+  }
+  .justify-between {
+    justify-content: space-between;
+  }
+  .justify-center {
+    justify-content: center;
+  }
+  .gap-1 {
+    gap: calc(var(--spacing) * 1);
+  }
+  .gap-1\.5 {
+    gap: calc(var(--spacing) * 1.5);
+  }
+  .gap-2 {
+    gap: calc(var(--spacing) * 2);
+  }
+  .gap-2\.5 {
+    gap: calc(var(--spacing) * 2.5);
+  }
+  .gap-3 {
+    gap: calc(var(--spacing) * 3);
+  }
+  .gap-4 {
+    gap: calc(var(--spacing) * 4);
+  }
+  .space-y-0\.5 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 0.5) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 0.5) * calc(1 - var(--tw-space-y-reverse)));
+    }
+  }
+  .space-y-2 {
+    :where(& > :not(:last-child)) {
+      --tw-space-y-reverse: 0;
+      margin-block-start: calc(calc(var(--spacing) * 2) * var(--tw-space-y-reverse));
+      margin-block-end: calc(calc(var(--spacing) * 2) * calc(1 - var(--tw-space-y-reverse)));
+    }
+  }
+  .gap-x-2 {
+    column-gap: calc(var(--spacing) * 2);
+  }
+  .gap-x-3 {
+    column-gap: calc(var(--spacing) * 3);
+  }
+  .gap-x-4 {
+    column-gap: calc(var(--spacing) * 4);
+  }
+  .gap-y-1 {
+    row-gap: calc(var(--spacing) * 1);
+  }
+  .gap-y-2 {
+    row-gap: calc(var(--spacing) * 2);
+  }
+  .divide-y {
+    :where(& > :not(:last-child)) {
+      --tw-divide-y-reverse: 0;
+      border-bottom-style: var(--tw-border-style);
+      border-top-style: var(--tw-border-style);
+      border-top-width: calc(1px * var(--tw-divide-y-reverse));
+      border-bottom-width: calc(1px * calc(1 - var(--tw-divide-y-reverse)));
+    }
+  }
+  .divide-border-subtle {
+    :where(& > :not(:last-child)) {
+      border-color: var(--color-border-subtle);
+    }
+  }
+  .truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .overflow-hidden {
+    overflow: hidden;
+  }
+  .overflow-visible {
+    overflow: visible;
+  }
+  .overflow-x-auto {
+    overflow-x: auto;
+  }
+  .rounded-\[3px\] {
+    border-radius: 3px;
+  }
+  .rounded-full {
+    border-radius: calc(infinity * 1px);
+  }
+  .rounded-lg {
+    border-radius: var(--radius-lg);
+  }
+  .rounded-md {
+    border-radius: var(--radius-md);
+  }
+  .rounded-sm {
+    border-radius: var(--radius-sm);
+  }
+  .rounded-xl {
+    border-radius: var(--radius-xl);
+  }
+  .border {
+    border-style: var(--tw-border-style);
+    border-width: 1px;
+  }
+  .border-y {
+    border-block-style: var(--tw-border-style);
+    border-block-width: 1px;
+  }
+  .border-t {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 1px;
+  }
+  .border-t-2 {
+    border-top-style: var(--tw-border-style);
+    border-top-width: 2px;
+  }
+  .border-b {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 1px;
+  }
+  .border-b-2 {
+    border-bottom-style: var(--tw-border-style);
+    border-bottom-width: 2px;
+  }
+  .border-l-2 {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 2px;
+  }
+  .border-l-4 {
+    border-left-style: var(--tw-border-style);
+    border-left-width: 4px;
+  }
+  .border-dashed {
+    --tw-border-style: dashed;
+    border-style: dashed;
+  }
+  .border-\[\#b6cfc0\] {
+    border-color: #b6cfc0;
+  }
+  .border-\[\#d3a14a\] {
+    border-color: #d3a14a;
+  }
+  .border-border-subtle {
+    border-color: var(--color-border-subtle);
+  }
+  .border-brand-accent {
+    border-color: var(--color-brand-accent);
+  }
+  .border-graph-gold {
+    border-color: var(--color-graph-gold);
+  }
+  .border-l-brand-accent {
+    border-left-color: var(--color-brand-accent);
+  }
+  .bg-\[\#9de6bc\] {
+    background-color: #9de6bc;
+  }
+  .bg-\[\#198467\] {
+    background-color: #198467;
+  }
+  .bg-\[\#a3b2a8\] {
+    background-color: #a3b2a8;
+  }
+  .bg-\[\#d49b40\] {
+    background-color: #d49b40;
+  }
+  .bg-\[\#e9f0e9\] {
+    background-color: #e9f0e9;
+  }
+  .bg-\[\#edf2ed\] {
+    background-color: #edf2ed;
+  }
+  .bg-\[\#edf3ee\] {
+    background-color: #edf3ee;
+  }
+  .bg-\[\#edf4ee\] {
+    background-color: #edf4ee;
+  }
+  .bg-\[\#edf5ef\] {
+    background-color: #edf5ef;
+  }
+  .bg-\[\#edf7f0\] {
+    background-color: #edf7f0;
+  }
+  .bg-\[\#eef4ee\] {
+    background-color: #eef4ee;
+  }
+  .bg-\[\#eef5ef\] {
+    background-color: #eef5ef;
+  }
+  .bg-\[\#f5f8f4\] {
+    background-color: #f5f8f4;
+  }
+  .bg-\[\#f5f9f5\] {
+    background-color: #f5f9f5;
+  }
+  .bg-brand-accent {
+    background-color: var(--color-brand-accent);
+  }
+  .bg-brand-deep {
+    background-color: var(--color-brand-deep);
+  }
+  .bg-brand-primary {
+    background-color: var(--color-brand-primary);
+  }
+  .bg-canvas {
+    background-color: var(--color-canvas);
+  }
+  .bg-canvas\/60 {
+    background-color: color-mix(in srgb, #f8f9f6 60%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-canvas) 60%, transparent);
+    }
+  }
+  .bg-canvas\/75 {
+    background-color: color-mix(in srgb, #f8f9f6 75%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-canvas) 75%, transparent);
+    }
+  }
+  .bg-graph-navy {
+    background-color: var(--color-graph-navy);
+  }
+  .bg-surface-muted {
+    background-color: var(--color-surface-muted);
+  }
+  .bg-surface-muted\/55 {
+    background-color: color-mix(in srgb, #eef3ed 55%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      background-color: color-mix(in oklab, var(--color-surface-muted) 55%, transparent);
+    }
+  }
+  .bg-white {
+    background-color: var(--color-white);
+  }
+  .p-4 {
+    padding: calc(var(--spacing) * 4);
+  }
+  .p-5 {
+    padding: calc(var(--spacing) * 5);
+  }
+  .px-2 {
+    padding-inline: calc(var(--spacing) * 2);
+  }
+  .px-3 {
+    padding-inline: calc(var(--spacing) * 3);
+  }
+  .px-3\.5 {
+    padding-inline: calc(var(--spacing) * 3.5);
+  }
+  .px-4 {
+    padding-inline: calc(var(--spacing) * 4);
+  }
+  .px-5 {
+    padding-inline: calc(var(--spacing) * 5);
+  }
+  .py-0\.5 {
+    padding-block: calc(var(--spacing) * 0.5);
+  }
+  .py-1 {
+    padding-block: calc(var(--spacing) * 1);
+  }
+  .py-2 {
+    padding-block: calc(var(--spacing) * 2);
+  }
+  .py-3 {
+    padding-block: calc(var(--spacing) * 3);
+  }
+  .py-3\.5 {
+    padding-block: calc(var(--spacing) * 3.5);
+  }
+  .py-4 {
+    padding-block: calc(var(--spacing) * 4);
+  }
+  .py-5 {
+    padding-block: calc(var(--spacing) * 5);
+  }
+  .py-7 {
+    padding-block: calc(var(--spacing) * 7);
+  }
+  .py-\[7px\] {
+    padding-block: 7px;
+  }
+  .py-\[11px\] {
+    padding-block: 11px;
+  }
+  .pt-3 {
+    padding-top: calc(var(--spacing) * 3);
+  }
+  .pt-4 {
+    padding-top: calc(var(--spacing) * 4);
+  }
+  .pt-5 {
+    padding-top: calc(var(--spacing) * 5);
+  }
+  .pt-6 {
+    padding-top: calc(var(--spacing) * 6);
+  }
+  .pr-3 {
+    padding-right: calc(var(--spacing) * 3);
+  }
+  .pr-8 {
+    padding-right: calc(var(--spacing) * 8);
+  }
+  .pb-3 {
+    padding-bottom: calc(var(--spacing) * 3);
+  }
+  .pb-6 {
+    padding-bottom: calc(var(--spacing) * 6);
+  }
+  .pb-14 {
+    padding-bottom: calc(var(--spacing) * 14);
+  }
+  .pl-3 {
+    padding-left: calc(var(--spacing) * 3);
+  }
+  .pl-9 {
+    padding-left: calc(var(--spacing) * 9);
+  }
+  .text-left {
+    text-align: left;
+  }
+  .text-right {
+    text-align: right;
+  }
+  .font-sans {
+    font-family: var(--font-sans);
+  }
+  .text-lg {
+    font-size: var(--text-lg);
+    line-height: var(--tw-leading, var(--text-lg--line-height));
+  }
+  .text-sm {
+    font-size: var(--text-sm);
+    line-height: var(--tw-leading, var(--text-sm--line-height));
+  }
+  .text-xs {
+    font-size: var(--text-xs);
+    line-height: var(--tw-leading, var(--text-xs--line-height));
+  }
+  .text-\[10px\] {
+    font-size: 10px;
+  }
+  .text-\[11px\] {
+    font-size: 11px;
+  }
+  .text-\[12px\] {
+    font-size: 12px;
+  }
+  .text-\[13px\] {
+    font-size: 13px;
+  }
+  .text-\[14px\] {
+    font-size: 14px;
+  }
+  .text-\[15px\] {
+    font-size: 15px;
+  }
+  .text-\[16px\] {
+    font-size: 16px;
+  }
+  .text-\[17px\] {
+    font-size: 17px;
+  }
+  .text-\[19px\] {
+    font-size: 19px;
+  }
+  .text-\[20px\] {
+    font-size: 20px;
+  }
+  .text-\[23px\] {
+    font-size: 23px;
+  }
+  .text-\[25px\] {
+    font-size: 25px;
+  }
+  .text-\[26px\] {
+    font-size: 26px;
+  }
+  .leading-7 {
+    --tw-leading: calc(var(--spacing) * 7);
+    line-height: calc(var(--spacing) * 7);
+  }
+  .leading-relaxed {
+    --tw-leading: var(--leading-relaxed);
+    line-height: var(--leading-relaxed);
+  }
+  .leading-snug {
+    --tw-leading: var(--leading-snug);
+    line-height: var(--leading-snug);
+  }
+  .leading-tight {
+    --tw-leading: var(--leading-tight);
+    line-height: var(--leading-tight);
+  }
+  .font-bold {
+    --tw-font-weight: var(--font-weight-bold);
+    font-weight: var(--font-weight-bold);
+  }
+  .font-medium {
+    --tw-font-weight: var(--font-weight-medium);
+    font-weight: var(--font-weight-medium);
+  }
+  .font-normal {
+    --tw-font-weight: var(--font-weight-normal);
+    font-weight: var(--font-weight-normal);
+  }
+  .font-semibold {
+    --tw-font-weight: var(--font-weight-semibold);
+    font-weight: var(--font-weight-semibold);
+  }
+  .tracking-tight {
+    --tw-tracking: var(--tracking-tight);
+    letter-spacing: var(--tracking-tight);
+  }
+  .break-all {
+    word-break: break-all;
+  }
+  .text-\[\#9de6bc\] {
+    color: #9de6bc;
+  }
+  .text-\[\#28744b\] {
+    color: #28744b;
+  }
+  .text-\[\#99681b\] {
+    color: #99681b;
+  }
+  .text-\[\#486655\] {
+    color: #486655;
+  }
+  .text-\[\#a97825\] {
+    color: #a97825;
+  }
+  .text-border-strong {
+    color: var(--color-border-strong);
+  }
+  .text-brand-accent {
+    color: var(--color-brand-accent);
+  }
+  .text-brand-deep {
+    color: var(--color-brand-deep);
+  }
+  .text-brand-primary {
+    color: var(--color-brand-primary);
+  }
+  .text-text-secondary {
+    color: var(--color-text-secondary);
+  }
+  .text-white {
+    color: var(--color-white);
+  }
+  .text-white\/50 {
+    color: color-mix(in srgb, #fff 50%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-white) 50%, transparent);
+    }
+  }
+  .text-white\/80 {
+    color: color-mix(in srgb, #fff 80%, transparent);
+    @supports (color: color-mix(in lab, red, red)) {
+      color: color-mix(in oklab, var(--color-white) 80%, transparent);
+    }
+  }
+  .tabular-nums {
+    --tw-numeric-spacing: tabular-nums;
+    font-variant-numeric: var(--tw-ordinal,) var(--tw-slashed-zero,) var(--tw-numeric-figure,) var(--tw-numeric-spacing,) var(--tw-numeric-fraction,);
+  }
+  .underline {
+    text-decoration-line: underline;
+  }
+  .underline-offset-2 {
+    text-underline-offset: 2px;
+  }
+  .underline-offset-4 {
+    text-underline-offset: 4px;
+  }
+  .antialiased {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  .shadow-sm {
+    --tw-shadow: 0 1px 3px 0 var(--tw-shadow-color, rgb(0 0 0 / 0.1)), 0 1px 2px -1px var(--tw-shadow-color, rgb(0 0 0 / 0.1));
+    box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+  }
+  .outline-none {
+    --tw-outline-style: none;
+    outline-style: none;
+  }
+  .hover\:bg-\[\#f5f9f5\] {
+    &:hover {
+      @media (hover: hover) {
+        background-color: #f5f9f5;
+      }
+    }
+  }
+  .hover\:bg-brand-deep {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-brand-deep);
+      }
+    }
+  }
+  .hover\:bg-surface-muted {
+    &:hover {
+      @media (hover: hover) {
+        background-color: var(--color-surface-muted);
+      }
+    }
+  }
+  .hover\:text-brand-primary {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-brand-primary);
+      }
+    }
+  }
+  .hover\:text-white {
+    &:hover {
+      @media (hover: hover) {
+        color: var(--color-white);
+      }
+    }
+  }
+  .hover\:underline {
+    &:hover {
+      @media (hover: hover) {
+        text-decoration-line: underline;
+      }
+    }
+  }
+  .focus\:border-brand-accent {
+    &:focus {
+      border-color: var(--color-brand-accent);
+    }
+  }
+  .focus\:ring-2 {
+    &:focus {
+      --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color, currentcolor);
+      box-shadow: var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow);
+    }
+  }
+  .focus\:ring-brand-accent\/20 {
+    &:focus {
+      --tw-ring-color: color-mix(in srgb, #198467 20%, transparent);
+      @supports (color: color-mix(in lab, red, red)) {
+        --tw-ring-color: color-mix(in oklab, var(--color-brand-accent) 20%, transparent);
+      }
+    }
+  }
+  .focus-visible\:outline-2 {
+    &:focus-visible {
+      outline-style: var(--tw-outline-style);
+      outline-width: 2px;
+    }
+  }
+  .focus-visible\:outline-3 {
+    &:focus-visible {
+      outline-style: var(--tw-outline-style);
+      outline-width: 3px;
+    }
+  }
+  .focus-visible\:outline-offset-2 {
+    &:focus-visible {
+      outline-offset: 2px;
+    }
+  }
+  .focus-visible\:outline-brand-accent {
+    &:focus-visible {
+      outline-color: var(--color-brand-accent);
+    }
+  }
+  .sm\:block {
+    @media (width >= 40rem) {
+      display: block;
+    }
+  }
+  .sm\:hidden {
+    @media (width >= 40rem) {
+      display: none;
+    }
+  }
+  .sm\:w-\[230px\] {
+    @media (width >= 40rem) {
+      width: 230px;
+    }
+  }
+  .sm\:w-auto {
+    @media (width >= 40rem) {
+      width: auto;
+    }
+  }
+  .sm\:flex-none {
+    @media (width >= 40rem) {
+      flex: none;
+    }
+  }
+  .sm\:grid-cols-\[95px_minmax\(0\,1fr\)_59px\] {
+    @media (width >= 40rem) {
+      grid-template-columns: 95px minmax(0,1fr) 59px;
+    }
+  }
+  .sm\:grid-cols-\[105px_minmax\(0\,1fr\)_74px\] {
+    @media (width >= 40rem) {
+      grid-template-columns: 105px minmax(0,1fr) 74px;
+    }
+  }
+  .sm\:grid-cols-\[minmax\(0\,1fr\)_130px\] {
+    @media (width >= 40rem) {
+      grid-template-columns: minmax(0,1fr) 130px;
+    }
+  }
+  .sm\:flex-row {
+    @media (width >= 40rem) {
+      flex-direction: row;
+    }
+  }
+  .sm\:items-center {
+    @media (width >= 40rem) {
+      align-items: center;
+    }
+  }
+  .sm\:items-end {
+    @media (width >= 40rem) {
+      align-items: flex-end;
+    }
+  }
+  .sm\:justify-between {
+    @media (width >= 40rem) {
+      justify-content: space-between;
+    }
+  }
+  .sm\:gap-3 {
+    @media (width >= 40rem) {
+      gap: calc(var(--spacing) * 3);
+    }
+  }
+  .sm\:p-5 {
+    @media (width >= 40rem) {
+      padding: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:px-5 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:px-6 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:px-7 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 7);
+    }
+  }
+  .sm\:px-8 {
+    @media (width >= 40rem) {
+      padding-inline: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:py-5 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:py-6 {
+    @media (width >= 40rem) {
+      padding-block: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:pt-5 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 5);
+    }
+  }
+  .sm\:pt-6 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 6);
+    }
+  }
+  .sm\:pt-8 {
+    @media (width >= 40rem) {
+      padding-top: calc(var(--spacing) * 8);
+    }
+  }
+  .sm\:pb-7 {
+    @media (width >= 40rem) {
+      padding-bottom: calc(var(--spacing) * 7);
+    }
+  }
+  .sm\:text-base {
+    @media (width >= 40rem) {
+      font-size: var(--text-base);
+      line-height: var(--tw-leading, var(--text-base--line-height));
+    }
+  }
+  .sm\:text-xs {
+    @media (width >= 40rem) {
+      font-size: var(--text-xs);
+      line-height: var(--tw-leading, var(--text-xs--line-height));
+    }
+  }
+  .sm\:text-\[28px\] {
+    @media (width >= 40rem) {
+      font-size: 28px;
+    }
+  }
+  .sm\:text-\[29px\] {
+    @media (width >= 40rem) {
+      font-size: 29px;
+    }
+  }
+  .sm\:text-\[30px\] {
+    @media (width >= 40rem) {
+      font-size: 30px;
+    }
+  }
+  .md\:col-span-1 {
+    @media (width >= 48rem) {
+      grid-column: span 1 / span 1;
+    }
+  }
+  .md\:col-span-3 {
+    @media (width >= 48rem) {
+      grid-column: span 3 / span 3;
+    }
+  }
+  .md\:grid-cols-2 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .md\:grid-cols-3 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  .md\:grid-cols-4 {
+    @media (width >= 48rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .lg\:col-span-1 {
+    @media (width >= 64rem) {
+      grid-column: span 1 / span 1;
+    }
+  }
+  .lg\:flex {
+    @media (width >= 64rem) {
+      display: flex;
+    }
+  }
+  .lg\:hidden {
+    @media (width >= 64rem) {
+      display: none;
+    }
+  }
+  .lg\:grid-cols-2 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+  .lg\:grid-cols-4 {
+    @media (width >= 64rem) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .lg\:grid-cols-\[1fr_1\.25fr_1\.45fr_1\.15fr_auto\] {
+    @media (width >= 64rem) {
+      grid-template-columns: 1fr 1.25fr 1.45fr 1.15fr auto;
+    }
+  }
+  .lg\:grid-cols-\[1fr_1\.25fr_1\.45fr_auto\] {
+    @media (width >= 64rem) {
+      grid-template-columns: 1fr 1.25fr 1.45fr auto;
+    }
+  }
+  .print\:hidden {
+    @media print {
+      display: none;
+    }
+  }
+}
+@property --tw-space-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-divide-y-reverse {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0;
+}
+@property --tw-border-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@property --tw-leading {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-font-weight {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-tracking {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ordinal {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-slashed-zero {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-figure {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-spacing {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-numeric-fraction {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-inset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-shadow-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-shadow-alpha {
+  syntax: "<percentage>";
+  inherits: false;
+  initial-value: 100%;
+}
+@property --tw-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-inset-ring-color {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-inset-ring-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-ring-inset {
+  syntax: "*";
+  inherits: false;
+}
+@property --tw-ring-offset-width {
+  syntax: "<length>";
+  inherits: false;
+  initial-value: 0px;
+}
+@property --tw-ring-offset-color {
+  syntax: "*";
+  inherits: false;
+  initial-value: #fff;
+}
+@property --tw-ring-offset-shadow {
+  syntax: "*";
+  inherits: false;
+  initial-value: 0 0 #0000;
+}
+@property --tw-outline-style {
+  syntax: "*";
+  inherits: false;
+  initial-value: solid;
+}
+@layer properties {
+  @supports ((-webkit-hyphens: none) and (not (margin-trim: inline))) or ((-moz-orient: inline) and (not (color:rgb(from red r g b)))) {
+    *, ::before, ::after, ::backdrop {
+      --tw-space-y-reverse: 0;
+      --tw-divide-y-reverse: 0;
+      --tw-border-style: solid;
+      --tw-leading: initial;
+      --tw-font-weight: initial;
+      --tw-tracking: initial;
+      --tw-ordinal: initial;
+      --tw-slashed-zero: initial;
+      --tw-numeric-figure: initial;
+      --tw-numeric-spacing: initial;
+      --tw-numeric-fraction: initial;
+      --tw-shadow: 0 0 #0000;
+      --tw-shadow-color: initial;
+      --tw-shadow-alpha: 100%;
+      --tw-inset-shadow: 0 0 #0000;
+      --tw-inset-shadow-color: initial;
+      --tw-inset-shadow-alpha: 100%;
+      --tw-ring-color: initial;
+      --tw-ring-shadow: 0 0 #0000;
+      --tw-inset-ring-color: initial;
+      --tw-inset-ring-shadow: 0 0 #0000;
+      --tw-ring-inset: initial;
+      --tw-ring-offset-width: 0px;
+      --tw-ring-offset-color: #fff;
+      --tw-ring-offset-shadow: 0 0 #0000;
+      --tw-outline-style: solid;
+    }
+  }
+}
+</style></head>
+<body class="min-h-screen bg-canvas font-sans text-brand-deep antialiased"><svg aria-hidden="true" class="absolute h-0 w-0 overflow-hidden" xmlns="http://www.w3.org/2000/svg">
+<symbol id="i-arrow-left" viewbox="0 0 24 24"><path d="m12 19-7-7 7-7M5 12h14"></path></symbol>
+<symbol id="i-chevron" viewbox="0 0 24 24"><path d="m6 9 6 6 6-6"></path></symbol>
+<symbol id="i-calendar" viewbox="0 0 24 24"><rect height="16" rx="2" width="18" x="3" y="5"></rect><path d="M8 3v4m8-4v4M3 10h18"></path></symbol>
+<symbol id="i-download" viewbox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M4 17v4h16v-4"></path></symbol>
+<symbol id="i-print" viewbox="0 0 24 24"><path d="M6 9V3h12v6M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><path d="M6 14h12v7H6z"></path></symbol>
+<symbol id="i-info" viewbox="0 0 24 24"><circle cx="12" cy="12" r="10"></circle><path d="M12 11v6m0-10h.01"></path></symbol>
+<symbol id="i-check" viewbox="0 0 24 24"><path d="m5 12 4 4L19 6"></path></symbol>
+<symbol id="i-menu" viewbox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"></path></symbol>
+<symbol id="i-activity" viewbox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"></path></symbol>
+<symbol id="i-external" viewbox="0 0 24 24"><path d="M13 5h6v6m0-6-9 9"></path><path d="M19 13v5a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h5"></path></symbol>
+<symbol id="i-down" viewbox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 17v4h14v-4"></path></symbol><symbol id="i-search" viewbox="0 0 24 24"><circle cx="11" cy="11" r="7"></circle><path d="m16 16 5 5"></path></symbol><symbol id="i-arrow" viewbox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6"></path></symbol></svg><div class="bg-brand-deep text-white print:hidden">
+<div class="mx-auto flex min-h-9 max-w-[1240px] flex-wrap items-center justify-between gap-2 px-4 py-2 text-[11px] sm:px-8">
+<span class="inline-flex items-center gap-2 font-medium"><span class="h-1.5 w-1.5 rounded-full bg-[#9de6bc]"></span>DESIGN REVIEW V0.4.2<span class="text-white/50">/</span><span class="font-normal text-white/80">ปรับตามรูปแบบ ANC V0.2</span></span>
+<a class="inline-flex items-center gap-1.5 text-white/80 underline-offset-4 hover:text-white hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/reports/aa86b13e8cb60cae6c3216b7e3e5f151" rel="noopener noreferrer" target="_blank"><svg class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><use href="#i-external"></use></svg>เปิดหน้า Production เพื่อเปรียบเทียบ</a>
+</div>
+</div><header class="border-b border-border-subtle bg-white print:hidden">
+<div class="mx-auto flex h-[70px] max-w-[1240px] items-center justify-between gap-3 px-4 sm:px-8">
+<a aria-label="หน้าแรก Song Health Data Center" class="flex min-w-0 items-center gap-3 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/">
+<div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand-deep text-lg font-bold tracking-tight text-white">S<span class="text-[#9de6bc]">+</span></div>
+<div class="min-w-0"><div class="truncate text-[15px] font-bold tracking-tight text-brand-deep sm:text-base">Song Health Data Center</div><div class="truncate text-[10px] text-text-secondary sm:text-xs">ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</div></div>
+</a>
+<nav aria-label="เมนูหลัก" class="hidden items-center gap-1 lg:flex">
+<a class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/">หน้าแรก</a>
+<a class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/#district">ข้อมูลพื้นที่</a>
+<a class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/#population">โครงสร้างประชากร</a>
+<a class="border-b-2 border-brand-accent px-3 py-2 text-[13px] font-semibold text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/reports">รายงานสุขภาพ</a>
+<a class="rounded-lg px-3 py-2 text-[13px] text-text-secondary hover:text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/pa">PA Dashboard</a>
+</nav>
+<button aria-controls="mobile-nav" aria-expanded="false" aria-label="เปิดเมนู" class="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-border-subtle text-brand-primary hover:bg-surface-muted lg:hidden focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" id="menu-button" type="button"><svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><use href="#i-menu"></use></svg></button>
+</div>
+<nav aria-label="เมนูหลักมือถือ" class="hidden border-t border-border-subtle bg-white px-4 py-3 sm:px-8 lg:hidden" id="mobile-nav">
+<a class="block py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/">หน้าแรก</a>
+<a class="block py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/#district">ข้อมูลพื้นที่</a>
+<a class="block py-2 text-sm font-semibold text-brand-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/reports">รายงานสุขภาพ</a>
+<a class="block py-2 text-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/pa">PA Dashboard</a>
+</nav>
+</header>
+<main class="mx-auto max-w-[1240px] px-4 pb-14 pt-6 sm:px-8 sm:pt-8"><nav aria-label="ลำดับหน้าของรายงาน" class="mb-4 print:hidden"><ol class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-text-secondary"><li><a class="font-semibold text-brand-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/reports">รายงานสุขภาพ</a></li><li aria-hidden="true">/</li><li>ส่งเสริมป้องกัน</li><li aria-hidden="true">/</li><li>การคัดกรอง</li></ol></nav>
+<section class="mb-5 overflow-hidden rounded-xl border border-border-subtle border-l-4 border-l-brand-accent bg-white px-5 py-5 sm:px-7 sm:py-6">
+<p class="mb-2 text-xs font-semibold text-brand-accent">การคัดกรอง</p>
+<h1 class="max-w-[950px] text-[23px] font-semibold leading-snug tracking-tight text-brand-deep sm:text-[28px]">การคัดกรองผู้สูงอายุ 9 ด้าน</h1>
+<p class="mt-2 text-[12px] leading-relaxed text-text-secondary">การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen STEP1)</p><div class="mt-4 flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border-subtle pt-3 text-xs text-text-secondary"><span>อำเภอสอง จังหวัดแพร่</span><span class="text-border-strong">•</span><span>ข้อมูล HDC Open Data</span><span class="text-border-strong">•</span><span>รายงานความครอบคลุม</span></div>
+</section>
+<div class="mb-4 flex items-start gap-2 rounded-lg bg-[#edf5ef] px-4 py-3 text-[11px] leading-relaxed text-[#486655] print:hidden"><svg class="mt-0.5 h-4 w-4 shrink-0" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><use href="#i-info"></use></svg><p><strong>ต้นแบบเพื่อพิจารณาการออกแบบ</strong> — ข้อมูลจาก PA-Data ปี 2568–2569 สำหรับทดลองรูปแบบหน้าเว็บ ไม่ใช่การอ่าน Snapshot บน Production แบบเรียลไทม์</p></div>
+<section aria-labelledby="filters-title" class="mb-4 rounded-xl border border-border-subtle bg-surface-muted/55 px-4 py-4 sm:px-6 sm:py-5 print:hidden">
+<div class="flex flex-wrap items-baseline justify-between gap-2"><h2 class="text-[15px] font-semibold text-brand-deep" id="filters-title">ตัวกรองรายงาน</h2><p class="text-xs text-text-secondary">เลือกเงื่อนไขแล้วกดแสดงผล · ข้อมูลรายด้านแสดงเป็นทั้งปี</p></div>
+<form class="mt-4 grid grid-cols-2 items-end gap-3 md:grid-cols-3 lg:grid-cols-[1fr_1.25fr_1.45fr_auto]" id="filters-form"><div class="contents" id="filter-fields"></div>
+<button class="col-span-2 flex h-10 items-center justify-center rounded-lg bg-brand-primary px-5 text-[13px] font-semibold text-white shadow-sm hover:bg-brand-deep focus-visible:outline-3 focus-visible:outline-brand-accent md:col-span-3 lg:col-span-1 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" type="submit">แสดงผล</button>
+</form></section>
+<div class="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"><div><h2 class="text-lg font-semibold text-brand-deep outline-none" id="results-title" tabindex="-1">ความครอบคลุมการคัดกรอง</h2>
+<p aria-live="polite" class="mt-1 text-[12px] text-text-secondary" id="result-context"></p><p class="mt-1 text-[11px] text-text-secondary" id="source-date"></p></div>
+<div class="flex w-full items-center gap-2 print:hidden sm:w-auto"><button class="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-subtle bg-white px-3.5 py-2 text-xs font-semibold text-brand-deep hover:bg-surface-muted sm:flex-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" id="download-csv" type="button"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><use href="#i-download"></use></svg>ดาวน์โหลด CSV</button><button class="inline-flex min-h-10 flex-1 items-center justify-center gap-1.5 rounded-lg border border-border-subtle bg-white px-3.5 py-2 text-xs font-semibold text-brand-deep hover:bg-surface-muted sm:flex-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" id="print-page" type="button"><svg class="h-4 w-4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" viewbox="0 0 24 24"><use href="#i-print"></use></svg>พิมพ์รายงาน</button></div></div><section aria-label="สรุปความครอบคลุม" class="mt-4"><div class="grid grid-cols-2 gap-3 md:grid-cols-4" id="aged-kpi"></div></section>
+<section aria-labelledby="area-summary-title" class="mt-4 grid gap-4 lg:grid-cols-2"><section class="rounded-xl border border-border-subtle bg-white p-4 sm:p-5"><div class="mb-4"><h3 class="text-[15px] font-semibold text-brand-deep" id="area-summary-title">ร้อยละการคัดกรองรายพื้นที่</h3><p class="mt-1 text-[11px] text-text-secondary">เปรียบเทียบกับเกณฑ์ 80%</p></div><div id="aged-area-chart"></div></section>
+<section class="overflow-hidden rounded-xl border border-border-subtle bg-white"><div class="px-4 pt-4 pb-3 sm:px-5"><h3 class="text-[15px] font-semibold text-brand-deep">เป้าหมาย ผลงาน และร้อยละรายพื้นที่</h3></div><div class="overflow-x-auto" id="aged-area-table"></div></section></section>
+<section class="mt-4 rounded-xl border border-border-subtle bg-white p-4 sm:p-5"><div class="flex flex-wrap items-end justify-between gap-2"><h3 class="text-[15px] font-semibold text-brand-deep">แนวโน้มความครอบคลุมย้อนหลัง</h3><span class="text-[11px] text-text-secondary">ปี 2565–2569</span></div><div class="mt-4 max-w-[870px]" id="aged-trend"></div><p class="mt-2 text-[11px] text-text-secondary">ปี 2565 ไม่มีผลรวมที่เปรียบเทียบกับปีอื่นได้ จึงไม่แสดงค่าร้อยละ</p></section>
+<section aria-labelledby="domains-title" class="mt-6 overflow-hidden rounded-xl border border-border-subtle bg-white"><div class="px-4 pt-4 pb-3 sm:px-5"><h3 class="text-[17px] font-semibold text-brand-deep outline-none" id="domains-title" tabindex="-1">ผลการคัดกรองทั้ง 9 ด้าน</h3><p class="mt-1 text-[12px] text-text-secondary">จำนวนรายการจากข้อมูลต้นทาง · เลือกด้านเพื่อดูรายละเอียดรายพื้นที่</p></div><div id="aged-domains"></div><p class="border-t border-border-subtle px-4 py-3 text-[11px] leading-relaxed text-text-secondary sm:px-5">จำนวนรายด้านไม่ใช่อัตราความเสี่ยง ไม่ใช่ผลผ่าน/ไม่ผ่าน และไม่จำเป็นต้องเท่ากับยอดรวมผู้ได้รับการคัดกรอง</p></section>
+<section aria-labelledby="domain-detail-title" class="mt-5 hidden" id="domain-detail"><div class="mb-3 flex flex-wrap items-center justify-between gap-3"><div><p class="text-[11px] font-semibold text-brand-accent">รายละเอียดด้านที่เลือก</p><h3 class="mt-1 text-[19px] font-semibold text-brand-deep outline-none" id="domain-detail-title" tabindex="-1"></h3><p class="mt-1 text-[12px] leading-relaxed text-text-secondary" id="domain-detail-hint">แสดงจำนวนรายการตามข้อมูลต้นทาง ไม่ใช่จำนวนผู้มีความเสี่ยง</p></div><button class="rounded-md border border-border-subtle bg-white px-3 py-2 text-[12px] text-text-secondary hover:bg-surface-muted focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" id="domain-close" type="button">ปิดรายละเอียด</button></div><div class="grid gap-4 lg:grid-cols-2"><section class="rounded-xl border border-border-subtle bg-white p-4 sm:p-5"><h4 class="mb-4 text-[15px] font-semibold text-brand-deep" id="domain-chart-title">จำนวนรายพื้นที่</h4><div id="domain-chart"></div></section><section class="overflow-hidden rounded-xl border border-border-subtle bg-white"><div class="px-4 pt-4 pb-3 sm:px-5"><h4 class="text-[15px] font-semibold text-brand-deep">ตารางจำนวนรายพื้นที่</h4></div><div class="overflow-x-auto" id="domain-table"></div></section></div></section><section class="mt-6 border-t border-border-subtle pt-5 text-[12px] leading-relaxed text-text-secondary print:hidden">
+<details><summary class="cursor-pointer font-semibold text-brand-primary hover:underline">แหล่งข้อมูลและข้อจำกัดของต้นแบบ</summary>
+<div class="mt-3 max-w-[930px] rounded-lg bg-surface-muted px-4 py-4 leading-7" id="method-notes"></div>
+</details></section>
+<section aria-labelledby="related-title" class="mt-6 border-t border-border-subtle pt-5 print:hidden"><div class="flex flex-wrap items-center justify-between gap-3"><div><h2 class="text-[15px] font-semibold text-brand-deep" id="related-title">รายงานที่เกี่ยวข้อง</h2><p class="mt-1 text-xs text-text-secondary">สำรวจรายงานเพิ่มเติมในหัวข้อการคัดกรอง</p></div><a class="inline-flex items-center gap-2 text-xs font-semibold text-brand-primary hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent" href="https://songhealth-dc.pages.dev/reports">ดูรายงานสุขภาพทั้งหมด <span aria-hidden="true">→</span></a></div></section></main><footer class="border-t border-border-subtle bg-white py-7 print:hidden"><div class="mx-auto flex max-w-[1240px] flex-col gap-2 px-4 text-xs text-text-secondary sm:flex-row sm:items-center sm:justify-between sm:px-8"><div><strong class="text-brand-deep">Song Health Data Center</strong> · สำนักงานสาธารณสุขอำเภอสอง จังหวัดแพร่</div><div>Report Detail V0.4.2 · ต้นแบบสำหรับตรวจรูปแบบ · ไม่ใช่ Production</div></div></footer>
+<script>
+const AREAS={"540601":"บ้านหนุน","540602":"บ้านกลาง","540603":"ห้วยหม้าย","540604":"เตาปูน","540605":"หัวเมือง","540606":"สะเอียบ","540607":"แดนชุมพล","540608":"ทุ่งน้าว"}, HOSP={"06413":"บ้านหนุน","06414":"ทุ่งน้าว","06415":"วังดิน","06416":"ลูนิเกตุ","06417":"ห้วยขอน","06418":"ห้วยหม้าย","06419":"เตาปูน","06420":"นาไร่เดียว","06421":"หัวเมือง","06422":"วังฟ่อน","06423":"สะเอียบ","06424":"ป่าเลา","06425":"นาหลวง","06426":"แดนชุมพล","10368":"แม่แรม","11170":"สอง","11760":"หนองเสี้ยว"}, YEARS=['2565','2566','2567','2568','2569'], YEAR_OPTIONS=['2569','2568'];
+const MONTHS=['ต.ค.','พ.ย.','ธ.ค.','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.'];
+const META={"topic":"การคัดกรอง","title":"การคัดกรองผู้สูงอายุ 9 ด้าน (Basic/Community Screen STEP1)","id":"aa86b13e8cb60cae6c3216b7e3e5f151","table":"s_aged9","cat":"6966b0664b89805a484d7ac96c6edc48","sub":"การคัดกรองผู้สูงอายุ","dates":{"2569":"202611081755","2568":"202511161940"},"goal":80,"kind":"aged"}, RAW={"2569":[{"area":"540601","hosp":"06413","v":[814,799,799,799,799,799,799,794,799,799,799]},{"area":"540601","hosp":"11170","v":[1355,1309,1346,1346,1346,1346,1346,1344,1346,1345,1310]},{"area":"540602","hosp":"06415","v":[397,391,391,391,391,391,391,390,391,391,391]},{"area":"540602","hosp":"11170","v":[1608,1594,1594,1594,1594,1594,1594,1594,1594,1594,1594]},{"area":"540603","hosp":"06416","v":[556,548,550,550,550,549,550,521,550,550,550]},{"area":"540603","hosp":"06417","v":[600,594,594,594,594,594,594,594,594,594,594]},{"area":"540603","hosp":"06418","v":[843,825,831,831,831,831,831,821,831,831,831]},{"area":"540604","hosp":"06419","v":[1322,1313,1313,1313,1312,1313,1313,1314,1297,1313,1313]},{"area":"540604","hosp":"06420","v":[214,207,207,207,207,213,207,210,207,207,207]},{"area":"540604","hosp":"10368","v":[158,136,137,137,136,137,137,135,137,137,137]},{"area":"540605","hosp":"06421","v":[694,672,673,673,673,674,673,674,672,673,673]},{"area":"540605","hosp":"06422","v":[522,520,520,520,520,520,520,520,519,520,520]},{"area":"540605","hosp":"11760","v":[403,399,399,399,399,399,399,401,399,399,399]},{"area":"540606","hosp":"06423","v":[662,658,658,658,658,658,658,656,658,658,658]},{"area":"540606","hosp":"06424","v":[221,221,221,221,221,221,221,219,221,221,221]},{"area":"540606","hosp":"06425","v":[297,289,290,289,290,290,290,281,290,290,290]},{"area":"540607","hosp":"06426","v":[605,602,603,603,603,603,602,600,603,603,602]},{"area":"540608","hosp":"06414","v":[917,915,915,915,915,915,915,902,915,915,915]}],"2568":[{"area":"540601","hosp":"06413","v":[799,794,794,794,794,794,794,794,794,794,794]},{"area":"540601","hosp":"11170","v":[1304,1261,1296,1296,1294,1296,1296,1299,1295,1296,1261]},{"area":"540602","hosp":"06415","v":[369,359,359,359,359,359,359,358,359,359,359]},{"area":"540602","hosp":"11170","v":[1620,1553,1600,1600,1600,1601,1600,1603,1600,1600,1553]},{"area":"540603","hosp":"06416","v":[528,524,524,524,524,524,524,524,524,524,524]},{"area":"540603","hosp":"06417","v":[580,575,575,575,575,575,575,576,575,575,575]},{"area":"540603","hosp":"06418","v":[857,805,812,812,812,812,812,807,812,812,812]},{"area":"540604","hosp":"06419","v":[1279,1273,1273,1273,1273,1274,1272,1272,1243,1273,1273]},{"area":"540604","hosp":"06420","v":[212,209,209,209,212,212,209,210,209,209,209]},{"area":"540604","hosp":"10368","v":[150,131,131,131,131,131,131,130,131,131,131]},{"area":"540605","hosp":"06421","v":[668,668,668,668,668,668,668,667,668,668,668]},{"area":"540605","hosp":"06422","v":[505,503,503,503,503,503,503,503,503,503,503]},{"area":"540605","hosp":"11760","v":[379,364,377,377,377,377,377,377,377,377,364]},{"area":"540606","hosp":"06423","v":[644,551,575,551,551,575,575,578,575,575,551]},{"area":"540606","hosp":"06424","v":[205,202,202,202,202,202,202,202,202,202,202]},{"area":"540606","hosp":"06425","v":[288,280,282,281,281,284,280,283,282,281,280]},{"area":"540607","hosp":"06426","v":[566,559,559,559,559,559,559,558,559,559,559]},{"area":"540608","hosp":"06414","v":[867,860,860,860,860,860,860,854,860,860,860]}]}, HISTORY={"2565":{"all":[10765,null],"540601":[1983,null],"540602":[1915,null],"540603":[1726,null],"540604":[1452,null],"540605":[1395,null],"540606":[1006,null],"540607":[515,null],"540608":[773,null]},"2566":{"all":[11163,10411],"540601":[2030,1974],"540602":[1941,1874],"540603":[1786,1761],"540604":[1539,1425],"540605":[1470,1278],"540606":[1072,800],"540607":[514,510],"540608":[811,789]},"2567":{"all":[11416,11001],"540601":[2065,2005],"540602":[1956,1883],"540603":[1880,1849],"540604":[1580,1551],"540605":[1469,1449],"540606":[1105,926],"540607":[528,521],"540608":[833,817]}};
+
+
+const fmt=n=>n==null?'—':new Intl.NumberFormat('th-TH').format(n);
+const fmtPct=n=>n==null?'—':new Intl.NumberFormat('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2}).format(n);
+const pctDisplay=n=>n==null?'—':fmtPct(n)+'%';
+const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const ratio=(target,result)=>target>0&&result!==null?100*result/target:null;
+const areaLabel=id=>id==='all'?'ทั้งอำเภอสอง':'ตำบล'+(AREAS[id]||id);
+const rowsFor=(y,a)=>(RAW[y]||[]).filter(r=>a==='all'||r.area===a);
+const formatter=new Intl.NumberFormat('th-TH');
+const dateText=s=>new Date(+s.slice(0,4),+s.slice(4,6)-1,+s.slice(6,8)).toLocaleDateString('th-TH',{day:'numeric',month:'long',year:'numeric'})+' เวลา '+s.slice(8,10)+':'+s.slice(10,12)+' น.';
+const byUnits=(rows,by,stat)=>{const groups=new Map();for(const r of rows){const k=by==='hosp'?r.hosp:r.area;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(r)}return [...groups.entries()].sort(([a],[b])=>a.localeCompare(b)).map(([id,rr])=>({id,name:by==='hosp'?(HOSP[id]||id):(AREAS[id]||id),...stat(rr)}))};
+function unitChart(targetId,items,goal,labelType='pct'){
+ let el=document.getElementById(targetId),max=Math.max(1,...items.map(a=>labelType==='pct'?Math.max(0,a.pct||0):Math.max(0,a.count||0)));
+ el.innerHTML=`<div role="list" aria-label="กราฟเปรียบเทียบรายพื้นที่" class="space-y-0.5">${items.map(a=>{let v=labelType==='pct'?a.pct:a.count,display=labelType==='pct'?pctDisplay(v):fmt(v),scale=labelType==='pct'?Math.max(100,max):max;return `<div role="listitem" class="grid grid-cols-[95px_minmax(0,1fr)_73px] items-center gap-2 py-2 sm:grid-cols-[105px_minmax(0,1fr)_74px]"><span class="truncate text-[12px] text-brand-deep" title="${esc(a.name)}">${esc(a.name)}</span><div class="relative h-[11px] overflow-hidden rounded-sm bg-[#edf2ed]"><div class="h-full rounded-sm bg-brand-accent" style="width:${v===null?0:Math.max(0,Math.min(100,100*v/scale))}%"></div>${labelType==='pct'&&goal!==null?`<div class="absolute top-0 bottom-0 border-l-2 border-dashed border-[#d3a14a]" style="left:${Math.min(100,100*goal/scale)}%"></div>`:''}</div><strong class="text-right text-[12px] tabular-nums text-brand-primary">${display}</strong></div>`}).join('')}</div>`;
+}
+function coverageTable(elId,items,total){document.getElementById(elId).innerHTML=`<table class="w-full min-w-[350px] border-collapse text-[12px]"><thead class="bg-[#eef4ee] text-brand-deep"><tr><th class="px-3 py-3 text-left font-semibold">พื้นที่</th><th class="px-3 py-3 text-right font-semibold">เป้าหมาย</th><th class="px-3 py-3 text-right font-semibold">ผลงาน</th><th class="px-3 py-3 text-right font-semibold">ร้อยละ</th></tr></thead><tbody>${items.map(a=>`<tr class="border-t border-border-subtle"><th class="px-3 py-[11px] text-left font-medium">${esc(a.name)}</th><td class="px-3 py-[11px] text-right tabular-nums">${fmt(a.target)}</td><td class="px-3 py-[11px] text-right tabular-nums">${fmt(a.result)}</td><td class="px-3 py-[11px] text-right font-semibold tabular-nums text-brand-primary">${fmtPct(a.pct)}</td></tr>`).join('')}</tbody><tfoot class="border-t-2 border-[#b6cfc0] bg-[#edf4ee] font-semibold"><tr><th class="px-3 py-3 text-left">รวม${areaLabel(state.area)}</th><td class="px-3 py-3 text-right tabular-nums">${fmt(total.target)}</td><td class="px-3 py-3 text-right tabular-nums">${fmt(total.result)}</td><td class="px-3 py-3 text-right tabular-nums text-brand-primary">${fmtPct(total.pct)}</td></tr></tfoot></table>`}
+function countTable(elId,items,total){document.getElementById(elId).innerHTML=`<table class="w-full border-collapse text-[12px]"><thead class="bg-[#eef4ee]"><tr><th class="px-3 py-3 text-left">พื้นที่</th><th class="px-3 py-3 text-right">จำนวนรายการ</th></tr></thead><tbody>${items.map(a=>`<tr class="border-t border-border-subtle"><th class="px-3 py-3 text-left font-medium">${esc(a.name)}</th><td class="px-3 py-3 text-right tabular-nums">${fmt(a.count)}</td></tr>`).join('')}</tbody><tfoot class="border-t border-border-subtle bg-[#edf4ee]"><tr><th class="px-3 py-3 text-left">รวม</th><td class="px-3 py-3 text-right font-semibold tabular-nums">${fmt(total)}</td></tr></tfoot></table>`}
+function trendSvg(id,items,goal){const el=document.getElementById(id),width=780,H=230,left=45,right=35,top=33,bottom=31,plotH=H-top-bottom,plotW=width-left-right,vals=items.map(x=>x.pct),scale=Math.max(100,Math.ceil(Math.max(0,...vals.filter(x=>x!==null))/25)*25),px=i=>left+plotW*(i+.5)/items.length,py=v=>top+(scale-v)/scale*plotH;
+ let svg=`<svg class="h-auto w-full" viewBox="0 0 ${width} ${H}" role="img" aria-label="กราฟแนวโน้มรายปี พร้อมค่าร้อยละและเส้นเกณฑ์">`;
+ for(let tick=0;tick<=scale;tick+=25){svg+=`<line x1="${left}" x2="${width-right}" y1="${py(tick)}" y2="${py(tick)}" stroke="#e1e9e1"/><text x="${left-10}" y="${py(tick)+4}" font-size="12" text-anchor="end" fill="#738778">${tick}</text>`}
+ if(goal!==null)svg+=`<line x1="${left}" x2="${width-right}" y1="${py(goal)}" y2="${py(goal)}" stroke="#d79b32" stroke-width="2" stroke-dasharray="8 7"/>`;
+ items.forEach((p,i)=>{const x=px(i),y=p.pct===null?null:py(p.pct);svg+=`<text x="${x}" y="${H-8}" font-size="12" text-anchor="middle" fill="#586b5f">${p.year}</text>`;if(y!==null){if(i>0&&items[i-1].pct!==null)svg+=`<path d="M ${px(i-1)} ${py(items[i-1].pct)} L ${x} ${y}" fill="none" stroke="#198467" stroke-width="2.5"/>`;svg+=`<circle cx="${x}" cy="${y}" r="5" fill="white" stroke="#198467" stroke-width="2.5"/><text x="${x}" y="${Math.max(14,y-12)}" text-anchor="middle" font-size="12" font-weight="600" fill="#153d32" stroke="white" stroke-width="4" paint-order="stroke">${fmtPct(p.pct)}</text>`}else svg+=`<text x="${x}" y="${py(9)}" text-anchor="middle" font-size="14" fill="#96a499">—</text>`});const mobile=`<div role="list" aria-label="แนวโน้มร้อยละรายปี" class="space-y-2 sm:hidden">${items.map(p=>`<div role="listitem" class="grid grid-cols-[48px_minmax(0,1fr)_62px] items-center gap-2 py-1"><span class="text-xs text-text-secondary">${p.year}</span><span class="relative h-2.5 overflow-hidden rounded-full bg-[#edf2ed]"><span class="block h-full rounded-full bg-brand-accent" style="width:${p.pct===null?0:Math.min(100,Math.max(0,p.pct/scale*100))}%"></span>${goal!==null?`<span class="absolute inset-y-0 border-l-2 border-dashed border-[#d3a14a]" style="left:${Math.min(100,goal/scale*100)}%"></span>`:''}</span><strong class="text-right text-xs tabular-nums text-brand-deep">${pctDisplay(p.pct)}</strong></div>`).join('')}</div>`;el.innerHTML=mobile+'<div class="hidden sm:block">'+svg+'</svg></div>'}
+function monthBars(id,items){let el=document.getElementById(id),max=Math.max(2,...items.flatMap(p=>[p.target,p.result])),scale=Math.ceil(max/5)*5,svg=`<svg class="min-w-[590px] w-full h-auto" viewBox="0 0 720 245" role="img" aria-label="เป้าหมายและผลงานรายเดือนพร้อมตัวเลข">`,l=42,r=15,t=29,b=34,h=245,plotH=h-t-b,plotW=720-l-r,unit=plotW/12,y=v=>t+(scale-v)/scale*plotH;for(const tick of [0,scale/2,scale])svg+=`<line x1="${l}" x2="${720-r}" y1="${y(tick)}" y2="${y(tick)}" stroke="#e1e9e1"/><text x="${l-6}" y="${y(tick)+4}" text-anchor="end" font-size="12" fill="#738778">${fmt(tick)}</text>`;items.forEach((p,i)=>{let cx=l+(i+.5)*unit,bw=17,top1=y(p.target),top2=y(p.result);svg+=`<rect x="${cx-19}" y="${top1}" width="${bw}" height="${y(0)-top1}" rx="2" fill="#254b43"/><rect x="${cx+2}" y="${top2}" width="${bw}" height="${y(0)-top2}" rx="2" fill="#198467"/><text x="${cx-10}" y="${Math.max(13,top1-5)}" text-anchor="middle" font-size="10" font-weight="600" fill="#254b43">${fmt(p.target)}</text><text x="${cx+10}" y="${Math.max(13,top2-5)}" text-anchor="middle" font-size="10" font-weight="600" fill="#198467">${fmt(p.result)}</text><text x="${cx}" y="236" font-size="12" text-anchor="middle" fill="#586b5f">${p.name}</text>`});el.innerHTML=svg+'</svg><p class="mt-2 flex items-center gap-4 text-[11px] text-text-secondary"><span><span class="mr-1 inline-block size-2.5 bg-graph-navy"></span>เป้าหมาย</span><span><span class="mr-1 inline-block size-2.5 bg-brand-accent"></span>ผลงาน</span></p>'}
+function kpiTiles(elId,values){document.getElementById(elId).innerHTML=values.map(([label,num,foot,tone])=>`<div class="min-w-0 rounded-xl border border-border-subtle bg-white px-4 py-4 sm:px-5"><p class="text-[12px] text-text-secondary">${label}</p><p class="mt-1 text-[25px] leading-tight font-semibold tabular-nums ${tone==='warn'?'text-[#a97825]':'text-brand-deep'} sm:text-[30px]">${num}</p><p class="mt-1 text-[11px] text-text-secondary">${foot}</p></div>`).join('')}
+function field(name,label,choices,val){return `<label class="block min-w-0"><span class="mb-1.5 block text-xs font-semibold text-brand-deep">${label}</span><span class="relative block"><select id="f-${name}" name="${name}" class="h-10 w-full appearance-none rounded-lg border border-border-subtle bg-white py-2 pl-3 pr-8 text-[12px] font-medium text-brand-deep outline-none focus:border-brand-accent focus:ring-2 focus:ring-brand-accent/20 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent">${choices.map(([v,t,disabled])=>`<option value="${v}" ${val===v?'selected':''} ${disabled?'disabled':''}>${esc(t)}</option>`).join('')}</select><svg class="pointer-events-none absolute top-3 right-2.5 size-4 text-text-secondary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><use href="#i-chevron"/></svg></span></label>`}
+function csvSafe(v){let x=String(v??'');if(/^\s*[=+\-@\t\r]/.test(x))x="'"+x;return '"'+x.replaceAll('"','""')+'"'}
+function exportCsv(rows){const csv='\ufeff'+rows.map(r=>r.map(csvSafe).join(',')).join('\r\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`SHDC-${META.table}-${state.year}-${state.area}.csv`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500)}
+
+
+const DOMAINS=['การมองเห็น','การกลั้นปัสสาวะ','การได้ยิน','การปฏิบัติกิจวัตรประจำวัน (ADL)','ความคิดความจำ','ภาวะซึมเศร้า (2Q)','การเคลื่อนไหว','สุขภาพช่องปาก','ภาวะขาดสารอาหาร'];
+const urlQ=new URLSearchParams(location.search);let state={year:YEAR_OPTIONS.includes(urlQ.get('year'))?urlQ.get('year'):'2569',area:AREAS[urlQ.get('area')]?urlQ.get('area'):'all',by:urlQ.get('by')==='hosp'?'hosp':'area'};if(state.area!=='all')state.by='hosp';let chosenDomain=/^[1-9]$/.test(urlQ.get('domain')||'')?Number(urlQ.get('domain'))-1:null;
+function agedStats(rows){let target=0,result=0;for(const r of rows){target+=r.v[0];result+=r.v[1]}return{target,result,pct:ratio(target,result)}}
+function domainStats(rows){return DOMAINS.map((name,i)=>({name,i,count:rows.reduce((s,r)=>s+r.v[i+2],0)}))}
+function agedHistory(y){if(RAW[y]){const x=agedStats(rowsFor(y,state.area));return{year:y,pct:y==='2565'?null:x.pct}}const p=HISTORY[y]?.[state.area];return{year:y,pct:(!p||p[1]===null)?null:ratio(p[0],p[1])}}
+function renderFilters(){document.getElementById('filter-fields').innerHTML=field('year','ปีงบประมาณ',YEAR_OPTIONS.map(y=>[y,y]),state.year)+field('area','พื้นที่',[['all','ทั้งอำเภอ'],...Object.entries(AREAS).map(([k,v])=>[k,'ตำบล'+v])],state.area)+field('by','เปรียบเทียบตาม',[['area','ตำบล',state.area!=='all'],['hosp','หน่วยบริการ']],state.by);document.getElementById('f-area').addEventListener('change',()=>{let x=document.getElementById('f-by');if(document.getElementById('f-area').value!=='all'){x.value='hosp';x.querySelector('option[value="area"]').disabled=true}else x.querySelector('option[value="area"]').disabled=false})}
+function domainOverview(rows){let domains=domainStats(rows);document.getElementById('aged-domains').innerHTML=`<div role="group" aria-label="รายงานจำนวนตามการคัดกรองทั้งเก้าด้าน" class="divide-y divide-border-subtle">${domains.map(x=>`<button type="button" data-domain="${x.i}" aria-controls="domain-detail" aria-expanded="${chosenDomain===x.i}" class="grid w-full grid-cols-[minmax(0,1fr)_92px] items-center gap-3 px-4 py-3.5 text-left hover:bg-[#f5f9f5] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-accent sm:grid-cols-[minmax(0,1fr)_130px] sm:px-5 ${chosenDomain===x.i?'bg-[#edf7f0]':''}"><span class="text-[13px] font-medium leading-snug text-brand-deep">${x.i+1}. ${esc(x.name)}</span><span class="text-right text-[13px] font-semibold tabular-nums text-brand-primary">${fmt(x.count)} <span class="ml-1 text-[10px] font-normal text-text-secondary">›</span></span></button>`).join('')}</div>`;document.getElementById('aged-domains').onclick=e=>{const row=e.target.closest('[data-domain]');if(row)selectDomain(Number(row.dataset.domain),true)}}
+function selectDomain(i,scroll){chosenDomain=i;updateUrl();domainOverview(rowsFor(state.year,state.area));domainDetail();if(scroll)requestAnimationFrame(()=>{document.getElementById('domain-detail-title').focus({preventScroll:true});document.getElementById('domain-detail').scrollIntoView({behavior:'smooth',block:'start'})})}
+function domainDetail(){const sec=document.getElementById('domain-detail');if(chosenDomain===null){sec.classList.add('hidden');return}sec.classList.remove('hidden');const rows=rowsFor(state.year,state.area),by=state.by,items=byUnits(rows,by,rr=>({count:rr.reduce((s,r)=>s+r.v[chosenDomain+2],0)})),total=items.reduce((a,r)=>a+r.count,0);document.getElementById('domain-detail-title').textContent=DOMAINS[chosenDomain];document.getElementById('domain-detail-hint').textContent=areaLabel(state.area)+' · ปีงบประมาณ '+state.year+' · จำนวนรายการตามข้อมูลต้นทาง ไม่ใช่จำนวนผู้มีความเสี่ยง';document.getElementById('domain-chart-title').textContent='จำนวนราย'+(by==='area'?'ตำบล':'หน่วยบริการ');unitChart('domain-chart',items,null,'count');countTable('domain-table',items,total)}
+function context(){document.getElementById('result-context').textContent=`ปีงบประมาณ ${state.year} · ${areaLabel(state.area)} · ทั้งปี · เปรียบเทียบราย${state.by==='area'?'ตำบล':'หน่วยบริการ'}`;document.getElementById('source-date').textContent='วันที่ข้อมูล '+dateText(META.dates[state.year])}
+function updateUrl(){const q=new URLSearchParams({year:state.year,area:state.area,by:state.by});if(chosenDomain!==null)q.set('domain',String(chosenDomain+1));try{history.replaceState(null,'','?'+q.toString())}catch(e){}}
+function render(){renderFilters();context();let rows=rowsFor(state.year,state.area),main=agedStats(rows),unit=byUnits(rows,state.by,agedStats),goal=80;kpiTiles('aged-kpi',[['เป้าหมาย',fmt(main.target),'คน'],['ผลงาน',fmt(main.result),'คน'],['ร้อยละ',pctDisplay(main.pct),'ความครอบคลุมการคัดกรอง'],['เกณฑ์','≥80%',main.pct===null?'ยังประเมินไม่ได้':main.pct>=80?'ผ่านเกณฑ์':'ไม่ผ่านเกณฑ์']]);unitChart('aged-area-chart',unit,goal);coverageTable('aged-area-table',unit,main);trendSvg('aged-trend',YEARS.map(agedHistory),goal);domainOverview(rows);domainDetail()}
+document.getElementById('filters-form').onsubmit=e=>{e.preventDefault();const f=document.getElementById('filter-fields');state.year=f.querySelector('#f-year').value;state.area=f.querySelector('#f-area').value;state.by=state.area==='all'?f.querySelector('#f-by').value:'hosp';updateUrl();render();document.getElementById('results-title').focus({preventScroll:true})};
+document.getElementById('domain-close').onclick=()=>{chosenDomain=null;updateUrl();render();document.getElementById('domains-title').focus({preventScroll:true});document.getElementById('domains-title').scrollIntoView({behavior:'smooth',block:'start'})};
+document.getElementById('method-notes').innerHTML=`ข้อมูลรวมรายหน่วยบริการจาก PA-Data / HDC Open Data ตาราง ${META.table} ปี 2568–2569 · เป้าหมายและผลงานเป็นความครอบคลุมรวมตามคอลัมน์ target/result · ผลคัดกรอง 9 ด้านแสดงค่าจาก result1–result9 โดยตรง · ไม่สรุปเป็นสถานะความเสี่ยงหรือเปอร์เซ็นต์จากคอลัมน์ย่อย เพราะยังต้องยืนยันความหมายของคอลัมน์ · ปี 2565 ไม่มีผลรวมผลการคัดกรองที่เทียบกับปีอื่นได้`;
+document.getElementById('download-csv').onclick=()=>{const rows=rowsFor(state.year,state.area),main=agedStats(rows),units=byUnits(rows,state.by,agedStats);exportCsv([['Song Health Data Center','รายงานคัดกรองผู้สูงอายุ 9 ด้าน'],['ปี',state.year,'พื้นที่',areaLabel(state.area)],[],['พื้นที่','เป้าหมาย','ผลงาน','ร้อยละ'],...units.map(x=>[x.name,x.target,x.result,fmtPct(x.pct)]),['รวม',main.target,main.result,fmtPct(main.pct)],[],['ด้านคัดกรอง','จำนวนรายการ'],...domainStats(rows).map(x=>[x.name,x.count])])};document.getElementById('print-page').onclick=()=>window.print();window.addEventListener('popstate',()=>location.reload());render();
+
+// ANC V0.2 navigation behavior reused in V0.4.1
+const shellMenuButton = document.getElementById('menu-button');
+if(shellMenuButton){shellMenuButton.addEventListener('click', () => {
+  const mobileNav = document.getElementById('mobile-nav');
+  const isOpen = mobileNav.classList.toggle('hidden') === false;
+  shellMenuButton.setAttribute('aria-expanded',isOpen?'true':'false');
+  shellMenuButton.setAttribute('aria-label',isOpen?'ปิดเมนู':'เปิดเมนู');
+});}
+
+if(shellMenuButton){document.addEventListener('keydown',e=>{if(e.key==='Escape'){const nav=document.getElementById('mobile-nav');if(!nav.classList.contains('hidden')){nav.classList.add('hidden');shellMenuButton.setAttribute('aria-expanded','false');shellMenuButton.setAttribute('aria-label','เปิดเมนู');shellMenuButton.focus()}}})}
+</script></body></html>
