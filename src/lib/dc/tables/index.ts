@@ -8,6 +8,9 @@ export const TABLE_PAGES = {
   s_kpi_childdev4: "childdev",
   s_kpi_childdev2: "childdev",
   s_epi1: "epi",
+  s_epi2: "epi",
+  s_epi3: "epi",
+  s_epi5: "epi",
   s_aged9: "aged9",
 } as const;
 

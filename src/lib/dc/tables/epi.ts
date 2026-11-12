@@ -1,10 +1,11 @@
 import type { DcCatalog, DcReportData, DcYearBlock, ReportQuery } from "../types";
 import { goalFor, measureLabel, passes, periods, shownMeasures, totals, totalsBy, trend, yearBlock } from "../values";
 
-// The data layer of the EPI1 page (SPEC §9.4, ADR-0015) for s_epi1: one row
-// per หมู่บ้าน, M_B with 20 รายการ (SCHEMA §4.6.4). Worked out with values.ts,
-// no formula of its own: no React, no DOM. Its result has no type in types.ts
-// (SPEC §2.7): the view takes it as ReturnType<typeof epiValues>.
+// The data layer of the EPI1 page (SPEC §9.4, ADR-0015) for s_epi1, s_epi2,
+// s_epi3 and s_epi5: one row per หมู่บ้าน, M_B with a {measure}_{MM} per
+// รายการ (SCHEMA §4.6.4). Worked out with values.ts, no formula of its own: no
+// React, no DOM. Its result has no type in types.ts (SPEC §2.7): the view
+// takes it as ReturnType<typeof epiValues>.
 
 /**
  * Every value the EPI1 page shows for a query: ภาพรวม, one row per รายการ in

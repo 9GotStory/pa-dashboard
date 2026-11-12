@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { S_EPI1 } from "../fixtures/reports-20261111";
+import { S_EPI1, S_EPI2 } from "../fixtures/reports-20261111";
 import { S_EPI1_ALL } from "../fixtures/reports-epi1-20261111";
+import { S_EPI2_2569, S_EPI3_2569, S_EPI5_2569 } from "../fixtures/reports-epi235-20261112";
 import type { Cell, DcReportData, ReportQuery } from "../types";
 import { reportQuery } from "../values";
 import { epiValues, findMeasures } from "./epi";
@@ -190,4 +191,59 @@ test("?measure=mmr → รายละเอียด MMR straight away · ?meas
   assert.equal(detail("measure=MMR"), null);
   assert.equal(detail("measure=pcv9"), null);
   assert.equal(detail(""), null);
+});
+
+// FEATURES F55: the same data layer on s_epi2, s_epi3 and s_epi5, cut from
+// the snapshot of 12 Nov 2569 whose blocks 2569 give SCHEMA §4.6.4's totals.
+
+const EPI2 = snapshot(S_EPI2_2569);
+const EPI3 = snapshot(S_EPI3_2569);
+const EPI5 = snapshot(S_EPI5_2569);
+/** 2565–2569 with mmr2 and pcv4 */
+const EPI2_YEARS = snapshot(S_EPI2);
+
+/** A row of ภาพรวม as "label เป้าหมาย/ผลงาน ร้อยละ เกณฑ์ ผลประเมิน" */
+const overviewLine = (r: ReturnType<typeof epiValues>["rows"][number]) => `${r.label} ${pair(r.total)} ${r.total?.pct?.toFixed(2)} ${r.goal} ${r.passed}`;
+
+test("s_epi2 2569 ภาพรวม → DTP4, OPV4, JE2, MMR1, MMR2 at 205 in header order, no PCV4 (empty every year) · เกณฑ์ 90, and 95 for MMR1/MMR2", () => {
+  const { rows } = epiValues(EPI2, OVERVIEW_2569, NAMES, YEARS);
+  assert.deepEqual(rows.map(overviewLine), [
+    "DTP4 205/192 93.66 90 true",
+    "OPV4 205/188 91.71 90 true",
+    "JE2 205/190 92.68 90 true",
+    "MMR1 205/192 93.66 95 false",
+    "MMR2 205/191 93.17 95 false",
+  ]);
+});
+
+test("s_epi2 MMR2 → no data 2565–2567 (—) and a trend of 2568–2569 alone · PCV4 never a รายการ", () => {
+  for (const year of ["2565", "2566", "2567"]) {
+    const { rows } = epiValues(EPI2_YEARS, { ...OVERVIEW_2569, year }, NAMES, YEARS);
+    assert.deepEqual(rows.map((r) => `${r.label} ${pair(r.total)}`), ["MMR2 null"], year);
+  }
+  const { rows, detail } = epiValues(EPI2_YEARS, { ...OVERVIEW_2569, measure: "mmr2" }, NAMES, YEARS);
+  assert.deepEqual(rows.map((r) => r.label), ["MMR2"]);
+  assert.deepEqual(
+    detail?.trend.map((p) => [p.b_year, p.totals && pair(p.totals)]),
+    [["2565", null], ["2566", null], ["2567", null], ["2568", "245/219"], ["2569", "205/191"]],
+  );
+});
+
+test("s_epi3 2569 → JE3 226/207 (91.59%) and MMR2 226/215 (95.13%), เกณฑ์ 90 both, ผ่าน", () => {
+  assert.deepEqual(epiValues(EPI3, OVERVIEW_2569, NAMES, YEARS).rows.map(overviewLine), ["JE3 226/207 91.59 90 true", "MMR2 226/215 95.13 90 true"]);
+});
+
+test("s_epi5 2569 → DTP5 260/245 (94.23%) and OPV5 260/242 (93.08%), เกณฑ์ 90 both, ผ่าน", () => {
+  assert.deepEqual(epiValues(EPI5, OVERVIEW_2569, NAMES, YEARS).rows.map(overviewLine), ["DTP5 260/245 94.23 90 true", "OPV5 260/242 93.08 90 true"]);
+});
+
+test("s_epi3 ?measure=je3 → รายละเอียด JE3 straight away, by ตำบล adding up to 226/207 · ?measure=dtp5 (s_epi5's) → ภาพรวม", () => {
+  const values = (search: string) => epiValues(EPI3, reportQuery(EPI3, new URLSearchParams(search), NAMES), NAMES, YEARS);
+  const { detail } = values("measure=je3");
+  assert.equal(detail?.label, "JE3");
+  assert.equal(pair(detail.total), "226/207");
+  const units = detail.units!;
+  assert.equal(units.length, 8);
+  assert.equal(pair(units.reduce((s, u) => ({ target: s.target + u.totals.target, result: s.result + u.totals.result }), { target: 0, result: 0 })), "226/207");
+  assert.equal(values("measure=dtp5").detail, null);
 });
