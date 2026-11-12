@@ -1001,22 +1001,6 @@ export interface TrendPoint {
   totals: Totals | null;         // null = ปีนั้นไม่มีคอลัมน์ที่ใช้ได้หรือไม่มีข้อมูล (SPEC §9.4) แสดง "—"
 }
 
-/* ---------- หน้ารายตารางของ /reports/{id} (Track J, SPEC §9.4, ADR-0015) ---------- */
-
-/** หน้าของตารางต้นทางที่มีหน้าแล้ว (src/lib/dc/tables/index.ts) */
-export type TablePage = "anc";
-
-/** ค่าทุกตัวที่หน้า ANC แสดงตาม ReportQuery (s_kpi_anc12, s_anc5, §4.6.2) */
-export interface AncValues {
-  block: DcYearBlock | null;     // block ปีของ query.year · null = ไม่มี: "ไม่มีข้อมูลปี … ในระบบ"
-  total: Totals | null;          // ตัวเลขสรุปของพื้นที่และช่วงเวลา · null = ผลงานรวมทั้งอำเภอปีนั้นเป็น 0 ("—")
-  goal: number | null;           // hdc_reports.goal
-  passed: boolean | null;        // ร้อยละ ≥ เกณฑ์ · null = ไม่มีร้อยละหรือไม่มีเกณฑ์
-  units: UnitTotals[] | null;    // ตำบลหรือหน่วยบริการตาม query.by ในพื้นที่ · null พร้อม total
-  trend: TrendPoint[];           // ทุกปีของ catalog.meta.years ด้วยพื้นที่และช่วงเวลาเดียวกัน · ปีที่ไม่มี block ปี totals เป็น null
-  quarters: { period: Period; totals: Totals | null }[];   // ไตรมาส 1–4 ของปีและพื้นที่ ไม่ขึ้นกับช่วงเวลาที่เลือก · [] = ปีนั้นไม่มีไตรมาส
-}
-
 /* ---------- ประชากรทะเบียนราษฎร (เฟส 2 และ Track I, §2.6–2.8, §3.8–3.9, §11) ---------- */
 
 /** แถวของ registry_population ไม่รวม uploaded_at: rows ของ POST, GET และ population.json */

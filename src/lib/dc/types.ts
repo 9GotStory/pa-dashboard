@@ -137,22 +137,6 @@ export interface TrendPoint {
   totals: Totals | null; // null = no usable columns or no data that year (SPEC §9.4), shown as "—"
 }
 
-/* ---------- หน้ารายตาราง of /reports/{id} (Track J, SPEC §9.4, ADR-0015) ---------- */
-
-/** The page of a source table that has one (src/lib/dc/tables/index.ts) */
-export type TablePage = "anc";
-
-/** Every value the ANC page shows for a ReportQuery (s_kpi_anc12, s_anc5, SCHEMA §4.6.2) */
-export interface AncValues {
-  block: DcYearBlock | null; // the block ปี of query.year · null = none: "ไม่มีข้อมูลปี … ในระบบ"
-  total: Totals | null; // ตัวเลขสรุป of the area and ช่วงเวลา · null = the whole district has no ผลงาน that year ("—")
-  goal: number | null; // hdc_reports.goal
-  passed: boolean | null; // ร้อยละ ≥ เกณฑ์ · null = no ร้อยละ or no เกณฑ์
-  units: UnitTotals[] | null; // the ตำบล or หน่วยบริการ of query.by in the area · null with total
-  trend: TrendPoint[]; // each year of catalog.meta.years with the area and ช่วงเวลา · a year without a block ปี has totals null
-  quarters: { period: Period; totals: Totals | null }[]; // ไตรมาส 1–4 of the year and area whatever ช่วงเวลา is picked · [] = none that year
-}
-
 /* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.8, §3.8–3.9, §11) ---------- */
 
 /** A registry_population row without uploaded_at: the rows of the POST, the GET and population.json */

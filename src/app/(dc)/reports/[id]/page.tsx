@@ -104,7 +104,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         {page || report.report_type === "coverage" ? (
           <TablePicker
             id={report.opendata_id}
-            sourceTable={report.source_table}
+            page={page}
             names={{ areas: catalog.areas, hospitals: catalog.hospitals }}
             years={catalog.meta.years}
           />
@@ -152,24 +152,21 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </dl>
             </div>
             <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4 text-xs leading-relaxed">
+              {(page || report.report_type === "coverage") && (
+                <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
+              )}
               {page ? (
-                <>
-                  <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-navy">วิธีคำนวณ</h3>
-                  <div className="mb-3">
-                    <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
-                  </div>
-                </>
+                <div className="mb-3">
+                  <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
+                </div>
               ) : (
                 // The coverage method of CoverageReport; another report_type has no page of its own yet
                 report.report_type === "coverage" && (
-                  <>
-                    <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-navy">วิธีคำนวณ</h3>
-                    <p className="mb-3">
-                      รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
-                      แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
-                      {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
-                    </p>
-                  </>
+                  <p className="mb-3">
+                    รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
+                    แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
+                    {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
+                  </p>
                 )
               )}
               <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">ข้อจำกัด</h3>

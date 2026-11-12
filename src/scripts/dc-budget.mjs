@@ -41,12 +41,16 @@ function dcPages() {
   return ["/", "/reports", ...ids.map((f) => `/reports/${f.replace(/\.html$/, "")}`)];
 }
 
-// Each script file the page's HTML loads, once: <script src> (not the noModule
-// polyfill, which modern browsers skip) and <link rel="preload" as="script">.
-function scriptsOf(html) {
+// The <script src> files of the page's HTML, without the noModule polyfill, which modern browsers skip
+function scriptTagsOf(html) {
   const tags = [...html.matchAll(/<script\b[^>]*\bsrc="([^"]+)"[^>]*>/g)].filter(([tag]) => !/\bnomodule\b/i.test(tag));
+  return tags.map(([, src]) => src.split("?")[0]);
+}
+
+// Each script file the page's HTML loads, once: <script src> and <link rel="preload" as="script">.
+function scriptsOf(html) {
   const preloads = [...html.matchAll(/<link\b(?=[^>]*\bas="script")[^>]*\bhref="([^"]+)"[^>]*>/g)];
-  return [...new Set([...tags, ...preloads].map(([, src]) => src.split("?")[0]))];
+  return [...new Set([...scriptTagsOf(html), ...preloads.map(([, src]) => src.split("?")[0])])];
 }
 
 // The script files of the table pages' chunks, as the HTML names them
@@ -58,10 +62,14 @@ function tablePageChunks() {
   return new Set(Object.values(manifest).flatMap((entry) => entry.files.map((file) => `/_next/${file}`)));
 }
 
-// The gzip size of each script the page's HTML loads, but those of skip
+// The gzip size of each script the page's HTML loads, but those of skip that
+// it only preloads: a file of skip that the HTML runs as a <script src> is
+// not a chunk next/dynamic loads, and counts.
 function loaded(page, skip = new Set()) {
-  return scriptsOf(htmlOf(page))
-    .filter((src) => !skip.has(src))
+  const html = htmlOf(page);
+  const run = new Set(scriptTagsOf(html));
+  return scriptsOf(html)
+    .filter((src) => run.has(src) || !skip.has(src))
     .map((src) => ({ src, gzip: zlib.gzipSync(fs.readFileSync(path.join(OUT, src))).length }));
 }
 

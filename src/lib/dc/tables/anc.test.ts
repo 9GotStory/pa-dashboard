@@ -5,8 +5,9 @@ import type { Cell, DcReportData, ReportQuery } from "../types";
 import { ancValues } from "./anc";
 
 // FEATURES F52: the data layer of the ANC page (SPEC §9.4) on s_kpi_anc12 and
-// s_anc5 cut from the snapshot. The expected values are SCHEMA §4.6.2's,
-// and the ANC V0.2 mockup's where SCHEMA gives none (read from PA-Data).
+// s_anc5 cut from the snapshot. The expected values are SCHEMA §4.6.2's, the
+// ANC V0.2 mockup's where SCHEMA gives none (read from PA-Data), and otherwise
+// the sums of rows in reports/{id}.json, added up apart from this code.
 
 /** The fixture as /data/reports/{id}.json gives it: each row in header order, "" where left out */
 function snapshot(cut: typeof S_KPI_ANC12): DcReportData {
@@ -43,6 +44,9 @@ const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", 
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
+/** The quarters added up, as เป้าหมาย/ผลงาน */
+const quarterSum = (quarters: { totals: { target: number; result: number } | null }[]) =>
+  pair(quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), { target: 0, result: 0 }));
 
 test("s_kpi_anc12 2569 ทั้งอำเภอ → 84/66, 78.57%, เกณฑ์ 75 ผ่าน", () => {
   const anc = ancValues(ANC12, DISTRICT_2569, NAMES, YEARS);
@@ -58,16 +62,17 @@ test("s_kpi_anc12 2569 รายไตรมาส → 22/20, 17/14, 23/19, 22/1
     quarters.map((q) => [q.period, pair(q.totals)]),
     [["q1", "22/20"], ["q2", "17/14"], ["q3", "23/19"], ["q4", "22/13"]],
   );
-  const sum = quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), { target: 0, result: 0 });
-  assert.equal(pair(sum), "84/66");
+  assert.equal(quarterSum(quarters), "84/66");
 });
 
-test("s_anc5 2569 ทั้งอำเภอ → 82/60, 73.17%, เกณฑ์ 75 ไม่ผ่าน · รายไตรมาส 22/20, 15/12, 23/17, 22/11", () => {
+test("s_anc5 2569 ทั้งอำเภอ → 82/60, 73.17%, เกณฑ์ 75 ไม่ผ่าน · รายไตรมาส 22/20, 15/12, 23/17, 22/11 summing to ทั้งปี", () => {
   const anc = ancValues(ANC5, DISTRICT_2569, NAMES, YEARS);
   assert.equal(pair(anc.total), "82/60");
   assert.equal(anc.total?.pct?.toFixed(2), "73.17");
+  assert.equal(anc.goal, 75);
   assert.equal(anc.passed, false);
   assert.deepEqual(anc.quarters.map((q) => pair(q.totals)), ["22/20", "15/12", "23/17", "22/11"]);
+  assert.equal(quarterSum(anc.quarters), "82/60");
 });
 
 test("s_kpi_anc12 2569 รายตำบล → the ANC V0.2 table: บ้านหนุน 14/12 … ทุ่งน้าว 6/5", () => {
@@ -104,14 +109,17 @@ test("แนวโน้ม of a report without the block ปี 2567 → 2567 s
   );
 });
 
-test("2568 ตำบลสะเอียบ ไตรมาส 2 รายหน่วยบริการ → ตัวเลขสรุป of its ไตรมาส 2, its 4 quarters summing to its ทั้งปี, by hospcode", () => {
+test("?year=2568&area=540606&period=q2&by=hosp → ตำบลสะเอียบ ไตรมาส 2 6/3 by its 3 หน่วยบริการ; its quarters 9/6, 6/3, 5/4, 6/3 sum to its ทั้งปี 26/16", () => {
   const query: ReportQuery = { year: "2568", area: "540606", period: "q2", measure: null, by: "hosp" };
   const anc = ancValues(ANC12, query, NAMES, YEARS);
-  const year = ancValues(ANC12, { ...query, period: "year" }, NAMES, YEARS).total!;
-  assert.deepEqual(anc.total, anc.quarters.find((q) => q.period === "q2")?.totals);
-  const sum = anc.quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), { target: 0, result: 0 });
-  assert.equal(pair(sum), pair(year));
-  assert.ok(anc.units!.length > 0 && anc.units!.every((u) => /^\d{5}$/.test(u.key)));
+  assert.equal(pair(anc.total), "6/3");
+  assert.deepEqual(
+    anc.units?.map((u) => [u.key, pair(u.totals)]),
+    [["06423", "2/1"], ["06424", "1/0"], ["06425", "3/2"]],
+  );
+  assert.deepEqual(anc.quarters.map((q) => pair(q.totals)), ["9/6", "6/3", "5/4", "6/3"]);
+  assert.equal(quarterSum(anc.quarters), "26/16");
+  assert.equal(pair(ancValues(ANC12, { ...query, period: "year" }, NAMES, YEARS).total), "26/16");
 });
 
 test("?year=2560, a year without a block ปี → block null and nothing to show, never zeros", () => {

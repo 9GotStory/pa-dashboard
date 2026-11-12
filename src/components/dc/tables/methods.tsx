@@ -1,4 +1,5 @@
-import type { DcReport, TablePage } from "@/lib/dc/types";
+import type { tablePage } from "@/lib/dc/tables";
+import type { DcReport } from "@/lib/dc/types";
 
 // วิธีคำนวณ of เกี่ยวกับรายงานนี้ for each page of a source table (SPEC §9.4):
 // the rows taken, what เป้าหมาย and ผลงาน mean (SCHEMA §4.6) and the page's
@@ -41,7 +42,7 @@ function AncMethod({ report, districtCode }: MethodProps) {
 }
 
 /** วิธีคำนวณ of a page */
-export function TableMethod({ page, ...props }: MethodProps & { page: TablePage }) {
+export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
     case "anc":
       return <AncMethod {...props} />;

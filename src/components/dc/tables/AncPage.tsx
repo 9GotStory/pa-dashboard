@@ -2,7 +2,7 @@
 
 import { reportCsv } from "@/lib/dc/csv";
 import { ancValues } from "@/lib/dc/tables/anc";
-import type { AncValues, DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
 import { PERIOD_LABELS, UNIT_LABELS, areaLabel, describe, pctText } from "../report/labels";
 import { PeriodPanel, TrendPanel, UnitPanel } from "../report/panels";
 import ReportActions from "../report/ReportActions";
@@ -77,7 +77,8 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
 }
 
 /** ตัวเลขสรุป, the charts and the table of a year with a block ปี; "—" and the trend alone when the district has no ผลงาน that year (SPEC §9.4) */
-function Figures({ anc, year, unitLabel, totalLabel }: { anc: AncValues; year: string; unitLabel: string; totalLabel: string }) {
+function Figures(props: { anc: ReturnType<typeof ancValues>; year: string; unitLabel: string; totalLabel: string }) {
+  const { anc, year, unitLabel, totalLabel } = props;
   const { total, units, goal, trend, quarters } = anc;
   return (
     <div className="px-4 pb-6 sm:px-6">
