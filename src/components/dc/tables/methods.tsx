@@ -173,24 +173,31 @@ function EpiLimits({ report }: { report: DcReport }) {
   return inferred ? <li>{inferred}</li> : null;
 }
 
+/** ร้อยละปี 2569 of อายุ 2, 3 and 5 ปี, which fell across the province (SCHEMA §4.6.5) */
+const COMPLETE_FELL_2569 =
+  "ร้อยละปี 2569 ต่ำกว่าปีก่อนมาก หน้า HDC แสดงทั้งจังหวัดแพร่ลดลงแบบเดียวกัน จึงไม่ได้เกิดเฉพาะอำเภอสอง · รายการวัคซีนในวิธีคำนวณเป็นนิยามของปี 2569 ส่วนนิยามของปีก่อนยังไม่ได้ยืนยัน จึงยังไม่รู้สาเหตุที่ลดลง";
+
 /**
- * เป้าหมาย of each of s_epi_complete's reports, and the vaccines its ผลงาน
- * counts in ปี 2569 where HDC's page names them (SCHEMA §4.6.5): อายุ 1 ปี's
- * are not recorded
+ * Each of s_epi_complete's reports (SCHEMA §4.6.5): its เป้าหมาย, the
+ * vaccines its ผลงาน counts in ปี 2569 where HDC's page names them (อายุ 1
+ * ปี's are not recorded), and its own ข้อจำกัด
  */
-const COMPLETE_MEANINGS: Record<string, { target: string; doses?: string }> = {
-  "28dd2c7955ce926456240b2ff0100bde": { target: "เด็กอายุครบ 1 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด" },
+const COMPLETE_MEANINGS: Record<string, { target: string; doses?: string; limits: string[] }> = {
+  "28dd2c7955ce926456240b2ff0100bde": { target: "เด็กอายุครบ 1 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด", limits: [] },
   "35f4a8d465e6e1edc05f3d8ab658c551": {
     target: "เด็กอายุครบ 2 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด",
     doses: "BCG 1, HBV 3 ครั้ง (แรกเกิด, 2 เดือน และ 6 เดือน), DTP 4, Hib 3, IPV 2, OPV 2, MMR 2 ครั้ง, Rota ครบตามเกณฑ์, LAJE 1 หรือ JE 2 ครั้ง",
+    limits: [COMPLETE_FELL_2569],
   },
   d1fe173d08e959397adf34b1d77e88d7: {
     target: "เด็กอายุครบ 3 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด",
     doses: "เหมือนอายุ 2 ปี แต่ LAJE 2 หรือ JE 3 ครั้ง",
+    limits: [COMPLETE_FELL_2569, "ปี 2569 ผลงานเป็น 0 ทุกเดือน ต.ค.–มี.ค. แล้วได้ 3–6 คนต่อเดือนตั้งแต่ เม.ย. ยังไม่รู้สาเหตุ"],
   },
   f033ab37c30201f73f142449d037028d: {
     target: "เด็กอายุครบ 5 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด",
     doses: "เหมือนอายุ 3 ปี แต่ DTP 5 และ OPV 3 ครั้ง",
+    limits: [COMPLETE_FELL_2569],
   },
 };
 
@@ -216,16 +223,8 @@ function CompleteMethod({ report, districtCode }: MethodProps) {
   );
 }
 
-/** The reports whose ร้อยละ fell in ปี 2569 across the province (SCHEMA §4.6.5): อายุ 2, 3 and 5 ปี */
-const COMPLETE_FELL_2569 = new Set(["35f4a8d465e6e1edc05f3d8ab658c551", "d1fe173d08e959397adf34b1d77e88d7", "f033ab37c30201f73f142449d037028d"]);
-
 function CompleteLimits({ report }: { report: DcReport }) {
-  return COMPLETE_FELL_2569.has(report.opendata_id) ? (
-    <li>
-      ร้อยละปี 2569 ต่ำกว่าปีก่อนมาก หน้า HDC แสดงทั้งจังหวัดแพร่ลดลงแบบเดียวกัน จึงไม่ได้เกิดเฉพาะอำเภอสอง · รายการวัคซีนในวิธีคำนวณเป็นนิยามของปี 2569
-      ส่วนนิยามของปีก่อนยังไม่ได้ยืนยัน จึงยังไม่รู้สาเหตุที่ลดลง
-    </li>
-  ) : null;
+  return (COMPLETE_MEANINGS[report.opendata_id]?.limits ?? []).map((limit) => <li key={limit}>{limit}</li>);
 }
 
 function Aged9Method({ report, districtCode }: MethodProps) {
