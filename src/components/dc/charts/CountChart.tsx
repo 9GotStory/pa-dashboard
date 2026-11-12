@@ -1,4 +1,5 @@
 import { formatCount } from "@/lib/dc/format";
+import type { UnitCount } from "../report/resultsText";
 
 const ROW = 30;
 // Columns of the chart as shares of its width: names, bars, counts, as UnitChart's
@@ -10,7 +11,7 @@ const BARS_WIDTH = "50%";
  * largest, laid out as UnitChart: a ด้าน of AGED9 is a count, not a ร้อยละ,
  * so there is no 0–100 scale and no เกณฑ์ (SPEC §9.4)
  */
-export default function CountChart({ title, units }: { title: string; units: { key: string; name: string; count: number }[] }) {
+export default function CountChart({ title, units }: { title: string; units: UnitCount[] }) {
   const height = units.length * ROW;
   const top = Math.max(...units.map((u) => u.count), 1);
   const label = `${title}: ` + units.map((u) => `${u.name} ${formatCount(u.count)}`).join(", ");

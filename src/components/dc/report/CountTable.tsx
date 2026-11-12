@@ -1,11 +1,12 @@
 import { formatCount } from "@/lib/dc/format";
+import type { UnitCount } from "./resultsText";
 
 /**
  * จำนวนรายการ of each ตำบล or หน่วยบริการ (unitLabel) with the total row
  * (totalLabel), as UnitTable lays out เป้าหมาย/ผลงาน/ร้อยละ: the count of a
  * ด้าน of AGED9 (SPEC §9.4)
  */
-export default function CountTable(props: { unitLabel: string; units: { key: string; name: string; count: number }[]; total: number; totalLabel: string }) {
+export default function CountTable(props: { unitLabel: string; units: UnitCount[]; total: number; totalLabel: string }) {
   const { unitLabel, units, total, totalLabel } = props;
   return (
     <section className="min-w-0">

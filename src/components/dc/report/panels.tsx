@@ -5,6 +5,7 @@ import PeriodChart from "../charts/PeriodChart";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
 import UnitChart from "../charts/UnitChart";
+import type { UnitCount } from "./resultsText";
 
 // กราฟ A–C of SPEC §9.4 and the counts of a ด้าน, each in its box with a title
 // and a key.
@@ -82,7 +83,7 @@ export function PeriodPanel(props: { year: string; stepName: string; points: { l
 }
 
 /** The count of a ด้าน (AGED9) for each ตำบล or หน่วยบริการ (unitLabel): จำนวนรายการ, not a ร้อยละ, so no เกณฑ์ */
-export function CountPanel({ unitLabel, units }: { unitLabel: string; units: { key: string; name: string; count: number }[] }) {
+export function CountPanel({ unitLabel, units }: { unitLabel: string; units: UnitCount[] }) {
   return (
     <Surface title={`จำนวนราย${unitLabel}`}>
       <CountChart title={`จำนวนรายการราย${unitLabel}`} units={units} />

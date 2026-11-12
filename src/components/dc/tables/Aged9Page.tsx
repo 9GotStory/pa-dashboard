@@ -2,9 +2,8 @@
 
 import { ChevronRight } from "lucide-react";
 import type { RefObject } from "react";
-import { reportCsv } from "@/lib/dc/csv";
 import { aged9Values } from "@/lib/dc/tables/aged9";
-import type { Cell, DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
 import CountTable from "../report/CountTable";
 import Detail, { useDetail } from "../report/Detail";
 import { areaLabel, countText, describe } from "../report/labels";
@@ -15,7 +14,7 @@ import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
-import { resultsText, unitTable } from "../report/resultsText";
+import { countsCsv, domainsCsv, resultsText, unitTable } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
@@ -46,20 +45,15 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
     push({ ...query, domain: domain === null ? null : Number(domain) }),
   );
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
-  const shown = block && { report: data.report, year: query.year, filters: summary, dateCom: block.max_date_com };
-  // The unit table of the ด้าน open, or ความครอบคลุม then the 9 ด้าน (SPEC §9.4 CSV)
-  const csv = !shown
-    ? null
-    : detail
-      ? detail.count !== null && detail.units
-        ? domainCsv(shown, detail.domain, [[unitLabel, "จำนวนรายการ"], ...detail.units.map((u) => [u.name, u.count]), [totalLabel, detail.count]])
-        : null
-      : domainCsv(shown, null, [
-          ...(total && units ? unitTable(unitLabel, units, total, totalLabel) : [["ความครอบคลุม", "ไม่มีข้อมูล: ผลงานรวมทั้งอำเภอว่างทั้งปี"]]),
-          [],
-          ["ด้าน", "จำนวนรายการ"],
-          ...domains.map((d) => [`${d.domain}. ${d.label}`, d.count ?? "—"]),
-        ]);
+  // What is shown: the ด้าน open, or ความครอบคลุม then the 9 ด้าน (SPEC §9.4 CSV); nothing without a unit
+  const csv =
+    !block || units?.length === 0
+      ? null
+      : detail
+        ? detail.count !== null && detail.units
+          ? countsCsv(data.report, query.year, summary, block.max_date_com, detail.domain, { unitLabel, units: detail.units, total: detail.count, totalLabel })
+          : null
+        : domainsCsv(data.report, query.year, summary, block.max_date_com, total && units && unitTable(unitLabel, units, total, totalLabel), domains);
 
   return (
     <>
@@ -91,11 +85,6 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
       )}
     </>
   );
-}
-
-/** The CSV download of a table shown, named with -domain{n} when a ด้าน is open (SPEC §9.4) */
-function domainCsv(shown: Omit<Parameters<typeof reportCsv>[0], "part" | "table">, domain: number | null, table: Cell[][]) {
-  return () => reportCsv({ ...shown, part: domain === null ? undefined : `domain${domain}`, table });
 }
 
 /** ผลการคัดกรองทั้ง 9 ด้าน: each ด้าน as a button with its count; headingRef and buttonProps are useDetail's */

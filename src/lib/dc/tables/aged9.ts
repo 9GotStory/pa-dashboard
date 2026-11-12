@@ -32,7 +32,7 @@ export function aged9Values(data: DcReportData, query: ReportQuery, names: Pick<
     trend: years.map((year) => byYear.get(year) ?? { b_year: year, totals: null }),
     /** ผลการคัดกรองทั้ง 9 ด้าน in the area: count null when the district has no ผลงาน of the ด้าน that year ("—") */
     domains: block
-      ? DOMAIN_LABELS.map((label, i) => ({ domain: i + 1, label, count: count(block, `result${i + 1}`, query.area) }))
+      ? DOMAIN_LABELS.map((label, i) => ({ domain: i + 1, label, count: count(block, domainColumn(i + 1), query.area) }))
       : [],
     /** รายละเอียด of query.domain, null for ภาพรวม */
     detail: block && query.domain !== null ? domainDetail(block, { ...query, domain: query.domain }, names) : null,
@@ -41,7 +41,7 @@ export function aged9Values(data: DcReportData, query: ReportQuery, names: Pick<
 
 /** The รายละเอียด of the open ด้าน (query.domain) in the block ปี of query.year: its count in the area, and per ตำบล or หน่วยบริการ (query.by) */
 function domainDetail(block: DcYearBlock, query: ReportQuery & { domain: number }, names: Pick<DcCatalog, "areas" | "hospitals">) {
-  const column = `result${query.domain}`;
+  const column = domainColumn(query.domain);
   return {
     domain: query.domain,
     label: DOMAIN_LABELS[query.domain - 1],
@@ -50,4 +50,9 @@ function domainDetail(block: DcYearBlock, query: ReportQuery & { domain: number 
     /** Each ตำบล or หน่วยบริการ; null with count */
     units: countsBy(block, column, query, names),
   };
+}
+
+/** The column of ด้าน k (SCHEMA §4.6.7) */
+function domainColumn(k: number): string {
+  return `result${k}`;
 }
