@@ -21,19 +21,14 @@ export function useDetail(shown: string | null, show: (item: string | null) => v
   // Where focus goes once the page shows what was asked: set by open and close only
   const moving = useRef<RefObject<HTMLHeadingElement | null>>(null);
   useEffect(() => {
-    const to = moving.current?.current;
+    if (moving.current) focus(moving.current.current);
     moving.current = null;
-    to?.scrollIntoView({ block: "start" });
-    to?.focus({ preventScroll: true });
   }, [shown]);
   const move = (to: RefObject<HTMLHeadingElement | null>, item: string | null) => {
-    if (item === shown) {
-      to.current?.scrollIntoView({ block: "start" });
-      to.current?.focus({ preventScroll: true });
-    } else {
-      moving.current = to;
-      show(item);
-    }
+    // The item shown already: no change of URL for the effect to see
+    if (item === shown) return focus(to.current);
+    moving.current = to;
+    show(item);
   };
   return {
     /** For the heading of ภาพรวม, where focus goes back on close */
@@ -48,6 +43,12 @@ export function useDetail(shown: string | null, show: (item: string | null) => v
     }),
     close: () => move(overview, null),
   };
+}
+
+/** Scrolls to the section a heading opens, with what is above the heading in it, and focuses the heading */
+function focus(heading: HTMLHeadingElement | null) {
+  heading?.closest("section")?.scrollIntoView({ block: "start" });
+  heading?.focus({ preventScroll: true });
 }
 
 /**
