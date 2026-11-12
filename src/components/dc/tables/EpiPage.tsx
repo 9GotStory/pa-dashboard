@@ -24,11 +24,18 @@ type Values = ReturnType<typeof epiValues>;
 const FIELDS: (keyof ReportQuery)[] = ["year", "area", "period"];
 
 /**
- * ผลรายงาน of s_epi1 after EPI1 V0.4.2 (SPEC §9.4): ภาพรวมการได้รับวัคซีน,
- * one row per รายการ with a search, and the รายละเอียด of the รายการ opened
- * from it, laid out from the values of epiValues. data-table-page names the
- * page in its chunk, which dc-check looks for in the scripts other reports
- * load.
+ * How ภาพรวม lays out the รายการ of each table (SPEC §9.4): the table of EPI1
+ * with a ช่องค้นหา for the 20 of s_epi1, without one for s_epi2, and การ์ดคู่
+ * for the 2 of s_epi3 and of s_epi5
+ */
+const LAYOUTS: Record<string, "search" | "table" | "cards"> = { s_epi1: "search", s_epi2: "table", s_epi3: "cards", s_epi5: "cards" };
+
+/**
+ * ผลรายงาน of s_epi1, s_epi2, s_epi3 and s_epi5 after EPI1 V0.4.2 (SPEC
+ * §9.4): ภาพรวมการได้รับวัคซีน, a row or a card per รายการ, and the
+ * รายละเอียด of the รายการ opened from it, laid out from the values of
+ * epiValues. data-table-page names the page in its chunk, which dc-check
+ * looks for in the scripts other reports load.
  */
 export default function EpiPage({ id, names, years }: { id: string; names: Names; years: string[] }) {
   return (
@@ -60,7 +67,13 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
       </ResultsHeader>
       {block ? (
         <div className="px-4 pb-6 sm:px-6">
-          <Overview rows={rows} open={query.measure} headingRef={overviewHeading} buttonProps={buttonProps} />
+          <Overview
+            layout={LAYOUTS[data.report.source_table]}
+            rows={rows}
+            open={query.measure}
+            headingRef={overviewHeading}
+            buttonProps={buttonProps}
+          />
           <Detail
             headingRef={detailHeading}
             onClose={close}
@@ -79,16 +92,18 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
 }
 
 /**
- * ภาพรวมการได้รับวัคซีน: the รายการ found by the search, as a table from md
- * and a list of buttons below it; headingRef and buttonProps are useDetail's
+ * ภาพรวมการได้รับวัคซีน: the รายการ as a table from md and a list of buttons
+ * below it, those found by a search for layout "search", or as การ์ดคู่ for
+ * layout "cards"; headingRef and buttonProps are useDetail's
  */
 function Overview(props: {
+  layout: (typeof LAYOUTS)[string];
   rows: Values["rows"];
   open: string | null;
   headingRef: RefObject<HTMLHeadingElement | null>;
   buttonProps: ReturnType<typeof useDetail>["buttonProps"];
 }) {
-  const { rows, open, headingRef, buttonProps } = props;
+  const { layout, rows, open, headingRef, buttonProps } = props;
   const [search, setSearch] = useState("");
   const found = findMeasures(rows, search);
   return (
@@ -107,24 +122,53 @@ function Overview(props: {
             {search.trim() ? `พบ ${found.length} จาก ${rows.length} รายการ` : "เลือกวัคซีนเพื่อดูรายละเอียดรายพื้นที่และแนวโน้ม"}
           </p>
         </div>
-        <div className="relative w-full sm:w-56 print:hidden">
-          <label htmlFor="measure-search" className="sr-only">
-            ค้นหาชื่อวัคซีน
-          </label>
-          <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-dc-text-secondary" />
-          <input
-            id="measure-search"
-            type="search"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="ค้นหาวัคซีน เช่น MMR"
-            autoComplete="off"
-            className="h-10 w-full rounded-md border border-dc-border-subtle bg-dc-canvas pr-3 pl-9 text-[13px] text-dc-brand-deep placeholder:text-dc-text-secondary"
-          />
-        </div>
+        {layout === "search" && (
+          <div className="relative w-full sm:w-56 print:hidden">
+            <label htmlFor="measure-search" className="sr-only">
+              ค้นหาชื่อวัคซีน
+            </label>
+            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-dc-text-secondary" />
+            <input
+              id="measure-search"
+              type="search"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="ค้นหาวัคซีน เช่น MMR"
+              autoComplete="off"
+              className="h-10 w-full rounded-md border border-dc-border-subtle bg-dc-canvas pr-3 pl-9 text-[13px] text-dc-brand-deep placeholder:text-dc-text-secondary"
+            />
+          </div>
+        )}
       </div>
       {found.length === 0 ? (
         <p className="border-t border-dc-border-subtle px-4 py-6 text-center text-dc-text-secondary">ไม่พบวัคซีนที่ค้นหา</p>
+      ) : layout === "cards" ? (
+        <ul className="grid gap-3 border-t border-dc-border-subtle p-4 sm:grid-cols-2">
+          {found.map((r) => (
+            <li key={r.measure}>
+              <button
+                {...buttonProps(r.measure)}
+                className={`block h-full w-full rounded-[9px] border p-4 text-left hover:bg-dc-surface-muted ${r.measure === open ? "border-dc-brand-primary bg-dc-highlight-soft" : "border-dc-border-subtle bg-white"}`}
+              >
+                <span className="flex items-center justify-between gap-2">
+                  <strong className="font-prompt text-base text-dc-brand-deep">{r.label}</strong>
+                  <Verdict passed={r.passed} />
+                </span>
+                <span className="mt-3 flex items-center gap-3">
+                  <strong className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{pctText(r.total?.pct ?? null)}</strong>
+                  <PctBar pct={r.total?.pct ?? null} passed={r.passed} />
+                </span>
+                <span className="mt-2 flex flex-wrap items-center justify-between gap-x-3 text-xs text-dc-text-secondary">
+                  <span>เกณฑ์ {goalText(r.goal)}</span>
+                  <span className="inline-flex items-center font-semibold text-dc-brand-primary">
+                    ดูรายละเอียด
+                    <ChevronRight aria-hidden="true" className="size-3.5" />
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
       ) : (
         <>
           <ul className="md:hidden">

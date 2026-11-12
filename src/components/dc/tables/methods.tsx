@@ -95,10 +95,14 @@ function ChilddevLimits({ report }: { report: DcReport }) {
   );
 }
 
-/** เป้าหมาย of s_epi1, and the vaccine each รายการ is, in header order (SCHEMA §4.6.4) */
-const EPI_MEANINGS: Record<string, { target: string; doses: Record<string, string> }> = {
+/**
+ * เป้าหมาย of each table, the vaccine each รายการ is in header order where
+ * HDC's page names it, and the รายการ without a เกณฑ์ (SCHEMA §4.6.4)
+ */
+const EPI_MEANINGS: Record<string, { target: string; doses?: Record<string, string>; noGoal?: string }> = {
   s_epi1: {
     target: "เด็กอายุครบ 1 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด (Type area 1 และ 3)",
+    noGoal: "PCV",
     doses: {
       bcg: "BCG แรกเกิด",
       dtp_hb3: "DTP 6 เดือน",
@@ -122,6 +126,12 @@ const EPI_MEANINGS: Record<string, { target: string; doses: Record<string, strin
       pcv3: "PCV 6 เดือน (นอกแผน)",
     },
   },
+  s_epi2: {
+    target: "เด็กอายุครบ 2 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด",
+    doses: { dtp4: "DTP 1 ปี 6 เดือน", opv4: "OPV 1 ปี 6 เดือน", je2: "LAJE/JE 1 ปี", mmr1: "MMR1 เก็บตก", mmr2: "MMR 1 ปี 6 เดือน" },
+  },
+  s_epi3: { target: "เด็กอายุครบ 3 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด" },
+  s_epi5: { target: "เด็กอายุครบ 5 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด" },
 };
 
 function EpiMethod({ report, districtCode }: MethodProps) {
@@ -134,7 +144,7 @@ function EpiMethod({ report, districtCode }: MethodProps) {
       </li>
       {meaning && <li>เป้าหมาย: {meaning.target} คอลัมน์ target ของแต่ละเดือน</li>}
       <li>ผลงาน: เด็กตามเป้าหมายที่ได้รับวัคซีนรายการนั้น คอลัมน์ {"{รายการ}_{เดือน}"} ทั้งปีคือผลรวม 12 เดือน และไตรมาสคือผลรวม 3 เดือน (ไตรมาส 1 = ต.ค.–ธ.ค.)</li>
-      {meaning && (
+      {meaning?.doses && (
         <li>
           วัคซีนของแต่ละรายการ:{" "}
           {Object.entries(meaning.doses)
@@ -146,12 +156,17 @@ function EpiMethod({ report, districtCode }: MethodProps) {
         ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · เป้าหมายเป็น 0 แสดง “—” · รายการที่ผลงานรวมทั้งอำเภอของปีเป็น 0
         ถือว่าไม่มีข้อมูลปีนั้น แสดง “—”
       </li>
-      <li>เกณฑ์ของแต่ละรายการตาม PA Dashboard ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์ · รายการที่ไม่มีเกณฑ์ (PCV) ไม่มีผลประเมิน</li>
+      <li>
+        เกณฑ์ของแต่ละรายการตาม PA Dashboard ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
+        {meaning?.noGoal && ` · รายการที่ไม่มีเกณฑ์ (${meaning.noGoal}) ไม่มีผลประเมิน`}
+      </li>
     </ul>
   );
 }
 
-function EpiLimits() {
+/** The pairing of columns with vaccines within a group of equal numbers, which s_epi1 alone infers (SCHEMA §4.6.4) */
+function EpiLimits({ report }: { report: DcReport }) {
+  if (report.source_table !== "s_epi1") return null;
   return (
     <li>
       หน้า HDC ยืนยันชื่อวัคซีนของคอลัมน์ได้เป็นกลุ่มที่ตัวเลขเท่ากัน การจับคู่คอลัมน์กับวัคซีนภายในกลุ่ม (BCG กับ ROTA1, DTP2 กับ HBV4, DTP1 DTP-HB3 HBV2 HBV3
@@ -220,7 +235,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
     case "childdev":
       return <ChilddevLimits report={report} />;
     case "epi":
-      return <EpiLimits />;
+      return <EpiLimits report={report} />;
     case "aged9":
       return <Aged9Limits />;
   }
