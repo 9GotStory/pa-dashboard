@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { TableMethod } from "@/components/dc/tables/methods";
+import { TableLimits, TableMethod } from "@/components/dc/tables/methods";
 import TablePicker from "@/components/dc/tables/TablePicker";
 import { formatThaiDate } from "@/lib/dc/format";
 import { readCatalog } from "@/lib/dc/snapshot";
@@ -32,16 +32,6 @@ function related(all: Entry[], here: Entry): Entry[] {
   const others = all.filter((e) => e.topic === here.topic && e !== here);
   return [...others.filter((e) => e.group === here.group), ...others.filter((e) => e.group !== here.group)].slice(0, 3);
 }
-
-/** Tables whose ทั้งปี differs from PA's, which เกี่ยวกับรายงานนี้ must say (SCHEMA §4.3) */
-const QUARTERS_UNLIKE_PA = ["s_kpi_childdev4", "s_kpi_childdev2"];
-
-/** ไตรมาส 4 that is low most years for a reason not known yet (SCHEMA §4.6.3) */
-const LOW_QUARTER_4: Record<string, string> = {
-  s_kpi_childdev4:
-    "ร้อยละไตรมาส 4 ต่ำกว่าไตรมาสอื่นเกือบทุกปี และปี 2569 ทั้งจังหวัดแพร่ก็ต่ำ จึงเป็นรูปแบบของข้อมูล HDC ไม่ใช่ข้อมูลของอำเภอสองที่ยังไม่ครบ ยังไม่รู้สาเหตุ",
-  s_kpi_childdev2: "เป้าหมายไตรมาส 4 (เด็กที่ได้รับการคัดกรอง) น้อยกว่าไตรมาสอื่นเกือบทุกปี ยังไม่รู้สาเหตุ",
-};
 
 export function generateStaticParams() {
   return entries(readCatalog()).map((e) => ({ id: e.report.opendata_id }));
@@ -180,10 +170,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <ul className="mt-1 list-disc pl-4">
                 <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
                 <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>
-                {QUARTERS_UNLIKE_PA.includes(report.source_table) && (
-                  <li>ทั้งปีคือผลรวม 4 ไตรมาสตามข้อมูล HDC ส่วน PA Dashboard รวม 3 ไตรมาสตามรอบประเมิน ตัวเลขทั้งปีจึงต่างจาก PA</li>
-                )}
-                {Object.hasOwn(LOW_QUARTER_4, report.source_table) && <li>{LOW_QUARTER_4[report.source_table]}</li>}
+                {page && <TableLimits page={page} report={report} />}
               </ul>
             </div>
           </div>

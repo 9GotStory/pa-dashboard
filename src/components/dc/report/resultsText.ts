@@ -3,11 +3,11 @@ import type { DcCatalog, DcReport, ReportQuery, Totals, UnitTotals } from "@/lib
 import { UNIT_LABELS, areaLabel, describe, pctText } from "./labels";
 
 /**
- * The words of results compared by ตำบล or หน่วยบริการ (SPEC §9.4): the
+ * The text of results compared by ตำบล or หน่วยบริการ (SPEC §9.4): the
  * filters in one line, the name of the units and of the total row, and the
- * CSV of the unit table as shown; csv null when no table is shown
+ * CSV download of the unit table as shown; csv null when no table is shown
  */
-export function unitResults(
+export function resultsText(
   report: DcReport,
   query: ReportQuery,
   names: Pick<DcCatalog, "areas" | "hospitals">,

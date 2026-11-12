@@ -9,7 +9,7 @@ import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
-import { unitResults } from "../report/unitResults";
+import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
@@ -33,9 +33,8 @@ export default function AncPage({ id, names, years }: { id: string; names: Names
 
 function Anc({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
-  const anc = ancValues(data, query, names, years);
-  const { block, total, units } = anc;
-  const { summary, unitLabel, totalLabel, csv } = unitResults(
+  const { block, total, goal, units, trend, quarters } = ancValues(data, query, names, years);
+  const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
     names,
@@ -54,7 +53,7 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
       ) : units?.length === 0 ? (
         <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
       ) : (
-        <QuarterFigures year={query.year} {...anc} unitLabel={unitLabel} totalLabel={totalLabel} />
+        <QuarterFigures {...{ total, goal, units, trend, quarters, unitLabel, totalLabel }} year={query.year} />
       )}
     </>
   );

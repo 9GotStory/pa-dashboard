@@ -8,7 +8,7 @@ import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
-import { unitResults } from "../report/unitResults";
+import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
@@ -32,9 +32,8 @@ export default function ChilddevPage({ id, names, years }: { id: string; names: 
 
 function Childdev({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query: asked, search, apply, heading } = useReportQuery(data, names);
-  const dev = childdevValues(data, asked, names, years);
-  const { query, block, total, units } = dev;
-  const { summary, unitLabel, totalLabel, csv } = unitResults(
+  const { query, block, total, goal, units, trend, quarters } = childdevValues(data, asked, names, years);
+  const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
     names,
@@ -48,7 +47,7 @@ function Childdev({ data, names, years }: { data: DcReportData; names: Names; ye
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {block ? <QuarterFigures year={query.year} {...dev} unitLabel={unitLabel} totalLabel={totalLabel} /> : <NoYear year={query.year} />}
+      {block ? <QuarterFigures {...{ total, goal, units, trend, quarters, unitLabel, totalLabel }} year={query.year} /> : <NoYear year={query.year} />}
     </>
   );
 }

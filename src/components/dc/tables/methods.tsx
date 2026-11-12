@@ -3,7 +3,8 @@ import type { DcReport } from "@/lib/dc/types";
 
 // วิธีคำนวณ of เกี่ยวกับรายงานนี้ for each page of a source table (SPEC §9.4):
 // the rows taken, what เป้าหมาย and ผลงาน mean (SCHEMA §4.6) and the page's
-// formula of ร้อยละ. Server Components, so the text is in the page's HTML.
+// formula of ร้อยละ; and the page's own ข้อจำกัด. Server Components, so the
+// text is in the page's HTML.
 
 type MethodProps = { report: DcReport; districtCode: string };
 
@@ -58,8 +59,7 @@ function ChilddevMethod({ report, districtCode }: MethodProps) {
   return (
     <ul className="list-disc pl-4">
       <li>
-        รวมทุกแถวที่ areacode ขึ้นต้นด้วย {districtCode} ตารางนี้มีหนึ่งแถวต่อหน่วยบริการ และ areacode คือตำบลที่ตั้งของหน่วยบริการ (อนุมาน)
-        จึงแสดงทั้งอำเภอรายหน่วยบริการ ไม่มีตัวกรองตำบล
+        รวมทุกแถวที่ areacode ขึ้นต้นด้วย {districtCode} ตารางนี้มีหนึ่งแถวต่อหน่วยบริการ จึงแสดงทั้งอำเภอรายหน่วยบริการ ไม่มีตัวกรองตำบล
       </li>
       {meaning && (
         <>
@@ -76,6 +76,24 @@ function ChilddevMethod({ report, districtCode }: MethodProps) {
   );
 }
 
+/** ไตรมาส 4 that is low every year for a reason not known yet (SCHEMA §4.6.3) */
+const CHILDDEV_LOW_QUARTER_4: Record<string, string> = {
+  s_kpi_childdev4:
+    "ร้อยละไตรมาส 4 ต่ำกว่าไตรมาสอื่นทุกปี 2565–2569 และปี 2569 ทั้งจังหวัดแพร่ก็ต่ำ จึงเป็นรูปแบบของข้อมูล HDC ไม่ใช่ข้อมูลของอำเภอสองที่ยังไม่ครบ ยังไม่รู้สาเหตุ",
+  s_kpi_childdev2: "เป้าหมายไตรมาส 4 (เด็กที่ได้รับการคัดกรอง) น้อยกว่าไตรมาสอื่นทุกปี 2565–2569 ยังไม่รู้สาเหตุ",
+};
+
+function ChilddevLimits({ report }: { report: DcReport }) {
+  const lowQuarter4 = CHILDDEV_LOW_QUARTER_4[report.source_table];
+  return (
+    <>
+      <li>ทั้งปีคือผลรวม 4 ไตรมาสตามข้อมูล HDC ส่วน PA Dashboard รวม 3 ไตรมาสตามรอบประเมิน ตัวเลขทั้งปีจึงต่างจาก PA</li>
+      <li>areacode ของแต่ละหน่วยบริการตรงกับตำบลที่ตั้งของหน่วยทุกแถว จึงอนุมานว่าเป็นที่ตั้งหน่วยบริการ ไม่ใช่ที่อยู่ของเด็ก หน้านี้จึงไม่แยกรายตำบล</li>
+      {lowQuarter4 && <li>{lowQuarter4}</li>}
+    </>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -83,5 +101,15 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <AncMethod {...props} />;
     case "childdev":
       return <ChilddevMethod {...props} />;
+  }
+}
+
+/** The ข้อจำกัด of a page, after those of every report: <li> items */
+export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typeof tablePage>>; report: DcReport }) {
+  switch (page) {
+    case "anc":
+      return null;
+    case "childdev":
+      return <ChilddevLimits report={report} />;
   }
 }

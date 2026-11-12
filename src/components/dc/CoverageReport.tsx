@@ -11,7 +11,7 @@ import ReportStatus, { NoYear } from "./report/ReportStatus";
 import ResultsHeader from "./report/ResultsHeader";
 import SummaryTiles from "./report/SummaryTiles";
 import UnitTable from "./report/UnitTable";
-import { unitResults } from "./report/unitResults";
+import { resultsText } from "./report/resultsText";
 import { useReportQuery } from "./report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
@@ -37,7 +37,7 @@ function Coverage({ data, names, years }: { data: DcReportData; names: Names; ye
   // null: the whole district has no ผลงาน that year, shown as "—" (SPEC §9.4)
   const values = units && total ? { units, total } : null;
   const figures = block && recognised && (!values || values.units.length > 0) ? { block, values } : null;
-  const { summary, unitLabel, totalLabel, csv } = unitResults(
+  const { summary, unitLabel, totalLabel, csv } = resultsText(
     report,
     query,
     names,
