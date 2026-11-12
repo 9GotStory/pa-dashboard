@@ -1,7 +1,7 @@
 "use client";
 
 import type { DcCatalog, DcReportData, DcYearBlock, ReportQuery, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
-import { goalFor, measureLabel, periods, totals, totalsBy, trend, yearBlock } from "@/lib/dc/values";
+import { goalFor, measureLabel, periods, shownMeasures, totals, totalsBy, trend, yearBlock } from "@/lib/dc/values";
 import { PERIOD_LABELS, areaLabel } from "./report/labels";
 import { PeriodPanel, TrendPanel, UnitPanel } from "./report/panels";
 import ReportActions from "./report/ReportActions";
@@ -27,9 +27,11 @@ export default function CoverageReport({ id, names, years }: { id: string; names
 }
 
 function Coverage({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query, search, apply, heading } = useReportQuery(data, names);
+  const { query: asked, search, apply, heading } = useReportQuery(data, names);
   const { report } = data;
-  const block = yearBlock(data, query.year);
+  const block = yearBlock(data, asked.year);
+  // This page has no ภาพรวม: no measure is the year's first รายการ (SCHEMA §4.2, §9)
+  const query = { ...asked, measure: asked.measure ?? (block && shownMeasures(data, block)[0]) ?? null };
   // Whether a rule of SCHEMA §4.3 finds the table's columns that year
   const recognised = block !== null && periods(block, report).length > 0;
   const units = block && totalsBy(block, report, query, names);

@@ -114,21 +114,18 @@ export function measureLabel(measure: string): string {
 
 /**
  * The periods a block can show (SCHEMA §4.3): ทั้งปี when any rule finds it,
- * quarters with a quarter family, months with M_A or M_B; none when no rule
- * applies. Quarters and months only when the whole district has a ผลงาน in
- * them that year (SPEC §9.4 "ว่างทั้งปี").
+ * quarters with a quarter family or with M_B (the sum of 3 months), months
+ * with M_A or M_B; none when no rule applies. Quarters and months only when
+ * the whole district has a ผลงาน in them that year (SPEC §9.4 "ว่างทั้งปี").
  */
 export function periods(block: DcYearBlock, report: DcReport): Period[] {
   const found = families(block, report);
   if (found.length === 0) return [];
   const out: Period[] = ["year"];
   const quarters = QUARTER_ORDER.find((f) => found.includes(f));
-  if (quarters && collected(block, FIXED_COLUMNS[quarters])) out.push("q1", "q2", "q3", "q4");
-  const months = [
-    ...(found.includes("M_A") ? [FIXED_COLUMNS.M_A] : []),
-    ...measures(block).map((m) => monthColumns(`${m}_`)),
-  ];
-  if (months.some((cols) => collected(block, cols))) out.push(...MONTHS.map((m) => `m${m}` as const));
+  const measured = measures(block).some((m) => collected(block, monthColumns(`${m}_`)));
+  if (quarters ? collected(block, FIXED_COLUMNS[quarters]) : measured) out.push("q1", "q2", "q3", "q4");
+  if (measured || (found.includes("M_A") && collected(block, FIXED_COLUMNS.M_A))) out.push(...MONTHS.map((m) => `m${m}` as const));
   return out;
 }
 
@@ -156,20 +153,28 @@ function level(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "p
   }
   if (period.startsWith("q")) {
     const family = QUARTER_ORDER.find((f) => found.includes(f));
-    return family ? FIXED_COLUMNS[family] : null;
+    // M_B has no quarter family: a quarter is the sum of its 3 months (SCHEMA §4.3)
+    return family ? FIXED_COLUMNS[family] : measure !== null ? measured : null;
   }
   return measure !== null ? measured : found.includes("M_A") ? FIXED_COLUMNS.M_A : null;
 }
 
-/** The columns summed into a row's target and result for a period, out of its level's (SCHEMA §4.3) */
+/**
+ * The columns summed into a row's target and result for a period, out of its
+ * level's (SCHEMA §4.3): a quarter is 1 column of 4, or 3 of the 12 months
+ */
 function columns(cols: Columns, period: Period): Columns {
   if (period === "year") return cols;
-  return entry(cols, period.startsWith("q") ? Number(period.slice(1)) - 1 : MONTHS.findIndex((m) => `m${m}` === period));
+  if (period.startsWith("q")) {
+    const size = cols.target.length / 4;
+    return entries(cols, (Number(period.slice(1)) - 1) * size, size);
+  }
+  return entries(cols, MONTHS.findIndex((m) => `m${m}` === period), 1);
 }
 
-/** The columns of quarter or month k alone */
-function entry(cols: Columns, k: number): Columns {
-  return { target: [cols.target[k]], result: [cols.result[k]] };
+/** The columns of the quarters or months k to k + size − 1 */
+function entries(cols: Columns, k: number, size: number): Columns {
+  return { target: cols.target.slice(k, k + size), result: cols.result.slice(k, k + size) };
 }
 
 /** The tambon of an areacode: its first 6 digits (SPEC §10) */
@@ -309,7 +314,8 @@ export function dataYears(data: DcReportData): string[] {
  * ReportQuery for the report's data, with the defaults of SCHEMA §9. A
  * 4-digit year without data is kept, so the page says so instead of showing
  * another year, and year is "" for a report without any data. measure and
- * period are always ones the year's columns have, as totals() expects.
+ * period are always ones the year's columns have, as totals() expects:
+ * measure null is ภาพรวม, also for a measure the year lacks (SPEC §9.4).
  */
 export function reportQuery(
   data: DcReportData,
@@ -320,7 +326,7 @@ export function reportQuery(
   const year = asked && /^\d{4}$/.test(asked) ? asked : (dataYears(data)[0] ?? "");
   const block = yearBlock(data, year);
   const found = block ? shownMeasures(data, block) : [];
-  const measure = found.find((m) => m === params.get("measure")) ?? found[0] ?? null;
+  const measure = found.find((m) => m === params.get("measure")) ?? null;
   const period = (block ? periods(block, data.report) : []).find((p) => p === params.get("period")) ?? "year";
   const area = names.areas.find((a) => a.id === params.get("area"))?.id ?? "all";
   // One ตำบล is compared by หน่วยบริการ only (SPEC §9.4)

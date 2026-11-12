@@ -1,9 +1,9 @@
-import { formatPct } from "@/lib/dc/format";
+import { formatCount, formatPct } from "@/lib/dc/format";
 import type { DcCatalog, Period, ReportQuery } from "@/lib/dc/types";
 import { measureLabel } from "@/lib/dc/values";
 
 // The words the report pages share: the names of ช่วงเวลา and เปรียบเทียบตาม,
-// ร้อยละ as shown, and the filters in one line.
+// counts, ร้อยละ, เกณฑ์ and ผลประเมิน as shown, and the filters in one line.
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
 
@@ -31,6 +31,11 @@ export const PERIOD_LABELS: Record<Period, { name: string; short: string }> = {
 /** What เปรียบเทียบตาม compares by */
 export const UNIT_LABELS: Record<ReportQuery["by"], string> = { area: "ตำบล", hosp: "หน่วยบริการ" };
 
+/** เป้าหมาย or ผลงาน as shown, "—" without data (SPEC §9.4) */
+export function countText(n: number | null): string {
+  return n === null ? "—" : formatCount(n);
+}
+
 /** ร้อยละ as shown, "—" when the เป้าหมาย is 0 (SPEC §9.4) */
 export function pctText(pct: number | null): string {
   return pct === null ? "—" : formatPct(pct);
@@ -40,13 +45,28 @@ export function areaLabel(area: string, names: Names): string {
   return area === "all" ? "ทั้งอำเภอ" : `ตำบล${names.areas.find((a) => a.id === area)?.name_th}`;
 }
 
-/** The filters in one line, for the results, the CSV and screen readers */
-export function describe(q: ReportQuery, names: Names): string {
+/** เกณฑ์ as shown: "ไม่มีเกณฑ์" for a รายการ without one (SPEC §9.4) */
+export function goalText(goal: number | null): string {
+  return goal === null ? "ไม่มีเกณฑ์" : `≥ ${goal}`;
+}
+
+/** ผลประเมิน as shown: "—" without a ร้อยละ or a เกณฑ์, never ไม่ผ่าน (SPEC §9.4) */
+export function passText(passed: boolean | null): string {
+  return passed === null ? "—" : passed ? "ผ่านเกณฑ์" : "ไม่ผ่านเกณฑ์";
+}
+
+/**
+ * The filters in one line, for the results, the CSV and screen readers: the
+ * fields of the page's form (all by default, as ReportFilters) and the
+ * รายการ open
+ */
+export function describe(q: ReportQuery, names: Names, fields?: (keyof ReportQuery)[]): string {
+  const has = (field: keyof ReportQuery) => !fields || fields.includes(field);
   return [
     `ปีงบประมาณ ${q.year}`,
-    areaLabel(q.area, names),
-    PERIOD_LABELS[q.period].name,
+    ...(has("area") ? [areaLabel(q.area, names)] : []),
+    ...(has("period") ? [PERIOD_LABELS[q.period].name] : []),
     ...(q.measure === null ? [] : [`รายการ ${measureLabel(q.measure)}`]),
-    `เปรียบเทียบราย${UNIT_LABELS[q.by]}`,
+    ...(has("by") ? [`เปรียบเทียบราย${UNIT_LABELS[q.by]}`] : []),
   ].join(" · ");
 }

@@ -1,5 +1,6 @@
 import type { tablePage } from "@/lib/dc/tables";
 import type { DcReport } from "@/lib/dc/types";
+import { measureLabel } from "@/lib/dc/values";
 
 // วิธีคำนวณ of เกี่ยวกับรายงานนี้ for each page of a source table (SPEC §9.4):
 // the rows taken, what เป้าหมาย and ผลงาน mean (SCHEMA §4.6) and the page's
@@ -94,6 +95,71 @@ function ChilddevLimits({ report }: { report: DcReport }) {
   );
 }
 
+/** เป้าหมาย of s_epi1, and the vaccine each รายการ is, in header order (SCHEMA §4.6.4) */
+const EPI_MEANINGS: Record<string, { target: string; doses: Record<string, string> }> = {
+  s_epi1: {
+    target: "เด็กอายุครบ 1 ปีที่อาศัยอยู่จริงในพื้นที่รับผิดชอบในงวด (Type area 1 และ 3)",
+    doses: {
+      bcg: "BCG แรกเกิด",
+      dtp_hb3: "DTP 6 เดือน",
+      opv3: "OPV 6 เดือน",
+      mmr: "MMR 9 เดือน",
+      hbv: "HBV แรกเกิด",
+      ipv: "IPV 4 เดือน",
+      dtp1: "DTP 2 เดือน",
+      rota: "Rota (ครบถ้วนตามเกณฑ์)",
+      hbv3: "HBV 6 เดือน",
+      hib3: "Hib 6 เดือน",
+      dtp2: "DTP 4 เดือน",
+      hbv2: "HBV 2 เดือน",
+      hbv4: "HBV 4 เดือน",
+      hib1: "Hib 2 เดือน",
+      hib2: "Hib 4 เดือน",
+      ipv1: "IPV 2 เดือน",
+      rota1: "Rota 2 เดือน",
+      pcv1: "PCV 2 เดือน (นอกแผน)",
+      pcv2: "PCV 4 เดือน (นอกแผน)",
+      pcv3: "PCV 6 เดือน (นอกแผน)",
+    },
+  },
+};
+
+function EpiMethod({ report, districtCode }: MethodProps) {
+  const meaning = EPI_MEANINGS[report.source_table];
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก · ทั้งอำเภอเปรียบเทียบรายตำบล
+        เลือกตำบลเปรียบเทียบรายหน่วยบริการ
+      </li>
+      {meaning && <li>เป้าหมาย: {meaning.target} คอลัมน์ target ของแต่ละเดือน</li>}
+      <li>ผลงาน: เด็กตามเป้าหมายที่ได้รับวัคซีนรายการนั้น คอลัมน์ {"{รายการ}_{เดือน}"} ทั้งปีคือผลรวม 12 เดือน และไตรมาสคือผลรวม 3 เดือน (ไตรมาส 1 = ต.ค.–ธ.ค.)</li>
+      {meaning && (
+        <li>
+          วัคซีนของแต่ละรายการ:{" "}
+          {Object.entries(meaning.doses)
+            .map(([measure, dose]) => `${measureLabel(measure)} = ${dose}`)
+            .join(" · ")}
+        </li>
+      )}
+      <li>
+        ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · เป้าหมายเป็น 0 แสดง “—” · รายการที่ผลงานรวมทั้งอำเภอของปีเป็น 0
+        ถือว่าไม่มีข้อมูลปีนั้น แสดง “—”
+      </li>
+      <li>เกณฑ์ของแต่ละรายการตาม PA Dashboard ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์ · รายการที่ไม่มีเกณฑ์ (PCV) ไม่มีผลประเมิน</li>
+    </ul>
+  );
+}
+
+function EpiLimits() {
+  return (
+    <li>
+      หน้า HDC ยืนยันชื่อวัคซีนของคอลัมน์ได้เป็นกลุ่มที่ตัวเลขเท่ากัน การจับคู่คอลัมน์กับวัคซีนภายในกลุ่ม (BCG กับ ROTA1, DTP2 กับ HBV4, DTP1 DTP-HB3 HBV2 HBV3
+      HIB1 HIB2 และ OPV3 และลำดับของ PCV1–3) จึงอนุมานจากชื่อคอลัมน์
+    </li>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -101,6 +167,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <AncMethod {...props} />;
     case "childdev":
       return <ChilddevMethod {...props} />;
+    case "epi":
+      return <EpiMethod {...props} />;
   }
 }
 
@@ -111,5 +179,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return null;
     case "childdev":
       return <ChilddevLimits report={report} />;
+    case "epi":
+      return <EpiLimits />;
   }
 }

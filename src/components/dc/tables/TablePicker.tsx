@@ -18,6 +18,7 @@ const loading = () => <ReportStatus>กำลังโหลดข้อมู�
 const PAGES: Record<Page, ComponentType<Props>> = {
   anc: dynamic(() => import("./AncPage"), { loading }),
   childdev: dynamic(() => import("./ChilddevPage"), { loading }),
+  epi: dynamic(() => import("./EpiPage"), { loading }),
 };
 const Coverage = dynamic(() => import("../CoverageReport"), { loading });
 
