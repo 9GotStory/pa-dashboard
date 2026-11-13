@@ -22,16 +22,16 @@ export default function UnitChart({ title, units, goal }: { title: string; units
     <svg role="img" aria-label={label} width="100%" height={height} className="block text-xs">
       {units.map((u, i) => (
         <g key={u.key}>
-          <text y={i * ROW + ROW / 2} dominantBaseline="middle" className="fill-dc-ink">
+          <text y={i * ROW + ROW / 2} dominantBaseline="middle" className="fill-dc-brand-deep">
             {u.name}
           </text>
           <svg x={BARS_X} y={i * ROW + 8} width={BARS_WIDTH} height={ROW - 16}>
             <rect width="100%" height="100%" rx="3" className="fill-dc-canvas" />
             {u.totals.pct !== null && (
-              <rect width={`${Math.min(u.totals.pct, 100)}%`} height="100%" rx="3" className="fill-dc-blue" />
+              <rect width={`${Math.min(u.totals.pct, 100)}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
             )}
           </svg>
-          <text x="100%" y={i * ROW + ROW / 2} dominantBaseline="middle" textAnchor="end" className="fill-dc-ink font-semibold tabular-nums">
+          <text x="100%" y={i * ROW + ROW / 2} dominantBaseline="middle" textAnchor="end" className="fill-dc-brand-deep font-semibold tabular-nums">
             {u.totals.pct === null ? "—" : formatPct(u.totals.pct)}
           </text>
         </g>

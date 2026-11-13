@@ -206,13 +206,13 @@ export default function RegistryPopulationUpload() {
   const finished = !saving && picked.some((p) => p.outcome);
 
   return (
-    <section aria-labelledby="registry-population" className="dc mt-6 rounded-xl border border-dc-border bg-white p-6 font-dc text-sm text-dc-ink">
-      <h2 id="registry-population" className="font-prompt text-lg font-bold text-dc-navy">
+    <section aria-labelledby="registry-population" className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep">
+      <h2 id="registry-population" className="font-prompt text-lg font-bold text-dc-brand-deep">
         ประชากรทะเบียนราษฎร (กรมการปกครอง)
       </h2>
-      <p className="mt-2 text-dc-muted">
+      <p className="mt-2 text-dc-text-secondary">
         ดาวน์โหลดไฟล์ <code>stat_m{"{ปี}"}.txt</code> จาก{" "}
-        <a href="https://stat.bora.dopa.go.th/" target="_blank" rel="noopener noreferrer" className="font-semibold text-dc-blue underline underline-offset-2">
+        <a href="https://stat.bora.dopa.go.th/" target="_blank" rel="noopener noreferrer" className="font-semibold text-dc-brand-primary underline underline-offset-2">
           stat.bora
         </a>{" "}
         เมนู ดาวน์โหลดสถิติ → จำนวนประชากร → ปี → ระดับหมู่บ้าน Text File เช่น <code>stat_m68.txt</code> คือยอด ณ 31 ธ.ค. 2568
@@ -232,7 +232,7 @@ export default function RegistryPopulationUpload() {
         ) : sheetYears.state === "failed" ? (
           <p>
             อ่านปีที่มีในชีตไม่ได้: {sheetYears.error}{" "}
-            <button type="button" onClick={reloadYears} className="font-semibold text-dc-blue underline underline-offset-2">
+            <button type="button" onClick={reloadYears} className="font-semibold text-dc-brand-primary underline underline-offset-2">
               ลองอีกครั้ง
             </button>
           </p>
@@ -259,7 +259,7 @@ export default function RegistryPopulationUpload() {
             multiple
             onChange={pick}
             disabled={district.state !== "ready" || saving}
-            className="mt-2 block w-full text-dc-ink file:mr-3 file:rounded-md file:border-0 file:bg-dc-blue-light file:px-3 file:py-2 file:font-semibold file:text-dc-blue-dark disabled:opacity-50"
+            className="mt-2 block w-full text-dc-brand-deep file:mr-3 file:rounded-md file:border-0 file:bg-dc-highlight-soft file:px-3 file:py-2 file:font-semibold file:text-dc-brand-deep disabled:opacity-50"
           />
         </div>
       )}
@@ -270,8 +270,8 @@ export default function RegistryPopulationUpload() {
             const ok = outcome ? outcome.ok : read.ok;
             const label = outcome ? (outcome.ok ? "บันทึกแล้ว" : outcome.partial ? "บันทึกบางส่วน" : "ไม่บันทึก") : read.ok ? "ผ่านการตรวจ" : "ไม่รับไฟล์";
             return (
-              <li key={i} className="rounded-lg border border-dc-border px-3 py-2">
-                <span className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-navy ${ok ? "bg-dc-teal/20" : "bg-dc-gold/30"}`}>
+              <li key={i} className="rounded-lg border border-dc-border-subtle px-3 py-2">
+                <span className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}>
                   {label}
                 </span>
                 <span className="font-semibold break-all">{read.name}</span>
@@ -283,7 +283,7 @@ export default function RegistryPopulationUpload() {
       )}
 
       {rebuild && (
-        <p role="status" className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-teal/10" : "bg-dc-gold/10"}`}>
+        <p role="status" className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}>
           {rebuild.text}
         </p>
       )}
@@ -293,7 +293,7 @@ export default function RegistryPopulationUpload() {
           type="button"
           onClick={save}
           disabled={saving || toSave === 0 || !GAS_URL}
-          className="mt-4 rounded-lg bg-dc-blue px-5 py-2.5 font-semibold text-white hover:bg-dc-blue-dark disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 rounded-lg bg-dc-brand-primary px-5 py-2.5 font-semibold text-white hover:bg-dc-brand-deep disabled:cursor-not-allowed disabled:opacity-50"
         >
           {saving ? "กำลังบันทึก…" : `บันทึก ${toSave} ไฟล์`}
         </button>
