@@ -9,9 +9,10 @@ import { tablePage } from "@/lib/dc/tables";
 import type { DcCatalog, DcReport } from "@/lib/dc/types";
 
 // The report page (SPEC §9.4): one page per report in catalog.json whose
-// source table has a page, and 404 for any other id. The frame (breadcrumb, hero, เกี่ยวกับรายงานนี้, รายงานที่
-// เกี่ยวข้อง) is built here from catalog.json at build time; the numbers come
-// from /data/reports/{id}.json in the browser.
+// source table has a page, and 404 for any other id. The frame (breadcrumb,
+// hero, เกี่ยวกับรายงานนี้, รายงานที่เกี่ยวข้อง) is built here from
+// catalog.json at build time; the numbers come from /data/reports/{id}.json
+// in the browser.
 export const dynamicParams = false;
 
 type Main = DcCatalog["mains"][number];
@@ -20,7 +21,7 @@ type Group = Topic["groups"][number];
 /** A report with the หมวด, หัวข้อ and กลุ่ม it sits in */
 type Entry = { main: Main; topic: Topic; group: Group; report: DcReport };
 
-/** Every report of catalog.json in its order (SPEC §5.4) */
+/** Every report of the catalog in its order (SPEC §5.4) */
 function entries(catalog: DcCatalog): Entry[] {
   return catalog.mains.flatMap((main) =>
     main.topics.flatMap((topic) => topic.groups.flatMap((group) => group.reports.map((report) => ({ main, topic, group, report })))),
@@ -51,7 +52,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const catalog = readCatalog();
   const all = entries(catalog);
   const here = all.find((e) => e.report.opendata_id === id);
-  // The page of the report's source table (ADR-0015)
+  // The page of the report's source table (ADR-0015); readCatalog keeps only
+  // reports with one, so !page only narrows the type
   const page = here && tablePage(here.report.source_table);
   if (!here || !page) notFound();
   const { main, topic, group, report } = here;
