@@ -24,6 +24,7 @@ const PAGES: Record<Page, ComponentType<Props>> = {
   screen: dynamic(() => import("./ScreenPage"), { loading }),
   follow: dynamic(() => import("./FollowPage"), { loading }),
   annual: dynamic(() => import("./AnnualPage"), { loading }),
+  cavity: dynamic(() => import("./CavityPage"), { loading }),
 };
 const Coverage = dynamic(() => import("../CoverageReport"), { loading });
 

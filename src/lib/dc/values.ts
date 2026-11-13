@@ -203,7 +203,7 @@ function rowsIn(block: DcYearBlock, area: string): Cell[][] {
 }
 
 /** ร้อยละ = R / T × 100 when T > 0, else null: "—" (SCHEMA §4.4) */
-function pctOf(result: number, target: number): number | null {
+export function pctOf(result: number, target: number): number | null {
   return target > 0 ? (result / target) * 100 : null;
 }
 

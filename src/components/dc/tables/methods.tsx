@@ -409,6 +409,24 @@ function AnnualLimits({ report }: { report: DcReport }) {
   return (ANNUAL_MEANINGS[report.source_table]?.limits ?? []).map((limit) => <li key={limit}>{limit}</li>);
 }
 
+/** c → b → a of s_dental_0_5_cavity_free as HDC's page heads them, and its two ร้อยละ (SCHEMA §4.6.11) */
+function CavityMethod({ report, districtCode }: MethodProps) {
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก · ข้อมูลเป็นทั้งปีอย่างเดียว
+      </li>
+      <li>เด็ก 0–5 ปี: เด็กอายุ 0–5 ปีทั้งหมด (คอลัมน์ c) · ตรวจช่องปาก: เด็กที่ได้รับการตรวจช่องปาก (คอลัมน์ b) · ฟันดีไม่มีผุ: เด็กที่ตรวจแล้วฟันดีไม่มีผุ (คอลัมน์ a)</li>
+      <li>
+        ร้อยละฟันดีไม่มีผุ = ผลรวม a ÷ ผลรวม b × 100 เป็นร้อยละของรายงาน
+        {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
+      </li>
+      <li>ร้อยละตรวจช่องปาก = ผลรวม b ÷ ผลรวม c × 100 ไม่มีเกณฑ์</li>
+      <li>ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · ตัวหารเป็น 0 แสดง “—”</li>
+    </ul>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -428,6 +446,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <FollowMethod {...props} />;
     case "annual":
       return <AnnualMethod {...props} />;
+    case "cavity":
+      return <CavityMethod {...props} />;
   }
 }
 
@@ -450,5 +470,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return <FollowLimits report={report} />;
     case "annual":
       return <AnnualLimits report={report} />;
+    case "cavity":
+      return null;
   }
 }

@@ -20,6 +20,7 @@ export const TABLE_PAGES = {
   s_kpi_food: "annual",
   s_kpi_dental28: "annual",
   s_kpi_dental33: "annual",
+  s_dental_0_5_cavity_free: "cavity",
 } as const;
 
 /** The page of a source table, null for a table without one yet (CoverageReport until F62) */
