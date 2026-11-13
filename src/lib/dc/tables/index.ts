@@ -15,6 +15,8 @@ export const TABLE_PAGES = {
   s_epi_complete: "complete",
   s_dm_screen: "screen",
   s_ht_screen: "screen",
+  s_ncd_screen_repleate1: "follow",
+  s_ht_screen_follow: "follow",
 } as const;
 
 /** The page of a source table, null for a table without one yet (CoverageReport until F62) */

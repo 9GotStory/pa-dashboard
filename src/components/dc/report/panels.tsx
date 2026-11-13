@@ -160,3 +160,29 @@ export function CountPanel({ unitLabel, units }: { unitLabel: string; units: Uni
     </Surface>
   );
 }
+
+/**
+ * The count of each วิธีวัด (s_ht_screen_follow's HBPM and OBPM) in the
+ * ช่วงเวลา, not a ร้อยละ: one person may have both, so they may add up to
+ * more than ผลงาน (result), which the note says
+ */
+export function MethodsPanel(props: { year: string; period: Period; result: number; methods: { label: string; count: number }[] }) {
+  const { year, period, result, methods } = props;
+  return (
+    <Surface title={`จำนวนตามวิธีวัดความดัน ${PERIOD_LABELS[period].short} ปีงบประมาณ ${year}`}>
+      <dl className="grid grid-cols-2 gap-3">
+        {methods.map((m) => (
+          <div key={m.label} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
+            <dt className="text-xs text-dc-text-secondary">{m.label}</dt>
+            <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
+              {formatCount(m.count)} <span className="text-xs font-normal text-dc-text-secondary">คน</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-[11px] text-dc-text-secondary">
+        HBPM วัดความดันที่บ้าน · OBPM วัดที่สถานบริการ · คนหนึ่งวัดได้ทั้งสองวิธี ผลรวมสองวิธีจึงเกินผลงาน ({formatCount(result)} คน) ได้
+      </p>
+    </Surface>
+  );
+}

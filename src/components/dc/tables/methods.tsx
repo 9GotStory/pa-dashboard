@@ -291,6 +291,66 @@ function ScreenMethod({ report, districtCode }: MethodProps) {
   );
 }
 
+/**
+ * B and A of s_ncd_screen_repleate1 and s_ht_screen_follow as HDC's page
+ * heads them, their quarter columns, the years their _13 columns are empty
+ * (SCHEMA §4.6.9–4.6.10) and HBPM/OBPM of s_ht_screen_follow
+ */
+const FOLLOW_MEANINGS: Record<string, { target: string; result: string; quarters: string; empty13: string; methods?: string }> = {
+  s_ncd_screen_repleate1: {
+    target: "ประชากรอายุ 35 ปีขึ้นไปในเขตรับผิดชอบที่ได้รับการคัดกรองเบาหวานและเป็นกลุ่มสงสัยป่วย",
+    result: "กลุ่มสงสัยป่วยที่ได้รับการตรวจยืนยันด้วย FPG ทางห้องปฏิบัติการภายใน 1–180 วันก่อนสิ้นปีงบประมาณ",
+    quarters: "targetq1–4 และ resultq1–4",
+    empty13: "2565–2567",
+  },
+  s_ht_screen_follow: {
+    target: "กลุ่มสงสัยป่วยโรคความดันโลหิตสูง",
+    result: "กลุ่มสงสัยป่วยที่ได้รับการติดตามเพื่อการวินิจฉัย ไม่นับซ้ำ",
+    quarters: "t_q1–4 และ r_q1–4",
+    empty13: "2565–2566",
+    methods:
+      "จำนวนตามวิธีวัดของช่วงเวลาที่เลือก: HBPM (วัดที่บ้าน) คอลัมน์ r1 และ OBPM (วัดที่สถานบริการ) คอลัมน์ r2 รายไตรมาสคือ r1_q1–4 และ r2_q1–4 · เป็นจำนวนคน ไม่คิดเป็นร้อยละ · คนหนึ่งวัดได้ทั้งสองวิธี ผลรวมสองวิธีจึงเกินผลงานได้",
+  },
+};
+
+function FollowMethod({ report, districtCode }: MethodProps) {
+  const meaning = FOLLOW_MEANINGS[report.source_table];
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถวที่ areacode ขึ้นต้นด้วย {districtCode} ตารางนี้มีหนึ่งแถวต่อหน่วยบริการ จึงแสดงทั้งอำเภอรายหน่วยบริการ ไม่มีตัวกรองตำบล
+      </li>
+      {meaning && (
+        <>
+          <li>เป้าหมาย (B ของ HDC): {meaning.target} (คอลัมน์ target)</li>
+          <li>ผลงาน (A ของ HDC): {meaning.result} (คอลัมน์ result)</li>
+        </>
+      )}
+      <li>
+        ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละหน่วยบริการ · เป้าหมายเป็น 0 แสดง “—”
+        {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
+      </li>
+      {meaning && <li>รายไตรมาสใช้คอลัมน์ {meaning.quarters} ซึ่ง 4 ไตรมาสรวมกันเท่าทั้งปี</li>}
+      {meaning?.methods && <li>{meaning.methods}</li>}
+    </ul>
+  );
+}
+
+function FollowLimits({ report }: { report: DcReport }) {
+  const meaning = FOLLOW_MEANINGS[report.source_table];
+  return (
+    <>
+      <li>
+        กราฟบนหน้า HDC คิดร้อยละจากกลุ่มสงสัยป่วยไตรมาส 1–3 (คอลัมน์ target_13 และ result_13) ส่วนหน้านี้ใช้ทั้งปี (target และ result) ร้อยละจึงต่างจาก
+        HDC เล็กน้อย
+        {meaning && ` · คอลัมน์ของกลุ่มไตรมาส 1–3 ว่างปี ${meaning.empty13} ถ้าใช้กลุ่มนั้นแนวโน้มจะขาดหลายปี`}
+      </li>
+      <li>เป้าหมายไตรมาส 3–4 มีน้อยมาก อนุมานว่าเพราะการคัดกรองส่วนใหญ่อยู่ในไตรมาส 1–2 ยังไม่ได้ยืนยัน</li>
+      <li>areacode ของแต่ละหน่วยบริการตรงกับตำบลที่ตั้งของหน่วยทุกแถว จึงอนุมานว่าเป็นที่ตั้งหน่วยบริการ ไม่ใช่ที่อยู่ของผู้ป่วย หน้านี้จึงไม่แยกรายตำบล</li>
+    </>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -306,6 +366,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <CompleteMethod {...props} />;
     case "screen":
       return <ScreenMethod {...props} />;
+    case "follow":
+      return <FollowMethod {...props} />;
   }
 }
 
@@ -324,5 +386,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return <CompleteLimits report={report} />;
     case "screen":
       return null;
+    case "follow":
+      return <FollowLimits report={report} />;
   }
 }
