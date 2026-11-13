@@ -32,24 +32,18 @@ const eslintConfig = defineConfig([
       "no-irregular-whitespace": ["error", { skipStrings: false }],
     },
   },
-  // Old R6 colour names are aliases until /reports/{id} is redesigned (SPEC
-  // §9.1, expand–contract, ADR-0013). The ignored files are the ones still on
-  // them; the contract step moves them to the V7.6 names and drops the ignores.
+  // The old R6 colour names were removed from globals.css in F63, the contract
+  // step of SPEC §9.1; a class on one of them would have no colour.
   // dc-canvas is a name of both, and dc-border-subtle a new one. dc-gold has
   // its own value, no V7.6 name for the เกณฑ์ line, and stays (FEATURES F63).
   {
     files: ["src/app/(dc)/**", "src/components/dc/**"],
-    ignores: [
-      "src/app/(dc)/reports/\\[id\\]/**",
-      "src/components/dc/RegistryPopulationUpload.tsx",
-      "src/components/dc/charts/**",
-    ],
     rules: {
       "no-restricted-syntax": [
         "error",
         ...["Literal[value", "TemplateElement[value.raw"].map((node) => ({
           selector: `${node}=/\\bdc-(blue|ink|muted|navy|teal)\\b|\\bdc-border(?!-)/]`,
-          message: "Use the V7.6 colour names here; the R6 names are aliases kept for /reports/{id} until its redesign (SPEC §9.1).",
+          message: "Use the V7.6 colour names; the R6 names were removed in F63 (SPEC §9.1).",
         })),
       ],
     },
