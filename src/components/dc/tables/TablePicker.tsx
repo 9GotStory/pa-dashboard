@@ -23,6 +23,7 @@ const PAGES: Record<Page, ComponentType<Props>> = {
   complete: dynamic(() => import("./CompletePage"), { loading }),
   screen: dynamic(() => import("./ScreenPage"), { loading }),
   follow: dynamic(() => import("./FollowPage"), { loading }),
+  annual: dynamic(() => import("./AnnualPage"), { loading }),
 };
 const Coverage = dynamic(() => import("../CoverageReport"), { loading });
 

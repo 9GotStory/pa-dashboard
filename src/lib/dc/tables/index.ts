@@ -17,6 +17,9 @@ export const TABLE_PAGES = {
   s_ht_screen: "screen",
   s_ncd_screen_repleate1: "follow",
   s_ht_screen_follow: "follow",
+  s_kpi_food: "annual",
+  s_kpi_dental28: "annual",
+  s_kpi_dental33: "annual",
 } as const;
 
 /** The page of a source table, null for a table without one yet (CoverageReport until F62) */

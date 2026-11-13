@@ -186,3 +186,29 @@ export function BpMethodsPanel(props: { year: string; period: Period; result: nu
     </Surface>
   );
 }
+
+/**
+ * The count of each เดือนอายุ 1–6 at which s_kpi_food's children were said to
+ * have only breast milk, not a ร้อยละ: one child may count at several, so
+ * they add up to more than ผลงาน (result), which the note says
+ */
+export function AgeMonthsPanel(props: { year: string; result: number; ageMonths: { month: number; count: number }[] }) {
+  const { year, result, ageMonths } = props;
+  return (
+    <Surface title={`ตอบว่ากินนมแม่อย่างเดียวตามเดือนอายุ ปีงบประมาณ ${year}`}>
+      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        {ageMonths.map((m) => (
+          <div key={m.month} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-3 py-3">
+            <dt className="text-xs text-dc-text-secondary">อายุ {m.month} เดือน</dt>
+            <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
+              {formatCount(m.count)} <span className="text-xs font-normal text-dc-text-secondary">คน</span>
+            </dd>
+          </div>
+        ))}
+      </dl>
+      <p className="mt-3 text-[11px] text-dc-text-secondary">
+        นับเด็กที่ตอบว่ากินนมแม่อย่างเดียวในแต่ละช่วงอายุ เด็กคนหนึ่งนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน ({formatCount(result)} คน) ได้
+      </p>
+    </Surface>
+  );
+}
