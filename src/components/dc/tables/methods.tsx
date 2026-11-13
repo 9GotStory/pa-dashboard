@@ -360,11 +360,11 @@ function FollowLimits({ report }: { report: DcReport }) {
  * (SCHEMA §4.6.6, §4.6.12), the เดือนอายุ of s_kpi_food and each table's own
  * ข้อจำกัด
  */
-const ANNUAL_MEANINGS: Record<string, { target: string; result: string; quarters?: string; ageMonths?: string; limits: string[] }> = {
+const ANNUAL_MEANINGS: Record<string, { target: string; result: string; annualOnly?: string; ageMonths?: string; limits: string[] }> = {
   s_kpi_food: {
     target: "เด็กอายุครบ 6 เดือนในปีงบประมาณที่แม่หรือผู้เลี้ยงดูถูกสอบถามเรื่องการกินนมแม่",
     result: "เด็กอายุครบ 6 เดือนที่แม่หรือผู้เลี้ยงดูตอบว่ากินนมแม่อย่างเดียว",
-    quarters: "คอลัมน์รายไตรมาส (target1–4 และ result1–4) ว่างทุกปี",
+    annualOnly: "คอลัมน์รายไตรมาส (target1–4 และ result1–4) ว่างทุกปี",
     ageMonths:
       "จำนวนที่ตอบว่ากินนมแม่อย่างเดียวที่อายุ 1–6 เดือน (คอลัมน์ r1–r6) ของพื้นที่ที่เลือก · เป็นจำนวนคน ไม่คิดเป็นร้อยละ · HDC เก็บประวัติตั้งแต่แรกเกิดถึง 6 เดือน เด็กคนหนึ่งจึงนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน",
     limits: [],
@@ -389,7 +389,7 @@ function AnnualMethod({ report, districtCode }: MethodProps) {
     <ul className="list-disc pl-4">
       <li>
         รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก · ข้อมูลเป็นทั้งปีอย่างเดียว
-        {meaning?.quarters && ` เพราะ${meaning.quarters}`}
+        {meaning?.annualOnly && ` เพราะ${meaning.annualOnly}`}
       </li>
       {meaning && (
         <li>

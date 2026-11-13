@@ -161,6 +161,22 @@ export function CountPanel({ unitLabel, units }: { unitLabel: string; units: Uni
   );
 }
 
+/** Cards of counts in คน, not ร้อยละ, of a panel whose counts may add up to more than ผลงาน */
+function CountCards({ grid, cards }: { grid: string; cards: { label: string; count: number }[] }) {
+  return (
+    <dl className={`grid gap-3 ${grid}`}>
+      {cards.map((c) => (
+        <div key={c.label} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
+          <dt className="text-xs text-dc-text-secondary">{c.label}</dt>
+          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
+            {formatCount(c.count)} <span className="text-xs font-normal text-dc-text-secondary">คน</span>
+          </dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
 /**
  * The count of each วิธีวัด (s_ht_screen_follow's HBPM and OBPM) in the
  * ช่วงเวลา, not a ร้อยละ: one person may have both, so they may add up to
@@ -170,16 +186,7 @@ export function BpMethodsPanel(props: { year: string; period: Period; result: nu
   const { year, period, result, bpMethods } = props;
   return (
     <Surface title={`จำนวนตามวิธีวัดความดัน ${PERIOD_LABELS[period].short} ปีงบประมาณ ${year}`}>
-      <dl className="grid grid-cols-2 gap-3">
-        {bpMethods.map((m) => (
-          <div key={m.label} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
-            <dt className="text-xs text-dc-text-secondary">{m.label}</dt>
-            <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
-              {formatCount(m.count)} <span className="text-xs font-normal text-dc-text-secondary">คน</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <CountCards grid="grid-cols-2" cards={bpMethods} />
       <p className="mt-3 text-[11px] text-dc-text-secondary">
         HBPM วัดความดันที่บ้าน · OBPM วัดที่สถานบริการ · คนหนึ่งวัดได้ทั้งสองวิธี ผลรวมสองวิธีจึงเกินผลงาน ({formatCount(result)} คน) ได้
       </p>
@@ -196,16 +203,7 @@ export function AgeMonthsPanel(props: { year: string; result: number; ageMonths:
   const { year, result, ageMonths } = props;
   return (
     <Surface title={`ตอบว่ากินนมแม่อย่างเดียวตามเดือนอายุ ปีงบประมาณ ${year}`}>
-      <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-        {ageMonths.map((m) => (
-          <div key={m.month} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-3 py-3">
-            <dt className="text-xs text-dc-text-secondary">อายุ {m.month} เดือน</dt>
-            <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
-              {formatCount(m.count)} <span className="text-xs font-normal text-dc-text-secondary">คน</span>
-            </dd>
-          </div>
-        ))}
-      </dl>
+      <CountCards grid="grid-cols-2 sm:grid-cols-3" cards={ageMonths.map((m) => ({ label: `อายุ ${m.month} เดือน`, count: m.count }))} />
       <p className="mt-3 text-[11px] text-dc-text-secondary">
         นับเด็กที่ตอบว่ากินนมแม่อย่างเดียวในแต่ละช่วงอายุ เด็กคนหนึ่งนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน ({formatCount(result)} คน) ได้
       </p>
