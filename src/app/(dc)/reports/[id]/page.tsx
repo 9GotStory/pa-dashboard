@@ -169,7 +169,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">ข้อจำกัด</h3>
               <ul className="mt-1 list-disc pl-4">
                 <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
-                <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>
+                {/* One year (s_dental_0_5_cavity_free) has no แนวโน้ม: nothing that reads as several years (SPEC §9.4) */}
+                {report.years.length > 1 && <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>}
                 {page && <TableLimits page={page} report={report} />}
               </ul>
             </div>
