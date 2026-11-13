@@ -6,11 +6,12 @@ import { followValues } from "./follow";
 
 // FEATURES F59: the data layer of the ติดตามยืนยันวินิจฉัย page (SPEC §9.4)
 // on s_ncd_screen_repleate1 and s_ht_screen_follow cut from the snapshot of
-// 12 Nov, one row per หน่วยบริการ. The expected values are SCHEMA §4.6.10's
-// for s_ht_screen_follow; s_ncd_screen_repleate1 2569 has grown since SCHEMA
-// §4.6.9's 192/188 (date_com 9 Nov) to 203/195 (date_com 11 Nov, as HDC's
-// page of 11 Nov), so its are the sums of rows in reports/{id}.json, added up
-// apart from this code.
+// 12 Nov, one row per หน่วยบริการ. s_ht_screen_follow's ทั้งปี, ไตรมาส and
+// ทั้งปี HBPM/OBPM of 2569 are SCHEMA §4.6.10's. s_ncd_screen_repleate1 2569
+// has grown since SCHEMA §4.6.9's 192/188 (date_com 9 Nov) to 203/195
+// (date_com 11 Nov, as HDC's page of 11 Nov). Those, and every other value
+// (แนวโน้ม, รายหน่วยบริการ, HBPM/OBPM of a ไตรมาส), are the sums of rows in
+// reports/{id}.json, added up apart from this code.
 
 /** The fixture as /data/reports/{id}.json gives it: each row in header order, "" where left out */
 function snapshot(cut: typeof S_HT_SCREEN_FOLLOW): DcReportData {
@@ -100,26 +101,26 @@ test("s_ht_screen_follow 2569 → 1,215/1,202, 98.93%, เกณฑ์ 80 ผ่
 });
 
 test("s_ht_screen_follow 2569 วิธีวัด ทั้งปี → HBPM (r1) 1,172 · OBPM (r2) 811, together more than ผลงาน 1,202", () => {
-  const { methods } = followValues(HT, DISTRICT_2569, NAMES, YEARS);
-  assert.deepEqual(methods, [
+  const { bpMethods } = followValues(HT, DISTRICT_2569, NAMES, YEARS);
+  assert.deepEqual(bpMethods, [
     { label: "HBPM", count: 1172 },
     { label: "OBPM", count: 811 },
   ]);
 });
 
 test("s_ht_screen_follow 2569 วิธีวัด of the ช่วงเวลา: ไตรมาส 2 → HBPM 458 · OBPM 280 · ไตรมาส 4 (ผลงาน 1) → HBPM 0, not “—” · OBPM 1", () => {
-  const at = (period: ReportQuery["period"]) => followValues(HT, { ...DISTRICT_2569, period }, NAMES, YEARS).methods?.map((m) => m.count);
+  const at = (period: ReportQuery["period"]) => followValues(HT, { ...DISTRICT_2569, period }, NAMES, YEARS).bpMethods?.map((m) => m.count);
   assert.deepEqual(at("q2"), [458, 280]);
   assert.deepEqual(at("q4"), [0, 1]);
 });
 
-test("s_ncd_screen_repleate1 has no r1/r2 → methods null: no วิธีวัด on its page", () => {
-  assert.equal(followValues(NCD, DISTRICT_2569, NAMES, YEARS).methods, null);
+test("s_ncd_screen_repleate1 has no r1/r2 → bpMethods null: no วิธีวัด on its page", () => {
+  assert.equal(followValues(NCD, DISTRICT_2569, NAMES, YEARS).bpMethods, null);
 });
 
 test("s_ht_screen_follow ?year=2567, a year without a block ปี (#258) → nothing to show, never zeros; แนวโน้ม has no point for 2567", () => {
   const ht = followValues(HT, { ...DISTRICT_2569, year: "2567" }, NAMES, YEARS);
-  assert.deepEqual([ht.block, ht.total, ht.units, ht.passed, ht.quarters, ht.methods], [null, null, null, null, [], null]);
+  assert.deepEqual([ht.block, ht.total, ht.units, ht.passed, ht.quarters, ht.bpMethods], [null, null, null, null, [], null]);
   assert.deepEqual(
     ht.trend.map((p) => [p.b_year, p.totals?.pct?.toFixed(2) ?? null]),
     [["2565", "89.69"], ["2566", "90.76"], ["2567", null], ["2568", "87.53"], ["2569", "98.93"]],

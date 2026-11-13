@@ -9,8 +9,12 @@ import { childdevValues } from "./childdev";
 // no type in types.ts (SPEC §2.7): the view takes it as
 // ReturnType<typeof followValues>.
 
-/** The วิธีวัด of s_ht_screen_follow and their ทั้งปี columns, ไตรมาส k being {column}_q{k} (SCHEMA §4.6.10) */
-const METHODS = [
+/**
+ * The วิธีวัด of s_ht_screen_follow and their ทั้งปี columns, ไตรมาส k being
+ * {column}_q{k} (SCHEMA §4.6.10): HBPM at home and OBPM at the หน่วยบริการ,
+ * as their _13 columns r_home_bp_13 and r_hosp_bp_13 are named
+ */
+const BP_METHODS = [
   { label: "HBPM", column: "r1" },
   { label: "OBPM", column: "r2" },
 ] as const;
@@ -23,7 +27,7 @@ const METHODS = [
 export function followValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
   const values = childdevValues(data, query, names, years);
   const { block, total, query: shown } = values;
-  const column = (name: string) => (shown.period === "year" ? name : `${name}_${shown.period}`);
+  const ofPeriod = (column: string) => (shown.period === "year" ? column : `${column}_${shown.period}`);
   return {
     ...values,
     /**
@@ -33,9 +37,9 @@ export function followValues(data: DcReportData, query: ReportQuery, names: Pick
      * null; with a total the district has data that year, so an empty column
      * is 0, not "—".
      */
-    methods:
+    bpMethods:
       block && total && block.headers.includes("r1")
-        ? METHODS.map(({ label, column: name }) => ({ label, count: count(block, column(name), "all") ?? 0 }))
+        ? BP_METHODS.map(({ label, column }) => ({ label, count: count(block, ofPeriod(column), "all") ?? 0 }))
         : null,
   };
 }

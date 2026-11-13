@@ -166,12 +166,12 @@ export function CountPanel({ unitLabel, units }: { unitLabel: string; units: Uni
  * ช่วงเวลา, not a ร้อยละ: one person may have both, so they may add up to
  * more than ผลงาน (result), which the note says
  */
-export function MethodsPanel(props: { year: string; period: Period; result: number; methods: { label: string; count: number }[] }) {
-  const { year, period, result, methods } = props;
+export function BpMethodsPanel(props: { year: string; period: Period; result: number; bpMethods: { label: string; count: number }[] }) {
+  const { year, period, result, bpMethods } = props;
   return (
     <Surface title={`จำนวนตามวิธีวัดความดัน ${PERIOD_LABELS[period].short} ปีงบประมาณ ${year}`}>
       <dl className="grid grid-cols-2 gap-3">
-        {methods.map((m) => (
+        {bpMethods.map((m) => (
           <div key={m.label} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
             <dt className="text-xs text-dc-text-secondary">{m.label}</dt>
             <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">

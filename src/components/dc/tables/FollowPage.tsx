@@ -2,7 +2,7 @@
 
 import { followValues } from "@/lib/dc/tables/follow";
 import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
-import { MethodsPanel } from "../report/panels";
+import { BpMethodsPanel } from "../report/panels";
 import QuarterFigures from "../report/QuarterFigures";
 import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
@@ -34,7 +34,7 @@ export default function FollowPage({ id, names, years }: { id: string; names: Na
 
 function Follow({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query: asked, search, apply, heading } = useReportQuery(data, names);
-  const { query, block, total, goal, units, trend, quarters, methods } = followValues(data, asked, names, years);
+  const { query, block, total, goal, units, trend, quarters, bpMethods } = followValues(data, asked, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
@@ -51,7 +51,7 @@ function Follow({ data, names, years }: { data: DcReportData; names: Names; year
       </ResultsHeader>
       {block ? (
         <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={quarters} year={query.year}>
-          {total && methods && <MethodsPanel year={query.year} period={query.period} result={total.result} methods={methods} />}
+          {total && bpMethods && <BpMethodsPanel year={query.year} period={query.period} result={total.result} bpMethods={bpMethods} />}
         </QuarterFigures>
       ) : (
         <NoYear year={query.year} />
