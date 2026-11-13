@@ -13,8 +13,9 @@ const KB = 1024;
 // The pages §9.6 budgets, by the gzip (zlib's default level) of the scripts
 // their HTML loads. Leaflet loads later through a dynamic import, so it is in
 // no <script> or preload of the HTML and does not count.
-// /reports/population (Track K) has no next/dynamic table page: all its
-// scripts count.
+// /reports/population (Track K) loads its เปรียบเทียบ and age sections with
+// next/dynamic once its data is in (F70): its HTML neither runs nor preloads
+// their chunks, so every script the HTML loads counts.
 const POPULATION_PAGE = "/reports/population";
 const JS_BUDGET = { "/": 150 * KB, "/reports": 150 * KB, [POPULATION_PAGE]: 150 * KB };
 // Each /reports/{id} (SPEC §9.6, since F52), without the chunks of the table

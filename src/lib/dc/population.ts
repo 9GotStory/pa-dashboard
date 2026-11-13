@@ -1,7 +1,6 @@
 import { formatCount } from "./format";
-import { populationTotals, registryYear } from "./population-totals";
+import { ageProfile, populationTotals, registryYear, UNSPLIT_GROUPS } from "./population-totals";
 import type {
-  AgeProfile,
   AreaVillages,
   DcCatalog,
   HomePopulation,
@@ -93,31 +92,6 @@ function tambonVillages(rows: RegistryPopulationVillageRow[]): AreaVillages {
   });
   list.sort((a, b) => (a.moo ?? Infinity) - (b.moo ?? Infinity));
   return { count: list.filter((v) => v.moo !== null).length, list };
-}
-
-// The ช่วงอายุ of the pyramid (SCHEMA §11.3): 5 years each from 0–4 to
-// 75–79, then 80+, which takes the ages 80 to 101 and so the over-100s.
-const BAND_LABELS = [...Array.from({ length: 16 }, (_, k) => `${k * 5}–${k * 5 + 4}`), "80+"];
-
-/** The age structure of an area from its age rows (SCHEMA §11.3), every สำนักทะเบียน added up */
-function ageProfile(rows: RegistryPopulationAgeRow[]): AgeProfile {
-  const bands = BAND_LABELS.map((label) => ({ label, male: 0, female: 0 }));
-  let aged60 = 0;
-  for (const row of rows) {
-    for (let age = 0; age <= 101; age++) {
-      const band = bands[Math.min(Math.floor(age / 5), bands.length - 1)];
-      band.male += row[`m${age}`];
-      band.female += row[`f${age}`];
-      if (age >= 60) aged60 += row[`m${age}`] + row[`f${age}`];
-    }
-  }
-  const age_total = bands.reduce((sum, b) => sum + b.male + b.female, 0);
-  // The ประชากรที่ไม่แยกอายุ by the file's own columns, which stat.bora's
-  // formula (SCHEMA §11.1) makes add up to the total less age_total.
-  const unsplit = Object.fromEntries(
-    UNSPLIT_GROUPS.map((group) => [group, rows.reduce((sum, r) => sum + r[`${group}_t`], 0)]),
-  ) as Record<UnsplitGroup, number>;
-  return { bands, age_total, aged60, aged60_pct: (aged60 / age_total) * 100, unsplit };
 }
 
 // stat_m{yy}.txt, also as a browser names a second download: stat_m68 (1).txt
@@ -329,7 +303,6 @@ function readStatM(name: string, text: string, districtCode: string): CheckedSta
 // age 0 … 101 (101 = over 100), then each group of the ประชากรที่ไม่แยกอายุ
 // and the total, each as ชาย หญิง รวม.
 type AgeCount = Exclude<keyof RegistryPopulationAgeRow, "yymm" | "rcode" | "tt" | "tt_name">;
-const UNSPLIT_GROUPS: UnsplitGroup[] = ["lunar", "central", "nonthai", "moving"];
 const UNSPLIT_AND_TOTAL: (UnsplitGroup | "total")[] = [...UNSPLIT_GROUPS, "total"];
 const AGE_COUNTS: AgeCount[] = [
   ...Array.from({ length: 102 }, (_, age): AgeCount[] => [`m${age}`, `f${age}`]).flat(),

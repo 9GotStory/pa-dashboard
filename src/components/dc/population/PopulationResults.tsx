@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useState } from "react";
 import { formatCount, formatPct } from "@/lib/dc/format";
 import { populationCsv } from "@/lib/dc/population-csv";
@@ -20,16 +21,29 @@ import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
 import { useUrlQuery } from "../report/useUrlQuery";
 import { changeText } from "./labels";
-import PopulationUnits from "./PopulationUnits";
 
 type Areas = DcCatalog["areas"];
+
+// The เปรียบเทียบ and the age sections, below the fold, each in a chunk of
+// its own loaded once the data is in, so the JavaScript the page's HTML
+// loads keeps within SPEC §9.6 (FEATURES F70). Here in a Client Component,
+// since a Server Component's dynamic import of a Client Component is not code
+// split (ADR-0015).
+const PopulationUnits = dynamic(() => import("./PopulationUnits"), {
+  loading: () => <ReportStatus>กำลังโหลดส่วนเปรียบเทียบ…</ReportStatus>,
+});
+const PopulationAge = dynamic(() => import("./PopulationAge"), {
+  loading: () => <ReportStatus>กำลังโหลดโครงสร้างอายุ…</ReportStatus>,
+});
 
 /**
  * ผลรายงาน of รายงานประชากร (SPEC §9.4.1): reports/population.json loaded
  * in the browser, the ปีข้อมูล and พื้นที่ form, then the area's ตัวเลขสรุป,
  * แนวโน้มรายปี and เปรียบเทียบ of its ตำบล or หมู่บ้าน, all from
- * populationReport (SCHEMA §11.5), with the CSV of the เปรียบเทียบ table. A
- * หมู่บ้าน has no เปรียบเทียบ, and no age structure, which says why.
+ * populationReport (SCHEMA §11.5), then the โครงสร้างอายุ and the
+ * ประชากรที่ไม่แยกอายุ (PopulationAge), with the CSV of the เปรียบเทียบ and
+ * ช่วงอายุ tables. A หมู่บ้าน has no เปรียบเทียบ, and no age structure, which
+ * says why.
  */
 export default function PopulationResults({ areas, districtCode }: { areas: Areas; districtCode: string }) {
   return (
@@ -74,6 +88,7 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
           <Summary year={query.year} shown={shown} change={change} share={share} level={report.level} />
           <Trend report={report} />
           {units && <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />}
+          {report.age && <PopulationAge report={report} age={report.age} />}
           {report.level === "village" && (
             <section aria-labelledby="population-age">
               <h2 id="population-age" className="mb-2 font-prompt text-base font-semibold text-dc-brand-deep">

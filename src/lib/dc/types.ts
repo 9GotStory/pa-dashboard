@@ -325,6 +325,16 @@ export interface PopulationUnit {
   change: PopulationChange | null; // from the unit's first year with rows to the year picked · null when the year picked has no rows or is the unit's first
 }
 
+/** The age section of รายงานประชากร for the อำเภอ or a ตำบล (SCHEMA §11.5) */
+export interface PopulationAgeReport {
+  shown: AgeProfile | null; // the year picked (SCHEMA §11.3) · null = that year has no age rows
+  first: { year: string; bands: AgeBand[] } | null; // the pyramid's outline: the first ปีข้อมูล with age rows · null when it is the year picked, or no year has age rows
+  aged60: { year: string; pct: number | null }[]; // ร้อยละ aged 60 and over in every ปีข้อมูล, not rounded · null = no age rows that year
+  bands: { label: string; totals: (number | null)[] }[]; // 17 ช่วงอายุ × ปีข้อมูล, ชาย and หญิง together · null = no age rows that year
+  sex_ratio: number | null; // ชาย per 100 หญิง in the year picked, not rounded · null when shown is
+  stages: { child: number; working: number; aged: number } | null; // ร้อยละ of วัยเด็ก 0–14, วัยทำงาน 15–59 and วัยสูงอายุ 60 and over in the year picked, not rounded (GLOSSARY "วัย")
+}
+
 /** How the เปรียบเทียบ section orders its units (SCHEMA §11.5): by code, by people in the year picked, or by change.pct */
 export type PopulationSort = "code" | "count" | "change";
 
@@ -342,4 +352,5 @@ export interface PopulationReport {
   trend: PopulationPoint[]; // every ปีข้อมูล
   units: PopulationUnit[] | null; // the เปรียบเทียบ section, by code (ไม่ระบุหมู่ last) · null for a หมู่บ้าน
   partial: boolean; // a unit has no rows in some year (a note under the table)
+  age: PopulationAgeReport | null; // null for a หมู่บ้าน
 }

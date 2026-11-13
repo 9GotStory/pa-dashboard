@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { POPULATION_REPORT_DATA_AGE } from "./fixtures/population-age-20261113";
 import { AREAS, POPULATION_REPORT_DATA } from "./fixtures/population-report-20261113";
 import { formatPct } from "./format";
 import { populationCsv } from "./population-csv";
@@ -343,7 +344,8 @@ test("CSV of รายงานประชากร, the whole อำเภอ 
   ]);
   // A change below 0 starts with -, so it is kept as text (R6's rule)
   assert.equal(lines[7], '"บ้านหนุน","7877","7765","7624","7495","7399","\'-478","\'-6.07"');
-  assert.equal(lines.length, 15);
+  // 8 ตำบล, then a blank line before the ช่วงอายุ table
+  assert.equal(lines[15], "");
 });
 
 test('CSV of บ้านกลาง → หมู่บ้าน × ปีข้อมูล in the order shown, ไม่ระบุหมู่ last, and "—" for a year without rows', () => {
@@ -352,13 +354,15 @@ test('CSV of บ้านกลาง → หมู่บ้าน × ปีข�
 
   assert.equal(lines[2], '"พื้นที่","ตำบลบ้านกลาง"');
   assert.equal(lines[6].split(",")[0], '"หมู่บ้าน"');
-  assert.equal(lines.at(-1), '"ไม่ระบุหมู่","16","14","15","16","14","\'-2","\'-12.50"');
+  // The last หมู่บ้าน row, before the blank line of the ช่วงอายุ table
+  const lastUnit = (csvLines: string[]) => csvLines[csvLines.lastIndexOf("") - 1];
+  assert.equal(lastUnit(lines), '"ไม่ระบุหมู่","16","14","15","16","14","\'-2","\'-12.50"');
 
   const cut = {
     years: POPULATION_REPORT_DATA.years.map((y) => ({ ...y, village: y.yymm === "6612" ? [] : y.village })),
   };
   const partial = populationReport(cut, { year: "2568", area: "540602" }, AREAS);
-  assert.equal(populationCsv(partial, partial.units, "5406").text.split("\r\n").at(-1)?.split(",")[3], '"—"');
+  assert.equal(lastUnit(populationCsv(partial, partial.units, "5406").text.split("\r\n")).split(",")[3], '"—"');
 });
 
 test("CSV file name of รายงานประชากร → SHDC-population-{ปีข้อมูล}-{area code}.csv, the district_code for the whole อำเภอ", () => {
@@ -388,4 +392,152 @@ test('CSV of หมู่ 4 ศรีมูลเรือง cut out of 2566 �
   const report = populationReport(without("54060104", ["6612"]), { year: "2568", area: "54060104" }, AREAS);
 
   assert.equal(populationCsv(report, null, "5406").text.split("\r\n")[9], '"2566","—","—","—","—"');
+});
+
+// FEATURES F70: the age section (SCHEMA §11.5) on the age rows of 2564–2568
+// of the same snapshot. Expected values are copied from SCHEMA §11.6, which
+// adds up the age files' columns themselves.
+
+test("2568, the whole อำเภอ → 13,487 aged 60 and over, ร้อยละ 29.09 of the 46,362 split by age", () => {
+  const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "all" }, AREAS);
+
+  assert.ok(age?.shown);
+  assert.equal(age.shown.aged60, 13487);
+  assert.equal(age.shown.age_total, 46362);
+  assert.equal(formatPct(age.shown.aged60_pct), "29.09");
+});
+
+test("ร้อยละ aged 60 and over of the whole อำเภอ, 2564–2568 → 24.31 · 25.44 · 26.56 · 27.92 · 29.09, each of those split by age that year", () => {
+  const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "all" }, AREAS);
+
+  assert.deepEqual(
+    age?.aged60.map((p) => [p.year, p.pct === null ? null : formatPct(p.pct)]),
+    [
+      ["2564", "24.31"],
+      ["2565", "25.44"],
+      ["2566", "26.56"],
+      ["2567", "27.92"],
+      ["2568", "29.09"],
+    ],
+  );
+});
+
+test("อัตราส่วนเพศ of the whole อำเภอ, 2564–2568 → 93.79 · 93.60 · 93.59 · 93.43 · 93.18 ชาย per 100 หญิง split by age, not 93.44 of the population rows", () => {
+  const ratios = ["2564", "2565", "2566", "2567", "2568"].map((year) => {
+    const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year, area: "all" }, AREAS);
+    return age?.sex_ratio == null ? null : formatPct(age.sex_ratio);
+  });
+
+  assert.deepEqual(ratios, ["93.79", "93.60", "93.59", "93.43", "93.18"]);
+});
+
+test("วัย of the whole อำเภอ → 2568: วัยเด็ก 11.06 · วัยทำงาน 59.85 · วัยสูงอายุ 29.09; 2564: 12.28 · 63.41 · 24.31", () => {
+  const stages = (year: string) => {
+    const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year, area: "all" }, AREAS);
+    assert.ok(age?.stages);
+    return [age.stages.child, age.stages.working, age.stages.aged].map(formatPct);
+  };
+
+  assert.deepEqual(stages("2568"), ["11.06", "59.85", "29.09"]);
+  assert.deepEqual(stages("2564"), ["12.28", "63.41", "24.31"]);
+});
+
+test("ช่วงอายุ × ปีข้อมูล of the whole อำเภอ → 17 ช่วงอายุ, 0–4: 1,679 in 2564 and 1,328 in 2568; 80+: 1,171 and 1,298", () => {
+  const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "all" }, AREAS);
+
+  assert.equal(age?.bands.length, 17);
+  const band = (label: string) => age?.bands.find((b) => b.label === label)?.totals;
+  assert.deepEqual([band("0–4")?.[0], band("0–4")?.[4]], [1679, 1328]);
+  assert.deepEqual([band("80+")?.[0], band("80+")?.[4]], [1171, 1298]);
+});
+
+test("2568 → the pyramid's outline is 2564, the first ปีข้อมูล with age rows, its 0–4 ชาย + หญิง 1,679; 2564 itself has none", () => {
+  const in2568 = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "all" }, AREAS).age;
+  const in2564 = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2564", area: "all" }, AREAS).age;
+
+  assert.equal(in2568?.first?.year, "2564");
+  const youngest = in2568?.first?.bands[0];
+  assert.deepEqual([youngest?.label, (youngest?.male ?? 0) + (youngest?.female ?? 0)], ["0–4", 1679]);
+  assert.equal(in2564?.first, null);
+});
+
+test("2568, the whole อำเภอ → 165 ประชากรที่ไม่แยกอายุ: ไม่ใช่สัญชาติไทย 81 · ทะเบียนบ้านกลาง 75 · ระหว่างการย้าย 9 · เกิดปีจันทรคติ 0", () => {
+  const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "all" }, AREAS);
+
+  assert.deepEqual(age?.shown?.unsplit, { nonthai: 81, central: 75, moving: 9, lunar: 0 });
+});
+
+test("บ้านหนุน in 2568 → its age rows of both สำนักทะเบียน: those split by age and the ประชากรที่ไม่แยกอายุ add up to its 7,399 people", () => {
+  const { age } = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "540601" }, AREAS);
+
+  assert.ok(age?.shown);
+  const unsplit = Object.values(age.shown.unsplit).reduce((a, b) => a + b, 0);
+  assert.equal(age.shown.age_total + unsplit, 7399);
+});
+
+test("หมู่ 4 ศรีมูลเรือง → no age section: the age file is by ตำบล only", () => {
+  const report = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "54060104" }, AREAS);
+
+  assert.equal(report.age, null);
+});
+
+/** The data with the age rows of those yymm cut out, as a year uploaded without its age file */
+const withoutAge = (...yymm: string[]) => ({
+  years: POPULATION_REPORT_DATA_AGE.years.map((y) => (yymm.includes(y.yymm) ? { ...y, age: [] } : y)),
+});
+
+test('age rows of 2566 cut out → 2566 is null ("—") in the ร้อยละ aged 60 and over and in every ช่วงอายุ, never 0', () => {
+  const { age } = populationReport(withoutAge("6612"), { year: "2568", area: "all" }, AREAS);
+
+  assert.equal(age?.aged60[2].pct, null);
+  assert.ok(age?.bands.every((b) => b.totals[2] === null));
+  assert.equal(age?.aged60[4].pct === null ? null : formatPct(age.aged60[4].pct), "29.09");
+});
+
+test("age rows of 2566 cut out, 2566 picked → no pyramid, อัตราส่วนเพศ, วัย or ประชากรที่ไม่แยกอายุ (the page says ไม่มีข้อมูลอายุของปีนี้), though its totals stay", () => {
+  const report = populationReport(withoutAge("6612"), { year: "2566", area: "all" }, AREAS);
+
+  assert.equal(report.shown?.total, 47636);
+  assert.ok(report.age);
+  assert.equal(report.age.shown, null);
+  assert.equal(report.age.sex_ratio, null);
+  assert.equal(report.age.stages, null);
+});
+
+test("age rows of 2564 cut out → the pyramid's outline is 2565, the next year with age rows", () => {
+  const { age } = populationReport(withoutAge("6412"), { year: "2568", area: "all" }, AREAS);
+
+  assert.equal(age?.first?.year, "2565");
+});
+
+test("no year with age rows → no outline and every ช่วงอายุ null in every year, still 17 of them", () => {
+  const { age } = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "all" }, AREAS);
+
+  assert.equal(age?.first, null);
+  assert.equal(age?.bands.length, 17);
+  assert.ok(age?.bands.every((b) => b.totals.every((t) => t === null)));
+  assert.ok(age?.aged60.every((p) => p.pct === null));
+});
+
+test("CSV of the whole อำเภอ in 2568 → after the ตำบล table, a blank line and ช่วงอายุ × ปีข้อมูล, 0–4 ปี to 80 ปีขึ้นไป", () => {
+  const report = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "all" }, AREAS);
+  const lines = populationCsv(report, report.units, "5406").text.split("\r\n");
+
+  assert.deepEqual(lines.slice(15, 17), ["", '"ช่วงอายุ","2564","2565","2566","2567","2568"']);
+  assert.match(lines[17], /^"0–4 ปี","1679",.*,"1328"$/);
+  assert.match(lines.at(-1)!, /^"80 ปีขึ้นไป","1171",.*,"1298"$/);
+  assert.equal(lines.length, 34);
+});
+
+test('CSV of the whole อำเภอ, age rows of 2566 cut out → "—" in the 2566 column of every ช่วงอายุ', () => {
+  const report = populationReport(withoutAge("6612"), { year: "2568", area: "all" }, AREAS);
+  const lines = populationCsv(report, report.units, "5406").text.split("\r\n");
+
+  assert.ok(lines.slice(17).every((l) => l.split(",")[3] === '"—"'));
+});
+
+test("CSV of หมู่ 4 ศรีมูลเรือง → no ช่วงอายุ table: a หมู่บ้าน has no age", () => {
+  const report = populationReport(POPULATION_REPORT_DATA_AGE, { year: "2568", area: "54060104" }, AREAS);
+
+  assert.equal(populationCsv(report, null, "5406").text.split("\r\n").length, 12);
 });

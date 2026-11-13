@@ -10,6 +10,11 @@ export function formatPct(val: number): string {
   return val.toFixed(2);
 }
 
+/** A ช่วงอายุ as a sentence says it: "0–4 ปี", "80 ปีขึ้นไป" (GLOSSARY) */
+export function bandName(label: string): string {
+  return label === "80+" ? "80 ปีขึ้นไป" : `${label} ปี`;
+}
+
 const counts = new Intl.NumberFormat("th-TH");
 
 /** A เป้าหมาย or ผลงาน with Thai digit grouping: 1234567 → "1,234,567" */

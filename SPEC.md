@@ -594,7 +594,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | JavaScript ของหน้าแรกและรายงานสุขภาพ (gzip) | < 150 KB (1 KB = 1024 ไบต์) ไม่รวม Leaflet ซึ่งโหลดทีหลังแบบ dynamic import เฉพาะหน้าแรก · `npm run dc:budget` ตรวจใน CI |
 | JavaScript ของ `/reports/{id}` (gzip) ตั้งแต่ F52 | < 150 KB ที่ HTML โหลด ไม่รวม chunk ของหน้าตารางที่ `next/dynamic` โหลดทีหลัง · แต่ละรายงานโหลด chunk ของหน้าตารางตัวเองเท่านั้น · `npm run dc:budget` ตรวจงบ และด่านที่ F52 เพิ่ม (`dc:budget` หรือ `dc:check`) ตรวจ chunk |
 | `/reports/{id}` LCP บนมือถือ 4G (Lighthouse mobile) | < 2.5 วินาที (Track J) |
-| JavaScript ของ `/reports/population` (gzip, Track K) | < 150 KB · `npm run dc:budget` ตรวจ |
+| JavaScript ของ `/reports/population` (gzip, Track K) | < 150 KB ที่ HTML โหลด ไม่รวม chunk ของส่วนเปรียบเทียบหน่วยย่อยและส่วนโครงสร้างอายุที่ `next/dynamic` โหลดหลังได้ข้อมูล (ตั้งแต่ F70) · `npm run dc:budget` ตรวจ |
 | `/reports/population` LCP บนมือถือ 4G (Lighthouse mobile) | < 2.5 วินาที (Track K) |
 | `catalog.json` | < 100 KB |
 | `reports/{id}.json` และ `reports/population.json` | < 500 KB ก่อน gzip |
