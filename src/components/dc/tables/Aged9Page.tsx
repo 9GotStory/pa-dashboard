@@ -68,7 +68,7 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
         <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
       ) : (
         <>
-          <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} quarters={[]} year={query.year} />
+          <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={[]} year={query.year} />
           <div className="px-4 pb-6 sm:px-6">
             <Domains domains={domains} open={query.domain} headingRef={overviewHeading} buttonProps={buttonProps} />
             <Detail

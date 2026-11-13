@@ -12,6 +12,7 @@ export const TABLE_PAGES = {
   s_epi3: "epi",
   s_epi5: "epi",
   s_aged9: "aged9",
+  s_epi_complete: "complete",
   s_dm_screen: "screen",
   s_ht_screen: "screen",
 } as const;

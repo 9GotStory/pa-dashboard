@@ -53,7 +53,7 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
       ) : units?.length === 0 ? (
         <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
       ) : (
-        <QuarterFigures {...{ total, goal, units, trend, quarters, unitLabel, totalLabel }} year={query.year} />
+        <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={quarters} year={query.year} />
       )}
     </>
   );

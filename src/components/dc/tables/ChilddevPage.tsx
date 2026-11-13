@@ -47,7 +47,7 @@ function Childdev({ data, names, years }: { data: DcReportData; names: Names; ye
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {block ? <QuarterFigures {...{ total, goal, units, trend, quarters, unitLabel, totalLabel }} year={query.year} /> : <NoYear year={query.year} />}
+      {block ? <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={quarters} year={query.year} /> : <NoYear year={query.year} />}
     </>
   );
 }
