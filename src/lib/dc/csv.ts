@@ -1,8 +1,10 @@
-import { formatThaiDate } from "./format";
-import type { Cell, DcReport } from "./types";
+import { formatPct, formatThaiDate } from "./format";
+import { POPULATION_REPORT, populationArea } from "./population-report";
+import { yearAsOf } from "./population-totals";
+import type { Cell, DcReport, PopulationReport, PopulationUnit } from "./types";
 
-// The CSV download of the report pages (SPEC §9.4), apart from format.ts,
-// which the home page loads too.
+// The CSV download of the report pages (SPEC §9.4, §9.4.1), apart from
+// format.ts, which the home page loads too.
 
 /**
  * Rows as CSV text: a UTF-8 BOM so Excel reads Thai, CRLF line ends, every
@@ -17,6 +19,8 @@ function toCsv(rows: Cell[][]): string {
   };
   return "\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n");
 }
+
+const SITE = "Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่";
 
 /**
  * The CSV download of a report page (SPEC §9.4): the header lines (the site,
@@ -40,12 +44,47 @@ export function reportCsv(csv: {
   return {
     name: `SHDC-${report.source_table}-${report.opendata_id.slice(0, 8)}-${year}${part ? `-${part}` : ""}.csv`,
     text: toCsv([
-      ["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"],
+      [SITE],
       ["รายงาน", `${report.report_name} (${report.opendata_id})`],
       ["ตัวกรอง", filters],
       ["แหล่งข้อมูล", `HDC Open Data ตาราง ${report.source_table} · วันที่ข้อมูล ${formatThaiDate(dateCom)}`],
       [],
       ...table,
+    ]),
+  };
+}
+
+/**
+ * The CSV download of รายงานประชากร (SPEC §9.4.1): the header lines (the
+ * site, the report, the area, the ปีข้อมูล, the source) and a blank line
+ * before the เปรียบเทียบ table in the order shown, units × every ปีข้อมูล
+ * with the change from each unit's first year, "—" for a year without rows.
+ * Named SHDC-population-{ปีข้อมูล}-{area code}.csv, the district_code for
+ * the whole อำเภอ.
+ */
+export function populationCsv(
+  report: PopulationReport,
+  units: PopulationUnit[],
+  districtCode: string,
+): { name: string; text: string } {
+  const { years, query, level } = report;
+  const change = `เปลี่ยนแปลงจากปีแรกถึง ${query.year}`;
+  return {
+    name: `SHDC-population-${query.year}-${query.area === "all" ? districtCode : query.area}.csv`,
+    text: toCsv([
+      [SITE],
+      ["รายงาน", POPULATION_REPORT.report_name],
+      ["พื้นที่", populationArea(report)],
+      ["ปีข้อมูล", yearAsOf(query.year)],
+      ["แหล่งข้อมูล", "กรมการปกครอง stat.bora"],
+      [],
+      [level === "district" ? "ตำบล" : "หมู่บ้าน", ...years, `${change} (คน)`, `${change} (ร้อยละ)`],
+      ...units.map((u) => [
+        u.name,
+        ...u.totals.map((t) => t ?? "—"),
+        u.change?.count ?? "—",
+        u.change?.pct == null ? "—" : formatPct(u.change.pct),
+      ]),
     ]),
   };
 }

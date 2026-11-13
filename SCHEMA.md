@@ -1196,6 +1196,9 @@ export interface PopulationAgeReport {
   stages: { child: number; working: number; aged: number } | null;   // ร้อยละของวัยเด็ก 0–14 / วัยทำงาน 15–59 / วัยสูงอายุ 60 ปีขึ้นไปของปีที่เลือก ไม่ปัด (GLOSSARY "วัย")
 }
 
+/** การเรียงของส่วนเปรียบเทียบ (§11.5) ไม่อยู่ใน URL: ตามรหัส (ค่าเริ่มต้น) ตามประชากรรวมของปีที่เลือก หรือตาม change.pct */
+export type PopulationSort = "code" | "count" | "change";
+
 /** ทุกค่าที่หน้ารายงานประชากรใช้ คืนจากชั้นข้อมูลฟังก์ชันเดียว (SPEC §9.5) */
 export interface PopulationReport {
   years: string[];               // ปีข้อมูล 4 หลัก เรียงน้อยไปมาก · [] = ยังไม่มีข้อมูล

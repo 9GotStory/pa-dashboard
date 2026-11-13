@@ -4,6 +4,7 @@ import { ChartBar, MoveHorizontal, Table } from "lucide-react";
 import { useState } from "react";
 import { formatCount } from "@/lib/dc/format";
 import type { AreaPopulation, HomePopulation } from "@/lib/dc/types";
+import Segmented from "./Segmented";
 
 type View = "chart" | "table";
 type Sort = "code" | "population";
@@ -179,37 +180,5 @@ export default function PopulationComparison({
         </div>
       </div>
     </section>
-  );
-}
-
-// One compact segmented control (design.md §4): a button per option, the one on show pressed.
-function Segmented<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: [T, string, typeof ChartBar?][];
-  value: T;
-  onChange: (value: T) => void;
-}) {
-  return (
-    <div role="group" aria-label={label} className="flex rounded-md border border-dc-border-subtle bg-dc-surface p-0.5">
-      {options.map(([option, text, Icon]) => (
-        <button
-          key={option}
-          type="button"
-          aria-pressed={option === value}
-          onClick={() => onChange(option)}
-          className={`inline-flex min-h-10 items-center gap-1.5 rounded px-3 text-xs font-bold ${
-            option === value ? "bg-dc-brand-primary text-white" : "text-dc-brand-deep hover:bg-dc-canvas"
-          }`}
-        >
-          {Icon && <Icon aria-hidden="true" className="size-4" />}
-          {text}
-        </button>
-      ))}
-    </div>
   );
 }

@@ -6,7 +6,7 @@ import ReportHero from "@/components/dc/report/ReportHero";
 import ReportStatus from "@/components/dc/report/ReportStatus";
 import { POPULATION_REPORT } from "@/lib/dc/population-report";
 import { registryYear } from "@/lib/dc/population-totals";
-import { readPopulationReport } from "@/lib/dc/snapshot";
+import { readCatalog, readPopulationReport } from "@/lib/dc/snapshot";
 
 export const metadata: Metadata = { title: `${POPULATION_REPORT.report_name} | Song Health Data Center` };
 
@@ -17,6 +17,7 @@ export const metadata: Metadata = { title: `${POPULATION_REPORT.report_name} | S
 // so in place of the form and the results, and the build goes on.
 export default function PopulationReportPage() {
   const { years } = readPopulationReport();
+  const { areas, meta } = readCatalog();
   const { report_name, category_name, main_report_name, cat_id, main_report_id } = POPULATION_REPORT;
 
   return (
@@ -31,7 +32,11 @@ export default function PopulationReportPage() {
       <ReportHero topic={category_name} title={report_name} credit="ข้อมูลจากกรมการปกครอง" />
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0">
-        {years.length > 0 ? <PopulationResults /> : <ReportStatus>ยังไม่มีข้อมูลประชากร</ReportStatus>}
+        {years.length > 0 ? (
+          <PopulationResults areas={areas} districtCode={meta.district_code} />
+        ) : (
+          <ReportStatus>ยังไม่มีข้อมูลประชากร</ReportStatus>
+        )}
 
         <ReportAbout
           sourceRows={[
@@ -58,7 +63,8 @@ export default function PopulationReportPage() {
           method={
             <p>
               ยอดของตำบลและหมู่บ้านรวมทุกสำนักทะเบียน (อำเภอสองและเทศบาลตำบลสอง) · การเปลี่ยนแปลงจากปีก่อนเทียบกับปีข้อมูลก่อนหน้าหนึ่งปี
-              ร้อยละเป็นจำนวนที่เปลี่ยน ÷ ค่าของปีก่อน × 100 · ส่วนอายุใช้ผู้ที่แยกอายุได้เป็นตัวหาร
+              ร้อยละเป็นจำนวนที่เปลี่ยน ÷ ค่าของปีก่อน × 100 · ร้อยละของอำเภอเป็นจำนวนคนของตำบล ÷ ของทั้งอำเภอในปีเดียวกัน × 100 ·
+              ส่วนเปรียบเทียบนับการเปลี่ยนแปลงจากปีแรกที่ตำบลหรือหมู่บ้านนั้นมีข้อมูลถึงปีที่เลือก · ส่วนอายุใช้ผู้ที่แยกอายุได้เป็นตัวหาร
             </p>
           }
           limits={

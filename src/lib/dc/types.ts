@@ -301,6 +301,7 @@ export interface PopulationReportEntry {
 /** The query of /reports/population: accepted values and defaults (SPEC §9.4.1) */
 export interface PopulationQuery {
   year: string; // ปีข้อมูล, 4 digits, e.g. "2568" (yymm "6812") · default = the latest ("" without any year) · a year not in the snapshot is kept, so the page says ไม่มีข้อมูลปี … ในระบบ
+  area: "all" | string; // "all" or a 6-digit ตำบล code of areas · anything else gives "all"
 }
 
 /** The change of one value (SCHEMA §11.5) */
@@ -315,11 +316,29 @@ export interface PopulationPoint {
   totals: PopulationTotals | null; // null = the area has no rows that year, shown "—", never 0
 }
 
+/** One unit of the เปรียบเทียบ section (SCHEMA §11.5) */
+export interface PopulationUnit {
+  key: string; // a 6-digit ตำบล code or an 8-digit หมู่บ้าน code
+  name: string; // the ตำบล's name, or "หมู่ {หมู่ที่} {its name in the year picked}", or "ไม่ระบุหมู่"
+  unspecified: boolean; // ไม่ระบุหมู่: last in every order, no bar, not pickable
+  totals: (number | null)[]; // people, in the order of PopulationReport.years · null = no rows that year
+  change: PopulationChange | null; // from the unit's first year with rows to the year picked · null when the year picked has no rows or is the unit's first
+}
+
+/** How the เปรียบเทียบ section orders its units (SCHEMA §11.5): by code, by people in the year picked, or by change.pct */
+export type PopulationSort = "code" | "count" | "change";
+
 /** Every value the รายงานประชากร page shows, from the one data-layer function (SPEC §9.5) */
 export interface PopulationReport {
   years: string[]; // ปีข้อมูล, 4 digits, oldest first · [] = no data yet
   query: PopulationQuery; // with what is not accepted replaced
-  shown: PopulationTotals | null; // the year picked · null = that year is not in the snapshot
+  level: "district" | "tambon";
+  name: string; // "อำเภอสอง" or the ตำบล's name
+  parent: { key: string; name: string } | null; // the larger area: the อำเภอ of a ตำบล · null for the อำเภอ
+  shown: PopulationTotals | null; // the year picked · null = that year is not in the snapshot, or the area has no rows that year
   change: Record<keyof PopulationTotals, PopulationChange> | null; // from the year before (SCHEMA §11.5) · null when that year is not in the snapshot, or the year picked is not
+  share: number | null; // ร้อยละ of parent's people in the year picked, not rounded · null for the อำเภอ
   trend: PopulationPoint[]; // every ปีข้อมูล
+  units: PopulationUnit[]; // the เปรียบเทียบ section, by code (ไม่ระบุหมู่ last)
+  partial: boolean; // a unit has no rows in some year (a note under the table)
 }
