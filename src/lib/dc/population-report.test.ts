@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { AREAS, POPULATION_REPORT_DATA } from "./fixtures/population-report-20261113";
 import { formatPct } from "./format";
+import { populationCsv } from "./population-csv";
 import { populationReport, sortUnits } from "./population-report";
 import type { PopulationChange } from "./types";
 
@@ -250,4 +251,47 @@ test("บ้านหนุน's แนวโน้ม → 7,877 · 7,765 · 7,6
     [7877, 7765, 7624, 7495, 7399],
   );
   assert.equal(trend[0].totals?.house, 3378);
+});
+
+// รายงานประชากร's CSV (FEATURES F68, SPEC §9.4.1): the units × years table shown.
+const population = (area: string) => populationReport(POPULATION_REPORT_DATA, { year: "2568", area }, AREAS);
+
+test("CSV of รายงานประชากร, the whole อำเภอ in 2568 → the header lines of SPEC §9.4.1, a blank line, then ตำบล × ปีข้อมูล with the change from the first year", () => {
+  const report = population("all");
+  const lines = populationCsv(report, report.units, "5406").text.split("\r\n");
+
+  assert.deepEqual(lines.slice(0, 7), [
+    '\uFEFF"Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"',
+    '"รายงาน","ประชากรและบ้าน รายตำบลและรายหมู่บ้าน"',
+    '"พื้นที่","ทั้งอำเภอสอง"',
+    '"ปีข้อมูล","ณ 31 ธ.ค. 2568"',
+    '"แหล่งข้อมูล","กรมการปกครอง stat.bora"',
+    "",
+    '"ตำบล","2564","2565","2566","2567","2568","เปลี่ยนแปลงจากปีแรกถึง 2568 (คน)","เปลี่ยนแปลงจากปีแรกถึง 2568 (ร้อยละ)"',
+  ]);
+  // A change below 0 starts with -, so it is kept as text (R6's rule)
+  assert.equal(lines[7], '"บ้านหนุน","7877","7765","7624","7495","7399","\'-478","\'-6.07"');
+  assert.equal(lines.length, 15);
+});
+
+test('CSV of บ้านกลาง → หมู่บ้าน × ปีข้อมูล in the order shown, ไม่ระบุหมู่ last, and "—" for a year without rows', () => {
+  const report = population("540602");
+  const lines = populationCsv(report, sortUnits(report, "count"), "5406").text.split("\r\n");
+
+  assert.equal(lines[2], '"พื้นที่","ตำบลบ้านกลาง"');
+  assert.equal(lines[6].split(",")[0], '"หมู่บ้าน"');
+  assert.equal(lines.at(-1), '"ไม่ระบุหมู่","16","14","15","16","14","\'-2","\'-12.50"');
+
+  const cut = {
+    years: POPULATION_REPORT_DATA.years.map((y) => ({ ...y, village: y.yymm === "6612" ? [] : y.village })),
+  };
+  const partial = populationReport(cut, { year: "2568", area: "540602" }, AREAS);
+  assert.equal(populationCsv(partial, partial.units, "5406").text.split("\r\n").at(-1)?.split(",")[3], '"—"');
+});
+
+test("CSV file name of รายงานประชากร → SHDC-population-{ปีข้อมูล}-{area code}.csv, the district_code for the whole อำเภอ", () => {
+  const name = (area: string) => populationCsv(population(area), [], "5406").name;
+
+  assert.equal(name("all"), "SHDC-population-2568-5406.csv");
+  assert.equal(name("540601"), "SHDC-population-2568-540601.csv");
 });

@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { populationCsv } from "@/lib/dc/csv";
 import { formatCount, formatPct } from "@/lib/dc/format";
+import { populationCsv } from "@/lib/dc/population-csv";
 import { populationArea, populationReport, populationSearch, sortUnits } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
 import type {
@@ -19,7 +19,8 @@ import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
 import { useUrlQuery } from "../report/useUrlQuery";
-import PopulationUnits, { changeText } from "./PopulationUnits";
+import { changeText } from "./labels";
+import PopulationUnits from "./PopulationUnits";
 
 type Areas = DcCatalog["areas"];
 

@@ -1,19 +1,10 @@
 import { MoveHorizontal } from "lucide-react";
-import { formatCount, formatPct } from "@/lib/dc/format";
-import { populationArea } from "@/lib/dc/population-report";
+import { formatCount } from "@/lib/dc/format";
+import { populationArea, populationUnitLabel } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
-import type { PopulationChange, PopulationReport, PopulationSort, PopulationUnit } from "@/lib/dc/types";
+import type { PopulationReport, PopulationSort, PopulationUnit } from "@/lib/dc/types";
 import Segmented from "../Segmented";
-
-/**
- * A change as shown (SPEC §9.4.1): signed + or −, never color alone, with
- * its unit when there is one, and "—" for a ร้อยละ from 0
- */
-export function changeText({ count, pct }: PopulationChange, unit?: string): string {
-  const sign = (v: number) => (v > 0 ? "+" : v < 0 ? "−" : "");
-  const pctPart = pct === null ? "—" : `${sign(pct)}${formatPct(Math.abs(pct))}%`;
-  return `${sign(count)}${formatCount(Math.abs(count))}${unit ? ` ${unit}` : ""} (${pctPart})`;
-}
+import { changeText } from "./labels";
 
 /**
  * The เปรียบเทียบ section of รายงานประชากร (SPEC §9.4.1): the ตำบล of the
@@ -30,7 +21,7 @@ export default function PopulationUnits(props: {
 }) {
   const { report, units, sort, onSort } = props;
   const { years, query } = report;
-  const unitLabel = report.level === "district" ? "ตำบล" : "หมู่บ้าน";
+  const unitLabel = populationUnitLabel(report);
   const at = years.indexOf(query.year);
   const bars = units.filter((u) => !u.unspecified);
   const caption = `ประชากรราย${unitLabel}รายปี (คน) · ${populationArea(report)} · ปีข้อมูลที่เลือก ${yearAsOf(query.year)}`;

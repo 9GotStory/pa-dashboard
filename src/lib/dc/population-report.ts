@@ -56,10 +56,10 @@ export function populationReport(
   const years = data.years.map((y) => registryYear(y.yymm));
   const year = /^\d{4}$/.test(query.year) ? query.year : (years.at(-1) ?? "");
   const tambon = areas.find((a) => a.id === query.area);
-  const trend = data.years.map((y) => {
-    const rows = tambon ? tambonRows(y, tambon.id) : y.population;
-    return { year: registryYear(y.yymm), totals: rows.length > 0 ? populationTotals(rows) : null };
-  });
+  const trend = data.years.map((y) => ({
+    year: registryYear(y.yymm),
+    totals: tambon ? tambonTotals(y, tambon.id) : populationTotals(y.population),
+  }));
   const totalsIn = (y: string) => trend.find((p) => p.year === y)?.totals ?? null;
   const shown = totalsIn(year);
   // The year before is Y − 1 only, never an older one (SCHEMA §11.5)
@@ -68,10 +68,8 @@ export function populationReport(
     shown && before
       ? (Object.fromEntries(VALUES.map((v) => [v, changeOf(before[v], shown[v])])) as PopulationReport["change"])
       : null;
-  const districtShown = data.years.find((y) => registryYear(y.yymm) === year);
-  const share =
-    tambon && shown && districtShown ? (shown.total / populationTotals(districtShown.population).total) * 100 : null;
   const shownAt = years.indexOf(year);
+  const share = tambon && shown ? (shown.total / populationTotals(data.years[shownAt].population).total) * 100 : null;
   const units = tambon
     ? villageUnits(data, tambon.id, shownAt)
     : areas.map(({ id, name_th }) =>
@@ -79,10 +77,7 @@ export function populationReport(
           id,
           name_th,
           false,
-          data.years.map((y) => {
-            const rows = tambonRows(y, id);
-            return rows.length > 0 ? populationTotals(rows).total : null;
-          }),
+          data.years.map((y) => tambonTotals(y, id)?.total ?? null),
           shownAt,
         ),
       );
@@ -101,9 +96,13 @@ export function populationReport(
   };
 }
 
-/** A ตำบล's population rows of a year: the first 6 digits of tt, across every สำนักทะเบียน (SCHEMA §11.3) */
-function tambonRows(year: RegistryPopulationYear, tambon: string) {
-  return year.population.filter((r) => r.tt.slice(0, 6) === tambon);
+/**
+ * A ตำบล's totals in a year: its population rows, the first 6 digits of tt,
+ * across every สำนักทะเบียน (SCHEMA §11.3) · null without rows that year
+ */
+function tambonTotals(year: RegistryPopulationYear, tambon: string): PopulationTotals | null {
+  const rows = year.population.filter((r) => r.tt.slice(0, 6) === tambon);
+  return rows.length > 0 ? populationTotals(rows) : null;
 }
 
 /**
@@ -174,6 +173,11 @@ export function sortUnits(report: PopulationReport, sort: PopulationSort): Popul
 /** The area of a report as the results and the CSV name it: "ทั้งอำเภอสอง" or "ตำบลบ้านหนุน" */
 export function populationArea(report: PopulationReport): string {
   return report.level === "district" ? `ทั้ง${report.name}` : `ตำบล${report.name}`;
+}
+
+/** What the เปรียบเทียบ section compares: the ตำบล of the อำเภอ, or the หมู่บ้าน of a ตำบล */
+export function populationUnitLabel(report: PopulationReport): string {
+  return report.level === "district" ? "ตำบล" : "หมู่บ้าน";
 }
 
 /** The URL query of a PopulationQuery, which the page reads back: ?year=&area= (SPEC §9.4.1) */
