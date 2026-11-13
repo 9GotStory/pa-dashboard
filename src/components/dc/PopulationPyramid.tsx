@@ -3,7 +3,7 @@
 import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
-import type { AgeBand, AgeProfile, UnsplitGroup } from "@/lib/dc/types";
+import type { AgeProfile, PopulationAgeReport, UnsplitGroup } from "@/lib/dc/types";
 
 // The columns of a ช่วงอายุ row and of the header above the rows: ชาย bar,
 // ชาย figure, ช่วงอายุ, หญิง figure, หญิง bar. The figures keep their width
@@ -12,10 +12,10 @@ const ROW_GRID =
   "grid grid-cols-[minmax(0,1fr)_2.75rem_2.75rem_2.75rem_minmax(0,1fr)] items-center gap-1 sm:grid-cols-[minmax(0,1fr)_3.25rem_3.5rem_3.25rem_minmax(0,1fr)] sm:gap-2";
 
 // The name of each kind of ประชากรที่ไม่แยกอายุ, in the order SCHEMA §11.4
-// lists them, for รายงานประชากร too. Named again here, not taken from
-// population.ts, which holds the /sync file reader too and so stays out of
-// the page's JavaScript (SPEC §9.6).
-export const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
+// lists them. Named again here, not taken from population.ts, which holds
+// the /sync file reader too and so stays out of the page's JavaScript (SPEC
+// §9.6).
+const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
   nonthai: "ไม่ใช่สัญชาติไทย",
   central: "ทะเบียนบ้านกลาง",
   moving: "ระหว่างการย้าย",
@@ -29,8 +29,7 @@ export const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
  * people aged 60 and over, their ร้อยละ of those split by age, and the
  * ประชากรที่ไม่แยกอายุ the pyramid leaves out, by kind. Every figure but a
  * row's รวม and ร้อยละ comes as computed (AgeProfile). ล้างการเลือก calls
- * onClear. DistrictExplorer
- * renders it, holding the ตำบล picked.
+ * onClear. DistrictExplorer renders it, holding the ตำบล picked.
  */
 export default function PopulationPyramid({
   scope,
@@ -43,9 +42,6 @@ export default function PopulationPyramid({
   source: string;
   onClear: () => void;
 }) {
-  const unsplit = (Object.keys(UNSPLIT_NAMES) as UnsplitGroup[]).filter((group) => age.unsplit[group] > 0);
-  const unsplitTotal = Object.values(age.unsplit).reduce((sum, count) => sum + count, 0);
-
   return (
     <section aria-labelledby="pyramid-title" className="min-w-0">
       <h2 id="pyramid-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
@@ -84,13 +80,28 @@ export default function PopulationPyramid({
             <dd className="mt-2 text-xs text-dc-text-secondary">ของ {formatCount(age.age_total)} คนที่แยกอายุได้</dd>
           </dl>
           <p className="mt-4 border-t border-dc-border-subtle pt-3 text-xs text-dc-text-secondary">
-            ไม่รวมประชากรที่ไม่แยกอายุ {formatCount(unsplitTotal)} คน
-            {unsplit.length > 0 &&
-              ` (${unsplit.map((group) => `${UNSPLIT_NAMES[group]} ${formatCount(age.unsplit[group])}`).join(" · ")})`}
+            <UnsplitText unsplit={age.unsplit} />
           </p>
         </div>
       </div>
     </section>
+  );
+}
+
+/**
+ * The ประชากรที่ไม่แยกอายุ that the pyramid leaves out, as the home page and
+ * รายงานประชากร say them: "ไม่รวมประชากรที่ไม่แยกอายุ 165 คน (ไม่ใช่สัญชาติไทย 81
+ * · …)", each kind by name without a kind of 0
+ */
+export function UnsplitText({ unsplit }: { unsplit: Record<UnsplitGroup, number> }) {
+  const kinds = (Object.keys(UNSPLIT_NAMES) as UnsplitGroup[]).filter((group) => unsplit[group] > 0);
+  const total = Object.values(unsplit).reduce((sum, count) => sum + count, 0);
+  return (
+    <>
+      ไม่รวมประชากรที่ไม่แยกอายุ {formatCount(total)} คน
+      {kinds.length > 0 &&
+        ` (${kinds.map((group) => `${UNSPLIT_NAMES[group]} ${formatCount(unsplit[group])}`).join(" · ")})`}
+    </>
   );
 }
 
@@ -115,7 +126,7 @@ export function PyramidRows({
   scope: string;
   age: AgeProfile;
   source: string;
-  first?: { year: string; bands: AgeBand[] } | null;
+  first?: PopulationAgeReport["first"];
 }) {
   // The ช่วงอายุ shown, by label, so it stays when another ตำบล is picked.
   const [shown, setShown] = useState<string | null>(null);

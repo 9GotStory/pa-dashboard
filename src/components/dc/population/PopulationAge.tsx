@@ -2,10 +2,10 @@ import { MoveHorizontal } from "lucide-react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import { populationArea } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
-import type { PopulationAgeReport, PopulationReport, UnsplitGroup } from "@/lib/dc/types";
+import type { PopulationAgeReport, PopulationReport } from "@/lib/dc/types";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
-import { PyramidRows, UNSPLIT_NAMES } from "../PopulationPyramid";
+import { PyramidRows, UnsplitText } from "../PopulationPyramid";
 
 const NO_AGE = "ไม่มีข้อมูลอายุของปีนี้";
 
@@ -61,7 +61,14 @@ export default function PopulationAge({ report, age }: { report: PopulationRepor
           ประชากรที่ไม่แยกอายุ
         </h2>
         {shown ? (
-          <Unsplit unsplit={shown.unsplit} year={year} />
+          <div className="rounded-[9px] border border-dc-border-subtle bg-white px-4 py-3">
+            <p className="text-sm text-dc-brand-deep tabular-nums">
+              ปี {year} <UnsplitText unsplit={shown.unsplit} />
+            </p>
+            <p className="mt-1 text-xs text-dc-text-secondary">
+              ไฟล์อายุของกรมการปกครองไม่ได้นับคนกลุ่มนี้ไว้ในจำนวนรายปีอายุ จึงไม่อยู่ในส่วนโครงสร้างอายุข้างบน
+            </p>
+          </div>
         ) : (
           <p className="text-sm text-dc-text-secondary">{NO_AGE}</p>
         )}
@@ -187,33 +194,6 @@ function BandTable({ report, age, area }: { report: PopulationReport; age: Popul
       </p>
       {age.bands[0].totals.includes(null) && (
         <p className="mt-2 text-xs text-dc-text-secondary">&quot;—&quot; คือปีที่ไม่มีข้อมูลอายุ</p>
-      )}
-    </div>
-  );
-}
-
-/** The ประชากรที่ไม่แยกอายุ of the year picked by kind, without a kind of 0, and their total */
-function Unsplit({ unsplit, year }: { unsplit: Record<UnsplitGroup, number>; year: string }) {
-  const groups = (Object.keys(UNSPLIT_NAMES) as UnsplitGroup[]).filter((group) => unsplit[group] > 0);
-  const total = Object.values(unsplit).reduce((sum, count) => sum + count, 0);
-  return (
-    <div className="rounded-[9px] border border-dc-border-subtle bg-white px-4 py-3">
-      <p className="text-sm text-dc-brand-deep">
-        ปี {year} รวม <strong className="font-semibold tabular-nums">{formatCount(total)}</strong> คน
-        ที่ไฟล์อายุของกรมการปกครองไม่ได้นับไว้ในจำนวนรายปีอายุ จึงไม่อยู่ในส่วนโครงสร้างอายุ
-      </p>
-      {groups.length > 0 && (
-        <dl className="mt-2 grid gap-x-6 gap-y-1 sm:grid-cols-3">
-          {groups.map((group) => (
-            <div
-              key={group}
-              className="flex items-baseline justify-between gap-2 border-t border-dc-border-subtle py-1.5 text-xs"
-            >
-              <dt className="text-dc-text-secondary">{UNSPLIT_NAMES[group]}</dt>
-              <dd className="font-semibold text-dc-brand-deep tabular-nums">{formatCount(unsplit[group])} คน</dd>
-            </div>
-          ))}
-        </dl>
       )}
     </div>
   );

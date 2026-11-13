@@ -7,9 +7,10 @@ import type {
 } from "./types";
 
 // ประชากรทะเบียนราษฎร and its age structure, added up the same way for the
-// home page (SCHEMA §11.3) and รายงานประชากร (SCHEMA §11.5). Apart from population.ts, which holds the
-// /sync file reader too, so that รายงานประชากร's JavaScript does not carry it
-// (SPEC §9.5). Pure functions: no React, no DOM, no fetch (CODING_STANDARDS §4).
+// home page (SCHEMA §11.3) and รายงานประชากร (SCHEMA §11.5). Apart from
+// population.ts, which holds the /sync file reader too, so that
+// รายงานประชากร's JavaScript does not carry it (SPEC §9.5). Pure functions:
+// no React, no DOM, no fetch (CODING_STANDARDS §4).
 
 /** The พ.ศ. year whose 31 Dec a yymm counts: "6812" → "2568" */
 export function registryYear(yymm: string): string {

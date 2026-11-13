@@ -146,9 +146,6 @@ function ageReport(years: string[], profiles: (AgeProfile | null)[], shownAt: nu
   const firstAt = profiles.findIndex((p) => p !== null);
   // Of those split by age, as every value of the section (SCHEMA §11.5)
   const sum = (key: "male" | "female") => shown?.bands.reduce((total, b) => total + b[key], 0) ?? 0;
-  // A วัย's ร้อยละ from its ช่วงอายุ, 5 years each: 0–14 is the first 3, 15–59 the next 9
-  const pctOf = (from: number, to: number) =>
-    (shown!.bands.slice(from, to).reduce((total, b) => total + b.male + b.female, 0) / shown!.age_total) * 100;
   return {
     shown,
     first: firstAt === -1 || firstAt === shownAt ? null : { year: years[firstAt], bands: profiles[firstAt]!.bands },
@@ -158,7 +155,7 @@ function ageReport(years: string[], profiles: (AgeProfile | null)[], shownAt: nu
       totals: profiles.map((p) => (p ? p.bands[k].male + p.bands[k].female : null)),
     })),
     sex_ratio: shown ? (sum("male") / sum("female")) * 100 : null,
-    stages: shown && { child: pctOf(0, 3), working: pctOf(3, 12), aged: shown.aged60_pct },
+    stages: shown && stagesOf(shown),
   };
 }
 
@@ -225,6 +222,18 @@ function unitOf(
   const now = totals[shown] ?? null;
   const change = now !== null && first < shown ? changeOf(totals[first]!, now) : null;
   return { key, name, unspecified, totals, change };
+}
+
+// The ช่วงอายุ of each วัย (GLOSSARY), by their place in AgeProfile.bands, 5
+// years each: 0–14 is the first 3, 15–59 the next 9; 60 and over is aged60.
+const CHILD_BANDS = [0, 3];
+const WORKING_BANDS = [3, 12];
+
+/** The ร้อยละ of วัยเด็ก, วัยทำงาน and วัยสูงอายุ of those split by age (SCHEMA §11.5) */
+function stagesOf(profile: AgeProfile): NonNullable<PopulationAgeReport["stages"]> {
+  const pct = ([from, to]: number[]) =>
+    (profile.bands.slice(from, to).reduce((total, b) => total + b.male + b.female, 0) / profile.age_total) * 100;
+  return { child: pct(CHILD_BANDS), working: pct(WORKING_BANDS), aged: profile.aged60_pct };
 }
 
 /**
