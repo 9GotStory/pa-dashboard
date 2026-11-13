@@ -355,6 +355,60 @@ function FollowLimits({ report }: { report: DcReport }) {
   );
 }
 
+/**
+ * เป้าหมาย and ผลงาน of s_kpi_food, s_kpi_dental28 and s_kpi_dental33
+ * (SCHEMA §4.6.6, §4.6.12), the เดือนอายุ of s_kpi_food and each table's own
+ * ข้อจำกัด
+ */
+const ANNUAL_MEANINGS: Record<string, { target: string; result: string; annualOnly?: string; ageMonths?: string; limits: string[] }> = {
+  s_kpi_food: {
+    target: "เด็กอายุครบ 6 เดือนในปีงบประมาณที่แม่หรือผู้เลี้ยงดูถูกสอบถามเรื่องการกินนมแม่",
+    result: "เด็กอายุครบ 6 เดือนที่แม่หรือผู้เลี้ยงดูตอบว่ากินนมแม่อย่างเดียว",
+    annualOnly: "คอลัมน์รายไตรมาส (target1–4 และ result1–4) ว่างทุกปี",
+    ageMonths:
+      "จำนวนที่ตอบว่ากินนมแม่อย่างเดียวที่อายุ 1–6 เดือน (คอลัมน์ r1–r6) ของพื้นที่ที่เลือก · เป็นจำนวนคน ไม่คิดเป็นร้อยละ · HDC เก็บประวัติตั้งแต่แรกเกิดถึง 6 เดือน เด็กคนหนึ่งจึงนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน",
+    limits: [],
+  },
+  s_kpi_dental28: {
+    target: "เด็ก 6 ปีในเขตรับผิดชอบ",
+    result: "เด็ก 6 ปีที่มีรหัสหัตถการเคลือบหลุมร่องฟันแท้ คนใหม่",
+    limits: [],
+  },
+  s_kpi_dental33: {
+    target: "ผู้มีอายุ 60 ปีขึ้นไปในเขตรับผิดชอบ",
+    result: "ผู้มีอายุ 60 ปีขึ้นไปที่ได้ตรวจทั้งปากและวางแผน ลงแฟ้ม dental",
+    limits: [
+      "ปี 2566 ผลงาน 1,645 จากเป้าหมาย 11,167 (ร้อยละ 14.73) ต่ำกว่าปีอื่นมาก (ร้อยละ 34–62) และปีนั้นทุกแถวมีค่าในคอลัมน์ ip ซึ่งปีอื่นว่าง ยังไม่รู้ว่าข้อมูลปีนั้นไม่ครบหรือเปลี่ยนวิธีนับ หน้านี้แสดงตามข้อมูล",
+    ],
+  },
+};
+
+function AnnualMethod({ report, districtCode }: MethodProps) {
+  const meaning = ANNUAL_MEANINGS[report.source_table];
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก · ข้อมูลเป็นทั้งปีอย่างเดียว
+        {meaning?.annualOnly && ` เพราะ${meaning.annualOnly}`}
+      </li>
+      {meaning && (
+        <li>
+          เป้าหมาย: {meaning.target} (คอลัมน์ target) · ผลงาน: {meaning.result} (คอลัมน์ result)
+        </li>
+      )}
+      <li>
+        ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · เป้าหมายเป็น 0 แสดง “—”
+        {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
+      </li>
+      {meaning?.ageMonths && <li>{meaning.ageMonths}</li>}
+    </ul>
+  );
+}
+
+function AnnualLimits({ report }: { report: DcReport }) {
+  return (ANNUAL_MEANINGS[report.source_table]?.limits ?? []).map((limit) => <li key={limit}>{limit}</li>);
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -372,6 +426,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <ScreenMethod {...props} />;
     case "follow":
       return <FollowMethod {...props} />;
+    case "annual":
+      return <AnnualMethod {...props} />;
   }
 }
 
@@ -392,5 +448,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return null;
     case "follow":
       return <FollowLimits report={report} />;
+    case "annual":
+      return <AnnualLimits report={report} />;
   }
 }
