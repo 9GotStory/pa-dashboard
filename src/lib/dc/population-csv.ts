@@ -1,5 +1,5 @@
 import { csvText } from "./csv";
-import { formatPct } from "./format";
+import { bandName, formatPct } from "./format";
 import { POPULATION_REPORT, populationArea, populationUnitLabel } from "./population-report";
 import { yearAsOf } from "./population-totals";
 import type { PopulationReport, PopulationUnit } from "./types";
@@ -13,7 +13,8 @@ import type { PopulationReport, PopulationUnit } from "./types";
  * The CSV download of รายงานประชากร (SPEC §9.4.1): its header lines (the
  * report, the area, the ปีข้อมูล, the source) before the table shown. The
  * อำเภอ or a ตำบล: the เปรียบเทียบ table in the order shown (units), units ×
- * every ปีข้อมูล with the change from each unit's first year. A หมู่บ้าน,
+ * every ปีข้อมูล with the change from each unit's first year, then, after a
+ * blank line, the ช่วงอายุ × ปีข้อมูล of the age section. A หมู่บ้าน,
  * which has no units: a row a year of its ชาย หญิง รวม บ้าน. "—" for a year
  * without rows. Named SHDC-population-{ปีข้อมูล}-{area code}.csv, the
  * district_code for the whole อำเภอ.
@@ -43,6 +44,13 @@ export function populationCsv(
               u.change?.count ?? "—",
               u.change?.pct == null ? "—" : formatPct(u.change.pct),
             ]),
+            ...(report.age
+              ? [
+                  [],
+                  ["ช่วงอายุ", ...years],
+                  ...report.age.bands.map((b) => [bandName(b.label), ...b.totals.map((t) => t ?? "—")]),
+                ]
+              : []),
           ]
         : [
             ["ปีข้อมูล", "ชาย", "หญิง", "รวม", "บ้าน"],

@@ -10,6 +10,15 @@ export function formatPct(val: number): string {
   return val.toFixed(2);
 }
 
+/**
+ * A ช่วงอายุ as a sentence says it: "0–4 ปี", "80 ปีขึ้นไป" (GLOSSARY). Here,
+ * which every page loads already, not in population-totals.ts: the home
+ * page's pyramid would then carry its age sums too (SPEC §9.6).
+ */
+export function bandName(label: string): string {
+  return label === "80+" ? "80 ปีขึ้นไป" : `${label} ปี`;
+}
+
 const counts = new Intl.NumberFormat("th-TH");
 
 /** A เป้าหมาย or ผลงาน with Thai digit grouping: 1234567 → "1,234,567" */

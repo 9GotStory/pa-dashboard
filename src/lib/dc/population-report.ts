@@ -1,6 +1,8 @@
-import { populationTotals, registryYear } from "./population-totals";
+import { ageProfile, BAND_LABELS, populationTotals, registryYear } from "./population-totals";
 import type {
+  AgeProfile,
   DcCatalog,
+  PopulationAgeReport,
   PopulationChange,
   PopulationQuery,
   PopulationReport,
@@ -114,6 +116,46 @@ export function populationReport(
     trend,
     units,
     partial: units?.some((u) => u.totals.includes(null)) ?? false,
+    // The age file is by ตำบล only (SCHEMA §11.1): no age for a หมู่บ้าน
+    age: village
+      ? null
+      : ageReport(
+          years,
+          data.years.map((y) => areaAge(y, tambon?.id)),
+          shownAt,
+        ),
+  };
+}
+
+/**
+ * The age structure of the whole อำเภอ, or of a ตำบล, in a year: its age
+ * rows across every สำนักทะเบียน (SCHEMA §11.3) · null without rows that year
+ */
+function areaAge(year: RegistryPopulationYear, tambon: string | undefined): AgeProfile | null {
+  const rows = tambon ? year.age.filter((r) => r.tt.slice(0, 6) === tambon) : year.age;
+  return rows.length > 0 ? ageProfile(rows) : null;
+}
+
+/**
+ * The age section (SCHEMA §11.5) from an area's age structure in each of
+ * the years (null = no age rows that year) and the year picked (shownAt,
+ * its index; −1 when not in the data)
+ */
+function ageReport(years: string[], profiles: (AgeProfile | null)[], shownAt: number): PopulationAgeReport {
+  const shown = profiles[shownAt] ?? null;
+  const firstAt = profiles.findIndex((p) => p !== null);
+  // Of those split by age, as every value of the section (SCHEMA §11.5)
+  const sum = (key: "male" | "female") => shown?.bands.reduce((total, b) => total + b[key], 0) ?? 0;
+  return {
+    shown,
+    first: firstAt === -1 || firstAt === shownAt ? null : { year: years[firstAt], bands: profiles[firstAt]!.bands },
+    aged60: profiles.map((p, i) => ({ year: years[i], pct: p?.aged60_pct ?? null })),
+    bands: BAND_LABELS.map((label, k) => ({
+      label,
+      totals: profiles.map((p) => (p ? p.bands[k].male + p.bands[k].female : null)),
+    })),
+    sex_ratio: shown ? (sum("male") / sum("female")) * 100 : null,
+    stages: shown && stagesOf(shown),
   };
 }
 
@@ -180,6 +222,18 @@ function unitOf(
   const now = totals[shown] ?? null;
   const change = now !== null && first < shown ? changeOf(totals[first]!, now) : null;
   return { key, name, unspecified, totals, change };
+}
+
+// The ช่วงอายุ of each วัย (GLOSSARY), by their place in AgeProfile.bands, 5
+// years each: 0–14 is the first 3, 15–59 the next 9; 60 and over is aged60.
+const CHILD_BANDS = [0, 3];
+const WORKING_BANDS = [3, 12];
+
+/** The ร้อยละ of วัยเด็ก, วัยทำงาน and วัยสูงอายุ of those split by age (SCHEMA §11.5) */
+function stagesOf(profile: AgeProfile): NonNullable<PopulationAgeReport["stages"]> {
+  const pct = ([from, to]: number[]) =>
+    (profile.bands.slice(from, to).reduce((total, b) => total + b.male + b.female, 0) / profile.age_total) * 100;
+  return { child: pct(CHILD_BANDS), working: pct(WORKING_BANDS), aged: profile.aged60_pct };
 }
 
 /**
