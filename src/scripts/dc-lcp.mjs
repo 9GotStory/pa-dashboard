@@ -85,7 +85,7 @@ async function serve(dir) {
   for (const deadline = Date.now() + 120_000; Date.now() < deadline;) {
     if (server.exitCode !== null) throw new Error(`serve ${dir} exited with code ${server.exitCode}`);
     try {
-      await fetch(url);
+      await fetch(url, { signal: AbortSignal.timeout(5000) });
       return url;
     } catch {
       await new Promise((resolve) => setTimeout(resolve, 500));
@@ -101,6 +101,8 @@ function lighthouse(url, file) {
 
 if (import.meta.main) {
   const pages = process.argv.length > 2 ? process.argv.slice(2) : ["/"];
+  const bad = pages.find((page) => !page.startsWith("/"));
+  if (bad) die(`${bad}: a page is a path from the site's root, such as / or /reports`);
 
   if (git("status", "--porcelain")) die("the working tree is not clean: commit or stash first, as main is built in it");
   const headSha = git("rev-parse", "--short", "HEAD");
@@ -115,29 +117,39 @@ if (import.meta.main) {
   // A detached HEAD goes back to its commit.
   const start = branch === "HEAD" ? headSha : branch;
 
-  let away = false;
+  let onMain = false;
   process.on("exit", () => {
-    for (const server of servers) if (server.exitCode === null) process.kill(-server.pid);
-    if (away && spawnSync("git", ["checkout", "--quiet", start], { stdio: "inherit" }).status !== 0) {
+    for (const server of servers) {
+      try {
+        process.kill(-server.pid);
+      } catch {
+        // Its group has ended already.
+      }
+    }
+    if (onMain && spawnSync("git", ["checkout", "--quiet", start], { stdio: "inherit" }).status !== 0) {
       console.error(`dc-lcp: could not check out ${start} again: run git checkout ${start}`);
     }
   });
+  // Ctrl-C reaches the build or Lighthouse running too. A signal sent to this
+  // process alone is handled once that child has finished.
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => process.exit(128 + os.constants.signals[signal]));
 
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dc-lcp-"));
   try {
-    const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dc-lcp-"));
     // main is built in this working tree: a git worktree of main with
     // node_modules symlinked does not build, as Turbopack refuses files
     // outside the worktree's root.
     console.log(`dc-lcp: building main (${mainSha})`);
     git("checkout", "--quiet", "main");
-    away = true;
+    onMain = true;
     run("npx", ["next", "build"], { stdio: "inherit" });
     const mainOut = path.join(tmp, "main-out");
     fs.cpSync("out", mainOut, { recursive: true });
+    // When the branch's build fails, no out/ of main is left for dc:check.
+    fs.rmSync("out", { recursive: true });
     git("checkout", "--quiet", start);
-    away = false;
+    onMain = false;
     console.log(`dc-lcp: building ${start} (${headSha})`);
     run("npx", ["next", "build"], { stdio: "inherit" });
 
@@ -154,26 +166,29 @@ if (import.meta.main) {
           runs[side].push(lcp);
         }
       }
-      results.push({ page, main: medianRun(runs.main), branch: medianRun(runs.branch) });
+      const main = medianRun(runs.main);
+      const branch = medianRun(runs.branch);
+      results.push({ page, main, branch, slow: tooSlow(branch.ms, main.ms) });
     }
 
-    const load = (values) => values.map((value) => value.toFixed(2)).join(" ");
+    const loadAverage = (values) => values.map((value) => value.toFixed(2)).join(" ");
     console.log(
-      `\nLCP, median of ${ROUNDS}: main ${mainSha} vs ${start} ${headSha} · load average ${load(loadBefore)} before, ${load(os.loadavg())} after`,
+      `\nLCP, median of ${ROUNDS}: main ${mainSha} vs ${start} ${headSha} · load average ${loadAverage(loadBefore)} before, ${loadAverage(os.loadavg())} after`,
     );
-    for (const { page, main, branch } of results) {
+    for (const { page, main, branch, slow } of results) {
       const diff = ((branch.ms - main.ms) / main.ms) * 100;
-      const verdict = tooSlow(branch.ms, main.ms) ? "FAIL: over 10% slower than main" : "pass";
+      const verdict = slow ? "FAIL: over 10% slower than main" : "pass";
       console.log(
         `${page}: main ${Math.round(main.ms)} ms · branch ${Math.round(branch.ms)} ms (${diff >= 0 ? "+" : ""}${diff.toFixed(1)}%) · ${verdict}`,
       );
       console.log(`  main LCP element: ${main.element}`);
       console.log(`  branch LCP element: ${branch.element}`);
     }
-    console.log(`Lighthouse JSON: ${tmp}`);
-    if (results.some(({ main, branch }) => tooSlow(branch.ms, main.ms))) process.exitCode = 1;
+    if (results.some(({ slow }) => slow)) process.exitCode = 1;
   } catch (error) {
     console.error(`dc-lcp: ${error.message}`);
     process.exitCode = 1;
+  } finally {
+    console.log(`Lighthouse JSON: ${tmp}`);
   }
 }
