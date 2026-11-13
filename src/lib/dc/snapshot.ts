@@ -3,6 +3,7 @@
 import "server-only";
 import fs from "node:fs";
 import path from "node:path";
+import { awaitingWarnings, shownCatalog } from "./tables";
 import type { DcCatalog, PopulationSnapshot, SnapshotMeta } from "./types";
 
 // The snapshot that build-snapshot.mjs writes before next build (SCHEMA §7),
@@ -19,8 +20,14 @@ export function readMeta(): SnapshotMeta {
   return read<SnapshotMeta>("meta.json");
 }
 
+/** catalog.json as the site shows it, without the รายงานที่รอวิเคราะห์ (SPEC §5.2) */
 export function readCatalog(): DcCatalog {
-  return read<DcCatalog>("catalog.json");
+  return shownCatalog(read<DcCatalog>("catalog.json"));
+}
+
+/** The warnings of the รายงานที่รอวิเคราะห์ that readCatalog leaves out */
+export function readAwaitingWarnings(): string[] {
+  return awaitingWarnings(read<DcCatalog>("catalog.json"));
 }
 
 export function readPopulation(): PopulationSnapshot {

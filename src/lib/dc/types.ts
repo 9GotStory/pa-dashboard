@@ -98,7 +98,7 @@ export interface ReportQuery {
   year: string; // 4 digits · default = the latest year whose block has rows ("" if none) · a year without data is kept
   area: "all" | string; // "all" or a 6-digit tambon code · default "all"
   period: Period; // default "year"
-  measure: string | null; // measure prefix (M_B tables only) whose รายละเอียด is open · default null (ภาพรวม) · CoverageReport (until F62): null = the first measure
+  measure: string | null; // measure prefix (M_B tables only) whose รายละเอียด is open · default null (ภาพรวม)
   by: "area" | "hosp"; // default "area" · forced to "hosp" when area ≠ "all"
   domain: number | null; // ด้าน 1–9 of s_aged9 whose รายละเอียด is open · default null (ภาพรวม) · any other value or table = null
 }
