@@ -227,7 +227,7 @@ function snapshot(cwd) {
   return { files, read: (file) => JSON.parse(fs.readFileSync(path.join(dir, file), "utf8")) };
 }
 
-test("catalog and every report answered → meta.json, catalog.json, population.json and one reports/{id}.json per active report; the vaccine topic runs กลุ่มอายุ 1 → 2 → 3 → 5 ปี with s_epi1 before fully immunized", async (t) => {
+test("catalog and every report answered → meta.json, catalog.json, population.json, reports/population.json and one reports/{id}.json per active report; the vaccine topic runs กลุ่มอายุ 1 → 2 → 3 → 5 ปี with s_epi1 before fully immunized", async (t) => {
   const gas = await startStub(t, gasOf(seedCatalog()));
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
@@ -238,7 +238,7 @@ test("catalog and every report answered → meta.json, catalog.json, population.
     "catalog.json",
     "meta.json",
     "population.json",
-    ...SEED_IDS.map((id) => `reports/${id}.json`).sort(),
+    ...[...SEED_IDS.map((id) => `reports/${id}.json`), "reports/population.json"].sort(),
   ]);
   const vaccine = snap
     .read("catalog.json")
@@ -735,7 +735,7 @@ test("an earlier snapshot with the file of a report no longer active → replace
     "catalog.json",
     "meta.json",
     "population.json",
-    ...SEED_IDS.map((id) => `reports/${id}.json`).sort(),
+    ...[...SEED_IDS.map((id) => `reports/${id}.json`), "reports/population.json"].sort(),
   ]);
 });
 
@@ -766,7 +766,7 @@ function ageRow(row) {
 // GAS answering the seed, and each ?action=registry_population with registry().
 const seedGasWithRegistry = (registry) => gasOf(seedCatalog(), undefined, registry);
 
-test("registry_population of 2567 and 2568, both with age rows → population.json has both years' population rows as GAS sent them, and the age rows of 2568 only (SCHEMA §7)", async (t) => {
+test("registry_population of 2567 and 2568, both with age rows → population.json has both years' population rows as GAS sent them, and the age rows of 2568 only; reports/population.json has every row of both years (SCHEMA §7)", async (t) => {
   const answer = {
     years: [
       { yymm: "6712", population: ROWS_6712, village: [], age: ROWS_6712.map(ageRow) },
@@ -787,9 +787,10 @@ test("registry_population of 2567 and 2568, both with age rows → population.js
       { yymm: "6812", population: ROWS_6812, village: [], age: ROWS_6812.map(ageRow) },
     ],
   });
+  assert.deepEqual(snapshot(res.cwd).read("reports/population.json"), answer);
 });
 
-test("2568 with population rows but no age rows yet, 2567 with both → age [] in both years: the age rows are the latest year's or none", async (t) => {
+test("2568 with population rows but no age rows yet, 2567 with both → age [] in both years of population.json: the age rows are the latest year's or none; reports/population.json keeps those of 2567", async (t) => {
   const answer = {
     years: [
       { yymm: "6712", population: ROWS_6712, village: [], age: ROWS_6712.map(ageRow) },
@@ -810,9 +811,10 @@ test("2568 with population rows but no age rows yet, 2567 with both → age [] i
       { yymm: "6812", population: ROWS_6812, village: [], age: [] },
     ],
   });
+  assert.deepEqual(snapshot(res.cwd).read("reports/population.json"), answer);
 });
 
-test("6812's population rows deleted by hand, its age rows left → 6812 is no year of population.json, and 2567, now the latest year with population rows, keeps its age rows", async (t) => {
+test("6812's population rows deleted by hand, its age rows left → 6812 is no year of population.json or reports/population.json, and 2567, now the latest year with population rows, keeps its age rows", async (t) => {
   const answer = {
     years: [
       { yymm: "6712", population: ROWS_6712, village: [], age: ROWS_6712.map(ageRow) },
@@ -827,12 +829,12 @@ test("6812's population rows deleted by hand, its age rows left → 6812 is no y
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
-    years: [{ yymm: "6712", population: ROWS_6712, village: [], age: ROWS_6712.map(ageRow) }],
-  });
+  const only6712 = { years: [{ yymm: "6712", population: ROWS_6712, village: [], age: ROWS_6712.map(ageRow) }] };
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), only6712);
+  assert.deepEqual(snapshot(res.cwd).read("reports/population.json"), only6712);
 });
 
-test("no registry sheet yet (years: []) → population.json is { years: [] } and the build goes on, exit 0", async (t) => {
+test("no registry sheet yet (years: []) → population.json and reports/population.json are { years: [] } and the build goes on, exit 0", async (t) => {
   const gas = await startStub(
     t,
     seedGasWithRegistry(() => ({ body: { years: [] } })),
@@ -842,6 +844,7 @@ test("no registry sheet yet (years: []) → population.json is { years: [] } and
 
   assert.equal(res.code, 0, res.stderr);
   assert.deepEqual(snapshot(res.cwd).read("population.json"), { years: [] });
+  assert.deepEqual(snapshot(res.cwd).read("reports/population.json"), { years: [] });
   assert.match(res.stdout, /\nbuild-snapshot: \?action=registry_population has no population rows yet/);
 });
 
@@ -966,7 +969,7 @@ test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 na
   }
 });
 
-test("age rows of the year the home page shows that do not match its population rows (SCHEMA §7) → exit 1 naming the year, the sheet and the row; an earlier snapshot is left as it was", async (t) => {
+test("age rows of a year that do not match its population rows (SCHEMA §7) → exit 1 naming the year, the sheet and the row; an earlier snapshot is left as it was", async (t) => {
   // The real age rows with the row of 54060400 changed.
   const withAgeRow3 = (fields) => AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, ...fields } : row));
   const cases = [
@@ -1018,10 +1021,7 @@ test("age rows of the year the home page shows that do not match its population 
       const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
       assert.equal(res.code, 1);
-      assert.match(
-        res.stderr,
-        /^build-snapshot: the age rows of 6812, the year the home page shows, do not match its population rows/m,
-      );
+      assert.match(res.stderr, /^build-snapshot: the age rows of 6812 do not match its population rows/m);
       assert.match(res.stderr, line);
       assert.match(
         res.stderr,
@@ -1045,7 +1045,7 @@ test("the real rows of 6812: 10 population rows and 10 age rows, 54060100 and 54
   assert.deepEqual(snapshot(res.cwd).read("population.json"), answer);
 });
 
-test("age rows that do not match in a year before the one the home page shows → not checked, its age [] as ever, exit 0", async (t) => {
+test("age rows of 2567 that do not match its population rows, 2568 the year the home page shows matching → exit 1 naming 6712: every year is checked, not only the latest (SCHEMA §7); an earlier snapshot is left as it was", async (t) => {
   const answer = {
     years: [
       { yymm: "6712", population: ROWS_6712, village: [], age: ROWS_6712.slice(1).map(ageRow) },
@@ -1057,15 +1057,16 @@ test("age rows that do not match in a year before the one the home page shows �
     seedGasWithRegistry(() => ({ body: answer })),
   );
 
-  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
-  assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
-    years: [
-      { yymm: "6712", population: ROWS_6712, village: [], age: [] },
-      { yymm: "6812", population: ROWS_6812, village: [], age: AGE_ROWS_6812 },
-    ],
-  });
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /^build-snapshot: the age rows of 6712 do not match its population rows/m);
+  assert.match(
+    res.stderr,
+    /\n {2}registry_population_age has no row for rcode 5406 tt 54060100, which registry_population has/,
+  );
+  assert.doesNotMatch(res.stderr, /6812/);
+  assertOldSnapshot(res.cwd);
 });
 
 test("registry_population of 2567 and 2568, both with village rows → population.json has the village rows of 2568 only, as GAS sent them, and village [] in 2567 (SCHEMA §7)", async (t) => {
@@ -1118,7 +1119,7 @@ test("2568 with population rows but no village rows yet, 2567 with both → vill
   );
 });
 
-test("village rows of the year the home page shows that do not match its population rows (SCHEMA §7) → exit 1 naming the year, the sheet and (rcode, tt); an earlier snapshot is left as it was", async (t) => {
+test("village rows of a year that do not match its population rows (SCHEMA §7) → exit 1 naming the year, the sheet and (rcode, tt); an earlier snapshot is left as it was", async (t) => {
   // The real village rows with the row of หมู่ 1 หนุนเหนือ (5406) changed.
   const withVillageRow0 = (fields) => VILLAGE_ROWS_6812.map((row, i) => (i === 0 ? { ...row, ...fields } : row));
   const cases = [
@@ -1169,10 +1170,7 @@ test("village rows of the year the home page shows that do not match its populat
       const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
       assert.equal(res.code, 1);
-      assert.match(
-        res.stderr,
-        /^build-snapshot: the village rows of 6812, the year the home page shows, do not match its population rows/m,
-      );
+      assert.match(res.stderr, /^build-snapshot: the village rows of 6812 do not match its population rows/m);
       assert.match(res.stderr, line);
       assert.match(
         res.stderr,
@@ -1183,7 +1181,7 @@ test("village rows of the year the home page shows that do not match its populat
   }
 });
 
-test("village rows that do not match in a year before the one the home page shows → not checked, its village [] as ever, exit 0", async (t) => {
+test("village rows of 2567 that do not match its population rows, 2568 matching → exit 1 naming 6712 and stat_m67.txt (SCHEMA §7); an earlier snapshot is left as it was", async (t) => {
   const answer = {
     years: [
       { yymm: "6712", population: ROWS_6712, village: VILLAGE_ROWS_6712.slice(1), age: [] },
@@ -1195,13 +1193,94 @@ test("village rows that do not match in a year before the one the home page show
     seedGasWithRegistry(() => ({ body: answer })),
   );
 
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /^build-snapshot: the village rows of 6712 do not match its population rows/m);
+  assert.match(res.stderr, /\n {2}registry_population_village adds up to \w+ \d+ for rcode 5406 tt 54060100/);
+  assert.match(res.stderr, /\nUpload stat_m67\.txt again on \/sync/);
+  assert.doesNotMatch(res.stderr, /6812/);
+  assertOldSnapshot(res.cwd);
+});
+
+test("age rows of 2567 and village rows of 2568 that do not match → exit 1 naming both years, each with its sheet; an earlier snapshot is left as it was", async (t) => {
+  const answer = {
+    years: [
+      { yymm: "6712", population: ROWS_6712, village: VILLAGE_ROWS_6712, age: ROWS_6712.slice(1).map(ageRow) },
+      { yymm: "6812", population: ROWS_6812, village: VILLAGE_ROWS_6812.slice(1), age: AGE_ROWS_6812 },
+    ],
+  };
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /^build-snapshot: the age rows of 6712 do not match its population rows/m);
+  assert.match(res.stderr, /^the village rows of 6812 do not match its population rows/m);
+  assertOldSnapshot(res.cwd);
+});
+
+test("2564–2568 with population rows, age and village rows in 2565 and 2567 only → every year in reports/population.json as GAS sent it, a year without age or village rows with []; population.json as before; exit 0", async (t) => {
+  // The 2567 rows as another year's
+  const rowsOf = (yymm, rows) => rows.map((row) => ({ ...row, yymm }));
+  const year = (yymm, population, withAgeAndVillage) => ({
+    yymm,
+    population,
+    village: withAgeAndVillage ? rowsOf(yymm, VILLAGE_ROWS_6712) : [],
+    age: withAgeAndVillage ? population.map(ageRow) : [],
+  });
+  const answer = {
+    years: [
+      year("6412", rowsOf("6412", ROWS_6712), false),
+      year("6512", rowsOf("6512", ROWS_6712), true),
+      year("6612", rowsOf("6612", ROWS_6712), false),
+      year("6712", ROWS_6712, true),
+      year("6812", ROWS_6812, false),
+    ],
+  };
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
+
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(
-    snapshot(res.cwd)
-      .read("population.json")
-      .years.map((year) => year.village.length),
-    [0, 94],
+  assert.deepEqual(snapshot(res.cwd).read("reports/population.json"), answer);
+  assert.deepEqual(snapshot(res.cwd).read("population.json"), {
+    years: answer.years.map((y) => ({ ...y, village: [], age: [] })),
+  });
+});
+
+test("a reports/population.json over its 500 KB limit (SPEC §6.1) → exit 1 naming it and its size; an earlier snapshot is left as it was", async (t) => {
+  // 6 years of the 2567 rows before 2568, each with a village cell of 90 KB, and
+  // about 28 KB of village rows in each of the 7 years, some 750 KB in all:
+  // every year's village rows go to reports/population.json, and only those of
+  // 2568, the latest year, to population.json.
+  const bulky = (yymm) => ({
+    yymm,
+    population: ROWS_6712.map((row) => ({ ...row, yymm })),
+    village: VILLAGE_ROWS_6712.map((row, i) => ({ ...row, yymm, ...(i === 0 && { cc_name: "x".repeat(90 * 1024) }) })),
+    age: [],
+  });
+  const answer = {
+    years: [
+      ...["6212", "6312", "6412", "6512", "6612", "6712"].map(bulky),
+      { yymm: "6812", population: ROWS_6812, village: VILLAGE_ROWS_6812, age: [] },
+    ],
+  };
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
   );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /\n {2}reports\/population\.json is 7\d\d\.\d KB, over its 500 KB limit/);
+  assert.doesNotMatch(res.stderr, /\n {2}population\.json is/);
+  assertOldSnapshot(res.cwd);
 });

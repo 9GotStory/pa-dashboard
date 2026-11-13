@@ -15,11 +15,12 @@ const fileReads = {
 };
 // population.ts holds the /sync file reader too, which stays out of the
 // pages' JavaScript (SPEC §9.6): page.tsx computes on the server and the
-// components take the result as props.
+// components take the result as props, and the modules รายงานประชากร runs in
+// the browser add up through population-totals.ts (SPEC §9.5).
 const populationReader = {
-  regex: "^@/lib/dc/population$",
+  regex: "^(@/lib/dc|\\.)/population$",
   message:
-    "A Data Center component does not import population.ts, which holds the /sync file reader (SPEC §9.6): take the computed values as props.",
+    "Data Center code that runs in the browser does not import population.ts, which holds the /sync file reader (SPEC §9.5, §9.6): take the computed values as props, or add up with population-totals.ts.",
 };
 
 const eslintConfig = defineConfig([
@@ -56,6 +57,10 @@ const eslintConfig = defineConfig([
   {
     files: ["src/components/dc/**"],
     ignores: ["src/components/dc/RegistryPopulationUpload.tsx"],
+    rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
+  },
+  {
+    files: ["src/lib/dc/population-report.ts", "src/lib/dc/population-totals.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
   },
   {

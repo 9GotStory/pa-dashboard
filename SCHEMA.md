@@ -980,9 +980,25 @@ export interface LibraryQuery {
   q: string;                     // คำค้นตามที่พิมพ์ · default ""
 }                                // ไม่มี page/size: ไม่แบ่งหน้า ลิงก์เก่าที่มีสองค่านี้ได้ query เดียวกับไม่มี (ADR-0013)
 
+/** รายงานหนึ่งตามที่หน้ารายงานสุขภาพและหน้าแรกแสดง (SPEC §9.2–9.3, F67): รายงานของ catalog.json หรือรายงานประชากร (SPEC §5.6) */
+export interface LibraryReport {
+  id: string;                    // opendata_id หรือ "population" · หน้าของรายงานคือ /reports/{id}
+  report_name: string;
+  references: string[];          // ค้นได้แต่ไม่แสดง (ข้อมูลอ้างอิงภายในระบบ SPEC §9.3): source_table กับ opendata_id หรือ POPULATION_REPORT.keywords
+  removed: boolean;              // catalog_status = removed: "HDC ไม่แสดงรายงานนี้แล้ว"
+  empty: boolean;                // "ยังไม่มีข้อมูล": years ว่าง หรือ reports/population.json ไม่มีปี
+}
+
+/** หมวด → หัวข้อ → กลุ่ม → รายงาน ของหน้ารายงานสุขภาพและหน้าแรก: ของ catalog.json โดยมีรายงานประชากรเป็นหมวดแรก (SPEC §5.6) · server component สร้างด้วย libraryMains ของ values.ts ตอน build */
+export interface LibraryMain {
+  main_report_id: string;
+  main_report_name: string;
+  topics: (DcTopic & { groups: { subgroup: string; reports: LibraryReport[] }[] })[];
+}
+
 /** รายงานทั้งหมดที่ตรงกับ LibraryQuery ของหน้ารายงานสุขภาพ */
 export interface LibraryList {
-  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[];   // ทุกรายงานที่ตรงตามหัวข้อและกลุ่ม ลำดับตาม catalog.json
+  groups: { topic: DcTopic; subgroup: string; reports: LibraryReport[] }[];   // ทุกรายงานที่ตรงตามหัวข้อและกลุ่ม ลำดับตาม LibraryMain
   total: number;                 // จำนวนรายงานใน groups
 }
 

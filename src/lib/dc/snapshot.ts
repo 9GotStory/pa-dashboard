@@ -4,7 +4,7 @@ import "server-only";
 import fs from "node:fs";
 import path from "node:path";
 import { awaitingWarnings, shownCatalog } from "./tables";
-import type { DcCatalog, PopulationSnapshot, SnapshotMeta } from "./types";
+import type { DcCatalog, PopulationReportData, PopulationSnapshot, SnapshotMeta } from "./types";
 
 // The snapshot that build-snapshot.mjs writes before next build (SCHEMA §7),
 // for server components to read at build time.
@@ -32,4 +32,9 @@ export function readAwaitingWarnings(): string[] {
 
 export function readPopulation(): PopulationSnapshot {
   return read<PopulationSnapshot>("population.json");
+}
+
+/** reports/population.json, the data of รายงานประชากร (SCHEMA §7) */
+export function readPopulationReport(): PopulationReportData {
+  return read<PopulationReportData>("reports/population.json");
 }

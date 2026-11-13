@@ -10,7 +10,7 @@ export default function ResultsHeader(props: {
   heading: RefObject<HTMLHeadingElement | null>;
   summary: string;
   dateCom: string | null;
-  children: ReactNode;
+  children?: ReactNode;
 }) {
   const { heading, summary, dateCom, children } = props;
   return (

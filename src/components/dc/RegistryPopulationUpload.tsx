@@ -2,7 +2,8 @@
 
 import { useEffect, useRef, useState, type ChangeEvent } from "react";
 import { formatCount } from "@/lib/dc/format";
-import { ageRowsTotals, populationTotals, readRegistryFiles, registryYear, villageCount } from "@/lib/dc/population";
+import { ageRowsTotals, readRegistryFiles, villageCount } from "@/lib/dc/population";
+import { populationTotals, registryYear } from "@/lib/dc/population-totals";
 import type {
   DcCatalog,
   GasError,

@@ -1,20 +1,21 @@
 // Data Center page check (CODING_STANDARDS §4–5, FEATURES F16). After
-// npm run build, opens every built page of /, /reports and /reports/[id] in
-// out/ at 360 px wide and exits 1, naming the page, when a page breaks a rule
-// that shows on the rendered page. The home page, /reports and a report of
-// each source table with a page of its own (src/lib/dc/tables/index.ts) are
-// opened at V7.6's review widths as well, and the check exits 1, naming the
-// width, when one scrolls sideways at one (SPEC §9.1). A report that loads
-// the chunk of another table's page exits 1, naming the report and the page
-// (SPEC §9.4, §9.6). /reports as built, before any
-// JavaScript runs, must link every report on the site, and
-// the check exits 1 naming each one it lacks (SPEC §9.3). A รายงานที่รอวิเคราะห์
-// (its source table has no page) is not on the site: the check warns,
-// naming the report and the table, and goes on (SPEC §5.2). The home page is
-// opened wide once more, and the check exits 1, naming the area, when its
-// population figures disagree, the figures by the bars of the ตำบล chart
-// among them (SPEC §9.2). The pages are opened with playwright-core in the
-// installed Google Chrome, the one dependency CODING_STANDARDS §3 allows a
+// npm run build, opens every built page of /, /reports, /reports/population
+// and /reports/[id] in out/ at 360 px wide and exits 1, naming the page, when
+// a page breaks a rule that shows on the rendered page. The home page,
+// /reports, /reports/population and a report of each source table with a page
+// of its own (src/lib/dc/tables/index.ts) are opened at V7.6's review widths
+// as well, and the check exits 1, naming the width, when one scrolls sideways
+// at one (SPEC §9.1). A report that loads the chunk of another table's page
+// exits 1, naming the report and the page (SPEC §9.4, §9.6); รายงานประชากร
+// has no table page, so it has no such check. /reports as built, before any
+// JavaScript runs, must link every report on the site, รายงานประชากร among
+// them, and the check exits 1 naming each one it lacks (SPEC §9.3). A
+// รายงานที่รอวิเคราะห์ (its source table has no page) is not on the site: the
+// check warns, naming the report and the table, and goes on (SPEC §5.2). The
+// home page is opened wide once more, and the check exits 1, naming the area,
+// when its population figures disagree, the figures by the bars of the ตำบล
+// chart among them (SPEC §9.2). The pages are opened with playwright-core in
+// the installed Google Chrome, the one dependency CODING_STANDARDS §3 allows a
 // node script.
 import fs from "node:fs";
 import http from "node:http";
@@ -84,8 +85,9 @@ function fail(message) {
   process.exit(1);
 }
 
-// URL paths of the (dc) pages in out/: /, /reports and /reports/{id}. A build
-// always has all three, since the prebuild fails with no active report.
+// URL paths of the (dc) pages in out/: /, /reports and every page under
+// /reports/, /reports/population and /reports/{id}. A build always has them,
+// since the prebuild fails with no active report.
 function dcPages() {
   const reports = path.join(OUT, "reports");
   const ids = fs.existsSync(reports)
@@ -284,16 +286,16 @@ function foreignChunkProblems(page, scripts) {
     .map((other) => `loads the chunk of the ${other} page, which is not the page of its source table (${page})`);
 }
 
-// The reports on the site that out/reports.html, as built,
-// has no /reports/{opendata_id} link to, as problems naming the report: the
-// static HTML lists every report, and the browser filters it once loaded
-// (SPEC §9.3), so a page whose list needs JavaScript fails here.
-function missingReportLinks(reports) {
+// The reports on the site, by id, that out/reports.html, as built, has no
+// /reports/{id} link to, as problems naming the report: the static HTML lists
+// every report, and the browser filters it once loaded (SPEC §9.3), so a page
+// whose list needs JavaScript fails here.
+function missingReportLinks(ids) {
   const html = fs.readFileSync(path.join(OUT, "reports.html"), "utf8");
   const linked = new Set([...html.matchAll(/href="\/reports\/([^"?#/]+)"/g)].map((m) => m[1]));
-  return reports
-    .filter((r) => !linked.has(r.opendata_id))
-    .map((r) => `no link to /reports/${r.opendata_id} in the HTML as built, before JavaScript runs`);
+  return ids
+    .filter((id) => !linked.has(id))
+    .map((id) => `no link to /reports/${id} in the HTML as built, before JavaScript runs`);
 }
 
 // What the population rules compare, as the home page shows it (SPEC §9.2): a
@@ -454,7 +456,8 @@ const catalog = readBuiltCatalog();
 for (const warning of awaitingWarnings(catalog)) console.warn(`dc-check: warning: ${warning}`);
 // The reports on the site: those of a source table with a page
 const reports = catalogReports(shownCatalog(catalog));
-const unlinked = missingReportLinks(reports);
+// รายงานประชากร's id (SPEC §5.6), which is not in catalog.json
+const unlinked = missingReportLinks(["population", ...reports.map((r) => r.opendata_id)]);
 // The page of each report's source table, by its URL path
 const reportPages = new Map(reports.map((r) => [`/reports/${r.opendata_id}`, tablePage(r.source_table)]));
 // The first report of each source table with a page, opened at every review width
@@ -476,7 +479,7 @@ try {
         problems.push(`${urlPath}: ${problem}`);
     }
   }
-  for (const urlPath of ["/", "/reports", ...wideReports]) {
+  for (const urlPath of ["/", "/reports", "/reports/population", ...wideReports]) {
     for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
   for (const problem of unlinked) problems.push(`/reports: ${problem}`);
@@ -500,7 +503,7 @@ const populationResult = !shownYear
     ? "population totals, the ตำบล chart and pyramids agree"
     : "population totals and the ตำบล chart agree";
 console.log(
-  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports and a report of each of ${wideReports.length} table(s) ` +
+  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population and a report of each of ${wideReports.length} table(s) ` +
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
-    `/reports links every report before JavaScript runs; ${populationResult}`,
+    `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
 );

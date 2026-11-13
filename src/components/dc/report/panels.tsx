@@ -63,7 +63,8 @@ export function UnitPanel({
  * กราฟ B: ร้อยละ per ปีงบประมาณ over the whole window, with the เกณฑ์: a line
  * from sm up, and on a phone a list of years whose ร้อยละ reads without hover
  */
-export function TrendPanel({ points, goal }: { points: TrendPoint[]; goal: number | null }) {
+export function TrendPanel({ points: trend, goal }: { points: TrendPoint[]; goal: number | null }) {
+  const points = trend.map((p) => ({ year: p.b_year, value: p.totals?.pct ?? null }));
   return (
     <Surface title="แนวโน้มร้อยละรายปี">
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
@@ -74,10 +75,10 @@ export function TrendPanel({ points, goal }: { points: TrendPoint[]; goal: numbe
         <GoalKey goal={goal} />
       </p>
       <div className="sm:hidden">
-        <TrendList title="แนวโน้มร้อยละรายปี" points={points} goal={goal} />
+        <TrendList title="แนวโน้มร้อยละรายปี" points={points} goal={goal} unit="pct" />
       </div>
       <div className="hidden sm:block">
-        <TrendChart title="แนวโน้มร้อยละรายปี" points={points} goal={goal} />
+        <TrendChart title="แนวโน้มร้อยละรายปี" points={points} goal={goal} unit="pct" />
       </div>
     </Surface>
   );
@@ -114,10 +115,7 @@ export function CumulativePanel(props: {
   quarters: { period: Period; result: number; cumulative: number; pct: number | null }[];
 }) {
   const { year, target, goal, quarters } = props;
-  const points: TrendPoint[] = quarters.map((q) => ({
-    b_year: PERIOD_LABELS[q.period].short,
-    totals: { target, result: q.cumulative, pct: q.pct },
-  }));
+  const points = quarters.map((q) => ({ year: PERIOD_LABELS[q.period].short, value: q.pct }));
   return (
     <Surface title={`ร้อยละสะสมรายไตรมาส ปีงบประมาณ ${year}`}>
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
@@ -127,10 +125,10 @@ export function CumulativePanel(props: {
         <GoalKey goal={goal} />
       </p>
       <div className="sm:hidden">
-        <TrendList title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} />
+        <TrendList title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} unit="pct" />
       </div>
       <div className="hidden sm:block">
-        <TrendChart title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} />
+        <TrendChart title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} unit="pct" />
       </div>
       <div role="region" tabIndex={0} aria-label="ตารางรายไตรมาส (เลื่อนดูแนวนอนได้)" className="mt-3 overflow-x-auto">
         <table className="w-full border-collapse text-xs tabular-nums">

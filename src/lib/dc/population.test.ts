@@ -3,15 +3,8 @@ import test from "node:test";
 import { AGE_6812, AGE_6812_LINES } from "./fixtures/age-6812cc54-20261106";
 import { STAT_M68, STAT_M68_LINES } from "./fixtures/stat-m68-20261111";
 import { formatPct } from "./format";
-import {
-  ageRowsTotals,
-  homePopulation,
-  populationTotals,
-  readRegistryFiles,
-  registryAsOf,
-  registryYear,
-  villageCount,
-} from "./population";
+import { ageRowsTotals, homePopulation, readRegistryFiles, villageCount } from "./population";
+import { populationTotals, registryAsOf, registryYear, yearAsOf } from "./population-totals";
 import type { AgeBand, PopulationSnapshot, RegistryPopulationRow } from "./types";
 
 // FEATURES F24, F44: reading and checking stat_m files in the /sync upload
@@ -324,6 +317,11 @@ test("population.json of 2567 and 2568 → the home page shows 2568, the latest:
   assert.ok(home);
   assert.equal(registryAsOf(home.yymm), "ณ 31 ธ.ค. 2568");
   assert.equal(home.district.totals.total, 46527);
+});
+
+test("ปีข้อมูล 2568, as รายงานประชากร lists it (SPEC §9.4.1) → ณ 31 ธ.ค. 2568, the text yymm 6812 gives on the home page", () => {
+  assert.equal(yearAsOf("2568"), "ณ 31 ธ.ค. 2568");
+  assert.equal(yearAsOf("2568"), registryAsOf("6812"));
 });
 
 test("ตำบล of 2568 → the 8 of areas by code, each adding up every สำนักทะเบียน: บ้านหนุน 7,399 คน 3,499 บ้าน (4,536 + 2,863 คน of 5406 and 5489), บ้านกลาง 6,686 คน 3,335 บ้าน (3,411 + 3,275)", () => {

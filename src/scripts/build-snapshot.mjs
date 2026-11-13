@@ -387,12 +387,21 @@ try {
 }
 const wrongShape = registryProblem(registry);
 if (wrongShape) fail(`?action=registry_population ${wrongShape}`);
-// population.json (PopulationSnapshot, SCHEMA §7): the years with population
-// rows, oldest first, and the village and age rows of the latest of them only,
-// so the file grows by a year's population rows alone.
+// The years with population rows, oldest first (SCHEMA §7). reports/population.json
+// (PopulationReportData) has every row of each of them, for รายงานประชากร;
+// population.json (PopulationSnapshot) has the village and age rows of the
+// latest of them only, so the file grows by a year's population rows alone.
 const populationYears = registry.years
   .filter((year) => year.population.length > 0)
   .sort((a, b) => (a.yymm < b.yymm ? -1 : 1));
+const populationReport = {
+  years: populationYears.map((year) => ({
+    yymm: year.yymm,
+    population: year.population,
+    village: year.village,
+    age: year.age,
+  })),
+};
 const population = {
   years: populationYears.map((year, i) => ({
     yymm: year.yymm,
@@ -408,27 +417,32 @@ console.log(
         `the latest ${latest.yymm} with ${latest.age.length} age rows and ${latest.village.length} village rows`
     : "build-snapshot: ?action=registry_population has no population rows yet, so the home page shows no population (SPEC §9.2)",
 );
-// Only the year the home page shows, the one year whose age rows are in the
-// snapshot. Without age rows it hides the pyramid (SCHEMA §11.3), also while
-// an admin has deleted them to upload again (SCHEMA §3.8), so that passes.
-const mismatches = latest?.age.length ? ageMismatches(latest) : [];
-if (mismatches.length > 0) {
-  fail(
-    `the age rows of ${latest.yymm}, the year the home page shows, do not match its population rows, so nothing is written (SCHEMA §7):\n  ` +
-      `${mismatches.join("\n  ")}\n` +
-      `Fix those rows in PA-Data, or delete the ${latest.yymm} rows of ${REGISTRY_SHEETS.age} and upload both of that year's files again on /sync (SCHEMA §3.8)`,
-  );
-}
-// The same for village rows: a year without them passes, and the home page
-// hides its หมู่บ้าน (SCHEMA §11.3). They can differ when an upload saved the
-// population rows but not the village rows (SCHEMA §3.8).
-const villageProblems = latest?.village.length ? villageMismatches(latest) : [];
-if (villageProblems.length > 0) {
-  fail(
-    `the village rows of ${latest.yymm}, the year the home page shows, do not match its population rows, so nothing is written (SCHEMA §7):\n  ` +
-      `${villageProblems.join("\n  ")}\n` +
-      `Upload stat_m${latest.yymm.slice(0, 2)}.txt again on /sync, or fix those rows of ${REGISTRY_SHEETS.village} in PA-Data (SCHEMA §3.8)`,
-  );
+// Every year's age and village rows against its population rows, since
+// reports/population.json has them all (SCHEMA §7). A year without age rows
+// passes: the home page hides the pyramid and รายงานประชากร says so (SCHEMA
+// §11.3, §11.5), also while an admin has deleted them to upload again (SCHEMA
+// §3.8). So does a year without village rows; they can differ when an upload
+// saved the population rows but not the village rows (SCHEMA §3.8).
+const registryProblems = populationYears.flatMap((year) => {
+  const ageProblems = year.age.length ? ageMismatches(year) : [];
+  const villageProblems = year.village.length ? villageMismatches(year) : [];
+  return [
+    ...(ageProblems.length > 0
+      ? [
+          `the age rows of ${year.yymm} do not match its population rows:\n  ${ageProblems.join("\n  ")}\n` +
+            `Fix those rows in PA-Data, or delete the ${year.yymm} rows of ${REGISTRY_SHEETS.age} and upload both of that year's files again on /sync (SCHEMA §3.8)`,
+        ]
+      : []),
+    ...(villageProblems.length > 0
+      ? [
+          `the village rows of ${year.yymm} do not match its population rows:\n  ${villageProblems.join("\n  ")}\n` +
+            `Upload stat_m${year.yymm.slice(0, 2)}.txt again on /sync, or fix those rows of ${REGISTRY_SHEETS.village} in PA-Data (SCHEMA §3.8)`,
+        ]
+      : []),
+  ];
+});
+if (registryProblems.length > 0) {
+  fail(`${registryProblems.join("\n")}\nSo nothing is written (SCHEMA §7).`);
 }
 
 // SnapshotMeta (SCHEMA §9). Every date_com starts YYYYMMDDHHmm, so the
@@ -455,6 +469,7 @@ const files = [
   ],
   ...[...answers].map(([id, data]) => [`reports/${id}.json`, data, 500 * KB]),
   ["population.json", population, 100 * KB],
+  ["reports/population.json", populationReport, 500 * KB],
 ].map(([file, content, maxBytes]) => {
   const json = JSON.stringify(content);
   return { file, json, bytes: Buffer.byteLength(json), maxBytes };

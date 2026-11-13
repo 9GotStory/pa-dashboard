@@ -1,3 +1,4 @@
+import { POPULATION_REPORT } from "./population-report";
 import type {
   Cell,
   DcCatalog,
@@ -7,7 +8,9 @@ import type {
   DcYearBlock,
   Family,
   LibraryList,
+  LibraryMain,
   LibraryQuery,
+  LibraryReport,
   Month,
   Period,
   ReportQuery,
@@ -433,8 +436,46 @@ export function reportSearch(query: ReportQuery): string {
   return `?${params}`;
 }
 
+/**
+ * The หมวด, หัวข้อ, กลุ่ม and reports that /reports and the home page list
+ * (SPEC §9.2–9.3): รายงานประชากร first, in its own หมวด and หัวข้อ (SPEC
+ * §5.6), empty when reports/population.json has no year, then catalog.json's
+ * in its order. An HDC report is searched by its source_table and
+ * opendata_id too; รายงานประชากร, which has neither, by its keywords.
+ */
+export function libraryMains(mains: DcCatalog["mains"], hasPopulation: boolean): LibraryMain[] {
+  const { id, report_name, keywords, ...topic } = POPULATION_REPORT;
+  const population: LibraryMain = {
+    main_report_id: topic.main_report_id,
+    main_report_name: topic.main_report_name,
+    topics: [
+      {
+        ...topic,
+        order: null,
+        groups: [
+          { subgroup: "", reports: [{ id, report_name, references: keywords, removed: false, empty: !hasPopulation }] },
+        ],
+      },
+    ],
+  };
+  const hdc = (r: DcReport): LibraryReport => ({
+    id: r.opendata_id,
+    report_name: r.report_name,
+    references: [r.source_table, r.opendata_id],
+    removed: r.catalog_status === "removed",
+    empty: r.years.length === 0,
+  });
+  return [
+    population,
+    ...mains.map((m) => ({
+      ...m,
+      topics: m.topics.map((t) => ({ ...t, groups: t.groups.map((g) => ({ ...g, reports: g.reports.map(hdc) })) })),
+    })),
+  ];
+}
+
 /** The query of /reports (?main=&cat=&q=) as a LibraryQuery, with the defaults of SCHEMA §9; an old link's page and size are not read */
-export function libraryQuery(mains: DcCatalog["mains"], params: URLSearchParams): LibraryQuery {
+export function libraryQuery(mains: LibraryMain[], params: URLSearchParams): LibraryQuery {
   const cat = mains.flatMap((m) => m.topics).find((t) => t.cat_id === params.get("cat"))?.cat_id ?? null;
   // One หัวข้อ or one หมวด is picked at a time, and the หัวข้อ is the narrower
   const main =
@@ -453,17 +494,17 @@ function contains(texts: string[], key: string): boolean {
 }
 
 /** The texts /reports shows of a report: its name, หัวข้อ, กลุ่ม and หมวด */
-function shownTexts(report: DcReport, topic: DcTopic, subgroup: string): string[] {
+function shownTexts(report: LibraryReport, topic: DcTopic, subgroup: string): string[] {
   return [report.report_name, topic.category_name, subgroup, topic.main_report_name];
 }
 
 /**
  * Every report /reports lists for a query (SPEC §9.3), by หัวข้อ and กลุ่ม
- * in catalog.json order: those of the หมวด or หัวข้อ picked whose
- * report_name, source_table, opendata_id, หัวข้อ, กลุ่ม or หมวด contains the
- * search, whatever its letter case.
+ * in libraryMains order: those of the หมวด or หัวข้อ picked whose
+ * report_name, หัวข้อ, กลุ่ม, หมวด or references contains the search,
+ * whatever its letter case.
  */
-export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): LibraryList {
+export function libraryList(mains: LibraryMain[], query: LibraryQuery): LibraryList {
   const key = searchKey(query.q);
   const groups = mains
     .filter((m) => query.main === null || m.main_report_id === query.main)
@@ -473,7 +514,7 @@ export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): Lib
         topic,
         subgroup: g.subgroup,
         reports: g.reports.filter((report) =>
-          contains([...shownTexts(report, topic, g.subgroup), report.source_table, report.opendata_id], key),
+          contains([...shownTexts(report, topic, g.subgroup), ...report.references], key),
         ),
       })),
     )
@@ -483,10 +524,10 @@ export function libraryList(mains: DcCatalog["mains"], query: LibraryQuery): Lib
 
 /**
  * Whether the list of a query holds a report that matches the search only by
- * its source_table or opendata_id, which /reports does not show: the note
- * under the list's heading (SPEC §9.3).
+ * its references, which /reports does not show: the note under the list's
+ * heading (SPEC §9.3).
  */
-export function libraryByReference(mains: DcCatalog["mains"], query: LibraryQuery): boolean {
+export function libraryByReference(mains: LibraryMain[], query: LibraryQuery): boolean {
   const key = searchKey(query.q);
   return libraryList(mains, query).groups.some((g) =>
     g.reports.some((report) => !contains(shownTexts(report, g.topic, g.subgroup), key)),

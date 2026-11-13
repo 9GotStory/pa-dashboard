@@ -1,6 +1,6 @@
 // Data Center budget check (SPEC §9.6, CODING_STANDARDS §5). CI runs it after
 // npm run build. It exits 1, naming the page, when the JavaScript that the
-// home page, the report library or a report page loads is over budget, or
+// home page, the report library, รายงานประชากร or a report page loads is over budget, or
 // when a Data Center page preloads font files, which held back each page's
 // LCP (SPEC §4).
 import fs from "node:fs";
@@ -13,7 +13,10 @@ const KB = 1024;
 // The pages §9.6 budgets, by the gzip (zlib's default level) of the scripts
 // their HTML loads. Leaflet loads later through a dynamic import, so it is in
 // no <script> or preload of the HTML and does not count.
-const JS_BUDGET = { "/": 150 * KB, "/reports": 150 * KB };
+// /reports/population (Track K) has no next/dynamic table page: all its
+// scripts count.
+const POPULATION_PAGE = "/reports/population";
+const JS_BUDGET = { "/": 150 * KB, "/reports": 150 * KB, [POPULATION_PAGE]: 150 * KB };
 // Each /reports/{id} (SPEC §9.6, since F52), without the chunks of the table
 // pages that src/components/dc/tables/TablePicker.tsx loads with next/dynamic.
 const REPORT_BUDGET = 150 * KB;
@@ -31,7 +34,8 @@ const kb = (bytes) => `${(bytes / KB).toFixed(1)} KB`;
 const sum = (files) => files.reduce((total, f) => total + f.gzip, 0);
 const htmlOf = (page) => fs.readFileSync(path.join(OUT, page === "/" ? "index.html" : `${page}.html`), "utf8");
 
-// The (dc) pages in out/, as dc-check.mjs lists them: /, /reports and /reports/{id}.
+// The (dc) pages in out/, as dc-check.mjs lists them: /, /reports and every
+// page under /reports/, /reports/population (SPEC §4) among them.
 function dcPages() {
   const reports = path.join(OUT, "reports");
   const ids = fs.existsSync(reports)
@@ -107,7 +111,7 @@ for (const [page, budget] of Object.entries(JS_BUDGET)) {
 
 const chunks = tablePageChunks();
 const reports = pages
-  .filter((page) => page.startsWith("/reports/"))
+  .filter((page) => page.startsWith("/reports/") && page !== POPULATION_PAGE)
   .map((page) => ({ page, files: loaded(page, chunks) }));
 const most = reports.reduce((a, b) => (sum(b.files) > sum(a.files) ? b : a));
 console.log(
