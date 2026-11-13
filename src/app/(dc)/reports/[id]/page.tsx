@@ -4,12 +4,12 @@ import { notFound } from "next/navigation";
 import { TableLimits, TableMethod } from "@/components/dc/tables/methods";
 import TablePicker from "@/components/dc/tables/TablePicker";
 import { formatThaiDate } from "@/lib/dc/format";
-import { readCatalog } from "@/lib/dc/snapshot";
+import { readAwaitingWarnings, readCatalog } from "@/lib/dc/snapshot";
 import { tablePage } from "@/lib/dc/tables";
 import type { DcCatalog, DcReport } from "@/lib/dc/types";
 
-// The report page (SPEC §9.4): one page per report in catalog.json, and 404
-// for any other id. The frame (breadcrumb, hero, เกี่ยวกับรายงานนี้, รายงานที่
+// The report page (SPEC §9.4): one page per report in catalog.json whose
+// source table has a page, and 404 for any other id. The frame (breadcrumb, hero, เกี่ยวกับรายงานนี้, รายงานที่
 // เกี่ยวข้อง) is built here from catalog.json at build time; the numbers come
 // from /data/reports/{id}.json in the browser.
 export const dynamicParams = false;
@@ -34,6 +34,8 @@ function related(all: Entry[], here: Entry): Entry[] {
 }
 
 export function generateStaticParams() {
+  // A รายงานที่รอวิเคราะห์ gets no page: the build warns, it does not fail (SPEC §5.2)
+  for (const warning of readAwaitingWarnings()) console.warn(warning);
   return entries(readCatalog()).map((e) => ({ id: e.report.opendata_id }));
 }
 
@@ -49,14 +51,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   const catalog = readCatalog();
   const all = entries(catalog);
   const here = all.find((e) => e.report.opendata_id === id);
-  if (!here) notFound();
+  // The page of the report's source table (ADR-0015)
+  const page = here && tablePage(here.report.source_table);
+  if (!here || !page) notFound();
   const { main, topic, group, report } = here;
   const hdc = `https://hdc.moph.go.th/pre/public/standard-report-detail/${report.opendata_id}?subcatalogId=${report.cat_id}`;
   const openData = `https://opendata.moph.go.th/th/services/summary-table/${report.main_report_id}/${report.source_table}/${report.opendata_id}`;
   const latest = report.years.reduce((max, y) => (y.max_date_com > max ? y.max_date_com : max), "");
   const others = related(all, here);
-  // The page of the report's source table, or none yet: CoverageReport for a coverage report (ADR-0015)
-  const page = tablePage(report.source_table);
   const crumbs = [
     { label: "รายงานสุขภาพ", href: "/reports" },
     { label: main.main_report_name, href: `/reports?main=${main.main_report_id}` },
@@ -98,27 +100,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       </header>
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border bg-white print:border-0">
-        {page || report.report_type === "coverage" ? (
-          <TablePicker
-            id={report.opendata_id}
-            page={page}
-            names={{ areas: catalog.areas, hospitals: catalog.hospitals }}
-            years={catalog.meta.years}
-          />
-        ) : (
-          // workload, empty or anything else of a table without a page: not shown (SPEC §9.4)
-          <section aria-labelledby="unsupported-title" className="px-4 py-10 text-center sm:px-6">
-            <h2 id="unsupported-title" className="font-prompt text-lg font-semibold text-dc-navy">
-              ยังไม่รองรับรูปแบบรายงานนี้
-            </h2>
-            <p className="mt-1 text-dc-muted">
-              หน้านี้แสดงได้เฉพาะรายงานแบบความครอบคลุม (coverage) ดูรายงานนี้ได้ที่{" "}
-              <a href={hdc} className="font-semibold text-dc-blue underline underline-offset-2">
-                หน้ารายงานบน HDC
-              </a>
-            </p>
-          </section>
-        )}
+        <TablePicker
+          id={report.opendata_id}
+          page={page}
+          names={{ areas: catalog.areas, hospitals: catalog.hospitals }}
+          years={catalog.meta.years}
+        />
 
         <section aria-labelledby="about-title" className="border-t border-dc-border bg-dc-canvas/60 px-4 py-5 sm:px-6">
           <h2 id="about-title" className="font-prompt text-[15px] font-semibold text-dc-navy">
@@ -149,29 +136,16 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               </dl>
             </div>
             <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4 text-xs leading-relaxed">
-              {(page || report.report_type === "coverage") && (
-                <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
-              )}
-              {page ? (
-                <div className="mb-3">
-                  <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
-                </div>
-              ) : (
-                // The coverage method of CoverageReport; another report_type has no page of its own yet
-                report.report_type === "coverage" && (
-                  <p className="mb-3">
-                    รวมเป้าหมายและผลงานของทุกแถวที่ areacode ขึ้นต้นด้วย {catalog.meta.district_code} (หรือ 6 หลักแรกตรงกับตำบลที่เลือก)
-                    แล้วคิดร้อยละ = ผลงาน ÷ เป้าหมาย × 100 จากผลรวม ไม่เฉลี่ยร้อยละของแต่ละแถว · ผ่านเกณฑ์เมื่อร้อยละ ≥ เกณฑ์
-                    {report.col_target && report.col_result && ` · เป้าหมายทั้งปีจากคอลัมน์ ${report.col_target} และผลงานจากคอลัมน์ ${report.col_result}`}
-                  </p>
-                )
-              )}
+              <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
+              <div className="mb-3">
+                <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
+              </div>
               <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">ข้อจำกัด</h3>
               <ul className="mt-1 list-disc pl-4">
                 <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
                 {/* One year (s_dental_0_5_cavity_free) has no แนวโน้ม: nothing that reads as several years (SPEC §9.4) */}
                 {report.years.length > 1 && <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>}
-                {page && <TableLimits page={page} report={report} />}
+                <TableLimits page={page} report={report} />
               </ul>
             </div>
           </div>

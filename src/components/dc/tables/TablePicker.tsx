@@ -26,10 +26,9 @@ const PAGES: Record<Page, ComponentType<Props>> = {
   annual: dynamic(() => import("./AnnualPage"), { loading }),
   cavity: dynamic(() => import("./CavityPage"), { loading }),
 };
-const Coverage = dynamic(() => import("../CoverageReport"), { loading });
 
-/** ผลรายงาน of the report: the page of its source table (tablePage), or CoverageReport for a table without one yet (ADR-0015) */
-export default function TablePicker({ page, ...props }: Props & { page: Page | null }) {
-  const Page = page ? PAGES[page] : Coverage;
+/** ผลรายงาน of the report: the page of its source table (tablePage, ADR-0015) */
+export default function TablePicker({ page, ...props }: Props & { page: Page }) {
+  const Page = PAGES[page];
   return <Page {...props} />;
 }
