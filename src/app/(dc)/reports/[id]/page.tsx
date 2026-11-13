@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ReportAbout from "@/components/dc/report/ReportAbout";
+import ReportBreadcrumb from "@/components/dc/report/ReportBreadcrumb";
+import ReportHero from "@/components/dc/report/ReportHero";
 import { TableLimits, TableMethod } from "@/components/dc/tables/methods";
 import TablePicker from "@/components/dc/tables/TablePicker";
 import { formatThaiDate } from "@/lib/dc/format";
@@ -72,42 +75,25 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
   return (
     <>
-      <nav aria-label="ลำดับหน้าของรายงาน" className="mb-3 print:hidden">
-        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-dc-text-secondary">
-          {crumbs.map((c, i) => (
-            <li key={c.label} className="flex items-center gap-2">
-              {i > 0 && <span aria-hidden="true">/</span>}
-              {c.href ? (
-                <Link href={c.href} className="font-semibold text-dc-brand-primary underline-offset-2 hover:underline">
-                  {c.label}
-                </Link>
-              ) : (
-                c.label
-              )}
-            </li>
-          ))}
-        </ol>
-      </nav>
-
-      <header className="mb-4 rounded-[10px] border border-l-4 border-dc-border-subtle border-l-dc-brand-accent bg-white px-4 py-5 sm:px-7 sm:py-6">
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-[5px] bg-dc-highlight-soft px-2.5 py-1 text-xs font-bold text-dc-brand-deep">
-            {report.source_table}
-          </span>
-          {report.catalog_status === "removed" && (
-            <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">
-              HDC ไม่แสดงรายงานนี้แล้ว
+      <ReportBreadcrumb crumbs={crumbs} />
+      <ReportHero
+        badges={
+          <>
+            <span className="rounded-[5px] bg-dc-highlight-soft px-2.5 py-1 text-xs font-bold text-dc-brand-deep">
+              {report.source_table}
             </span>
-          )}
-        </div>
-        <p className="mb-1.5 text-xs font-bold text-dc-brand-primary">{topic.category_name}</p>
-        <h1 className="font-prompt text-[22px] font-semibold leading-snug text-dc-brand-deep sm:text-[28px]">
-          {report.report_name}
-        </h1>
-        <p className="mt-3 border-t border-dc-border-subtle pt-3 text-xs text-dc-text-secondary">
-          {group.subgroup && `${group.subgroup} · `}อำเภอสอง จังหวัดแพร่ · ข้อมูลจาก HDC Open Data
-        </p>
-      </header>
+            {report.catalog_status === "removed" && (
+              <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">
+                HDC ไม่แสดงรายงานนี้แล้ว
+              </span>
+            )}
+          </>
+        }
+        topic={topic.category_name}
+        title={report.report_name}
+        subgroup={group.subgroup}
+        credit="ข้อมูลจาก HDC Open Data"
+      />
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0">
         <TablePicker
@@ -117,27 +103,19 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           years={catalog.meta.years}
         />
 
-        <section
-          aria-labelledby="about-title"
-          className="border-t border-dc-border-subtle bg-dc-canvas/60 px-4 py-5 sm:px-6"
-        >
-          <h2 id="about-title" className="font-prompt text-[15px] font-semibold text-dc-brand-deep">
-            เกี่ยวกับรายงานนี้
-          </h2>
-          <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-white p-4">
-              <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">แหล่งข้อมูล</h3>
-              <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
-                <dt className="text-dc-text-secondary">ตารางต้นทาง</dt>
-                <dd>{report.source_table}</dd>
-                <dt className="text-dc-text-secondary">รหัสรายงาน</dt>
-                <dd>{report.opendata_id}</dd>
-                <dt className="text-dc-text-secondary">ปีที่มีในระบบ</dt>
-                <dd>{report.years.length > 0 ? report.years.map((y) => y.b_year).join(", ") : "ยังไม่มีข้อมูล"}</dd>
-                <dt className="text-dc-text-secondary">วันที่ข้อมูลล่าสุด</dt>
-                <dd>{formatThaiDate(latest) || "—"}</dd>
-                <dt className="text-dc-text-secondary">ต้นทาง</dt>
-                <dd>
+        <ReportAbout
+          sourceRows={[
+            { term: "ตารางต้นทาง", detail: report.source_table },
+            { term: "รหัสรายงาน", detail: report.opendata_id },
+            {
+              term: "ปีที่มีในระบบ",
+              detail: report.years.length > 0 ? report.years.map((y) => y.b_year).join(", ") : "ยังไม่มีข้อมูล",
+            },
+            { term: "วันที่ข้อมูลล่าสุด", detail: formatThaiDate(latest) || "—" },
+            {
+              term: "ต้นทาง",
+              detail: (
+                <>
                   <a href={hdc} className="text-dc-brand-primary underline underline-offset-2">
                     HDC
                   </a>{" "}
@@ -145,24 +123,20 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <a href={openData} className="text-dc-brand-primary underline underline-offset-2">
                     HDC Open Data
                   </a>
-                </dd>
-              </dl>
-            </div>
-            <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-white p-4 text-xs leading-relaxed">
-              <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
-              <div className="mb-3">
-                <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
-              </div>
-              <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">ข้อจำกัด</h3>
-              <ul className="mt-1 list-disc pl-4">
-                <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
-                {/* One year (s_dental_0_5_cavity_free) has no แนวโน้ม: nothing that reads as several years (SPEC §9.4) */}
-                {report.years.length > 1 && <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>}
-                <TableLimits page={page} report={report} />
-              </ul>
-            </div>
-          </div>
-        </section>
+                </>
+              ),
+            },
+          ]}
+          method={<TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />}
+          limits={
+            <>
+              <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
+              {/* One year (s_dental_0_5_cavity_free) has no แนวโน้ม: nothing that reads as several years (SPEC §9.4) */}
+              {report.years.length > 1 && <li>นิยามและคอลัมน์ของตารางอาจเปลี่ยนข้ามปี ควรระวังเมื่อเทียบแนวโน้ม</li>}
+              <TableLimits page={page} report={report} />
+            </>
+          }
+        />
       </div>
 
       {others.length > 0 && (
