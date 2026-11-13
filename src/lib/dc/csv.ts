@@ -1,8 +1,9 @@
 import { formatThaiDate } from "./format";
 import type { Cell, DcReport } from "./types";
 
-// The CSV download of the report pages (SPEC §9.4), apart from format.ts,
-// which the home page loads too.
+// The CSV download of the report pages (SPEC §9.4, §9.4.1), apart from
+// format.ts, which the home page loads too. รายงานประชากร builds its own in
+// population-report.ts on csvText, so the HDC pages do not load its data layer.
 
 /**
  * Rows as CSV text: a UTF-8 BOM so Excel reads Thai, CRLF line ends, every
@@ -16,6 +17,14 @@ function toCsv(rows: Cell[][]): string {
     return `"${safe.replaceAll('"', '""')}"`;
   };
   return "\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n");
+}
+
+/**
+ * The text of a report's CSV download (SPEC §9.4, §9.4.1): the site's line,
+ * the report's own header lines, a blank line, then the table shown
+ */
+export function csvText(header: Cell[][], table: Cell[][]): string {
+  return toCsv([["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"], ...header, [], ...table]);
 }
 
 /**
@@ -39,13 +48,13 @@ export function reportCsv(csv: {
   const { report, year, part, filters, dateCom, table } = csv;
   return {
     name: `SHDC-${report.source_table}-${report.opendata_id.slice(0, 8)}-${year}${part ? `-${part}` : ""}.csv`,
-    text: toCsv([
-      ["Song Health Data Center · ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่"],
-      ["รายงาน", `${report.report_name} (${report.opendata_id})`],
-      ["ตัวกรอง", filters],
-      ["แหล่งข้อมูล", `HDC Open Data ตาราง ${report.source_table} · วันที่ข้อมูล ${formatThaiDate(dateCom)}`],
-      [],
-      ...table,
-    ]),
+    text: csvText(
+      [
+        ["รายงาน", `${report.report_name} (${report.opendata_id})`],
+        ["ตัวกรอง", filters],
+        ["แหล่งข้อมูล", `HDC Open Data ตาราง ${report.source_table} · วันที่ข้อมูล ${formatThaiDate(dateCom)}`],
+      ],
+      table,
+    ),
   };
 }

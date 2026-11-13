@@ -60,7 +60,7 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
   },
   {
-    files: ["src/lib/dc/population-report.ts", "src/lib/dc/population-totals.ts"],
+    files: ["src/lib/dc/population-report.ts", "src/lib/dc/population-csv.ts", "src/lib/dc/population-totals.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
   },
   {
