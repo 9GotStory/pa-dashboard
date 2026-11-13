@@ -6,7 +6,7 @@ Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playw
 
 - Start from `.wizard/f42/check.mjs`, F42's live check of `/reports` (counts against `catalog.json`, search, history, focus, contrast, overflow): `SHOTS=.wizard/<ticket>/shots node .wizard/f42/check.mjs <result.json> <catalog.json>`, with `BASE=<url>` for a local build.
 - A script outside the repo cannot resolve `playwright-core` by name: ESM looks for `node_modules` beside the script. Import it by path: `import { chromium } from "<repo>/node_modules/playwright-core/index.mjs"`, and launch with `{ channel: "chrome" }` as `dc-check.mjs` does.
-- Serve `out/` with `npx serve@latest out -l <port>` started in the background, and stop it by its PID: `kill $(ss -ltnp | grep ":<port> " | grep -o 'pid=[0-9]*' | cut -d= -f2)`. A hook denies `pkill -f`.
+- Serve `out/` with `npx serve@latest out -l <port>` started in the background, wait until it answers (`until curl -s -o /dev/null localhost:<port>; do sleep 1; done`) before the first `page.goto`, and stop it by its PID: `kill $(ss -ltnp | grep ":<port> " | grep -o 'pid=[0-9]*' | cut -d= -f2)`. A hook denies `pkill -f`.
 - Block the map tiles (`page.route((u) => u.hostname === "tile.openstreetmap.org", (r) => r.abort())`) so the check does not depend on the tile server.
 - To try a build without population data, set `years` to `[]` in a copy of `public/data/population.json`, `npx next build`, check, then put the copy back and build again.
 
@@ -19,7 +19,7 @@ A ticket that changes how a page looks: screenshot the reference HTML in `docs/r
 1. Commit the branch. Build it from the snapshot (`npx next build`) and copy `out/` to the scratchpad.
 2. `git checkout main`, `npx next build`, copy `out/` to the scratchpad, `git checkout -` back. Both builds then read the same `public/data/`.
    - A `git worktree` of `main` with `node_modules` symlinked from the repo does not build: Turbopack refuses files outside the worktree's root.
-3. Serve the two copies on two ports and run the SPEC §9.6 Lighthouse command against each, alternating `main` and branch, 3 runs each. Add `--output=json --output-path=<file> --quiet` to read the result:
+3. Serve the two copies on two ports and run the SPEC §9.6 Lighthouse command against each: 3 rounds as SPEC §9.6 sets, one run of each per round, swapping which goes first every round. Add `--output=json --output-path=<file> --quiet` to read the result:
    - LCP in ms: `audits["largest-contentful-paint"].numericValue`.
    - The LCP element: Lighthouse 13 has no `largest-contentful-paint-element` audit; the element's `nodeLabel` and `snippet` are inside `audits["lcp-breakdown-insight"].details`.
 4. Record both medians and the LCP element of each in the PR. Note the load average: this machine is shared.

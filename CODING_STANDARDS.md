@@ -43,6 +43,7 @@
 - หน้าใน `(dc)` ต้องไม่มี network request ไป `script.google.com`
 - การเข้าถึง: ทุก control มี label, ตารางมี `<caption>`, กราฟ SVG มี `role="img"` + `aria-label` ส่วน SVG ที่มีปุ่มข้างใน (ตำบลบนแผนที่) เป็น `role="group"` + `aria-label` และกราฟที่กดได้ (แท่งของส่วนเปรียบเทียบ แถวช่วงอายุ) เป็น `<button>` ที่ชื่อบอกค่าและ SVG ข้างในเป็น `aria-hidden`, focus ย้ายไปหัวข้อเมื่อเปลี่ยนหน้าแบบ R6
 - URL state: ตัวกรองของหน้ารายงานอยู่ใน query ตาม `ReportQuery` และตั้ง `dynamicParams = false`
+- หน้ารายตาราง (ADR-0015): สูตรและกติกาที่ทุกหน้าต้องเหมือนกันอยู่ที่เดียว (`values.ts`, ชิ้นส่วนร่วมใน `src/components/dc/report/`) การเขียนซ้ำคือ finding · layout, markup และ map/switch ต่อหน้าที่หน้าพี่น้องคล้ายกันซ้ำได้ ไม่ใช่ finding
 
 ## 5. เทสต์และ seam ที่ตกลงกัน
 
