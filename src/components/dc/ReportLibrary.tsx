@@ -4,10 +4,10 @@ import { ArrowRight, ChevronDown, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useOptimistic, useRef, type ReactNode, type RefObject } from "react";
-import type { DcCatalog, DcReport, LibraryQuery } from "@/lib/dc/types";
+import type { LibraryMain, LibraryQuery, LibraryReport } from "@/lib/dc/types";
 import { libraryByReference, libraryList, libraryNameParts, libraryQuery, librarySearch } from "@/lib/dc/values";
 
-type Mains = DcCatalog["mains"];
+type Mains = LibraryMain[];
 type Topic = Mains[number]["topics"][number];
 type Go = (next: LibraryQuery, how?: "push" | "replace") => void;
 
@@ -313,7 +313,7 @@ function Directory({
                           )}
                           <ul>
                             {g.reports.map((r) => (
-                              <li key={r.opendata_id}>
+                              <li key={r.id}>
                                 <Row report={r} q={query.q} />
                               </li>
                             ))}
@@ -379,10 +379,10 @@ function Count({ n }: { n: number }) {
  * ไม่แสดงรายงานนี้แล้ว or ยังไม่มีข้อมูล under the name (SPEC §9.3). The
  * marks are React elements, so a search of HTML stays text.
  */
-function Row({ report, q }: { report: DcReport; q: string }) {
+function Row({ report, q }: { report: LibraryReport; q: string }) {
   return (
     <Link
-      href={`/reports/${report.opendata_id}`}
+      href={`/reports/${report.id}`}
       className="group flex min-h-16 min-w-0 items-center justify-between gap-4 border-b border-dc-border-subtle py-4 hover:bg-dc-canvas focus-visible:rounded-md sm:gap-6 sm:px-2"
     >
       <span className="min-w-0 flex-1 text-sm leading-[1.8] group-hover:text-dc-brand-primary sm:text-[15px]">
@@ -395,12 +395,10 @@ function Row({ report, q }: { report: DcReport; q: string }) {
             part.text
           ),
         )}
-        {report.catalog_status === "removed" && (
+        {report.removed && (
           <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">HDC ไม่แสดงรายงานนี้แล้ว</span>
         )}
-        {report.years.length === 0 && (
-          <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">ยังไม่มีข้อมูล</span>
-        )}
+        {report.empty && <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">ยังไม่มีข้อมูล</span>}
       </span>
       <ArrowRight
         aria-hidden="true"

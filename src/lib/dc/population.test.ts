@@ -3,15 +3,8 @@ import test from "node:test";
 import { AGE_6812, AGE_6812_LINES } from "./fixtures/age-6812cc54-20261106";
 import { STAT_M68, STAT_M68_LINES } from "./fixtures/stat-m68-20261111";
 import { formatPct } from "./format";
-import {
-  ageRowsTotals,
-  homePopulation,
-  populationTotals,
-  readRegistryFiles,
-  registryAsOf,
-  registryYear,
-  villageCount,
-} from "./population";
+import { ageRowsTotals, homePopulation, readRegistryFiles, villageCount } from "./population";
+import { populationTotals, registryAsOf, registryYear } from "./population-totals";
 import type { AgeBand, PopulationSnapshot, RegistryPopulationRow } from "./types";
 
 // FEATURES F24, F44: reading and checking stat_m files in the /sync upload

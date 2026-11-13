@@ -1,4 +1,5 @@
 import { formatCount } from "./format";
+import { populationTotals, registryYear } from "./population-totals";
 import type {
   AgeProfile,
   AreaVillages,
@@ -18,29 +19,6 @@ import type {
 // the admin downloads from stat.bora, in the /sync upload (SCHEMA §11.2), and
 // the population part of the home page, at build time (SCHEMA §11.3).
 // Pure functions: no React, no DOM, no fetch (CODING_STANDARDS §4).
-
-/** The พ.ศ. year whose 31 Dec a yymm counts: "6812" → "2568" */
-export function registryYear(yymm: string): string {
-  return `25${yymm.slice(0, 2)}`;
-}
-
-/** The day a yymm's figures count to, as the home page shows it: "6812" → "ณ 31 ธ.ค. 2568" */
-export function registryAsOf(yymm: string): string {
-  return `ณ 31 ธ.ค. ${registryYear(yymm)}`;
-}
-
-/** ชาย หญิง รวม and บ้าน of rows added up */
-export function populationTotals(rows: RegistryPopulationRow[]): PopulationTotals {
-  return rows.reduce(
-    (sum, r) => ({
-      male: sum.male + r.male,
-      female: sum.female + r.female,
-      total: sum.total + r.total,
-      house: sum.house + r.house,
-    }),
-    { male: 0, female: 0, total: 0, house: 0 },
-  );
-}
 
 /**
  * How many หมู่บ้าน village rows are of (SCHEMA §11.2): each code once,

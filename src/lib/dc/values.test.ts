@@ -3,13 +3,24 @@ import test from "node:test";
 import { MAINS, MCH, PROMOTION, SERVICE_PLAN, VACCINES } from "./fixtures/catalog-20261104";
 import { HEADERS } from "./fixtures/headers-20261104";
 import { S_AGED9, S_EPI1, S_EPI2 as S_EPI2_CUT, S_KPI_FOOD } from "./fixtures/reports-20261111";
-import type { Cell, DcReport, DcReportData, DcYearBlock, Family, LibraryList, ReportQuery, TrendPoint } from "./types";
+import type {
+  Cell,
+  DcReport,
+  DcReportData,
+  DcYearBlock,
+  Family,
+  LibraryList,
+  LibraryReport,
+  ReportQuery,
+  TrendPoint,
+} from "./types";
 import {
   dataYears,
   families,
   goalFor,
   libraryByReference,
   libraryList,
+  libraryMains,
   libraryNameParts,
   libraryQuery,
   librarySearch,
@@ -651,12 +662,114 @@ test("s_kpi_food 2569: Q_A in the header but target1–result4 empty in the whol
   assert.equal(reportQuery(food, new URLSearchParams("period=q1"), NAMES).period, "year");
 });
 
-// FEATURES F19, F40: ?main=&cat=&q= of /reports as a LibraryQuery, and the
-// reports of catalog.json it lists (SPEC §9.3), on the real catalog of 4 Nov
-// 2569: 21 reports, 14 in ส่งเสริมป้องกัน and 7 in ข้อมูลตอบสนอง Service Plan.
-const library = (search: string) => libraryList(MAINS, libraryQuery(MAINS, new URLSearchParams(search)));
-/** Each group of a list as its กลุ่ม followed by its reports' source_table */
-const listed = (list: LibraryList) => list.groups.map((g) => [g.subgroup, ...g.reports.map((r) => r.source_table)]);
+// FEATURES F19, F40, F67: ?main=&cat=&q= of /reports as a LibraryQuery, and the
+// reports it lists (SPEC §9.3), on the real catalog of 4 Nov 2569 with
+// รายงานประชากร first (SPEC §5.6): 22 reports, รายงานประชากร, 14 in
+// ส่งเสริมป้องกัน and 7 in ข้อมูลตอบสนอง Service Plan.
+const LIBRARY = libraryMains(MAINS, true);
+const library = (search: string) => libraryList(LIBRARY, libraryQuery(LIBRARY, new URLSearchParams(search)));
+/** A report as a test lists it: an HDC report's references start with its source_table */
+const label = (r: LibraryReport) => (r.id === "population" ? "population" : r.references[0]);
+/** Each group of a list as its กลุ่ม followed by its reports' source_table, or population */
+const listed = (list: LibraryList) => list.groups.map((g) => [g.subgroup, ...g.reports.map(label)]);
+
+test("catalog.json's หมวด with รายงานประชากร first: its own หมวด ข้อมูลประชากร, หัวข้อ ประชากรทะเบียนราษฎร and one report, no กลุ่ม; then the 2 หมวด of HDC as in catalog.json", () => {
+  assert.deepEqual(
+    LIBRARY.map((m) => [m.main_report_id, m.main_report_name, m.topics.length]),
+    [
+      ["population", "ข้อมูลประชากร", 1],
+      [PROMOTION.main_report_id, "ส่งเสริมป้องกัน", 4],
+      [SERVICE_PLAN.main_report_id, "ข้อมูลตอบสนอง Service Plan", 2],
+    ],
+  );
+  const [topic] = LIBRARY[0].topics;
+  assert.equal(topic.cat_id, "population");
+  assert.equal(topic.category_name, "ประชากรทะเบียนราษฎร");
+  assert.deepEqual(topic.groups, [
+    {
+      subgroup: "",
+      reports: [
+        {
+          id: "population",
+          report_name: "ประชากรและบ้าน รายตำบลและรายหมู่บ้าน",
+          references: ["ผู้สูงอายุ"],
+          removed: false,
+          empty: false,
+        },
+      ],
+    },
+  ]);
+});
+
+test("an HDC report in the library → its opendata_id and name, its source_table and opendata_id to search, removed from catalog_status removed and empty from years []", () => {
+  /** The library's reports of HDC, with MAINS' reports changed */
+  const hdcReports = (change: (r: DcReport) => DcReport) =>
+    libraryMains(
+      MAINS.map((m) => ({
+        ...m,
+        topics: m.topics.map((t) => ({
+          ...t,
+          groups: t.groups.map((g) => ({ ...g, reports: g.reports.map(change) })),
+        })),
+      })),
+      true,
+    )
+      .slice(1)
+      .flatMap((m) => m.topics.flatMap((t) => t.groups.flatMap((g) => g.reports)));
+  const year = { b_year: "2569", row_count: 1, max_date_com: "202611120605", synced_at: "" };
+
+  const [anc12] = hdcReports((r) => ({ ...r, years: [year] }));
+  assert.deepEqual(anc12, {
+    id: "1c1b8e24aff59258a806f122e264031e",
+    report_name: "ร้อยละหญิงตั้งครรภ์ได้รับการฝากครรภ์ครั้งแรกก่อนหรือเท่ากับ 12 สัปดาห์",
+    references: ["s_kpi_anc12", "1c1b8e24aff59258a806f122e264031e"],
+    removed: false,
+    empty: false,
+  });
+  const [removed] = hdcReports((r) => ({ ...r, catalog_status: "removed", years: [] }));
+  assert.equal(removed.removed, true);
+  assert.equal(removed.empty, true);
+});
+
+test("reports/population.json without a year → รายงานประชากร stays first in the library, empty (ยังไม่มีข้อมูล)", () => {
+  const [main] = libraryMains(MAINS, false);
+  assert.equal(main.main_report_id, "population");
+  assert.equal(main.topics[0].groups[0].reports[0].empty, true);
+});
+
+test("?main=population and ?cat=population → รายงานประชากร alone", () => {
+  for (const search of ["main=population", "cat=population"]) {
+    assert.deepEqual(listed(library(search)), [["", "population"]], search);
+  }
+  assert.deepEqual(libraryQuery(LIBRARY, new URLSearchParams("cat=population")), {
+    main: null,
+    cat: "population",
+    q: "",
+  });
+});
+
+test("ทะเบียนราษฎร and หมู่บ้าน → รายงานประชากร by its หัวข้อ or name; ประชากร → it first, then s_dm_screen and s_ht_screen, whose names have ประชากรอายุ 35 ปีขึ้นไป; ผู้สูงอายุ → it by its keyword, which counts as reference data, then s_aged9 and s_kpi_dental33 by name", () => {
+  for (const q of ["ทะเบียนราษฎร", "หมู่บ้าน"]) {
+    assert.deepEqual(listed(library(`q=${q}`)), [["", "population"]], q);
+  }
+  assert.deepEqual(listed(library("q=ประชากร")), [
+    ["", "population"],
+    ["", "s_dm_screen", "s_ht_screen"],
+  ]);
+  for (const q of ["ประชากร", "ทะเบียนราษฎร", "หมู่บ้าน"]) {
+    assert.equal(libraryByReference(LIBRARY, libraryQuery(LIBRARY, new URLSearchParams(`q=${q}`))), false, q);
+  }
+  assert.deepEqual(listed(library("q=ผู้สูงอายุ")), [
+    ["", "population"],
+    ["", "s_aged9"],
+    ["", "s_kpi_dental33"],
+  ]);
+  assert.equal(libraryByReference(LIBRARY, libraryQuery(LIBRARY, new URLSearchParams("q=ผู้สูงอายุ"))), true);
+});
+
+test("?q=population, its id → no report: รายงานประชากร has no opendata_id to search (SPEC §9.3)", () => {
+  assert.equal(library("q=population").total, 0);
+});
 
 test("?cat= of การสร้างเสริมภูมิคุ้มกันโรค → its 8 reports in 4 กลุ่ม, กลุ่มอายุ 1 → 2 → 3 → 5 ปี, s_epi1 before fully immunized in its กลุ่ม", () => {
   const list = library(`cat=${VACCINES.cat_id}`);
@@ -682,7 +795,7 @@ test("?q=s_epi_complete → its 4 reports, fully immunized 1, 2, 3 and 5 ปี;
 
 test("?q= also finds an opendata_id and a หัวข้อ name, in any letter case and with spaces around it: 28DD2C79 → fully immunized 1 ปี; service plan → the 7 reports of its 2 หัวข้อ", () => {
   assert.deepEqual(
-    library("q= 28DD2C79 ").groups.flatMap((g) => g.reports.map((r) => r.opendata_id)),
+    library("q= 28DD2C79 ").groups.flatMap((g) => g.reports.map((r) => r.id)),
     ["28dd2c7955ce926456240b2ff0100bde"],
   );
   assert.equal(library("q=service plan").total, 7);
@@ -697,7 +810,7 @@ test("?main= of ข้อมูลตอบสนอง Service Plan → the rep
     ],
   );
   assert.deepEqual(
-    libraryQuery(MAINS, new URLSearchParams(`main=${SERVICE_PLAN.main_report_id}&cat=${VACCINES.cat_id}`)),
+    libraryQuery(LIBRARY, new URLSearchParams(`main=${SERVICE_PLAN.main_report_id}&cat=${VACCINES.cat_id}`)),
     {
       main: null,
       cat: VACCINES.cat_id,
@@ -715,10 +828,11 @@ test("?q= searches within the หมวด or หัวข้อ picked: ร้�
   assert.equal(library(`cat=${MCH.cat_id}&q=s_epi_complete`).total, 0);
 });
 
-test("no query → all 21 reports in one list, in catalog.json order by หัวข้อ and กลุ่ม", () => {
+test("no query → all 22 reports in one list, รายงานประชากร first, then in catalog.json order by หัวข้อ and กลุ่ม", () => {
   const list = library("");
-  assert.equal(list.total, 21);
+  assert.equal(list.total, 22);
   assert.deepEqual(listed(list), [
+    ["", "population"],
     ["", "s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"],
     ["กลุ่มอายุ 1 ปี", "s_epi1", "s_epi_complete"],
     ["กลุ่มอายุ 2 ปี", "s_epi2", "s_epi_complete"],
@@ -731,27 +845,27 @@ test("no query → all 21 reports in one list, in catalog.json order by หั�
   ]);
 });
 
-test("?page=3&size=20 of an old link → the LibraryQuery of no query, and all 21 reports", () => {
-  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams("page=3&size=20")), { main: null, cat: null, q: "" });
-  assert.equal(library("page=3&size=20").total, 21);
+test("?page=3&size=20 of an old link → the LibraryQuery of no query, and all 22 reports", () => {
+  assert.deepEqual(libraryQuery(LIBRARY, new URLSearchParams("page=3&size=20")), { main: null, cat: null, q: "" });
+  assert.equal(library("page=3&size=20").total, 22);
 });
 
 test("a LibraryQuery → ?main=&cat=&q= without its defaults or page/size, which libraryQuery reads back as the same query; the defaults alone → no query", () => {
   const picked = { main: null, cat: VACCINES.cat_id, q: "epi 2" } as const;
   assert.equal(librarySearch(picked), "?cat=4df360514655f79f13901ef1181ca1c7&q=epi+2");
-  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams(librarySearch(picked))), picked);
+  assert.deepEqual(libraryQuery(LIBRARY, new URLSearchParams(librarySearch(picked))), picked);
   const thai = { main: PROMOTION.main_report_id, cat: null, q: "กลุ่มอายุ 2 ปี" } as const;
-  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams(librarySearch(thai))), thai);
+  assert.deepEqual(libraryQuery(LIBRARY, new URLSearchParams(librarySearch(thai))), thai);
   assert.equal(librarySearch({ main: null, cat: null, q: "" }), "");
 });
 
-test("?main= or ?cat= that catalog.json lacks, such as a หัวข้อ no longer shown or the id cut short → every หมวด: all 21 reports", () => {
-  assert.deepEqual(libraryQuery(MAINS, new URLSearchParams("main=73daf277&cat=4df36051")), {
+test("?main= or ?cat= that catalog.json lacks, such as a หัวข้อ no longer shown or the id cut short → every หมวด: all 22 reports", () => {
+  assert.deepEqual(libraryQuery(LIBRARY, new URLSearchParams("main=73daf277&cat=4df36051")), {
     main: null,
     cat: null,
     q: "",
   });
-  assert.equal(library("cat=4df36051").total, 21);
+  assert.equal(library("cat=4df36051").total, 22);
 });
 
 // FEATURES F41: the search of /reports (SPEC §9.3) on the same catalog.
@@ -762,7 +876,8 @@ test("?q=เบาหวาน → the 2 reports named so, s_dm_screen and s_ncd
 });
 
 test("s_epi_complete matches its 4 reports by source_table alone → libraryByReference; service plan, a หัวข้อ name, and เบาหวาน, in report names → not; s_epi_complete in อนามัยแม่และเด็ก, with no report → not", () => {
-  const byReference = (search: string) => libraryByReference(MAINS, libraryQuery(MAINS, new URLSearchParams(search)));
+  const byReference = (search: string) =>
+    libraryByReference(LIBRARY, libraryQuery(LIBRARY, new URLSearchParams(search)));
   assert.equal(byReference("q=s_epi_complete"), true);
   assert.equal(byReference("q=service plan"), false);
   assert.equal(byReference("q=เบาหวาน"), false);

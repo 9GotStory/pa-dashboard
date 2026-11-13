@@ -105,14 +105,30 @@ export interface ReportQuery {
 
 /** /reports query: accepted values and defaults */
 export interface LibraryQuery {
-  main: string | null; // main_report_id of a หมวด in catalog.json · default null (every หมวด) · null when cat is set
-  cat: string | null; // cat_id of a หัวข้อ in catalog.json · default null · wins over main
+  main: string | null; // main_report_id of a หมวด in catalog.json, or "population" (SPEC §5.6) · default null (every หมวด) · null when cat is set
+  cat: string | null; // cat_id of a หัวข้อ in catalog.json, or "population" · default null · wins over main
   q: string; // the search as typed · default ""
 } // no page/size: the list is not paged, and an old link with them gets the same query as one without (ADR-0013)
 
+/** A report as the รายงานสุขภาพ page and the home page list it (SPEC §9.2–9.3): one of catalog.json, or รายงานประชากร (SPEC §5.6) */
+export interface LibraryReport {
+  id: string; // opendata_id, or "population" · its page is /reports/{id}
+  report_name: string;
+  references: string[]; // searched but not shown (SPEC §9.3): source_table and opendata_id, or POPULATION_REPORT.keywords
+  removed: boolean; // catalog_status "removed": HDC ไม่แสดงรายงานนี้แล้ว
+  empty: boolean; // ยังไม่มีข้อมูล: years [], or reports/population.json without a year
+}
+
+/** หมวด → หัวข้อ → กลุ่ม → report of the รายงานสุขภาพ page and the home page: catalog.json's, with รายงานประชากร first (SPEC §5.6) */
+export interface LibraryMain {
+  main_report_id: string;
+  main_report_name: string;
+  topics: (DcTopic & { groups: { subgroup: string; reports: LibraryReport[] }[] })[];
+}
+
 /** Every report of the รายงานสุขภาพ page that matches a LibraryQuery */
 export interface LibraryList {
-  groups: { topic: DcTopic; subgroup: string; reports: DcReport[] }[]; // every matching report by หัวข้อ and กลุ่ม, in catalog.json order
+  groups: { topic: DcTopic; subgroup: string; reports: LibraryReport[] }[]; // every matching report by หัวข้อ and กลุ่ม, in LibraryMain order
   total: number; // the reports in groups
 }
 
@@ -264,4 +280,46 @@ export interface HomePopulation {
   yymm: string; // the year shown (SCHEMA §11.3)
   district: AreaPopulation; // key "all"
   areas: AreaPopulation[]; // the ตำบล, by code
+}
+
+/* ---------- รายงานประชากร (Track K, ADR-0016, SPEC §5.6, §9.4.1, SCHEMA §11.5) ---------- */
+
+/** reports/population.json (SCHEMA §7): population.json's shape, but every year has its own age and village rows ([] when it has none) · years [] = no data yet */
+export type PopulationReportData = PopulationSnapshot;
+
+/** รายงานประชากร in the catalog (SPEC §5.6), fixed in code as POPULATION_REPORT of the data layer, not in catalog.json */
+export interface PopulationReportEntry {
+  id: "population"; // no 32-hex opendata_id, so it never clashes with one
+  report_name: string;
+  cat_id: "population";
+  category_name: string;
+  main_report_id: "population";
+  main_report_name: string;
+  keywords: string[]; // searched as the reference data of SPEC §9.3, like source_table: ["ผู้สูงอายุ"]
+}
+
+/** The query of /reports/population: accepted values and defaults (SPEC §9.4.1) */
+export interface PopulationQuery {
+  year: string; // ปีข้อมูล, 4 digits, e.g. "2568" (yymm "6812") · default = the latest ("" without any year) · a year not in the snapshot is kept, so the page says ไม่มีข้อมูลปี … ในระบบ
+}
+
+/** The change of one value (SCHEMA §11.5) */
+export interface PopulationChange {
+  count: number; // new − old
+  pct: number | null; // count ÷ old × 100, not rounded · null when old is 0 (shown "—")
+}
+
+/** An area's totals in one ปีข้อมูล */
+export interface PopulationPoint {
+  year: string; // ปีข้อมูล, 4 digits
+  totals: PopulationTotals | null; // null = the area has no rows that year, shown "—", never 0
+}
+
+/** Every value the รายงานประชากร page shows, from the one data-layer function (SPEC §9.5) */
+export interface PopulationReport {
+  years: string[]; // ปีข้อมูล, 4 digits, oldest first · [] = no data yet
+  query: PopulationQuery; // with what is not accepted replaced
+  shown: PopulationTotals | null; // the year picked · null = that year is not in the snapshot
+  change: Record<keyof PopulationTotals, PopulationChange> | null; // from the year before (SCHEMA §11.5) · null when that year is not in the snapshot, or the year picked is not
+  trend: PopulationPoint[]; // every ปีข้อมูล
 }

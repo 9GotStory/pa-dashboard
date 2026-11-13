@@ -9,22 +9,27 @@ import {
   ScanSearch,
   Smile,
   Syringe,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import DistrictExplorer from "@/components/dc/DistrictExplorer";
 import Hero from "@/components/dc/Hero";
 import { formatBuildTime, formatCount, formatThaiDate } from "@/lib/dc/format";
-import { homePopulation, registryAsOf } from "@/lib/dc/population";
+import { homePopulation } from "@/lib/dc/population";
+import { registryAsOf } from "@/lib/dc/population-totals";
 import { readCatalog, readMeta, readPopulation } from "@/lib/dc/snapshot";
+import { libraryMains } from "@/lib/dc/values";
 
 // The day public/geo/song-tambon.geojson was downloaded, as public/geo/README.md
 // records it (SCHEMA §8); a new download changes both.
 const BOUNDARY_DOWNLOADED = "4 พฤศจิกายน 2569";
 
-// One icon per หัวข้อ of hdc_topics (SCHEMA §6), by cat_id; a หัวข้อ added
-// later gets FALLBACK_TOPIC_ICON until it is mapped here.
+// One icon per หัวข้อ of hdc_topics (SCHEMA §6) and รายงานประชากร's (SPEC
+// §5.6), by cat_id; a หัวข้อ added later gets FALLBACK_TOPIC_ICON until it is
+// mapped here.
 const TOPIC_ICONS: Record<string, LucideIcon> = {
+  population: Users, // ประชากรทะเบียนราษฎร
   "1ed90bc32310b503b7ca9b32af425ae5": Baby, // อนามัยแม่และเด็ก
   "4df360514655f79f13901ef1181ca1c7": Syringe, // การสร้างเสริมภูมิคุ้มกันโรค
   bebf866fceaef84c4078965eaf619565: Leaf, // การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม
@@ -37,8 +42,8 @@ const FALLBACK_TOPIC_ICON = FileText;
 // The Data Center home page (SPEC §9.2), built from catalog.json, meta.json
 // and population.json at build time: the Hero, the ประชากรทะเบียนราษฎร of
 // the อำเภอ, the ตำบล on a map with their หน่วยบริการ, population and
-// population pyramid, a row per หัวข้อ into the report library, and the
-// sources with the latest data date. The client gets the population as
+// population pyramid, a row per หัวข้อ into the report library (รายงานประชากร's
+// first), and the sources with the latest data date. The client gets the population as
 // computed (HomePopulation), never the rows; without population data the
 // page is as in phase 1, under the Hero.
 export default function Home() {
@@ -49,7 +54,7 @@ export default function Home() {
   // (SPEC §9.2). Made here, not in the client: population.ts holds the /sync
   // file reader too.
   const source = population ? `ทะเบียนราษฎร ${registryAsOf(population.yymm)} · กรมการปกครอง` : "";
-  const topics = mains.flatMap((main) =>
+  const topics = libraryMains(mains, population !== null).flatMap((main) =>
     main.topics.map((topic) => ({ topic, count: topic.groups.reduce((n, g) => n + g.reports.length, 0) })),
   );
 
