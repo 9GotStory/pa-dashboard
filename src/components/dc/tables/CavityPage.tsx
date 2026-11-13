@@ -42,7 +42,7 @@ export default function CavityPage({ id, names }: { id: string; names: Names; ye
 
 function Cavity({ data, names }: { data: DcReportData; names: Names }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
-  const { block, total, goal, passed, funnel, units } = cavityValues(data, query, names);
+  const { block, goal, passed, funnel, units } = cavityValues(data, query, names);
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
   const csv =
     block && funnel && units
@@ -54,8 +54,8 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
             dateCom: block.max_date_com,
             table: [
               [unitLabel, ...COLUMNS],
-              ...units.map((u) => [u.name, ...cells(u.children, u.totals.target, u.totals.result, u.screenedPct, u.totals.pct)]),
-              [totalLabel, ...cells(funnel.children, funnel.screened, funnel.cavityFree, funnel.screenedPct, total?.pct ?? null)],
+              ...units.map((u) => [u.name, ...cells(u.funnel)]),
+              [totalLabel, ...cells(funnel)],
             ],
           })
       : null;
@@ -75,10 +75,10 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
         <ReportStatus>ไม่มีข้อมูลในปีงบประมาณ {query.year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</ReportStatus>
       ) : (
         <div className="px-4 pb-6 sm:px-6">
-          <FunnelSummary funnel={funnel} pct={total?.pct ?? null} goal={goal} passed={passed} />
+          <FunnelSummary funnel={funnel} goal={goal} passed={passed} />
           <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <UnitPanel unitLabel={unitLabel} units={units} goal={goal} what="ร้อยละฟันดีไม่มีผุ" />
-            <CavityTable unitLabel={unitLabel} units={units} funnel={funnel} pct={total?.pct ?? null} totalLabel={totalLabel} />
+            <UnitPanel unitLabel={unitLabel} units={units} goal={goal} pctLabel="ร้อยละฟันดีไม่มีผุ" />
+            <CavityTable unitLabel={unitLabel} units={units} funnel={funnel} totalLabel={totalLabel} />
           </div>
         </div>
       )}
@@ -86,13 +86,13 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
   );
 }
 
-/** A unit's cells after its name: counts as numbers for the CSV, which the table formats */
-function cells(children: number, screened: number, cavityFree: number, screenedPct: number | null, pct: number | null): Cell[] {
-  return [children, screened, cavityFree, pctText(screenedPct), pctText(pct)];
+/** The cells of a กรวย after its unit's name: counts as numbers for the CSV, which the table formats */
+function cells(f: Funnel): Cell[] {
+  return [f.children, f.screened, f.cavityFree, pctText(f.screenedPct), pctText(f.cavityFreePct)];
 }
 
 /** A cell as the table shows it */
-function shown(v: Cell) {
+function cellText(v: Cell) {
   return typeof v === "number" ? formatCount(v) : v;
 }
 
@@ -101,8 +101,8 @@ function shown(v: Cell) {
  * เด็ก 0–5 ปี, then ร้อยละฟันดีไม่มีผุ (the report's ร้อยละ) against the
  * เกณฑ์ and ร้อยละตรวจช่องปาก, which has none
  */
-function FunnelSummary(props: { funnel: Funnel; pct: number | null; goal: number | null; passed: boolean | null }) {
-  const { funnel, pct, goal, passed } = props;
+function FunnelSummary(props: { funnel: Funnel; goal: number | null; passed: boolean | null }) {
+  const { funnel, goal, passed } = props;
   const steps = [
     { label: "เด็ก 0–5 ปี", column: "c", count: funnel.children },
     { label: "ตรวจช่องปาก", column: "b", count: funnel.screened },
@@ -138,7 +138,7 @@ function FunnelSummary(props: { funnel: Funnel; pct: number | null; goal: number
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1">
         <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
           <dt className="text-xs text-dc-text-secondary">ร้อยละฟันดีไม่มีผุ (a ÷ b)</dt>
-          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{pctText(pct)}</dd>
+          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{pctText(funnel.cavityFreePct)}</dd>
           <dd className="text-xs text-dc-text-secondary">เกณฑ์ {goalText(goal)}</dd>
           {passed !== null && (
             <dd className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${passed ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}>
@@ -157,8 +157,8 @@ function FunnelSummary(props: { funnel: Funnel; pct: number | null; goal: number
 }
 
 /** c, b and a of each ตำบล or หน่วยบริการ with both ร้อยละ and the total row, scrolling sideways in its own frame (SPEC §9.1) */
-function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; pct: number | null; totalLabel: string }) {
-  const { unitLabel, units, funnel, pct, totalLabel } = props;
+function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; totalLabel: string }) {
+  const { unitLabel, units, funnel, totalLabel } = props;
   return (
     <section className="min-w-0">
       <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border-subtle">
@@ -184,9 +184,9 @@ function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; p
                 <th scope="row" className="px-2 py-2 text-left font-normal whitespace-nowrap sm:px-3">
                   {u.name}
                 </th>
-                {cells(u.children, u.totals.target, u.totals.result, u.screenedPct, u.totals.pct).map((v, i) => (
+                {cells(u.funnel).map((v, i) => (
                   <td key={COLUMNS[i]} className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
-                    {shown(v)}
+                    {cellText(v)}
                   </td>
                 ))}
               </tr>
@@ -197,9 +197,9 @@ function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; p
               <th scope="row" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">
                 {totalLabel}
               </th>
-              {cells(funnel.children, funnel.screened, funnel.cavityFree, funnel.screenedPct, pct).map((v, i) => (
+              {cells(funnel).map((v, i) => (
                 <td key={COLUMNS[i]} className="px-2 py-2 text-right whitespace-nowrap sm:px-3">
-                  {shown(v)}
+                  {cellText(v)}
                 </td>
               ))}
             </tr>

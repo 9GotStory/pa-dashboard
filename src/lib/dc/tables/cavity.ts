@@ -1,4 +1,4 @@
-import type { DcCatalog, DcReportData, ReportQuery } from "../types";
+import type { DcCatalog, DcReportData, ReportQuery, Totals } from "../types";
 import { count, countsBy, goalFor, passes, pctOf, totals, totalsBy, yearBlock } from "../values";
 
 // The data layer of the กรวยปีเดียว page (SPEC §9.4, ADR-0015) for
@@ -28,22 +28,24 @@ export function cavityValues(data: DcReportData, query: ReportQuery, names: Pick
     goal,
     /** ร้อยละฟันดีไม่มีผุ ≥ เกณฑ์; null without a ร้อยละ or a เกณฑ์ */
     passed: passes(total?.pct ?? null, goal),
-    /**
-     * The กรวย of the area: เด็ก 0–5 ปี (c) → ตรวจช่องปาก (b) → ฟันดีไม่มีผุ
-     * (a), with ร้อยละตรวจช่องปาก b ÷ c; null with total
-     */
-    funnel: total && {
-      children: children ?? 0,
-      screened: total.target,
-      cavityFree: total.result,
-      screenedPct: pctOf(total.target, children ?? 0),
-    },
-    /** The ตำบล or หน่วยบริการ of query.by in the area with their เด็ก 0–5 ปี (c) and ร้อยละตรวจช่องปาก; null with total */
-    units:
-      units &&
-      units.map((u) => {
-        const unitChildren = childrenOf.get(u.key) ?? 0;
-        return { ...u, children: unitChildren, screenedPct: pctOf(u.totals.target, unitChildren) };
-      }),
+    /** The กรวย of the area; null with total */
+    funnel: total && funnelOf(children ?? 0, total),
+    /** The ตำบล or หน่วยบริการ of query.by in the area, each with its กรวย; null with total */
+    units: units && units.map((u) => ({ ...u, funnel: funnelOf(childrenOf.get(u.key) ?? 0, u.totals) })),
+  };
+}
+
+/**
+ * A กรวย: เด็ก 0–5 ปี (c) → ตรวจช่องปาก (b) → ฟันดีไม่มีผุ (a), with
+ * ร้อยละตรวจช่องปาก b ÷ c and ร้อยละฟันดีไม่มีผุ a ÷ b, the report's ร้อยละ
+ * that totals gives
+ */
+function funnelOf(children: number, totals: Totals) {
+  return {
+    children,
+    screened: totals.target,
+    cavityFree: totals.result,
+    screenedPct: pctOf(totals.target, children),
+    cavityFreePct: totals.pct,
   };
 }

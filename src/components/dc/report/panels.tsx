@@ -35,14 +35,13 @@ function GoalKey({ goal }: { goal: number | null }) {
   return goal === null ? null : <Key swatch="w-4 border-t-2 border-dashed border-dc-gold">เกณฑ์ {goal}</Key>;
 }
 
-/** กราฟ A: ร้อยละ (or the ร้อยละ named by what) of each ตำบล or หน่วยบริการ (unitLabel), with the เกณฑ์ */
-export function UnitPanel(props: { unitLabel: string; units: UnitTotals[]; goal: number | null; what?: string }) {
-  const { unitLabel, units, goal, what = "ร้อยละ" } = props;
-  const title = `${what}ราย${unitLabel}`;
+/** กราฟ A: ร้อยละ (named pctLabel) of each ตำบล or หน่วยบริการ (unitLabel), with the เกณฑ์ */
+export function UnitPanel({ unitLabel, units, goal, pctLabel = "ร้อยละ" }: { unitLabel: string; units: UnitTotals[]; goal: number | null; pctLabel?: string }) {
+  const title = `${pctLabel}ราย${unitLabel}`;
   return (
     <Surface title={title}>
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
-        <Key swatch="h-2 w-4 rounded-sm bg-dc-brand-primary">ร้อยละ</Key>
+        <Key swatch="h-2 w-4 rounded-sm bg-dc-brand-primary">{pctLabel}</Key>
         <GoalKey goal={goal} />
       </p>
       <UnitChart title={title} units={units} goal={goal} />

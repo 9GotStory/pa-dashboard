@@ -46,7 +46,7 @@ test("2569 ทั้งอำเภอ → c 1,361 · b 954 · a 795 · ฟั�
   assert.equal(cavity.funnel?.screened, 954);
   assert.equal(cavity.funnel?.cavityFree, 795);
   assert.equal(cavity.funnel?.screenedPct?.toFixed(2), "70.10");
-  assert.equal(cavity.total?.pct?.toFixed(2), "83.33");
+  assert.equal(cavity.funnel?.cavityFreePct?.toFixed(2), "83.33");
   assert.equal(cavity.goal, 80);
   assert.equal(cavity.passed, true);
 });
@@ -54,7 +54,7 @@ test("2569 ทั้งอำเภอ → c 1,361 · b 954 · a 795 · ฟั�
 test("2569 รายตำบล → c/b/a ของ 8 ตำบลตามรหัส · a ≤ b ≤ c ทุกตำบล · ร้อยละฟันดีไม่มีผุ = a ÷ b", () => {
   const cavity = cavityValues(CAVITY, DISTRICT_2569, NAMES);
   assert.deepEqual(
-    cavity.units?.map((u) => [u.name, u.children, u.totals.target, u.totals.result]),
+    cavity.units?.map((u) => [u.name, u.funnel.children, u.funnel.screened, u.funnel.cavityFree]),
     [
       ["บ้านหนุน", 180, 159, 119],
       ["บ้านกลาง", 144, 114, 89],
@@ -67,8 +67,10 @@ test("2569 รายตำบล → c/b/a ของ 8 ตำบลตามร�
     ],
   );
   for (const u of cavity.units ?? []) {
-    assert.ok(u.totals.result <= u.totals.target && u.totals.target <= u.children, u.name);
+    assert.ok(u.funnel.cavityFree <= u.funnel.screened && u.funnel.screened <= u.funnel.children, u.name);
   }
+  assert.equal(cavity.units?.[6].funnel.cavityFreePct?.toFixed(2), "92.31");
+  // กราฟ A reads the same ร้อยละฟันดีไม่มีผุ from totals
   assert.equal(cavity.units?.[6].totals.pct?.toFixed(2), "92.31");
 });
 
@@ -77,10 +79,10 @@ test("2569 ตำบลแดนชุมพล รายหน่วยบร�
   assert.deepEqual(cavity.funnel && [cavity.funnel.children, cavity.funnel.screened, cavity.funnel.cavityFree], [68, 65, 60]);
   assert.equal(cavity.funnel?.screenedPct?.toFixed(2), "95.59");
   assert.deepEqual(
-    cavity.units?.map((u) => [u.name, u.children, u.totals.target, u.totals.result]),
+    cavity.units?.map((u) => [u.name, u.funnel.children, u.funnel.screened, u.funnel.cavityFree]),
     [["หน่วยบริการ 06426", 68, 65, 60]],
   );
-  assert.equal(cavity.units?.[0].screenedPct?.toFixed(2), "95.59");
+  assert.equal(cavity.units?.[0].funnel.screenedPct?.toFixed(2), "95.59");
 });
 
 test("?year=2568, a year the table does not have → no block, no กรวย, no units", () => {
