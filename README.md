@@ -111,7 +111,8 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm run dev` | dev server |
 | `npm run build` | ดึง snapshot จาก GAS จริงก่อน (prebuild ราว 2.5 นาที) แล้ว build เป็นไฟล์ static ใน `out/` · `npx next build` build ใหม่จาก `public/data/` ที่มีอยู่โดยไม่ดึงซ้ำ |
 | `npm start` | เปิดดูผล build ที่ <http://localhost:3000> ด้วย `npx serve@latest out` (`next start` ใช้กับ static export ไม่ได้) |
-| `npm run lint` | ESLint (รวมกฎ import ของ Data Center) และวลีที่ GLOSSARY ให้เลี่ยง |
+| `npm run lint` | ESLint (รวมกฎ import ของ Data Center), format ตาม Prettier และวลีที่ GLOSSARY ให้เลี่ยง |
+| `npm run format` | จัด format ตาม Prettier ทุกไฟล์ที่ไม่อยู่ใน `.prettierignore` |
 | `npm test` | เทสต์ GAS และเทสต์ของ Data Center |
 | `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 และเปิดหน้าแรกที่จอกว้างเพื่อเทียบตัวเลขประชากรบนหน้ากันเอง (§5) (CI รันทุก PR) |
 | `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center (CI รันทุก PR) |

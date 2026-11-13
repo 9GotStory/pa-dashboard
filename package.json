@@ -8,7 +8,8 @@
     "build": "next build",
     "snapshot": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
     "start": "npx serve@latest out",
-    "lint": "eslint && node src/scripts/check-glossary.mjs",
+    "lint": "eslint && prettier --check . && node src/scripts/check-glossary.mjs",
+    "format": "prettier --write .",
     "typecheck": "next typegen && tsc --noEmit",
     "test": "node --test \"src/scripts/test/**/*.test.js\" && tsx --test src/lib/dc/*.test.ts src/lib/dc/tables/*.test.ts",
     "gas:push": "clasp push -f",
@@ -46,6 +47,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.4.3",
     "playwright-core": "^1.64.1",
+    "prettier": "3.10.1",
     "tailwindcss": "^4",
     "tsx": "^4.23.15",
     "typescript": "^5"
