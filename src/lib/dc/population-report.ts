@@ -41,12 +41,14 @@ function changeOf(oldValue: number, newValue: number): PopulationChange {
 
 /**
  * Every value of the รายงานประชากร page (SPEC §9.4.1) for a query: the area
- * picked, the whole อำเภอ or a ตำบล of areas, in the ปีข้อมูล picked, its
- * change from the year before, its ร้อยละ of the อำเภอ, and its แนวโน้ม over
- * every year (SCHEMA §11.5). A ตำบล adds up its rows of every สำนักทะเบียน.
- * A year that is not 4 digits gives the latest; a 4-digit year not in the
- * data is kept, without totals, so the page says so instead of showing
- * another year. An area not in areas gives the whole อำเภอ.
+ * picked, the whole อำเภอ, a ตำบล of areas or one of its หมู่บ้าน, in the
+ * ปีข้อมูล picked, its change from the year before, its ร้อยละ of the larger
+ * area, and its แนวโน้ม over every year (SCHEMA §11.5). A ตำบล or หมู่บ้าน
+ * adds up its rows of every สำนักทะเบียน. A year that is not 4 digits gives
+ * the latest; a 4-digit year not in the data is kept, without totals, so the
+ * page says so instead of showing another year. An 8-digit code that is not
+ * a หมู่บ้าน, ไม่ระบุหมู่ among them, gives its ตำบล; an area of neither
+ * gives the whole อำเภอ.
  */
 export function populationReport(
   data: PopulationReportData,
@@ -55,10 +57,13 @@ export function populationReport(
 ): PopulationReport {
   const years = data.years.map((y) => registryYear(y.yymm));
   const year = /^\d{4}$/.test(query.year) ? query.year : (years.at(-1) ?? "");
-  const tambon = areas.find((a) => a.id === query.area);
-  const trend = data.years.map((y) => ({
-    year: registryYear(y.yymm),
-    totals: tambon ? tambonTotals(y, tambon.id) : populationTotals(y.population),
+  const shownAt = years.indexOf(year);
+  const tambon = /^\d{6}(\d{2})?$/.test(query.area) ? areas.find((a) => a.id === query.area.slice(0, 6)) : undefined;
+  const villages = tambon ? villagesOf(data, tambon.id, shownAt) : [];
+  const village = villages.find((v) => v.key === query.area && !v.unspecified);
+  const trend = data.years.map((y, i) => ({
+    year: years[i],
+    totals: village ? village.totals[i] : tambon ? tambonTotals(y, tambon.id) : populationTotals(y.population),
   }));
   const totalsIn = (y: string) => trend.find((p) => p.year === y)?.totals ?? null;
   const shown = totalsIn(year);
@@ -68,31 +73,47 @@ export function populationReport(
     shown && before
       ? (Object.fromEntries(VALUES.map((v) => [v, changeOf(before[v], shown[v])])) as PopulationReport["change"])
       : null;
-  const shownAt = years.indexOf(year);
-  const share = tambon && shown ? (shown.total / populationTotals(data.years[shownAt].population).total) * 100 : null;
-  const units = tambon
-    ? villageUnits(data, tambon.id, shownAt)
-    : areas.map(({ id, name_th }) =>
-        unitOf(
-          id,
-          name_th,
-          false,
-          data.years.map((y) => tambonTotals(y, id)?.total ?? null),
-          shownAt,
-        ),
-      );
+  // A หมู่บ้าน's ร้อยละ is of its ตำบล, a ตำบล's of the อำเภอ, in people only
+  const parentTotal =
+    !shown || !tambon
+      ? null
+      : village
+        ? (tambonTotals(data.years[shownAt], tambon.id)?.total ?? null)
+        : populationTotals(data.years[shownAt].population).total;
+  const units = village
+    ? null
+    : tambon
+      ? villages.map((v) =>
+          unitOf(
+            v.key,
+            v.name,
+            v.unspecified,
+            v.totals.map((t) => t?.total ?? null),
+            shownAt,
+          ),
+        )
+      : areas.map(({ id, name_th }) =>
+          unitOf(
+            id,
+            name_th,
+            false,
+            data.years.map((y) => tambonTotals(y, id)?.total ?? null),
+            shownAt,
+          ),
+        );
   return {
     years,
-    query: { year, area: tambon?.id ?? "all" },
-    level: tambon ? "tambon" : "district",
-    name: tambon?.name_th ?? DISTRICT,
-    parent: tambon ? { key: "all", name: DISTRICT } : null,
+    query: { year, area: village?.key ?? tambon?.id ?? "all" },
+    level: village ? "village" : tambon ? "tambon" : "district",
+    name: village?.name ?? tambon?.name_th ?? DISTRICT,
+    parent: village ? { key: tambon!.id, name: tambon!.name_th } : tambon ? { key: "all", name: DISTRICT } : null,
+    villages: villages.filter((v) => !v.unspecified).map(({ key, name }) => ({ key, name })),
     shown,
     change,
-    share,
+    share: shown && parentTotal ? (shown.total / parentTotal) * 100 : null,
     trend,
     units,
-    partial: units.some((u) => u.totals.includes(null)),
+    partial: units?.some((u) => u.totals.includes(null)) ?? false,
   };
 }
 
@@ -105,14 +126,22 @@ function tambonTotals(year: RegistryPopulationYear, tambon: string): PopulationT
   return rows.length > 0 ? populationTotals(rows) : null;
 }
 
+/** A หมู่บ้าน, or ไม่ระบุหมู่, of a ตำบล with its totals in every year (null = no rows that year) */
+interface Village {
+  key: string;
+  name: string;
+  unspecified: boolean;
+  totals: (PopulationTotals | null)[];
+}
+
 /**
- * The หมู่บ้าน of a ตำบล in the เปรียบเทียบ section (SCHEMA §11.5): each
- * 8-digit code with village rows in any year, every สำนักทะเบียน added up,
- * by หมู่ที่ (the code's last 2 digits), named as its first row in the year
- * picked or else in the latest year it has rows, then ไม่ระบุหมู่ (00) when
- * it has rows in any year
+ * The หมู่บ้าน of a ตำบล (SCHEMA §11.5): each 8-digit code with village rows
+ * in any year, every สำนักทะเบียน added up, by หมู่ที่ (the code's last 2
+ * digits), named as its first row in the year picked (shownAt, −1 when not
+ * in the data) or else in the latest year it has rows, then ไม่ระบุหมู่ (00)
+ * when it has rows in any year
  */
-function villageUnits(data: PopulationReportData, tambon: string, shownAt: number): PopulationUnit[] {
+function villagesOf(data: PopulationReportData, tambon: string, shownAt: number): Village[] {
   const rows = data.years.map((y) =>
     Map.groupBy(
       y.village.filter((r) => r.mm.slice(0, 6) === tambon),
@@ -120,20 +149,19 @@ function villageUnits(data: PopulationReportData, tambon: string, shownAt: numbe
     ),
   );
   const codes = [...new Set(rows.flatMap((byCode) => [...byCode.keys()]))].sort();
-  const units = codes.map((code) => {
+  const villages = codes.map((code) => {
     const byYear = rows.map((byCode) => byCode.get(code) ?? null);
     const named = byYear[shownAt] ?? byYear.findLast((r) => r !== null)!;
     const moo = Number(code.slice(6));
-    return unitOf(
-      code,
-      moo === 0 ? "ไม่ระบุหมู่" : `หมู่ ${moo} ${named[0].mm_name}`,
-      moo === 0,
-      byYear.map((r) => (r ? populationTotals(r).total : null)),
-      shownAt,
-    );
+    return {
+      key: code,
+      name: moo === 0 ? "ไม่ระบุหมู่" : `หมู่ ${moo} ${named[0].mm_name}`,
+      unspecified: moo === 0,
+      totals: byYear.map((r) => (r ? populationTotals(r) : null)),
+    };
   });
   // A code's last 2 digits order the หมู่ที่; ไม่ระบุหมู่, 00, goes last
-  return [...units.filter((u) => !u.unspecified), ...units.filter((u) => u.unspecified)];
+  return [...villages.filter((v) => !v.unspecified), ...villages.filter((v) => v.unspecified)];
 }
 
 /**
@@ -158,20 +186,24 @@ function unitOf(
  * The units of the เปรียบเทียบ section in an order (SCHEMA §11.5): by code as
  * report.units has them, by people in the year picked, or by change.pct,
  * the largest first and null last. Ties go by code, so the order is the same
- * every time, and ไม่ระบุหมู่ stays last.
+ * every time, and ไม่ระบุหมู่ stays last. A หมู่บ้าน has none: null.
  */
-export function sortUnits(report: PopulationReport, sort: PopulationSort): PopulationUnit[] {
+export function sortUnits(report: PopulationReport, sort: PopulationSort): PopulationUnit[] | null {
   const at = report.years.indexOf(report.query.year);
   const value = (u: PopulationUnit) => (sort === "count" ? (u.totals[at] ?? null) : (u.change?.pct ?? null));
   const rank = (u: PopulationUnit) => (u.unspecified ? 2 : value(u) === null ? 1 : 0);
-  if (sort === "code") return report.units;
+  if (!report.units || sort === "code") return report.units;
   return report.units.toSorted(
     (a, b) => rank(a) - rank(b) || (value(b) ?? 0) - (value(a) ?? 0) || a.key.localeCompare(b.key),
   );
 }
 
-/** The area of a report as the results and the CSV name it: "ทั้งอำเภอสอง" or "ตำบลบ้านหนุน" */
+/**
+ * The area of a report as the results and the CSV name it: "ทั้งอำเภอสอง",
+ * "ตำบลบ้านหนุน" or "หมู่ 4 ศรีมูลเรือง ตำบลบ้านหนุน"
+ */
 export function populationArea(report: PopulationReport): string {
+  if (report.level === "village") return `${report.name} ตำบล${report.parent?.name}`;
   return report.level === "district" ? `ทั้ง${report.name}` : `ตำบล${report.name}`;
 }
 

@@ -28,7 +28,8 @@ type Areas = DcCatalog["areas"];
  * ผลรายงาน of รายงานประชากร (SPEC §9.4.1): reports/population.json loaded
  * in the browser, the ปีข้อมูล and พื้นที่ form, then the area's ตัวเลขสรุป,
  * แนวโน้มรายปี and เปรียบเทียบ of its ตำบล or หมู่บ้าน, all from
- * populationReport (SCHEMA §11.5), with the CSV of the เปรียบเทียบ table.
+ * populationReport (SCHEMA §11.5), with the CSV of the เปรียบเทียบ table. A
+ * หมู่บ้าน has no เปรียบเทียบ, and no age structure, which says why.
  */
 export default function PopulationResults({ areas, districtCode }: { areas: Areas; districtCode: string }) {
   return (
@@ -58,7 +59,7 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
   return (
     <>
       {/* Remounted when the query changes (แสดงผล, back, forward), so the form shows what the results show */}
-      <PopulationFilters key={search} report={report} areas={areas} onApply={apply} />
+      <PopulationFilters key={search} data={data} report={report} areas={areas} onApply={apply} />
       <ResultsHeader heading={heading} summary={`${populationArea(report)} · ${yearAsOf(query.year)}`} dateCom={null}>
         <ReportActions csv={shown ? () => populationCsv(report, units, districtCode) : null} />
       </ResultsHeader>
@@ -70,9 +71,20 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
         </ReportStatus>
       ) : (
         <div className="space-y-4 px-4 pb-6 sm:px-6">
-          <Summary year={query.year} shown={shown} change={change} share={share} />
+          <Summary year={query.year} shown={shown} change={change} share={share} level={report.level} />
           <Trend report={report} />
-          <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />
+          {units ? (
+            <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />
+          ) : (
+            <section aria-labelledby="population-age">
+              <h2 id="population-age" className="mb-2 font-prompt text-base font-semibold text-dc-brand-deep">
+                โครงสร้างอายุ
+              </h2>
+              <p className="text-sm text-dc-text-secondary">
+                ไฟล์อายุของกรมการปกครองมีแค่ระดับตำบล จึงไม่มีโครงสร้างอายุของหมู่บ้าน
+              </p>
+            </section>
+          )}
         </div>
       )}
     </>
@@ -81,15 +93,24 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
 
 /**
  * The form of SPEC §9.4.1: ปีข้อมูล, every year of the snapshot as ณ 31 ธ.ค.
- * {ปี}, พื้นที่, the whole อำเภอ or one of its ตำบล, and แสดงผล. A year not
- * in the data (?year=2570) is not in the list: the form offers the latest
- * instead.
+ * {ปี}, พื้นที่, the whole อำเภอ or one of its ตำบล, then, once a ตำบล is
+ * picked, หมู่บ้าน, the whole ตำบล or one of its หมู่บ้าน as named in the year
+ * picked, and แสดงผล. A year not in the data (?year=2570) is not in the
+ * list: the form offers the latest instead.
  */
-function PopulationFilters(props: { report: PopulationReport; areas: Areas; onApply: (q: PopulationQuery) => void }) {
-  const { report, areas, onApply } = props;
+function PopulationFilters(props: {
+  data: PopulationReportData;
+  report: PopulationReport;
+  areas: Areas;
+  onApply: (q: PopulationQuery) => void;
+}) {
+  const { data, report, areas, onApply } = props;
   const latest = report.years.at(-1) ?? "";
   const [year, setYear] = useState(report.years.includes(report.query.year) ? report.query.year : latest);
-  const [area, setArea] = useState(report.query.area);
+  const [area, setArea] = useState(report.level === "village" ? report.parent!.key : report.query.area);
+  const [village, setVillage] = useState(report.level === "village" ? report.query.area : "");
+  // The หมู่บ้าน of the ตำบล picked in the form, before แสดงผล shows it
+  const villages = area === "all" ? [] : populationReport(data, { year, area }, areas).villages;
   return (
     <section
       aria-labelledby="filters-title"
@@ -102,7 +123,7 @@ function PopulationFilters(props: { report: PopulationReport; areas: Areas; onAp
       <form
         onSubmit={(e) => {
           e.preventDefault();
-          onApply({ year, area });
+          onApply({ year, area: village || area });
         }}
         className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
@@ -132,7 +153,10 @@ function PopulationFilters(props: { report: PopulationReport; areas: Areas; onAp
             id="filter-area"
             name="area"
             value={area}
-            onChange={(e) => setArea(e.target.value)}
+            onChange={(e) => {
+              setArea(e.target.value);
+              setVillage("");
+            }}
             className="h-11 w-full min-w-0 rounded-md border border-dc-border-subtle bg-white px-2 text-[13px] text-dc-brand-deep"
           >
             <option value="all">ทั้งอำเภอสอง</option>
@@ -143,6 +167,27 @@ function PopulationFilters(props: { report: PopulationReport; areas: Areas; onAp
             ))}
           </select>
         </div>
+        {area !== "all" && (
+          <div className="flex min-w-0 flex-col gap-1 sm:w-60">
+            <label htmlFor="filter-village" className="text-xs font-bold text-dc-brand-deep">
+              หมู่บ้าน
+            </label>
+            <select
+              id="filter-village"
+              name="village"
+              value={village}
+              onChange={(e) => setVillage(e.target.value)}
+              className="h-11 w-full min-w-0 rounded-md border border-dc-border-subtle bg-white px-2 text-[13px] text-dc-brand-deep"
+            >
+              <option value="">ทั้งตำบล</option>
+              {villages.map((v) => (
+                <option key={v.key} value={v.key}>
+                  {v.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <button
           type="submit"
           className="h-11 rounded-md bg-dc-brand-primary px-5 font-semibold text-white hover:bg-dc-brand-deep"
@@ -157,14 +202,16 @@ function PopulationFilters(props: { report: PopulationReport; areas: Areas; onAp
 /**
  * ตัวเลขสรุป: ประชากร ชาย หญิง บ้าน of the year picked, each with its change
  * from the year before when there is one, and a ตำบล's ร้อยละ of the อำเภอ
+ * or a หมู่บ้าน's of its ตำบล
  */
 function Summary(props: {
   year: string;
   shown: NonNullable<PopulationReport["shown"]>;
   change: PopulationReport["change"];
   share: number | null;
+  level: PopulationReport["level"];
 }) {
-  const { year, shown, change, share } = props;
+  const { year, shown, change, share, level } = props;
   const tiles = [
     { key: "total", label: "ประชากร", unit: "คน" },
     { key: "male", label: "ชาย", unit: "คน" },
@@ -189,7 +236,9 @@ function Summary(props: {
               </dd>
             )}
             {t.key === "total" && share !== null && (
-              <dd className="mt-1 text-xs text-dc-text-secondary tabular-nums">ร้อยละ {formatPct(share)} ของอำเภอ</dd>
+              <dd className="mt-1 text-xs text-dc-text-secondary tabular-nums">
+                ร้อยละ {formatPct(share)} ของ{level === "village" ? "ตำบล" : "อำเภอ"}
+              </dd>
             )}
           </div>
         ))}

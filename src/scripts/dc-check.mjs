@@ -2,7 +2,7 @@
 // npm run build, opens every built page of /, /reports, /reports/population
 // and /reports/[id] in out/ at 360 px wide and exits 1, naming the page, when
 // a page breaks a rule that shows on the rendered page. The home page,
-// /reports, /reports/population (and at a ตำบล) and a report of each source table with a page
+// /reports, /reports/population (and at a ตำบล and a หมู่บ้าน) and a report of each source table with a page
 // of its own (src/lib/dc/tables/index.ts) are opened at V7.6's review widths
 // as well, and the check exits 1, naming the width, when one scrolls sideways
 // at one (SPEC §9.1). A report that loads the chunk of another table's page
@@ -468,6 +468,9 @@ const wideReports = Object.keys(TABLE_PAGES)
 // รายงานประชากร at a ตำบล (SPEC §9.4.1): ห้วยหม้าย has the most หมู่บ้าน, 17,
 // and the longest name, so the widest table of หมู่บ้าน × ปีข้อมูล (SCHEMA §11.4)
 const POPULATION_TAMBON = "/reports/population?area=540603";
+// รายงานประชากร at a หมู่บ้าน: หมู่ 17 ห้วยหม้ายหล่ายห้วย, the longest name, in
+// the หมู่บ้าน <select> and the results' area at 320 px (FEATURES F69)
+const POPULATION_VILLAGE = "/reports/population?area=54060317";
 const server = await serveOut();
 const origin = `http://127.0.0.1:${server.address().port}`;
 const problems = [];
@@ -482,7 +485,14 @@ try {
         problems.push(`${urlPath}: ${problem}`);
     }
   }
-  for (const urlPath of ["/", "/reports", "/reports/population", POPULATION_TAMBON, ...wideReports]) {
+  for (const urlPath of [
+    "/",
+    "/reports",
+    "/reports/population",
+    POPULATION_TAMBON,
+    POPULATION_VILLAGE,
+    ...wideReports,
+  ]) {
     for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
   for (const problem of unlinked) problems.push(`/reports: ${problem}`);
@@ -506,7 +516,7 @@ const populationResult = !shownYear
     ? "population totals, the ตำบล chart and pyramids agree"
     : "population totals and the ตำบล chart agree";
 console.log(
-  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON} and a report of each of ${wideReports.length} table(s) ` +
+  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON}, ${POPULATION_VILLAGE} and a report of each of ${wideReports.length} table(s) ` +
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
     `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
 );
