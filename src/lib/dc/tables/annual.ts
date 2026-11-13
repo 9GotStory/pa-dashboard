@@ -16,7 +16,12 @@ const AGE_MONTHS = [1, 2, 3, 4, 5, 6] as const;
  * s_kpi_food is empty every year), and the count of each เดือนอายุ of
  * s_kpi_food in the area
  */
-export function annualValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function annualValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   const { block, total, goal, passed, units, trend } = ancValues(data, query, names, years);
   return {
     block,

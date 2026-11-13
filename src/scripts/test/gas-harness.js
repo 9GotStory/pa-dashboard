@@ -307,7 +307,9 @@ export function loadGas({ sheets = {}, fetch } = {}) {
         if (format === "yyyy") return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric" }).format(date);
         if (format !== "yyyy-MM-dd") throw new Error(`Utilities.formatDate stub: unsupported format ${format}`);
         // en-CA formats a date as YYYY-MM-DD.
-        return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(date);
+        return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" }).format(
+          date,
+        );
       },
     },
     Date: ClockDate,

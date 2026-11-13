@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { S_EPI_COMPLETE_1, S_EPI_COMPLETE_2, S_EPI_COMPLETE_3, S_EPI_COMPLETE_5 } from "../fixtures/reports-complete-20261112";
+import {
+  S_EPI_COMPLETE_1,
+  S_EPI_COMPLETE_2,
+  S_EPI_COMPLETE_3,
+  S_EPI_COMPLETE_5,
+} from "../fixtures/reports-complete-20261112";
 import type { Cell, DcReportData, ReportQuery } from "../types";
 import { completeValues } from "./complete";
 
@@ -44,13 +49,25 @@ const NAMES = {
   ],
   hospitals: [],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null };
+const DISTRICT_2569: ReportQuery = {
+  year: "2569",
+  area: "all",
+  period: "year",
+  measure: null,
+  by: "area",
+  domain: null,
+};
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
 /** The months added up, as เป้าหมาย/ผลงาน */
 const monthSum = (months: { totals: { target: number; result: number } | null }[]) =>
-  pair(months.reduce((s, m) => ({ target: s.target + m.totals!.target, result: s.result + m.totals!.result }), { target: 0, result: 0 }));
+  pair(
+    months.reduce((s, m) => ({ target: s.target + m.totals!.target, result: s.result + m.totals!.result }), {
+      target: 0,
+      result: 0,
+    }),
+  );
 
 test("ปี 2569 ทั้งอำเภอ → 1 ปี 181/143 (79.01%), 2 ปี 205/72 (35.12%), 3 ปี 228/28 (12.28%), 5 ปี 262/26 (9.92%), เกณฑ์ 90 ไม่ผ่านทุกอายุ", () => {
   const ages = [AGE1, AGE2, AGE3, AGE5].map((data) => completeValues(data, DISTRICT_2569, NAMES, YEARS));
@@ -66,7 +83,12 @@ test("ปี 2569 ทั้งอำเภอ → 1 ปี 181/143 (79.01%), 2 �
 });
 
 test("ปี 2569 รายเดือน → 12 เดือน ต.ค.–ก.ย. (M_A) that sum to ทั้งปี for each age", () => {
-  for (const [data, year] of [[AGE1, "181/143"], [AGE2, "205/72"], [AGE3, "228/28"], [AGE5, "262/26"]] as const) {
+  for (const [data, year] of [
+    [AGE1, "181/143"],
+    [AGE2, "205/72"],
+    [AGE3, "228/28"],
+    [AGE5, "262/26"],
+  ] as const) {
     const { months } = completeValues(data, DISTRICT_2569, NAMES, YEARS);
     assert.deepEqual(
       months.map((m) => m.period),
@@ -88,7 +110,13 @@ test("แนวโน้ม อายุ 1 ปี ทั้งอำเภอ �
   const { trend } = completeValues(AGE1, DISTRICT_2569, NAMES, YEARS);
   assert.deepEqual(
     trend.map((p) => [p.b_year, pair(p.totals)]),
-    [["2565", "259/196"], ["2566", "257/189"], ["2567", "248/184"], ["2568", "217/184"], ["2569", "181/143"]],
+    [
+      ["2565", "259/196"],
+      ["2566", "257/189"],
+      ["2567", "248/184"],
+      ["2568", "217/184"],
+      ["2569", "181/143"],
+    ],
   );
 });
 
@@ -115,7 +143,11 @@ test("?area=540606&period=m04&by=hosp → ตำบลสะเอียบ เ�
   assert.equal(pair(v.total), "2/2");
   assert.deepEqual(
     v.units?.map((u) => [u.key, pair(u.totals)]),
-    [["06423", "1/1"], ["06424", "0/0"], ["06425", "1/1"]],
+    [
+      ["06423", "1/1"],
+      ["06424", "0/0"],
+      ["06425", "1/1"],
+    ],
   );
   assert.equal(v.months.length, 12);
   assert.equal(monthSum(v.months), "23/18");

@@ -26,7 +26,13 @@ export default function CountChart({ title, units }: { title: string; units: Uni
             <rect width="100%" height="100%" rx="3" className="fill-dc-canvas" />
             <rect width={`${(u.count / top) * 100}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
           </svg>
-          <text x="100%" y={i * ROW + ROW / 2} dominantBaseline="middle" textAnchor="end" className="fill-dc-brand-deep font-semibold tabular-nums">
+          <text
+            x="100%"
+            y={i * ROW + ROW / 2}
+            dominantBaseline="middle"
+            textAnchor="end"
+            className="fill-dc-brand-deep font-semibold tabular-nums"
+          >
             {formatCount(u.count)}
           </text>
         </g>

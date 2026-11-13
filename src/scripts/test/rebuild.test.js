@@ -47,7 +47,10 @@ test("5 rebuilds in one day succeed (remaining_today 4 → 0); the 6th → Rebui
   const five = Array.from({ length: 5 }, () => rebuild(h));
   const sixth = rebuild(h);
 
-  assert.deepEqual(five, [4, 3, 2, 1, 0].map((n) => ({ status: "success", remaining_today: n })));
+  assert.deepEqual(
+    five,
+    [4, 3, 2, 1, 0].map((n) => ({ status: "success", remaining_today: n })),
+  );
   assert.deepEqual(sixth, { status: "error", message: "Rebuild quota exceeded for today (5/5)" });
   assert.equal(h.fetches.length, 5);
   assert.ok(h.fetches.every((f) => f.url === HOOK && f.method === "post"));
@@ -105,7 +108,10 @@ test("a successful rebuild logs INFO Rebuild requested ({reason}) to system_logs
 
   rebuild(h, "sync page");
 
-  const logged = h.sheet("system_logs").slice(1).map((row) => [row[1], row[2]]);
+  const logged = h
+    .sheet("system_logs")
+    .slice(1)
+    .map((row) => [row[1], row[2]]);
   assert.deepEqual(logged, [["INFO", "Rebuild requested (sync page)"]]);
 });
 
@@ -157,7 +163,10 @@ test("syncAllData that saved a table → one rebuild at the end, logged as Rebui
 
   assert.equal(h.fetches.filter((f) => f.url === HOOK).length, 1);
   assert.equal(h.fetches.at(-1).url, HOOK);
-  const logged = h.sheet("system_logs").slice(1).map((row) => [row[1], row[2]]);
+  const logged = h
+    .sheet("system_logs")
+    .slice(1)
+    .map((row) => [row[1], row[2]]);
   assert.deepEqual(logged.at(-1), ["INFO", "Rebuild requested (daily sync)"]);
   assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });

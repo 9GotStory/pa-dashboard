@@ -33,35 +33,51 @@ const DENTAL = "db30e434e30565c12fbac44958e338d5";
 // SCHEMA §6: the 6 seed topics with their order, each with its seed reports
 // as [opendata_id, subgroup, order].
 const SEED = [
-  [MCH, 10, [
-    ["1c1b8e24aff59258a806f122e264031e", "", 10],
-    ["bd63b8d99f7054560fcf9c3b96f39c13", "", 20],
-    ["1b60d68b1cb5b003fcba38a4a0e4027b", "", 30],
-    ["684e99dc7538c8b1a97f19f91a100f08", "", 40],
-  ]],
-  [EPI, 20, [
-    ["c88658f4d09acb8c76e6c06ffb58ebaf", "กลุ่มอายุ 1 ปี", 10],
-    ["28dd2c7955ce926456240b2ff0100bde", "กลุ่มอายุ 1 ปี", 11],
-    ["71e49e4b61aafee17761601c506d5f85", "กลุ่มอายุ 2 ปี", 20],
-    ["35f4a8d465e6e1edc05f3d8ab658c551", "กลุ่มอายุ 2 ปี", 21],
-    ["267ce09f2a704eb7783997e25d1f18ba", "กลุ่มอายุ 3 ปี", 30],
-    ["d1fe173d08e959397adf34b1d77e88d7", "กลุ่มอายุ 3 ปี", 31],
-    ["c47283d3c2c1e6528ddcf88c254f21b3", "กลุ่มอายุ 5 ปี", 50],
-    ["f033ab37c30201f73f142449d037028d", "กลุ่มอายุ 5 ปี", 51],
-  ]],
+  [
+    MCH,
+    10,
+    [
+      ["1c1b8e24aff59258a806f122e264031e", "", 10],
+      ["bd63b8d99f7054560fcf9c3b96f39c13", "", 20],
+      ["1b60d68b1cb5b003fcba38a4a0e4027b", "", 30],
+      ["684e99dc7538c8b1a97f19f91a100f08", "", 40],
+    ],
+  ],
+  [
+    EPI,
+    20,
+    [
+      ["c88658f4d09acb8c76e6c06ffb58ebaf", "กลุ่มอายุ 1 ปี", 10],
+      ["28dd2c7955ce926456240b2ff0100bde", "กลุ่มอายุ 1 ปี", 11],
+      ["71e49e4b61aafee17761601c506d5f85", "กลุ่มอายุ 2 ปี", 20],
+      ["35f4a8d465e6e1edc05f3d8ab658c551", "กลุ่มอายุ 2 ปี", 21],
+      ["267ce09f2a704eb7783997e25d1f18ba", "กลุ่มอายุ 3 ปี", 30],
+      ["d1fe173d08e959397adf34b1d77e88d7", "กลุ่มอายุ 3 ปี", 31],
+      ["c47283d3c2c1e6528ddcf88c254f21b3", "กลุ่มอายุ 5 ปี", 50],
+      ["f033ab37c30201f73f142449d037028d", "กลุ่มอายุ 5 ปี", 51],
+    ],
+  ],
   [SURVEILLANCE, 30, [["4164a7c49fcb2b8c3ccca67dcdf28bd0", "", 10]]],
   [SCREENING, 40, [["aa86b13e8cb60cae6c3216b7e3e5f151", "", 10]]],
-  [NCD, 50, [
-    ["626c89f6b8d9f7ed90c72c719775eb07", "", 10],
-    ["9702fa28cd2ec73ecc6af89d14f46874", "", 20],
-    ["e9e461e793e8258f47d46d6956f12832", "", 30],
-    ["b57439ff27302ade8c38d1dd189644a4", "", 40],
-  ]],
-  [DENTAL, 60, [
-    ["abt2t2k4z4xeqzytwbave", "", 10],
-    ["e07a6ff3cd63d34a759be4bff5c1a4c6", "", 20],
-    ["1fb6b46f1d1fd42362f97072f4b3b653", "", 30],
-  ]],
+  [
+    NCD,
+    50,
+    [
+      ["626c89f6b8d9f7ed90c72c719775eb07", "", 10],
+      ["9702fa28cd2ec73ecc6af89d14f46874", "", 20],
+      ["e9e461e793e8258f47d46d6956f12832", "", 30],
+      ["b57439ff27302ade8c38d1dd189644a4", "", 40],
+    ],
+  ],
+  [
+    DENTAL,
+    60,
+    [
+      ["abt2t2k4z4xeqzytwbave", "", 10],
+      ["e07a6ff3cd63d34a759be4bff5c1a4c6", "", 20],
+      ["1fb6b46f1d1fd42362f97072f4b3b653", "", 30],
+    ],
+  ],
 ];
 const SEED_IDS = SEED.flatMap(([, , reports]) => reports.map(([id]) => id));
 
@@ -129,7 +145,13 @@ function reportAnswer(report) {
       b_year: y.b_year,
       headers: HEADERS,
       rows: Array.from({ length: y.row_count }, (_, i) => [
-        report.opendata_id, "06413", `5406010${i + 1}`, y.max_date_com, y.b_year, 10, 8,
+        report.opendata_id,
+        "06413",
+        `5406010${i + 1}`,
+        y.max_date_com,
+        y.b_year,
+        10,
+        8,
       ]),
       max_date_com: y.max_date_com,
       sheet_rows: y.row_count,
@@ -182,9 +204,14 @@ after(() => fs.rmSync(TMP, { recursive: true, force: true }));
 // a test sets it.
 function run(env, cwd = fs.mkdtempSync(path.join(TMP, "run-"))) {
   return new Promise((resolve) => {
-    execFile(process.execPath, [SCRIPT], { cwd, env: { SNAPSHOT_WAIT_SCALE: "0", ...env } }, (error, stdout, stderr) => {
-      resolve({ code: error ? error.code : 0, stdout, stderr, cwd });
-    });
+    execFile(
+      process.execPath,
+      [SCRIPT],
+      { cwd, env: { SNAPSHOT_WAIT_SCALE: "0", ...env } },
+      (error, stdout, stderr) => {
+        resolve({ code: error ? error.code : 0, stdout, stderr, cwd });
+      },
+    );
   });
 }
 
@@ -207,8 +234,16 @@ test("catalog and every report answered → meta.json, catalog.json, population.
 
   assert.equal(res.code, 0, res.stderr);
   const snap = snapshot(res.cwd);
-  assert.deepEqual(snap.files, ["catalog.json", "meta.json", "population.json", ...SEED_IDS.map((id) => `reports/${id}.json`).sort()]);
-  const vaccine = snap.read("catalog.json").mains.flatMap((m) => m.topics).find((tp) => tp.cat_id === EPI);
+  assert.deepEqual(snap.files, [
+    "catalog.json",
+    "meta.json",
+    "population.json",
+    ...SEED_IDS.map((id) => `reports/${id}.json`).sort(),
+  ]);
+  const vaccine = snap
+    .read("catalog.json")
+    .mains.flatMap((m) => m.topics)
+    .find((tp) => tp.cat_id === EPI);
   assert.deepEqual(
     vaccine.groups.map((g) => [g.subgroup, g.reports.map((r) => `${r.source_table} ${r.opendata_id}`)]),
     [
@@ -226,26 +261,37 @@ test("the seed listed in reverse → catalog.json has its หมวด, หั�
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
-  const outline = snapshot(res.cwd).read("catalog.json").mains.map((m) => [
-    m.main_report_name,
-    m.topics.map((tp) => [tp.cat_id, tp.groups.map((g) => [g.subgroup, g.reports.map((r) => r.source_table)])]),
-  ]);
+  const outline = snapshot(res.cwd)
+    .read("catalog.json")
+    .mains.map((m) => [
+      m.main_report_name,
+      m.topics.map((tp) => [tp.cat_id, tp.groups.map((g) => [g.subgroup, g.reports.map((r) => r.source_table)])]),
+    ]);
   assert.deepEqual(outline, [
-    ["ส่งเสริมป้องกัน", [
-      [MCH, [["", ["s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"]]]],
-      [EPI, [
-        ["กลุ่มอายุ 1 ปี", ["s_epi1", "s_epi_complete"]],
-        ["กลุ่มอายุ 2 ปี", ["s_epi2", "s_epi_complete"]],
-        ["กลุ่มอายุ 3 ปี", ["s_epi3", "s_epi_complete"]],
-        ["กลุ่มอายุ 5 ปี", ["s_epi5", "s_epi_complete"]],
-      ]],
-      [SURVEILLANCE, [["", ["s_kpi_food"]]]],
-      [SCREENING, [["", ["s_aged9"]]]],
-    ]],
-    ["ข้อมูลตอบสนอง Service Plan", [
-      [NCD, [["", ["s_dm_screen", "s_ht_screen", "s_ncd_screen_repleate1", "s_ht_screen_follow"]]]],
-      [DENTAL, [["", ["s_dental_0_5_cavity_free", "s_kpi_dental28", "s_kpi_dental33"]]]],
-    ]],
+    [
+      "ส่งเสริมป้องกัน",
+      [
+        [MCH, [["", ["s_kpi_anc12", "s_anc5", "s_kpi_childdev4", "s_kpi_childdev2"]]]],
+        [
+          EPI,
+          [
+            ["กลุ่มอายุ 1 ปี", ["s_epi1", "s_epi_complete"]],
+            ["กลุ่มอายุ 2 ปี", ["s_epi2", "s_epi_complete"]],
+            ["กลุ่มอายุ 3 ปี", ["s_epi3", "s_epi_complete"]],
+            ["กลุ่มอายุ 5 ปี", ["s_epi5", "s_epi_complete"]],
+          ],
+        ],
+        [SURVEILLANCE, [["", ["s_kpi_food"]]]],
+        [SCREENING, [["", ["s_aged9"]]]],
+      ],
+    ],
+    [
+      "ข้อมูลตอบสนอง Service Plan",
+      [
+        [NCD, [["", ["s_dm_screen", "s_ht_screen", "s_ncd_screen_repleate1", "s_ht_screen_follow"]]]],
+        [DENTAL, [["", ["s_dental_0_5_cavity_free", "s_kpi_dental28", "s_kpi_dental33"]]]],
+      ],
+    ],
   ]);
 });
 
@@ -302,7 +348,10 @@ test("a URL that answers every request with an error → exit 1 naming the catal
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
   assert.equal(res.code, 1);
-  assert.match(res.stderr, /^build-snapshot: cannot get the catalog \(\?action=catalog\): GAS answered: Sheet not allowed/);
+  assert.match(
+    res.stderr,
+    /^build-snapshot: cannot get the catalog \(\?action=catalog\): GAS answered: Sheet not allowed/,
+  );
   assertOldSnapshot(res.cwd);
 });
 
@@ -312,14 +361,20 @@ test("a URL whose answer is JSON but no catalog (another web app) → exit 1 say
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 1);
-  assert.match(res.stderr, /^build-snapshot: \?action=catalog answered without meta, topics and reports; check that NEXT_PUBLIC_GAS_SCRIPT_URL/);
+  assert.match(
+    res.stderr,
+    /^build-snapshot: \?action=catalog answered without meta, topics and reports; check that NEXT_PUBLIC_GAS_SCRIPT_URL/,
+  );
   assert.equal(snapshot(res.cwd), null);
 });
 
 test("a report answer without report and years → exit 1 saying to check the URL; nothing written", async (t) => {
   const catalog = seedCatalog();
   const odd = catalog.reports.find((r) => r.source_table === "s_aged9");
-  const gas = await startStub(t, gasOf(catalog, (r) => ({ body: r === odd ? { status: "success" } : reportAnswer(r) })));
+  const gas = await startStub(
+    t,
+    gasOf(catalog, (r) => ({ body: r === odd ? { status: "success" } : reportAnswer(r) })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -347,7 +402,10 @@ test("a report whose opendata_id is not an HDC id (../escape) → exit 1 naming 
 test("one report that GAS keeps failing → asked 4 times (3 retries), then exit 1 naming it; an earlier snapshot is left as it was", async (t) => {
   const catalog = seedCatalog();
   const broken = catalog.reports.find((r) => r.source_table === "s_aged9");
-  const gas = await startStub(t, gasOf(catalog, (r) => (r === broken ? { status: 500, body: "<html>Error</html>" } : { body: reportAnswer(r) })));
+  const gas = await startStub(
+    t,
+    gasOf(catalog, (r) => (r === broken ? { status: 500, body: "<html>Error</html>" } : { body: reportAnswer(r) })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
@@ -363,8 +421,15 @@ test("one report that GAS keeps failing → asked 4 times (3 retries), then exit
 test("a report whose first 3 answers fail (connection dropped, HTTP 500, not JSON) → asked again each time and written, exit 0", async (t) => {
   const catalog = seedCatalog();
   const flaky = catalog.reports.find((r) => r.source_table === "s_aged9");
-  const failures = ["drop", { status: 500, body: "<html>Error</html>" }, { body: "<html>Sorry, unable to open the file</html>" }];
-  const gas = await startStub(t, gasOf(catalog, (r) => (r === flaky && failures.length > 0 ? failures.shift() : { body: reportAnswer(r) })));
+  const failures = [
+    "drop",
+    { status: 500, body: "<html>Error</html>" },
+    { body: "<html>Sorry, unable to open the file</html>" },
+  ];
+  const gas = await startStub(
+    t,
+    gasOf(catalog, (r) => (r === flaky && failures.length > 0 ? failures.shift() : { body: reportAnswer(r) })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -386,21 +451,30 @@ function seedGasWith(table, change) {
 }
 
 test("a block ปี whose sheet_rows ≠ expected_rows → exit 1 naming the report, the year and both counts; an earlier snapshot is left as it was", async (t) => {
-  const gas = await startStub(t, seedGasWith("s_kpi_dental28", (answer) => {
-    answer.years[0].sheet_rows = 1;
-  }));
+  const gas = await startStub(
+    t,
+    seedGasWith("s_kpi_dental28", (answer) => {
+      answer.years[0].sheet_rows = 1;
+    }),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
   assert.equal(res.code, 1);
-  assert.match(res.stderr, /\n {2}e07a6ff3cd63d34a759be4bff5c1a4c6 \(s_kpi_dental28\) 2568: sheet_rows 1 ≠ expected_rows 2/);
+  assert.match(
+    res.stderr,
+    /\n {2}e07a6ff3cd63d34a759be4bff5c1a4c6 \(s_kpi_dental28\) 2568: sheet_rows 1 ≠ expected_rows 2/,
+  );
   assertOldSnapshot(res.cwd);
 });
 
 test("a year of report.years without a block ปี in years (its sheet deleted, SCHEMA §3.2) → exit 1 naming the report and the year; an earlier snapshot is left as it was", async (t) => {
-  const gas = await startStub(t, seedGasWith("s_ht_screen_follow", (answer) => {
-    answer.years = answer.years.filter((block) => block.b_year !== "2568");
-  }));
+  const gas = await startStub(
+    t,
+    seedGasWith("s_ht_screen_follow", (answer) => {
+      answer.years = answer.years.filter((block) => block.b_year !== "2568");
+    }),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
@@ -413,14 +487,20 @@ test("a year of report.years without a block ปี in years (its sheet deleted,
 });
 
 test("a report with 0 rows in the current year's block ปี (no row has its id) → exit 1 naming it; an earlier snapshot is left as it was", async (t) => {
-  const gas = await startStub(t, seedGasWith("s_kpi_food", (answer) => {
-    answer.years[1].rows = [];
-  }));
+  const gas = await startStub(
+    t,
+    seedGasWith("s_kpi_food", (answer) => {
+      answer.years[1].rows = [];
+    }),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
   assert.equal(res.code, 1);
-  assert.match(res.stderr, /\n {2}4164a7c49fcb2b8c3ccca67dcdf28bd0 \(s_kpi_food\) 2569: no row of this report in the current year/);
+  assert.match(
+    res.stderr,
+    /\n {2}4164a7c49fcb2b8c3ccca67dcdf28bd0 \(s_kpi_food\) 2569: no row of this report in the current year/,
+  );
   assertOldSnapshot(res.cwd);
 });
 
@@ -429,11 +509,14 @@ test("a report with no years yet, and one with 0 rows in a past year only → bo
   const unsynced = catalog.reports.find((r) => r.source_table === "s_anc5");
   unsynced.years = [];
   const pastEmpty = catalog.reports.find((r) => r.source_table === "s_kpi_childdev2");
-  const gas = await startStub(t, gasOf(catalog, (r) => {
-    const answer = reportAnswer(r);
-    if (r === pastEmpty) answer.years[0].rows = [];
-    return { body: answer };
-  }));
+  const gas = await startStub(
+    t,
+    gasOf(catalog, (r) => {
+      const answer = reportAnswer(r);
+      if (r === pastEmpty) answer.years[0].rows = [];
+      return { body: answer };
+    }),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -474,7 +557,10 @@ test("GAS answers Busy twice for a report, then the report → asked again 100 m
   const catalog = seedCatalog();
   const locked = catalog.reports.find((r) => r.source_table === "s_dm_screen");
   let busyLeft = 2;
-  const gas = await startStub(t, gasOf(catalog, (r) => (r === locked && busyLeft-- > 0 ? BUSY : { body: reportAnswer(r) })));
+  const gas = await startStub(
+    t,
+    gasOf(catalog, (r) => (r === locked && busyLeft-- > 0 ? BUSY : { body: reportAnswer(r) })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
 
@@ -483,7 +569,10 @@ test("GAS answers Busy twice for a report, then the report → asked again 100 m
   assert.equal(asked.length, 3);
   // At least the wait apart, less a few ms for the timer's clock.
   const gaps = asked.slice(1).map((at, i) => at - asked[i]);
-  assert.ok(gaps.every((ms) => ms >= 95), `asked ${gaps.join(", ")} ms apart`);
+  assert.ok(
+    gaps.every((ms) => ms >= 95),
+    `asked ${gaps.join(", ")} ms apart`,
+  );
   assert.deepEqual(snapshot(res.cwd).read(`reports/${locked.opendata_id}.json`), reportAnswer(locked));
 });
 
@@ -540,15 +629,17 @@ test("หัวข้อ by order then Thai name, an empty order last; หมว
     fakeTopic("topic-food", unused, "โภชนาการ", 1),
   ];
   // One report in each topic but topic-dental and topic-food.
-  const reports = ["topic-care", "topic-zone", "topic-screen", "topic-mother", "topic-herbs", "topic-misc"].map((catId) =>
-    fakeReport({ opendata_id: `report-${catId}`, cat_id: catId }),
+  const reports = ["topic-care", "topic-zone", "topic-screen", "topic-mother", "topic-herbs", "topic-misc"].map(
+    (catId) => fakeReport({ opendata_id: `report-${catId}`, cat_id: catId }),
   );
   const gas = await startStub(t, gasOf({ ...seedCatalog(), topics, reports }));
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
-  const outline = snapshot(res.cwd).read("catalog.json").mains.map((m) => [m.main_report_id, m.topics.map((tp) => tp.cat_id)]);
+  const outline = snapshot(res.cwd)
+    .read("catalog.json")
+    .mains.map((m) => [m.main_report_id, m.topics.map((tp) => tp.cat_id)]);
   assert.deepEqual(outline, [
     ["main-plan", ["topic-zone", "topic-care", "topic-screen"]],
     ["main-thai", ["topic-herbs"]],
@@ -573,14 +664,21 @@ test("กลุ่ม by the smallest order of their reports then name, the repo
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
-  const [{ topics: [mch] }] = snapshot(res.cwd).read("catalog.json").mains;
-  assert.deepEqual(mch.groups.map((g) => [g.subgroup, g.reports.map((r) => r.opendata_id)]), [
-    ["กลุ่ม ข", ["report-d", "report-c", "report-b", "report-e"]],
-    ["กลุ่ม ง", ["report-h"]],
-    ["กลุ่ม ก", ["report-a"]],
-    ["กลุ่ม ค", ["report-g"]],
-    ["", ["report-f"]],
-  ]);
+  const [
+    {
+      topics: [mch],
+    },
+  ] = snapshot(res.cwd).read("catalog.json").mains;
+  assert.deepEqual(
+    mch.groups.map((g) => [g.subgroup, g.reports.map((r) => r.opendata_id)]),
+    [
+      ["กลุ่ม ข", ["report-d", "report-c", "report-b", "report-e"]],
+      ["กลุ่ม ง", ["report-h"]],
+      ["กลุ่ม ก", ["report-a"]],
+      ["กลุ่ม ค", ["report-g"]],
+      ["", ["report-f"]],
+    ],
+  );
 });
 
 // The seed, with a cell of bytes ASCII characters in s_aged9's 2569 block,
@@ -598,7 +696,10 @@ test("a reports/{id}.json over its 500 KB limit (SPEC §6.1) → exit 1 naming t
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
   assert.equal(res.code, 1);
-  assert.match(res.stderr, /\n {2}reports\/aa86b13e8cb60cae6c3216b7e3e5f151\.json is 521\.\d KB, over its 500 KB limit/);
+  assert.match(
+    res.stderr,
+    /\n {2}reports\/aa86b13e8cb60cae6c3216b7e3e5f151\.json is 521\.\d KB, over its 500 KB limit/,
+  );
   assertOldSnapshot(res.cwd);
 });
 
@@ -630,7 +731,12 @@ test("an earlier snapshot with the file of a report no longer active → replace
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, cwd);
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(snapshot(cwd).files, ["catalog.json", "meta.json", "population.json", ...SEED_IDS.map((id) => `reports/${id}.json`).sort()]);
+  assert.deepEqual(snapshot(cwd).files, [
+    "catalog.json",
+    "meta.json",
+    "population.json",
+    ...SEED_IDS.map((id) => `reports/${id}.json`).sort(),
+  ]);
 });
 
 // The counts of a registry_population_age row (SCHEMA §2.7): m0, f0 … m101,
@@ -667,7 +773,10 @@ test("registry_population of 2567 and 2568, both with age rows → population.js
       { yymm: "6812", population: ROWS_6812, village: [], age: ROWS_6812.map(ageRow) },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -687,7 +796,10 @@ test("2568 with population rows but no age rows yet, 2567 with both → age [] i
       { yymm: "6812", population: ROWS_6812, village: [], age: [] },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -707,7 +819,10 @@ test("6812's population rows deleted by hand, its age rows left → 6812 is no y
       { yymm: "6812", population: [], village: [], age: ROWS_6812.map(ageRow) },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -718,7 +833,10 @@ test("6812's population rows deleted by hand, its age rows left → 6812 is no y
 });
 
 test("no registry sheet yet (years: []) → population.json is { years: [] } and the build goes on, exit 0", async (t) => {
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: { years: [] } })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: { years: [] } })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -730,7 +848,10 @@ test("no registry sheet yet (years: []) → population.json is { years: [] } and
 test("GAS answers Busy twice to registry_population, then its rows → asked again after each Busy and written, exit 0", async (t) => {
   let busyLeft = 2;
   const answer = { years: [{ yymm: "6812", population: ROWS_6812, village: [], age: [] }] };
-  const gas = await startStub(t, seedGasWithRegistry(() => (busyLeft-- > 0 ? BUSY : { body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => (busyLeft-- > 0 ? BUSY : { body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
 
@@ -740,7 +861,10 @@ test("GAS answers Busy twice to registry_population, then its rows → asked aga
 });
 
 test("registry_population answered with an error every time → asked 4 times (3 retries), then exit 1 naming it; an earlier snapshot is left as it was", async (t) => {
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: { status: "error", message: "Exception: Service Spreadsheets timed out" } })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: { status: "error", message: "Exception: Service Spreadsheets timed out" } })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
@@ -756,7 +880,10 @@ test("registry_population answered with an error every time → asked 4 times (3
 test("a population.json over its 100 KB limit (SPEC §6.1) → exit 1 naming it and its size; an earlier snapshot is left as it was", async (t) => {
   // One cell of 110 KB: rows are copied as GAS sends them.
   const bulky = [{ ...ROWS_6812[0], cc_name: "x".repeat(110 * 1024) }, ...ROWS_6812.slice(1)];
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: { years: [{ yymm: "6812", population: bulky, village: [], age: [] }] } })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: { years: [{ yymm: "6812", population: bulky, village: [], age: [] }] } })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
@@ -766,20 +893,42 @@ test("a population.json over its 100 KB limit (SPEC §6.1) → exit 1 naming it 
 });
 
 test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 naming what is wrong; an earlier snapshot is left as it was", async (t) => {
-  const year = (fields) => ({ yymm: "6812", population: ROWS_6812, village: [], age: ROWS_6812.map(ageRow), ...fields });
+  const year = (fields) => ({
+    yymm: "6812",
+    population: ROWS_6812,
+    village: [],
+    age: ROWS_6812.map(ageRow),
+    ...fields,
+  });
   // A row without one column: GAS leaves out a column the sheet lacks and a
   // count that is blank or no number (SCHEMA §3.9).
   const without = (row, column) => Object.fromEntries(Object.entries(row).filter(([key]) => key !== column));
   const cases = [
-    ["no years (another web app)", { status: "success" }, /^build-snapshot: \?action=registry_population answered without years; check that NEXT_PUBLIC_GAS_SCRIPT_URL/],
-    ["a yymm not of December", { years: [year({ yymm: "6811" })] }, /^build-snapshot: \?action=registry_population answered a year with yymm "6811"/],
+    [
+      "no years (another web app)",
+      { status: "success" },
+      /^build-snapshot: \?action=registry_population answered without years; check that NEXT_PUBLIC_GAS_SCRIPT_URL/,
+    ],
+    [
+      "a yymm not of December",
+      { years: [year({ yymm: "6811" })] },
+      /^build-snapshot: \?action=registry_population answered a year with yymm "6811"/,
+    ],
     [
       "a year with a blank yymm, from a row whose yymm cell was cleared (SCHEMA §3.9)",
       { years: [year({ yymm: "", population: ROWS_6812.slice(0, 1), age: [] }), year()] },
       /^build-snapshot: \?action=registry_population answered a year with yymm "", not the figures at 31 Dec \(YY12\); fix the yymm column of registry_population, registry_population_village and registry_population_age in PA-Data/,
     ],
-    ["the same yymm twice", { years: [year(), year()] }, /^build-snapshot: \?action=registry_population answered yymm 6812 twice/],
-    ["age rows that are not a list", { years: [year({ age: {} })] }, /^build-snapshot: \?action=registry_population answered 6812 without a list of age rows/],
+    [
+      "the same yymm twice",
+      { years: [year(), year()] },
+      /^build-snapshot: \?action=registry_population answered yymm 6812 twice/,
+    ],
+    [
+      "age rows that are not a list",
+      { years: [year({ age: {} })] },
+      /^build-snapshot: \?action=registry_population answered 6812 without a list of age rows/,
+    ],
     [
       "a year without village, as GAS answered before Track I (SCHEMA §3.9)",
       { years: [without(year(), "village")] },
@@ -803,7 +952,10 @@ test("a registry_population answer of the wrong shape (SCHEMA §7) → exit 1 na
   ];
   for (const [name, answer, message] of cases) {
     await t.test(name, async (t) => {
-      const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+      const gas = await startStub(
+        t,
+        seedGasWithRegistry(() => ({ body: answer })),
+      );
 
       const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
@@ -818,7 +970,11 @@ test("age rows of the year the home page shows that do not match its population 
   // The real age rows with the row of 54060400 changed.
   const withAgeRow3 = (fields) => AGE_ROWS_6812.map((row, i) => (i === 3 ? { ...row, ...fields } : row));
   const cases = [
-    ["a ตำบล without its age row", { age: AGE_ROWS_6812.slice(1) }, /\n {2}registry_population_age has no row for rcode 5406 tt 54060100, which registry_population has/],
+    [
+      "a ตำบล without its age row",
+      { age: AGE_ROWS_6812.slice(1) },
+      /\n {2}registry_population_age has no row for rcode 5406 tt 54060100, which registry_population has/,
+    ],
     [
       "an age row of a ตำบล without population rows",
       // ตำบลห้วยหม้าย is in สำนักทะเบียน 5406 only.
@@ -854,14 +1010,23 @@ test("age rows of the year the home page shows that do not match its population 
   for (const [name, fields, line] of cases) {
     await t.test(name, async (t) => {
       const answer = { years: [{ yymm: "6812", population: ROWS_6812, village: [], age: AGE_ROWS_6812, ...fields }] };
-      const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+      const gas = await startStub(
+        t,
+        seedGasWithRegistry(() => ({ body: answer })),
+      );
 
       const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
       assert.equal(res.code, 1);
-      assert.match(res.stderr, /^build-snapshot: the age rows of 6812, the year the home page shows, do not match its population rows/m);
+      assert.match(
+        res.stderr,
+        /^build-snapshot: the age rows of 6812, the year the home page shows, do not match its population rows/m,
+      );
       assert.match(res.stderr, line);
-      assert.match(res.stderr, /\nFix those rows in PA-Data, or delete the 6812 rows of registry_population_age and upload both of that year's files again on \/sync \(SCHEMA §3\.8\)/);
+      assert.match(
+        res.stderr,
+        /\nFix those rows in PA-Data, or delete the 6812 rows of registry_population_age and upload both of that year's files again on \/sync \(SCHEMA §3\.8\)/,
+      );
       assertOldSnapshot(res.cwd);
     });
   }
@@ -869,7 +1034,10 @@ test("age rows of the year the home page shows that do not match its population 
 
 test("the real rows of 6812: 10 population rows and 10 age rows, 54060100 and 54060200 under both สำนักทะเบียน → they match, written as GAS sent them, exit 0", async (t) => {
   const answer = { years: [{ yymm: "6812", population: ROWS_6812, village: [], age: AGE_ROWS_6812 }] };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -884,7 +1052,10 @@ test("age rows that do not match in a year before the one the home page shows �
       { yymm: "6812", population: ROWS_6812, village: [], age: AGE_ROWS_6812 },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -904,7 +1075,10 @@ test("registry_population of 2567 and 2568, both with village rows → populatio
       { yymm: "6812", population: ROWS_6812, village: VILLAGE_ROWS_6812, age: AGE_ROWS_6812 },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
@@ -915,7 +1089,10 @@ test("registry_population of 2567 and 2568, both with village rows → populatio
       { yymm: "6812", population: ROWS_6812, village: VILLAGE_ROWS_6812, age: AGE_ROWS_6812 },
     ],
   });
-  assert.match(res.stdout, /\nbuild-snapshot: \?action=registry_population has population rows for 2 years, the latest 6812 with 10 age rows and 94 village rows/);
+  assert.match(
+    res.stdout,
+    /\nbuild-snapshot: \?action=registry_population has population rows for 2 years, the latest 6812 with 10 age rows and 94 village rows/,
+  );
 });
 
 test("2568 with population rows but no village rows yet, 2567 with both → village [] in both years and the build goes on, exit 0: the home page hides the หมู่บ้าน", async (t) => {
@@ -925,13 +1102,18 @@ test("2568 with population rows but no village rows yet, 2567 with both → vill
       { yymm: "6812", population: ROWS_6812, village: [], age: [] },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
   assert.deepEqual(
-    snapshot(res.cwd).read("population.json").years.map((year) => year.village),
+    snapshot(res.cwd)
+      .read("population.json")
+      .years.map((year) => year.village),
     [[], []],
   );
 });
@@ -955,22 +1137,47 @@ test("village rows of the year the home page shows that do not match its populat
       [...VILLAGE_ROWS_6812, VILLAGE_ROWS_6812[0]],
       /\n {2}registry_population_village has 2 rows for rcode 5406 mm 54060101/,
     ],
-    ["one more ชาย", withVillageRow0({ male: 230 }), /\n {2}registry_population_village adds up to male 2137 for rcode 5406 tt 54060100, but registry_population has male 2136/],
-    ["one more หญิง", withVillageRow0({ female: 250 }), /\n {2}registry_population_village adds up to female 2401 for rcode 5406 tt 54060100, but registry_population has female 2400/],
-    ["one more รวม", withVillageRow0({ total: 479 }), /\n {2}registry_population_village adds up to total 4537 for rcode 5406 tt 54060100, but registry_population has total 4536/],
-    ["one more บ้าน", withVillageRow0({ house: 225 }), /\n {2}registry_population_village adds up to house 2164 for rcode 5406 tt 54060100, but registry_population has house 2163/],
+    [
+      "one more ชาย",
+      withVillageRow0({ male: 230 }),
+      /\n {2}registry_population_village adds up to male 2137 for rcode 5406 tt 54060100, but registry_population has male 2136/,
+    ],
+    [
+      "one more หญิง",
+      withVillageRow0({ female: 250 }),
+      /\n {2}registry_population_village adds up to female 2401 for rcode 5406 tt 54060100, but registry_population has female 2400/,
+    ],
+    [
+      "one more รวม",
+      withVillageRow0({ total: 479 }),
+      /\n {2}registry_population_village adds up to total 4537 for rcode 5406 tt 54060100, but registry_population has total 4536/,
+    ],
+    [
+      "one more บ้าน",
+      withVillageRow0({ house: 225 }),
+      /\n {2}registry_population_village adds up to house 2164 for rcode 5406 tt 54060100, but registry_population has house 2163/,
+    ],
   ];
   for (const [name, village, line] of cases) {
     await t.test(name, async (t) => {
       const answer = { years: [{ yymm: "6812", population: ROWS_6812, village, age: AGE_ROWS_6812 }] };
-      const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+      const gas = await startStub(
+        t,
+        seedGasWithRegistry(() => ({ body: answer })),
+      );
 
       const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
 
       assert.equal(res.code, 1);
-      assert.match(res.stderr, /^build-snapshot: the village rows of 6812, the year the home page shows, do not match its population rows/m);
+      assert.match(
+        res.stderr,
+        /^build-snapshot: the village rows of 6812, the year the home page shows, do not match its population rows/m,
+      );
       assert.match(res.stderr, line);
-      assert.match(res.stderr, /\nUpload stat_m68\.txt again on \/sync, or fix those rows of registry_population_village in PA-Data \(SCHEMA §3\.8\)/);
+      assert.match(
+        res.stderr,
+        /\nUpload stat_m68\.txt again on \/sync, or fix those rows of registry_population_village in PA-Data \(SCHEMA §3\.8\)/,
+      );
       assertOldSnapshot(res.cwd);
     });
   }
@@ -983,10 +1190,18 @@ test("village rows that do not match in a year before the one the home page show
       { yymm: "6812", population: ROWS_6812, village: VILLAGE_ROWS_6812, age: [] },
     ],
   };
-  const gas = await startStub(t, seedGasWithRegistry(() => ({ body: answer })));
+  const gas = await startStub(
+    t,
+    seedGasWithRegistry(() => ({ body: answer })),
+  );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(snapshot(res.cwd).read("population.json").years.map((year) => year.village.length), [0, 94]);
+  assert.deepEqual(
+    snapshot(res.cwd)
+      .read("population.json")
+      .years.map((year) => year.village.length),
+    [0, 94],
+  );
 });

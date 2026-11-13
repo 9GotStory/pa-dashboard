@@ -41,8 +41,9 @@ export default function Aged9Page({ id, names, years }: { id: string; names: Nam
 function Aged9({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, push, heading } = useReportQuery(data, names);
   const { block, total, goal, units, trend, domains, detail } = aged9Values(data, query, names, years);
-  const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.domain === null ? null : String(query.domain), (domain) =>
-    push({ ...query, domain: domain === null ? null : Number(domain) }),
+  const { overviewHeading, detailHeading, buttonProps, close } = useDetail(
+    query.domain === null ? null : String(query.domain),
+    (domain) => push({ ...query, domain: domain === null ? null : Number(domain) }),
   );
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
   // What is shown: the ด้าน open, or ความครอบคลุม then the 9 ด้าน (SPEC §9.4 CSV); nothing without a unit
@@ -51,9 +52,21 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
       ? null
       : detail
         ? detail.count !== null && detail.units
-          ? countsCsv(data.report, query.year, summary, block.max_date_com, detail.domain, { unitLabel, units: detail.units, total: detail.count, totalLabel })
+          ? countsCsv(data.report, query.year, summary, block.max_date_com, detail.domain, {
+              unitLabel,
+              units: detail.units,
+              total: detail.count,
+              totalLabel,
+            })
           : null
-        : domainsCsv(data.report, query.year, summary, block.max_date_com, total && units && unitTable(unitLabel, units, total, totalLabel), domains);
+        : domainsCsv(
+            data.report,
+            query.year,
+            summary,
+            block.max_date_com,
+            total && units && unitTable(unitLabel, units, total, totalLabel),
+            domains,
+          );
 
   return (
     <>
@@ -65,7 +78,9 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
       {!block ? (
         <NoYear year={query.year} />
       ) : units?.length === 0 ? (
-        <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
+        <ReportStatus>
+          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+        </ReportStatus>
       ) : (
         <>
           <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={[]} year={query.year} />
@@ -78,7 +93,9 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
               eyebrow="รายละเอียดด้านที่เลือก"
               context={describe({ ...query, domain: null }, names, ["year", "area"])}
             >
-              {detail && <DomainFigures detail={detail} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />}
+              {detail && (
+                <DomainFigures detail={detail} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />
+              )}
             </Detail>
           </div>
         </>
@@ -96,9 +113,17 @@ function Domains(props: {
 }) {
   const { domains, open, headingRef, buttonProps } = props;
   return (
-    <section aria-labelledby="domains-title" className="overflow-hidden rounded-[9px] border border-dc-border-subtle bg-white">
+    <section
+      aria-labelledby="domains-title"
+      className="overflow-hidden rounded-[9px] border border-dc-border-subtle bg-white"
+    >
       <div className="p-4">
-        <h3 id="domains-title" ref={headingRef} tabIndex={-1} className="font-prompt text-base font-semibold text-dc-brand-deep focus:outline-none">
+        <h3
+          id="domains-title"
+          ref={headingRef}
+          tabIndex={-1}
+          className="font-prompt text-base font-semibold text-dc-brand-deep focus:outline-none"
+        >
           ผลการคัดกรองทั้ง 9 ด้าน
         </h3>
         <p className="text-xs text-dc-text-secondary">จำนวนรายการจากข้อมูลต้นทาง · เลือกด้านเพื่อดูรายละเอียดรายพื้นที่</p>
@@ -134,7 +159,12 @@ function Domains(props: {
  * and the count of each ตำบล or หน่วยบริการ beside its table; a note when the
  * district has no ผลงาน of it that year
  */
-function DomainFigures(props: { detail: NonNullable<Values["detail"]>; year: string; unitLabel: string; totalLabel: string }) {
+function DomainFigures(props: {
+  detail: NonNullable<Values["detail"]>;
+  year: string;
+  unitLabel: string;
+  totalLabel: string;
+}) {
   const { detail, year, unitLabel, totalLabel } = props;
   return (
     <>

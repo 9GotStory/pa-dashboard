@@ -67,7 +67,10 @@ export default function ReportFilters(props: {
   const measureOptions = block ? shownMeasures(data, block) : [];
   const pick = (name: keyof ReportQuery, value: string) => setPicked({ ...picked, [name]: value });
   return (
-    <section aria-labelledby="filters-title" className="border-b border-dc-border-subtle bg-dc-highlight-soft/50 px-4 py-5 sm:px-6 print:hidden">
+    <section
+      aria-labelledby="filters-title"
+      className="border-b border-dc-border-subtle bg-dc-highlight-soft/50 px-4 py-5 sm:px-6 print:hidden"
+    >
       <h2 id="filters-title" className="font-prompt text-[15px] font-semibold text-dc-brand-deep">
         ตัวกรองรายงาน
       </h2>
@@ -80,7 +83,9 @@ export default function ReportFilters(props: {
         className="mt-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end"
       >
         <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-          {fields.includes("year") && <Select name="year" label="ปีงบประมาณ" value={draft.year} options={years.map((y) => [y, y])} onPick={pick} />}
+          {fields.includes("year") && (
+            <Select name="year" label="ปีงบประมาณ" value={draft.year} options={years.map((y) => [y, y])} onPick={pick} />
+          )}
           {fields.includes("area") && (
             <Select
               name="area"
@@ -95,7 +100,10 @@ export default function ReportFilters(props: {
               name="period"
               label="ช่วงเวลา"
               value={draft.period}
-              options={(periodOptions.length > 0 ? periodOptions : ["year" as const]).map((p) => [p, PERIOD_LABELS[p].name])}
+              options={(periodOptions.length > 0 ? periodOptions : ["year" as const]).map((p) => [
+                p,
+                PERIOD_LABELS[p].name,
+              ])}
               onPick={pick}
             />
           )}
@@ -120,7 +128,10 @@ export default function ReportFilters(props: {
             />
           )}
         </div>
-        <button type="submit" className="h-10 rounded-md bg-dc-brand-primary px-5 font-semibold text-white hover:bg-dc-brand-deep">
+        <button
+          type="submit"
+          className="h-10 rounded-md bg-dc-brand-primary px-5 font-semibold text-white hover:bg-dc-brand-deep"
+        >
           แสดงผล
         </button>
       </form>

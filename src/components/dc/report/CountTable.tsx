@@ -6,13 +6,25 @@ import type { UnitCount } from "./resultsText";
  * (totalLabel), as UnitTable lays out เป้าหมาย/ผลงาน/ร้อยละ: the count of a
  * ด้าน of AGED9 (SPEC §9.4)
  */
-export default function CountTable(props: { unitLabel: string; units: UnitCount[]; total: number; totalLabel: string }) {
+export default function CountTable(props: {
+  unitLabel: string;
+  units: UnitCount[];
+  total: number;
+  totalLabel: string;
+}) {
   const { unitLabel, units, total, totalLabel } = props;
   return (
     <section className="min-w-0">
-      <div role="region" tabIndex={0} aria-label={`ตารางจำนวนราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border-subtle">
+      <div
+        role="region"
+        tabIndex={0}
+        aria-label={`ตารางจำนวนราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
+        className="overflow-x-auto rounded-[9px] border border-dc-border-subtle"
+      >
         <table className="w-full border-collapse text-xs tabular-nums">
-          <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">จำนวนรายการราย{unitLabel}</caption>
+          <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">
+            จำนวนรายการราย{unitLabel}
+          </caption>
           <thead className="bg-dc-highlight-soft text-dc-brand-deep">
             <tr>
               <th scope="col" className="px-2 py-2 text-left whitespace-nowrap sm:px-3">

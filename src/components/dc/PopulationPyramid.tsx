@@ -81,7 +81,10 @@ export default function PopulationPyramid({
       <div className="mt-1 grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(16rem,0.62fr)]">
         <div className="min-w-0 rounded-[10px] border border-dc-border-subtle bg-dc-surface px-2 py-4 sm:px-5">
           <div className="mx-auto max-w-3xl">
-            <p aria-hidden="true" className={`${ROW_GRID} border-b border-dc-border-subtle px-1 pb-2 text-[11px] font-bold text-dc-brand-deep sm:px-2`}>
+            <p
+              aria-hidden="true"
+              className={`${ROW_GRID} border-b border-dc-border-subtle px-1 pb-2 text-[11px] font-bold text-dc-brand-deep sm:px-2`}
+            >
               <span className="inline-flex items-center justify-end gap-1.5">
                 <i className="inline-block size-2.5 rounded-sm bg-dc-pyramid-male" />
                 ชาย
@@ -107,7 +110,10 @@ export default function PopulationPyramid({
                     b.label === shown ? "bg-dc-highlight-soft" : "hover:bg-dc-canvas"
                   }`}
                 >
-                  <span aria-hidden="true" className="flex h-3.5 justify-end overflow-hidden rounded-sm bg-dc-surface-muted">
+                  <span
+                    aria-hidden="true"
+                    className="flex h-3.5 justify-end overflow-hidden rounded-sm bg-dc-surface-muted"
+                  >
                     <span className="block h-full bg-dc-pyramid-male" style={{ width: barWidth(b.male) }} />
                   </span>
                   <span className="text-right font-semibold text-dc-brand-deep">{formatCount(b.male)}</span>
@@ -133,7 +139,9 @@ export default function PopulationPyramid({
             <dd className="mt-1 font-prompt text-[28px] leading-tight font-bold text-dc-brand-deep tabular-nums">
               {formatCount(age.aged60)} <small className="text-sm font-semibold">คน</small>
             </dd>
-            <dd className="mt-3 font-prompt text-xl font-bold text-dc-brand-deep tabular-nums">ร้อยละ {formatPct(age.aged60_pct)}</dd>
+            <dd className="mt-3 font-prompt text-xl font-bold text-dc-brand-deep tabular-nums">
+              ร้อยละ {formatPct(age.aged60_pct)}
+            </dd>
             <dd aria-hidden="true" className="mt-2 h-2 overflow-hidden rounded-full bg-dc-surface-muted">
               <span className="block h-full rounded-full bg-dc-brand-accent" style={{ width: `${age.aged60_pct}%` }} />
             </dd>
@@ -141,7 +149,8 @@ export default function PopulationPyramid({
           </dl>
           <p className="mt-4 border-t border-dc-border-subtle pt-3 text-xs text-dc-text-secondary">
             ไม่รวมประชากรที่ไม่แยกอายุ {formatCount(unsplitTotal)} คน
-            {unsplit.length > 0 && ` (${unsplit.map((group) => `${UNSPLIT_NAMES[group]} ${formatCount(age.unsplit[group])}`).join(" · ")})`}
+            {unsplit.length > 0 &&
+              ` (${unsplit.map((group) => `${UNSPLIT_NAMES[group]} ${formatCount(age.unsplit[group])}`).join(" · ")})`}
           </p>
         </div>
       </div>

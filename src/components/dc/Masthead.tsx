@@ -20,10 +20,15 @@ export default function Masthead() {
             <strong className="block font-prompt text-base leading-snug font-bold text-dc-brand-deep sm:text-lg">
               Song Health <span className="text-dc-brand-accent">Data Center</span>
             </strong>
-            <small className="mt-0.5 block text-[11px] text-dc-text-secondary sm:text-xs">ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</small>
+            <small className="mt-0.5 block text-[11px] text-dc-text-secondary sm:text-xs">
+              ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่
+            </small>
           </span>
         </Link>
-        <nav aria-label="เมนูหลัก" className="w-full border-t border-dc-border-subtle md:w-auto md:border-t-0 print:hidden">
+        <nav
+          aria-label="เมนูหลัก"
+          className="w-full border-t border-dc-border-subtle md:w-auto md:border-t-0 print:hidden"
+        >
           <MainNav />
         </nav>
       </div>

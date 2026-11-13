@@ -78,7 +78,8 @@ export default function Home() {
               <div className="min-w-0 px-5 py-5 sm:col-span-3 sm:px-8 sm:py-7 lg:col-span-1">
                 <dt className="text-xs font-semibold text-dc-text-secondary">ประชากรทั้งหมด</dt>
                 <dd className="mt-2 font-prompt text-[40px] leading-none font-bold text-dc-brand-deep tabular-nums sm:text-[52px]">
-                  {formatCount(population.district.totals.total)} <small className="text-sm font-medium text-dc-text-secondary">คน</small>
+                  {formatCount(population.district.totals.total)}{" "}
+                  <small className="text-sm font-medium text-dc-text-secondary">คน</small>
                 </dd>
               </div>
               {(
@@ -87,7 +88,10 @@ export default function Home() {
                   ["ประชากรหญิง", population.district.totals.female, "bg-dc-pyramid-female"],
                 ] as const
               ).map(([label, count, dot]) => (
-                <div key={label} className="min-w-0 border-t border-dc-border-subtle px-5 py-5 sm:border-t-0 sm:px-7 sm:py-7">
+                <div
+                  key={label}
+                  className="min-w-0 border-t border-dc-border-subtle px-5 py-5 sm:border-t-0 sm:px-7 sm:py-7"
+                >
                   <dt className="flex items-center gap-2 text-xs font-semibold text-dc-text-secondary">
                     <span aria-hidden="true" className={`size-2.5 rounded-full ${dot}`} />
                     {label}
@@ -147,7 +151,9 @@ export default function Home() {
                     <Icon className="size-5" />
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block leading-snug font-semibold text-dc-brand-deep group-hover:underline">{topic.category_name}</span>
+                    <span className="block leading-snug font-semibold text-dc-brand-deep group-hover:underline">
+                      {topic.category_name}
+                    </span>
                     <span className="mt-0.5 block text-xs text-dc-text-secondary">
                       {topic.main_report_name} · <span className="tabular-nums">{count}</span> รายงาน
                     </span>
@@ -191,7 +197,10 @@ export default function Home() {
             MOPH GIS
           </a>{" "}
           ดาวน์โหลด {BOUNDARY_DOWNLOADED} · แผนที่พื้นหลัง:{" "}
-          <a href="https://www.openstreetmap.org/copyright" className="text-dc-brand-primary underline underline-offset-2">
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            className="text-dc-brand-primary underline underline-offset-2"
+          >
             OpenStreetMap
           </a>{" "}
           · สร้างหน้าเว็บ <time dateTime={built_at}>{formatBuildTime(built_at)}</time>

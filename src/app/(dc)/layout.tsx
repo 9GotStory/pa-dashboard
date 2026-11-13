@@ -26,7 +26,11 @@ export default function DcLayout({
         ข้ามไปยังเนื้อหาหลัก
       </a>
       <Masthead />
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-330 flex-1 px-4 pt-5 pb-12 focus:outline-none sm:px-8 sm:pt-7">
+      <main
+        id="main"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-330 flex-1 px-4 pt-5 pb-12 focus:outline-none sm:px-8 sm:pt-7"
+      >
         {children}
       </main>
       <Footer />

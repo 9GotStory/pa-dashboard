@@ -32,7 +32,12 @@ export function registryAsOf(yymm: string): string {
 /** ชาย หญิง รวม and บ้าน of rows added up */
 export function populationTotals(rows: RegistryPopulationRow[]): PopulationTotals {
   return rows.reduce(
-    (sum, r) => ({ male: sum.male + r.male, female: sum.female + r.female, total: sum.total + r.total, house: sum.house + r.house }),
+    (sum, r) => ({
+      male: sum.male + r.male,
+      female: sum.female + r.female,
+      total: sum.total + r.total,
+      house: sum.house + r.house,
+    }),
     { male: 0, female: 0, total: 0, house: 0 },
   );
 }
@@ -193,7 +198,8 @@ export function readRegistryFiles(files: { name: string; text: string }[], distr
   return files.map(({ name, text }, i): RegistryFileRead => {
     const statMRead = statMReads[i];
     if (statMRead) return statMRead;
-    if (!AGE_FILE_NAME.test(name)) return { name, ok: false, reason: "ไม่ใช่ไฟล์ stat_m{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora" };
+    if (!AGE_FILE_NAME.test(name))
+      return { name, ok: false, reason: "ไม่ใช่ไฟล์ stat_m{ปี}.txt หรือ {ปี}12cc{จังหวัด}.txt ของ stat.bora" };
     const read = readAgeFile(name, text, districtCode, statMs);
     if (!read.ok) return read;
     const first = ageFiles.get(read.yymm);
@@ -211,7 +217,12 @@ export function readRegistryFiles(files: { name: string; text: string }[], distr
 function fileValues(text: string): string[][] {
   const lines = text.replace(/^\uFEFF/, "").split("\n");
   if (lines.at(-1) === "") lines.pop();
-  return lines.map((line) => line.replace(/\|$/, "").split("|").map((s) => s.trim()));
+  return lines.map((line) =>
+    line
+      .replace(/\|$/, "")
+      .split("|")
+      .map((s) => s.trim()),
+  );
 }
 
 // A count as stat_m writes it: digits, grouped by commas.
@@ -246,15 +257,28 @@ function readStatM(name: string, text: string, districtCode: string): CheckedSta
     if (bad !== undefined) return refuse(`บรรทัดที่ ${i + 1} มีค่าที่ไม่ใช่ตัวเลข: ${bad}`);
     const [yymm, cc, cc_name, rcode, rcode_name, tt, tt_name, mm, mm_name, male, female, total, house] = values;
     fileRows.push({
-      yymm, cc, cc_name, rcode, rcode_name, tt, tt_name, mm, mm_name,
-      male: count(male), female: count(female), total: count(total), house: count(house),
+      yymm,
+      cc,
+      cc_name,
+      rcode,
+      rcode_name,
+      tt,
+      tt_name,
+      mm,
+      mm_name,
+      male: count(male),
+      female: count(female),
+      total: count(total),
+      house: count(house),
     });
   }
 
   // 2. One yymm, of December: the figures at 31 Dec.
   const other = fileRows.findIndex((r) => r.yymm !== fileRows[0].yymm);
   if (other > -1) {
-    return refuse(`ปีเดือนไม่เท่ากันทั้งไฟล์: บรรทัดที่ 1 เป็น ${fileRows[0].yymm} แต่บรรทัดที่ ${other + 1} เป็น ${fileRows[other].yymm}`);
+    return refuse(
+      `ปีเดือนไม่เท่ากันทั้งไฟล์: บรรทัดที่ 1 เป็น ${fileRows[0].yymm} แต่บรรทัดที่ ${other + 1} เป็น ${fileRows[other].yymm}`,
+    );
   }
   if (fileRows.length > 0 && !/^\d{2}12$/.test(fileRows[0].yymm)) {
     return refuse(`ปีเดือนในไฟล์คือ ${fileRows[0].yymm} ไม่ใช่เดือน 12 (ยอด ณ 31 ธ.ค.)`);
@@ -308,13 +332,18 @@ function readStatM(name: string, text: string, districtCode: string): CheckedSta
     const sum = populationTotals(of);
     for (const [key, label] of COUNT_LABELS) {
       if (sum[key] !== tambon[key]) {
-        return refuse(`ผลรวมบรรทัดหมู่บ้านของ ${where} ไม่เท่าบรรทัดตำบล: ${label} ${formatCount(sum[key])} แต่บรรทัดตำบล ${formatCount(tambon[key])}`);
+        return refuse(
+          `ผลรวมบรรทัดหมู่บ้านของ ${where} ไม่เท่าบรรทัดตำบล: ${label} ${formatCount(sum[key])} แต่บรรทัดตำบล ${formatCount(tambon[key])}`,
+        );
       }
     }
   }
 
   // 6. The district's ตำบล lines are the rows, its หมู่บ้าน lines the villages.
-  return { read: { name, ok: true, kind: "population", yymm: fileRows[0].yymm, rows: districtRows, villages }, officeTotals };
+  return {
+    read: { name, ok: true, kind: "population", yymm: fileRows[0].yymm, rows: districtRows, villages },
+    officeTotals,
+  };
 }
 
 // The 219 counts of an age file line after its name, in file order, as
@@ -370,7 +399,12 @@ interface AgeBlock {
  * (SCHEMA §2.7) for each row of that stat_m, or the first rule it breaks, in
  * Thai.
  */
-function readAgeFile(name: string, text: string, districtCode: string, statMs: Map<string, CheckedStatM>): RegistryFileRead {
+function readAgeFile(
+  name: string,
+  text: string,
+  districtCode: string,
+  statMs: Map<string, CheckedStatM>,
+): RegistryFileRead {
   const refuse = (reason: string): Refused => ({ name, ok: false, reason });
 
   // 1. The yymm and จังหวัด from the name, which readRegistryFiles has
@@ -387,7 +421,10 @@ function readAgeFile(name: string, text: string, districtCode: string, statMs: M
     if (values.length !== 220) return refuse(`บรรทัดที่ ${i + 1} มี ${values.length} ค่า ไฟล์อายุมีบรรทัดละ 220 ค่า`);
     const bad = values.slice(1).find((s) => !AGE_COUNT_FORMAT.test(s));
     if (bad !== undefined) return refuse(`บรรทัดที่ ${i + 1} มีค่าที่ไม่ใช่จำนวนเต็ม: ${bad}`);
-    const counts = Object.fromEntries(AGE_COUNTS.map((column, k) => [column, Number(values[k + 1])])) as Record<AgeCount, number>;
+    const counts = Object.fromEntries(AGE_COUNTS.map((column, k) => [column, Number(values[k + 1])])) as Record<
+      AgeCount,
+      number
+    >;
     lines.push({ tt_name: values[0], ...counts });
   }
 
@@ -429,13 +466,16 @@ function readAgeFile(name: string, text: string, districtCode: string, statMs: M
   // block line's are the total line's of its สำนักทะเบียน.
   for (const { row, block, line } of pairs) {
     const differ = totalsDiffer(line, row);
-    if (differ) return refuse(`ยอดของ ${line.tt_name} ในบล็อก ${block.line.tt_name} ไม่ตรงกับ ${statM.read.name}: ${differ}`);
+    if (differ)
+      return refuse(`ยอดของ ${line.tt_name} ในบล็อก ${block.line.tt_name} ไม่ตรงกับ ${statM.read.name}: ${differ}`);
   }
   for (const office of statM.officeTotals) {
     const block = blockOf.get(office.rcode)!;
     const differ = totalsDiffer(block.line, office);
     if (differ) {
-      return refuse(`ยอดของบล็อก ${block.line.tt_name} ไม่ตรงกับบรรทัดยอดรวมของสำนักทะเบียน ${office.rcode} ใน ${statM.read.name}: ${differ}`);
+      return refuse(
+        `ยอดของบล็อก ${block.line.tt_name} ไม่ตรงกับบรรทัดยอดรวมของสำนักทะเบียน ${office.rcode} ใน ${statM.read.name}: ${differ}`,
+      );
     }
   }
 
@@ -453,7 +493,10 @@ function readAgeFile(name: string, text: string, districtCode: string, statMs: M
     }
   }
   for (const { block, line } of pairs) {
-    for (const [sex, label] of [["m", "ชาย"], ["f", "หญิง"]] as const) {
+    for (const [sex, label] of [
+      ["m", "ชาย"],
+      ["f", "หญิง"],
+    ] as const) {
       let sum = 0;
       for (let age = 0; age <= 101; age++) sum += line[`${sex}${age}`];
       for (const group of UNSPLIT_GROUPS) sum += line[`${group}_${sex}`];
@@ -466,5 +509,11 @@ function readAgeFile(name: string, text: string, districtCode: string, statMs: M
   }
 
   // 8. The rows: yymm from the name, rcode and tt from stat_m, the rest as in the line.
-  return { name, ok: true, kind: "age", yymm, rows: pairs.map(({ row, line }) => ({ yymm, rcode: row.rcode, tt: row.tt, ...line })) };
+  return {
+    name,
+    ok: true,
+    kind: "age",
+    yymm,
+    rows: pairs.map(({ row, line }) => ({ yymm, rcode: row.rcode, tt: row.tt, ...line })),
+  };
 }

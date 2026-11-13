@@ -32,9 +32,14 @@ async function capturePage(paUrl) {
       const url = paUrl + query;
       await page.goto(url, { waitUntil: "domcontentloaded", timeout: 60000 });
       const cells = page.locator(CELL);
-      await cells.first().waitFor({ timeout: 180000 }).catch(() => {
-        throw new Error(`no KPI cell on ${url} within 3 min: check that it opens in Chrome and GAS answers BATCH_ALL, then rerun`);
-      });
+      await cells
+        .first()
+        .waitFor({ timeout: 180000 })
+        .catch(() => {
+          throw new Error(
+            `no KPI cell on ${url} within 3 min: check that it opens in Chrome and GAS answers BATCH_ALL, then rerun`,
+          );
+        });
       // Cells appear once BATCH_ALL is in; let the rest of the render finish.
       await page.waitForTimeout(2000);
       const labels = await cells.evaluateAll((els) => els.map((e) => e.getAttribute("aria-label")));
@@ -68,7 +73,9 @@ async function snapshot(name) {
     page[tab] = rest;
   }
   fs.writeFileSync(path.join(out, "page.json"), JSON.stringify(page, null, 2));
-  const counts = Object.entries(page).map(([tab, p]) => `${tab} ${p.labels.length} cells`).join(", ");
+  const counts = Object.entries(page)
+    .map(([tab, p]) => `${tab} ${p.labels.length} cells`)
+    .join(", ");
   console.log(`pa-check: saved ${out} (${counts}, BATCH_ALL ${Object.keys(batch.data).length} keys)`);
 }
 
@@ -82,9 +89,19 @@ function load(name) {
 }
 
 // Rows as sorted key-sorted JSON, so row and key order do not matter.
-const rowSet = (rows) => rows.map((row) => JSON.stringify(Object.keys(row).sort().map((k) => [k, row[k]]))).sort();
+const rowSet = (rows) =>
+  rows
+    .map((row) =>
+      JSON.stringify(
+        Object.keys(row)
+          .sort()
+          .map((k) => [k, row[k]]),
+      ),
+    )
+    .sort();
 const sameRows = (x, y) => JSON.stringify(rowSet(x)) === JSON.stringify(rowSet(y));
-const maxDateCom = (rows) => rows.reduce((max, row) => (String(row.date_com ?? "") > max ? String(row.date_com) : max), "");
+const maxDateCom = (rows) =>
+  rows.reduce((max, row) => (String(row.date_com ?? "") > max ? String(row.date_com) : max), "");
 const indexes = (n) => Array.from({ length: n }, (_, i) => i);
 
 function compare(a, b) {
@@ -99,7 +116,9 @@ function compare(a, b) {
     const xs = x.text.split("\n");
     const ys = y.text.split("\n");
     const lineDiffs = indexes(Math.max(xs.length, ys.length)).filter((i) => xs[i] !== ys[i]);
-    console.log(`page ${tab}: ${x.labels.length} → ${y.labels.length} cells, ${cellDiffs.length} differ; ${lineDiffs.length} text lines differ`);
+    console.log(
+      `page ${tab}: ${x.labels.length} → ${y.labels.length} cells, ${cellDiffs.length} differ; ${lineDiffs.length} text lines differ`,
+    );
     cellDiffs.slice(0, 5).forEach((i) => console.log(`  cell ${x.labels[i]} → ${y.labels[i]}`));
     lineDiffs.slice(0, 5).forEach((i) => console.log(`  line ${i + 1}: ${xs[i]} → ${ys[i]}`));
     if (cellDiffs.length > 0 || lineDiffs.length > 0) changed++;
@@ -121,26 +140,34 @@ function compare(a, b) {
     const districts = new Set(y.map((row) => String(row.areacode).slice(0, 4)));
     const narrowed = x.filter((row) => districts.has(String(row.areacode).slice(0, 4)) && String(row.b_year) === year);
     if (y.length > 0 && sameRows(narrowed, y)) {
-      console.log(`data ${key}: ${x.length} → ${y.length} rows, the same rows narrowed to ${[...districts].join(",")} / ${year}`);
+      console.log(
+        `data ${key}: ${x.length} → ${y.length} rows, the same rows narrowed to ${[...districts].join(",")} / ${year}`,
+      );
     } else {
       changed++;
-      console.log(`data ${key}: ${x.length} → ${y.length} rows, CHANGED; max date_com ${maxDateCom(x)} → ${maxDateCom(y)}`);
+      console.log(
+        `data ${key}: ${x.length} → ${y.length} rows, CHANGED; max date_com ${maxDateCom(x)} → ${maxDateCom(y)}`,
+      );
     }
   }
   console.log(`data: ${identical}/${keys.length} keys identical`);
   for (const key of new Set([...Object.keys(before.batch.meta), ...Object.keys(after.batch.meta)])) {
     const x = JSON.stringify(before.batch.meta[key]);
     const y = JSON.stringify(after.batch.meta[key]);
-    if (x !== y) console.log(`meta ${key}: ${String(x).slice(0, 100)} → ${String(y).slice(0, 100)} (shown, not judged)`);
+    if (x !== y)
+      console.log(`meta ${key}: ${String(x).slice(0, 100)} → ${String(y).slice(0, 100)} (shown, not judged)`);
   }
 
   if (changed > 0) {
-    fail(`${changed} difference(s). A newer max date_com means MOPH sent new data; the same date_com means the code changed what PA gets.`);
+    fail(
+      `${changed} difference(s). A newer max date_com means MOPH sent new data; the same date_com means the code changed what PA gets.`,
+    );
   }
   console.log("pa-check: PA unchanged");
 }
 
-const checkName = (name) => (/^[\w.-]+$/.test(name) ? name : fail(`snapshot name "${name}": letters, digits, . _ - only`));
+const checkName = (name) =>
+  /^[\w.-]+$/.test(name) ? name : fail(`snapshot name "${name}": letters, digits, . _ - only`);
 const [command, ...args] = process.argv.slice(2);
 try {
   if (command === "snapshot" && args.length === 1) await snapshot(checkName(args[0]));

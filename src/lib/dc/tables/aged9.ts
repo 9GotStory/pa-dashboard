@@ -12,7 +12,12 @@ import { DOMAIN_LABELS, count, countsBy, goalFor, passes, totals, totalsBy, tren
  * with เปรียบเทียบตาม, the 9 ด้าน, and the รายละเอียด of query.domain when
  * one is open (period and measure are not used: the table has ทั้งปี only)
  */
-export function aged9Values(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function aged9Values(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   const block = yearBlock(data, query.year);
   const total = block && totals(block, data.report, query);
   const goal = goalFor(data.report, null);
@@ -32,7 +37,11 @@ export function aged9Values(data: DcReportData, query: ReportQuery, names: Pick<
     trend: years.map((year) => byYear.get(year) ?? { b_year: year, totals: null }),
     /** ผลการคัดกรองทั้ง 9 ด้าน in the area: count null when the district has no ผลงาน of the ด้าน that year ("—") */
     domains: block
-      ? DOMAIN_LABELS.map((label, i) => ({ domain: i + 1, label, count: count(block, domainColumn(i + 1), query.area) }))
+      ? DOMAIN_LABELS.map((label, i) => ({
+          domain: i + 1,
+          label,
+          count: count(block, domainColumn(i + 1), query.area),
+        }))
       : [],
     /** รายละเอียด of query.domain, null for ภาพรวม */
     detail: block && query.domain !== null ? domainDetail(block, { ...query, domain: query.domain }, names) : null,
@@ -40,7 +49,11 @@ export function aged9Values(data: DcReportData, query: ReportQuery, names: Pick<
 }
 
 /** The รายละเอียด of the open ด้าน (query.domain) in the block ปี of query.year: its count in the area, and per ตำบล or หน่วยบริการ (query.by) */
-function domainDetail(block: DcYearBlock, query: ReportQuery & { domain: number }, names: Pick<DcCatalog, "areas" | "hospitals">) {
+function domainDetail(
+  block: DcYearBlock,
+  query: ReportQuery & { domain: number },
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+) {
   const column = domainColumn(query.domain);
   return {
     domain: query.domain,

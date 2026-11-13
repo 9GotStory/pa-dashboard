@@ -138,7 +138,8 @@ export function periods(block: DcYearBlock, report: DcReport): Period[] {
   const quarters = QUARTER_ORDER.find((f) => found.includes(f));
   const measured = measures(block).some((m) => collected(block, monthColumns(`${m}_`)));
   if (quarters ? collected(block, FIXED_COLUMNS[quarters]) : measured) out.push("q1", "q2", "q3", "q4");
-  if (measured || (found.includes("M_A") && collected(block, FIXED_COLUMNS.M_A))) out.push(...MONTHS.map((m) => `m${m}` as const));
+  if (measured || (found.includes("M_A") && collected(block, FIXED_COLUMNS.M_A)))
+    out.push(...MONTHS.map((m) => `m${m}` as const));
   return out;
 }
 
@@ -182,7 +183,11 @@ function columns(cols: Columns, period: Period): Columns {
     const size = cols.target.length / 4;
     return entries(cols, (Number(period.slice(1)) - 1) * size, size);
   }
-  return entries(cols, MONTHS.findIndex((m) => `m${m}` === period), 1);
+  return entries(
+    cols,
+    MONTHS.findIndex((m) => `m${m}` === period),
+    1,
+  );
 }
 
 /** The columns of the quarters or months k to k + size − 1 */
@@ -234,7 +239,11 @@ function collected(block: DcYearBlock, cols: Columns): boolean {
  * The columns of a period when the whole district has a ผลงาน in its level
  * that year, else null: no rule applies, or the year has no data
  */
-function collectedColumns(block: DcYearBlock, report: DcReport, query: Pick<ReportQuery, "period" | "measure">): Columns | null {
+function collectedColumns(
+  block: DcYearBlock,
+  report: DcReport,
+  query: Pick<ReportQuery, "period" | "measure">,
+): Columns | null {
   const all = level(block, report, query);
   return all && collected(block, all) ? columns(all, query.period) : null;
 }
@@ -268,11 +277,17 @@ export function totalsBy(
   names: Pick<DcCatalog, "areas" | "hospitals">,
 ): UnitTotals[] | null {
   const cols = collectedColumns(block, report, query);
-  return cols && unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, totals: sum(block, cols, rows) }));
+  return (
+    cols && unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, totals: sum(block, cols, rows) }))
+  );
 }
 
 /** The rows in an area per tambon or per hospcode (query.by), in code order and named as totalsBy */
-function unitRows(block: DcYearBlock, query: Pick<ReportQuery, "area" | "by">, names: Pick<DcCatalog, "areas" | "hospitals">) {
+function unitRows(
+  block: DcYearBlock,
+  query: Pick<ReportQuery, "area" | "by">,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+) {
   const unit =
     query.by === "area"
       ? {
@@ -324,7 +339,11 @@ export function countsBy(
 ): { key: string; name: string; count: number }[] | null {
   const cols = countColumns(column);
   if (!collected(block, cols)) return null;
-  return unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, count: sum(block, cols, rows).result }));
+  return unitRows(block, query, names).map(({ key, name, rows }) => ({
+    key,
+    name,
+    count: sum(block, cols, rows).result,
+  }));
 }
 
 /**
@@ -375,7 +394,10 @@ export function yearBlock(data: DcReportData, year: string): DcYearBlock | null 
 
 /** The years with data, latest first: the ปีงบประมาณ a report page offers (SPEC §9.4) */
 export function dataYears(data: DcReportData): string[] {
-  return data.years.filter((b) => b.rows.length > 0).map((b) => b.b_year).reverse();
+  return data.years
+    .filter((b) => b.rows.length > 0)
+    .map((b) => b.b_year)
+    .reverse();
 }
 
 /**
@@ -386,11 +408,7 @@ export function dataYears(data: DcReportData): string[] {
  * period are always ones the year's columns have, as totals() expects:
  * measure null is ภาพรวม, also for a measure the year lacks (SPEC §9.4).
  */
-export function reportQuery(
-  data: DcReportData,
-  params: URLSearchParams,
-  names: Pick<DcCatalog, "areas">,
-): ReportQuery {
+export function reportQuery(data: DcReportData, params: URLSearchParams, names: Pick<DcCatalog, "areas">): ReportQuery {
   const asked = params.get("year");
   const year = asked && /^\d{4}$/.test(asked) ? asked : (dataYears(data)[0] ?? "");
   const block = yearBlock(data, year);
@@ -419,7 +437,8 @@ export function reportSearch(query: ReportQuery): string {
 export function libraryQuery(mains: DcCatalog["mains"], params: URLSearchParams): LibraryQuery {
   const cat = mains.flatMap((m) => m.topics).find((t) => t.cat_id === params.get("cat"))?.cat_id ?? null;
   // One หัวข้อ or one หมวด is picked at a time, and the หัวข้อ is the narrower
-  const main = cat === null ? (mains.find((m) => m.main_report_id === params.get("main"))?.main_report_id ?? null) : null;
+  const main =
+    cat === null ? (mains.find((m) => m.main_report_id === params.get("main"))?.main_report_id ?? null) : null;
   return { main, cat, q: params.get("q") ?? "" };
 }
 

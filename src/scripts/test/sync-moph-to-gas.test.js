@@ -186,7 +186,10 @@ test("MOPH sends fewer rows than total → that table stops with a message and i
 });
 
 test("MOPH answers 429, then 503 → retried, saved on the third try", async (t) => {
-  const replies = [{ status: 429, body: { message: "Too Many Requests" } }, { status: 503, body: {} }];
+  const replies = [
+    { status: 429, body: { message: "Too Many Requests" } },
+    { status: 503, body: {} },
+  ];
   const env = await start(t, (body) => replies.shift() ?? { body: envelope(mophRows(body.year)) });
 
   const res = await run(env, ["--only", "s_kpi_dental33", "--no-rebuild"]);
@@ -277,7 +280,10 @@ test("MOPH replies with a bare array (no total, SCHEMA §5.3) → saved, and the
   const res = await run(env, ["--only", "s_kpi_dental33", "--no-rebuild"]);
 
   assert.equal(res.code, 0, res.stderr);
-  assert.match(res.stdout, /✓ s_kpi_dental33 2569 → s_kpi_dental33: fetched 5 \(MOPH sent no total\), received 5, count 3\n/);
+  assert.match(
+    res.stdout,
+    /✓ s_kpi_dental33 2569 → s_kpi_dental33: fetched 5 \(MOPH sent no total\), received 5, count 3\n/,
+  );
 });
 
 test("--backfill where HDC has no 2565 rows → 2565 is no data, not a failure: the other years saved, exit 0", async (t) => {

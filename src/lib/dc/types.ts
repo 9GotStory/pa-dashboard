@@ -172,8 +172,9 @@ export type RegistryPopulationAgeRow = {
   rcode: string;
   tt: string;
   tt_name: string;
-} & { [age: `m${number}` | `f${number}`]: number }
-  & { [column in `${UnsplitGroup | "total"}_${"m" | "f" | "t"}`]: number };
+} & { [age: `m${number}` | `f${number}`]: number } & {
+  [column in `${UnsplitGroup | "total"}_${"m" | "f" | "t"}`]: number;
+};
 
 export interface RegistryPopulationYear {
   yymm: string;
@@ -200,7 +201,13 @@ export type GasUploadAnswer = { status: "success"; count?: number; remaining_tod
 
 /** A file the admin picked in the /sync upload, read and checked (SCHEMA §11.2): the district's rows of its kind, which save_registry_population takes as is (SCHEMA §3.8), or why it is refused */
 export type RegistryFileRead = { name: string } & (
-  | { ok: true; kind: "population"; yymm: string; rows: RegistryPopulationRow[]; villages: RegistryPopulationVillageRow[] } // stat_m: rows = ตำบล rows (kind population) · villages = หมู่บ้าน rows (kind village)
+  | {
+      ok: true;
+      kind: "population";
+      yymm: string;
+      rows: RegistryPopulationRow[];
+      villages: RegistryPopulationVillageRow[];
+    } // stat_m: rows = ตำบล rows (kind population) · villages = หมู่บ้าน rows (kind village)
   | { ok: true; kind: "age"; yymm: string; rows: RegistryPopulationAgeRow[] }
   | { ok: false; reason: string }
 );

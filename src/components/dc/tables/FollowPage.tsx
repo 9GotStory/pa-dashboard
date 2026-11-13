@@ -51,7 +51,9 @@ function Follow({ data, names, years }: { data: DcReportData; names: Names; year
       </ResultsHeader>
       {block ? (
         <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={quarters} year={query.year}>
-          {total && bpMethods && <BpMethodsPanel year={query.year} period={query.period} result={total.result} bpMethods={bpMethods} />}
+          {total && bpMethods && (
+            <BpMethodsPanel year={query.year} period={query.period} result={total.result} bpMethods={bpMethods} />
+          )}
         </QuarterFigures>
       ) : (
         <NoYear year={query.year} />

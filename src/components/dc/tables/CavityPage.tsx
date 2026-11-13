@@ -70,7 +70,9 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
       {!block ? (
         <NoYear year={query.year} />
       ) : units?.length === 0 ? (
-        <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
+        <ReportStatus>
+          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+        </ReportStatus>
       ) : !funnel || !units ? (
         <ReportStatus>ไม่มีข้อมูลในปีงบประมาณ {query.year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</ReportStatus>
       ) : (
@@ -110,7 +112,10 @@ function FunnelSummary(props: { funnel: Funnel; goal: number | null; passed: boo
   ];
   return (
     <div className="grid gap-3 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-      <section aria-labelledby="cavity-funnel" className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
+      <section
+        aria-labelledby="cavity-funnel"
+        className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3"
+      >
         <h3 id="cavity-funnel" className="mb-2 font-prompt text-sm font-semibold text-dc-brand-deep">
           กรวยฟันดีไม่มีผุ
         </h3>
@@ -138,17 +143,23 @@ function FunnelSummary(props: { funnel: Funnel; goal: number | null; passed: boo
       <dl className="grid grid-cols-2 gap-3 lg:grid-cols-1">
         <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
           <dt className="text-xs text-dc-text-secondary">ร้อยละฟันดีไม่มีผุ (a ÷ b)</dt>
-          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{pctText(funnel.cavityFreePct)}</dd>
+          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
+            {pctText(funnel.cavityFreePct)}
+          </dd>
           <dd className="text-xs text-dc-text-secondary">เกณฑ์ {goalText(goal)}</dd>
           {passed !== null && (
-            <dd className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${passed ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}>
+            <dd
+              className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${passed ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
+            >
               {passText(passed)}
             </dd>
           )}
         </div>
         <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
           <dt className="text-xs text-dc-text-secondary">ร้อยละตรวจช่องปาก (b ÷ c)</dt>
-          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{pctText(funnel.screenedPct)}</dd>
+          <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
+            {pctText(funnel.screenedPct)}
+          </dd>
           <dd className="text-xs text-dc-text-secondary">ไม่มีเกณฑ์</dd>
         </div>
       </dl>
@@ -161,7 +172,12 @@ function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; t
   const { unitLabel, units, funnel, totalLabel } = props;
   return (
     <section className="min-w-0">
-      <div role="region" tabIndex={0} aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`} className="overflow-x-auto rounded-[9px] border border-dc-border-subtle">
+      <div
+        role="region"
+        tabIndex={0}
+        aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
+        className="overflow-x-auto rounded-[9px] border border-dc-border-subtle"
+      >
         <table className="w-full border-collapse text-xs tabular-nums">
           <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">
             เด็ก 0–5 ปี ตรวจช่องปาก และฟันดีไม่มีผุราย{unitLabel}

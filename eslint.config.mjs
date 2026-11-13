@@ -18,7 +18,8 @@ const fileReads = {
 // components take the result as props.
 const populationReader = {
   regex: "^@/lib/dc/population$",
-  message: "A Data Center component does not import population.ts, which holds the /sync file reader (SPEC §9.6): take the computed values as props.",
+  message:
+    "A Data Center component does not import population.ts, which holds the /sync file reader (SPEC §9.6): take the computed values as props.",
 };
 
 const eslintConfig = defineConfig([

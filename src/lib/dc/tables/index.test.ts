@@ -34,7 +34,12 @@ test("shownCatalog leaves out a รายงานที่รอวิเคร
     topics: main.topics.map((topic) =>
       topic.cat_id !== VACCINES.cat_id
         ? topic
-        : { ...topic, groups: topic.groups.map((g, i) => (i === 0 ? { ...g, reports: [g.reports[0], AWAITING, ...g.reports.slice(1)] } : g)) },
+        : {
+            ...topic,
+            groups: topic.groups.map((g, i) =>
+              i === 0 ? { ...g, reports: [g.reports[0], AWAITING, ...g.reports.slice(1)] } : g,
+            ),
+          },
     ),
   }));
   assert.equal(mains[0].topics[1].groups[0].reports.length, 3);
@@ -43,12 +48,21 @@ test("shownCatalog leaves out a รายงานที่รอวิเคร
 });
 
 test("shownCatalog leaves out a กลุ่ม, หัวข้อ or หมวด that has only รายงานที่รอวิเคราะห์", () => {
-  const topic = { ...VACCINES, cat_id: "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a", category_name: "หัวข้อที่รอวิเคราะห์", groups: [{ subgroup: "", reports: [AWAITING] }] };
+  const topic = {
+    ...VACCINES,
+    cat_id: "1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a1a",
+    category_name: "หัวข้อที่รอวิเคราะห์",
+    groups: [{ subgroup: "", reports: [AWAITING] }],
+  };
   const mains: DcCatalog["mains"] = [
     {
       ...MAINS[0],
       topics: [
-        ...MAINS[0].topics.map((t) => (t.cat_id === VACCINES.cat_id ? { ...t, groups: [...t.groups, { subgroup: "กลุ่มอายุ 7 ปี", reports: [AWAITING] }] } : t)),
+        ...MAINS[0].topics.map((t) =>
+          t.cat_id === VACCINES.cat_id
+            ? { ...t, groups: [...t.groups, { subgroup: "กลุ่มอายุ 7 ปี", reports: [AWAITING] }] }
+            : t,
+        ),
         topic,
       ],
     },
@@ -60,8 +74,23 @@ test("shownCatalog leaves out a กลุ่ม, หัวข้อ or หมว
 });
 
 test("awaitingWarnings names each รายงานที่รอวิเคราะห์ and its source table, and none for the real catalog", () => {
-  const second: DcReport = { ...AWAITING, opendata_id: "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c", report_name: "ผู้สูงอายุได้รับการคัดกรองภาวะสมองเสื่อม", source_table: "s_aged_dementia" };
-  const mains = [{ ...MAINS[0], topics: [{ ...VACCINES, groups: [{ subgroup: "", reports: [AWAITING, ...MAINS[0].topics[1].groups[0].reports, second] }] }] }];
+  const second: DcReport = {
+    ...AWAITING,
+    opendata_id: "3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c3c",
+    report_name: "ผู้สูงอายุได้รับการคัดกรองภาวะสมองเสื่อม",
+    source_table: "s_aged_dementia",
+  };
+  const mains = [
+    {
+      ...MAINS[0],
+      topics: [
+        {
+          ...VACCINES,
+          groups: [{ subgroup: "", reports: [AWAITING, ...MAINS[0].topics[1].groups[0].reports, second] }],
+        },
+      ],
+    },
+  ];
 
   assert.deepEqual(awaitingWarnings(catalog(mains)), [
     "รายงานที่รอวิเคราะห์ not on the site: ความครอบคลุมวัคซีน DTP5 ในเด็กอายุ 5 ปี (0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f0f), source table s_epi_dtp5 has no page (SPEC §5.2)",

@@ -34,8 +34,17 @@ const htmlOf = (page) => fs.readFileSync(path.join(OUT, page === "/" ? "index.ht
 // The (dc) pages in out/, as dc-check.mjs lists them: /, /reports and /reports/{id}.
 function dcPages() {
   const reports = path.join(OUT, "reports");
-  const ids = fs.existsSync(reports) ? fs.readdirSync(reports).filter((f) => f.endsWith(".html")).sort() : [];
-  if (!fs.existsSync(path.join(OUT, "index.html")) || !fs.existsSync(path.join(OUT, "reports.html")) || ids.length === 0) {
+  const ids = fs.existsSync(reports)
+    ? fs
+        .readdirSync(reports)
+        .filter((f) => f.endsWith(".html"))
+        .sort()
+    : [];
+  if (
+    !fs.existsSync(path.join(OUT, "index.html")) ||
+    !fs.existsSync(path.join(OUT, "reports.html")) ||
+    ids.length === 0
+  ) {
     fail("out/ lacks /, /reports or any /reports/{id} page: run npm run build first");
   }
   return ["/", "/reports", ...ids.map((f) => `/reports/${f.replace(/\.html$/, "")}`)];
@@ -56,7 +65,9 @@ function scriptsOf(html) {
 // The script files of the table pages' chunks, as the HTML names them
 function tablePageChunks() {
   if (!fs.existsSync(LOADABLE_MANIFEST)) {
-    fail(`${path.relative(".", LOADABLE_MANIFEST)} is missing: run npm run build first, or find where this version of Next.js lists next/dynamic chunks`);
+    fail(
+      `${path.relative(".", LOADABLE_MANIFEST)} is missing: run npm run build first, or find where this version of Next.js lists next/dynamic chunks`,
+    );
   }
   const manifest = JSON.parse(fs.readFileSync(LOADABLE_MANIFEST, "utf8"));
   return new Set(Object.values(manifest).flatMap((entry) => entry.files.map((file) => `/_next/${file}`)));
@@ -76,7 +87,10 @@ function loaded(page, skip = new Set()) {
 // [] when the files are within budget, else the problem, naming the page and its largest files
 function overBudget(page, files, budget) {
   if (sum(files) <= budget) return [];
-  const largest = files.sort((a, b) => b.gzip - a.gzip).slice(0, 3).map((f) => `${f.src} ${kb(f.gzip)}`);
+  const largest = files
+    .sort((a, b) => b.gzip - a.gzip)
+    .slice(0, 3)
+    .map((f) => `${f.src} ${kb(f.gzip)}`);
   return [`${page} is over the JavaScript budget of SPEC §9.6; the largest files: ${largest.join(", ")}`];
 }
 
@@ -85,12 +99,16 @@ const problems = [];
 
 for (const [page, budget] of Object.entries(JS_BUDGET)) {
   const files = loaded(page);
-  console.log(`dc-budget: ${page} loads ${kb(sum(files))} of JavaScript (gzip, ${files.length} files) of ${kb(budget)}`);
+  console.log(
+    `dc-budget: ${page} loads ${kb(sum(files))} of JavaScript (gzip, ${files.length} files) of ${kb(budget)}`,
+  );
   problems.push(...overBudget(page, files, budget));
 }
 
 const chunks = tablePageChunks();
-const reports = pages.filter((page) => page.startsWith("/reports/")).map((page) => ({ page, files: loaded(page, chunks) }));
+const reports = pages
+  .filter((page) => page.startsWith("/reports/"))
+  .map((page) => ({ page, files: loaded(page, chunks) }));
 const most = reports.reduce((a, b) => (sum(b.files) > sum(a.files) ? b : a));
 console.log(
   `dc-budget: each of ${reports.length} /reports/{id} loads at most ${kb(sum(most.files))} of JavaScript ` +
@@ -98,7 +116,9 @@ console.log(
 );
 for (const { page, files } of reports) problems.push(...overBudget(page, files, REPORT_BUDGET));
 
-const preloading = pages.filter((page) => /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="font")[^>]*>/.test(htmlOf(page)));
+const preloading = pages.filter((page) =>
+  /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="font")[^>]*>/.test(htmlOf(page)),
+);
 console.log(`dc-budget: ${preloading.length} of ${pages.length} Data Center pages preload font files`);
 if (preloading.length > 0) {
   problems.push(

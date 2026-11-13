@@ -32,9 +32,10 @@ function dcGetReport(idRaw, settings) {
   })[0];
   if (!report) return { status: "error", message: "Unknown report" };
   // Without an id column, a sheet's rows cannot be told apart by report.
-  const shared = reports.filter(function (r) {
-    return r.source_table === report.source_table;
-  }).length > 1;
+  const shared =
+    reports.filter(function (r) {
+      return r.source_table === report.source_table;
+    }).length > 1;
 
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const years = [];
@@ -46,8 +47,11 @@ function dcGetReport(idRaw, settings) {
     // A sheet deleted by hand: the year is left out, and system_logs tells
     // the admin, since only report.years still shows it.
     if (!sheet) {
-      logToSheet("WARNING", "Report year skipped " + report.source_table + " " + yearStatus.b_year,
-        "sheet " + sheetName + " not found (report " + id + ")");
+      logToSheet(
+        "WARNING",
+        "Report year skipped " + report.source_table + " " + yearStatus.b_year,
+        "sheet " + sheetName + " not found (report " + id + ")",
+      );
       continue;
     }
     const values = sheet.getDataRange().getValues();
@@ -62,16 +66,21 @@ function dcGetReport(idRaw, settings) {
     // Exact id, case kept, whatever the number of reports on the table: an
     // id that does not match the catalog shows as 0 rows rather than mixing
     // in another report's rows.
-    const rows = iId === -1 ? inDistrict : inDistrict.filter(function (row) {
-      return String(row[iId]) === id;
-    });
+    const rows =
+      iId === -1
+        ? inDistrict
+        : inDistrict.filter(function (row) {
+            return String(row[iId]) === id;
+          });
     years.push({
       b_year: yearStatus.b_year,
       headers: values[0].map(String),
       rows: rows,
-      max_date_com: dcMaxDateCom(rows.map(function (row) {
-        return iDate > -1 ? row[iDate] : "";
-      })),
+      max_date_com: dcMaxDateCom(
+        rows.map(function (row) {
+          return iDate > -1 ? row[iDate] : "";
+        }),
+      ),
       sheet_rows: inDistrict.length,
       expected_rows: yearStatus.row_count,
     });

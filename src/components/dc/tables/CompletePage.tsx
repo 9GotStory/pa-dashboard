@@ -51,9 +51,16 @@ function Complete({ data, names, years }: { data: DcReportData; names: Names; ye
       {!block ? (
         <NoYear year={query.year} />
       ) : units?.length === 0 ? (
-        <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
+        <ReportStatus>
+          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+        </ReportStatus>
       ) : (
-        <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={months} stepName="เดือน" year={query.year} />
+        <QuarterFigures
+          {...{ total, goal, units, trend, unitLabel, totalLabel }}
+          steps={months}
+          stepName="เดือน"
+          year={query.year}
+        />
       )}
     </>
   );

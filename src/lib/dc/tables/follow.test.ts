@@ -63,7 +63,14 @@ const NAMES = {
     { hospcode: "11760", hospname: "หนองเสี้ยว", tambon_id: "540605" },
   ],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "hosp", domain: null };
+const DISTRICT_2569: ReportQuery = {
+  year: "2569",
+  area: "all",
+  period: "year",
+  measure: null,
+  by: "hosp",
+  domain: null,
+};
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
@@ -78,13 +85,23 @@ test("s_ncd_screen_repleate1 2569 ทั้งปี → 203/195, 96.06%, เก
 
 /** The quarters added up, as เป้าหมาย/ผลงาน */
 const quarterSum = (quarters: { totals: { target: number; result: number } | null }[]) =>
-  pair(quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), { target: 0, result: 0 }));
+  pair(
+    quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), {
+      target: 0,
+      result: 0,
+    }),
+  );
 
 test("s_ncd_screen_repleate1 2569 รายไตรมาส (Q_B) → 147/142, 55/53, 0/0 with ร้อยละ null (“—”), 1/0, summing to ทั้งปี 203/195", () => {
   const { quarters } = followValues(NCD, DISTRICT_2569, NAMES, YEARS);
   assert.deepEqual(
     quarters.map((q) => [q.period, pair(q.totals)]),
-    [["q1", "147/142"], ["q2", "55/53"], ["q3", "0/0"], ["q4", "1/0"]],
+    [
+      ["q1", "147/142"],
+      ["q2", "55/53"],
+      ["q3", "0/0"],
+      ["q4", "1/0"],
+    ],
   );
   assert.equal(quarters[2].totals?.pct, null);
   assert.equal(quarterSum(quarters), "203/195");
@@ -96,7 +113,10 @@ test("s_ht_screen_follow 2569 → 1,215/1,202, 98.93%, เกณฑ์ 80 ผ่
   assert.equal(ht.total?.pct?.toFixed(2), "98.93");
   assert.equal(ht.goal, 80);
   assert.equal(ht.passed, true);
-  assert.deepEqual(ht.quarters.map((q) => pair(q.totals)), ["739/733", "470/465", "3/3", "3/1"]);
+  assert.deepEqual(
+    ht.quarters.map((q) => pair(q.totals)),
+    ["739/733", "470/465", "3/3", "3/1"],
+  );
   assert.equal(quarterSum(ht.quarters), "1215/1202");
 });
 
@@ -109,7 +129,8 @@ test("s_ht_screen_follow 2569 วิธีวัด ทั้งปี → HBPM 
 });
 
 test("s_ht_screen_follow 2569 วิธีวัด of the ช่วงเวลา: ไตรมาส 2 → HBPM 458 · OBPM 280 · ไตรมาส 4 (ผลงาน 1) → HBPM 0, not “—” · OBPM 1", () => {
-  const at = (period: ReportQuery["period"]) => followValues(HT, { ...DISTRICT_2569, period }, NAMES, YEARS).bpMethods?.map((m) => m.count);
+  const at = (period: ReportQuery["period"]) =>
+    followValues(HT, { ...DISTRICT_2569, period }, NAMES, YEARS).bpMethods?.map((m) => m.count);
   assert.deepEqual(at("q2"), [458, 280]);
   assert.deepEqual(at("q4"), [0, 1]);
 });
@@ -120,16 +141,28 @@ test("s_ncd_screen_repleate1 has no r1/r2 → bpMethods null: no วิธีว
 
 test("s_ht_screen_follow ?year=2567, a year without a block ปี (#258) → nothing to show, never zeros; แนวโน้ม has no point for 2567", () => {
   const ht = followValues(HT, { ...DISTRICT_2569, year: "2567" }, NAMES, YEARS);
-  assert.deepEqual([ht.block, ht.total, ht.units, ht.passed, ht.quarters, ht.bpMethods], [null, null, null, null, [], null]);
+  assert.deepEqual(
+    [ht.block, ht.total, ht.units, ht.passed, ht.quarters, ht.bpMethods],
+    [null, null, null, null, [], null],
+  );
   assert.deepEqual(
     ht.trend.map((p) => [p.b_year, p.totals?.pct?.toFixed(2) ?? null]),
-    [["2565", "89.69"], ["2566", "90.76"], ["2567", null], ["2568", "87.53"], ["2569", "98.93"]],
+    [
+      ["2565", "89.69"],
+      ["2566", "90.76"],
+      ["2567", null],
+      ["2568", "87.53"],
+      ["2569", "98.93"],
+    ],
   );
 });
 
 test("แนวโน้ม of s_ncd_screen_repleate1 ทั้งปี → 80.00, 87.50, 83.46, 69.70, 96.06", () => {
   const { trend } = followValues(NCD, DISTRICT_2569, NAMES, YEARS);
-  assert.deepEqual(trend.map((p) => p.totals?.pct?.toFixed(2)), ["80.00", "87.50", "83.46", "69.70", "96.06"]);
+  assert.deepEqual(
+    trend.map((p) => p.totals?.pct?.toFixed(2)),
+    ["80.00", "87.50", "83.46", "69.70", "96.06"],
+  );
 });
 
 test("s_ht_screen_follow 2569 รายหน่วยบริการ → 17 หน่วย named from catalog.json, in hospcode order, summing to ทั้งปี", () => {

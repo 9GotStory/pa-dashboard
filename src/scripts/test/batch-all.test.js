@@ -44,7 +44,10 @@ function post(h, body) {
 // The admin typing value into (row, column by header name) of a sheet.
 function setCell(h, sheetName, row, column, value) {
   const col = h.sheet(sheetName)[0].indexOf(column) + 1;
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(row, col).setValues([[value]]);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(sheetName)
+    .getRange(row, col)
+    .setValues([[value]]);
 }
 
 // The admin ticking `enabled` on a report in hdc_reports.
@@ -146,7 +149,10 @@ test("syncAllData fetches every sync unit, the DC unit s_ipv last, and saves it"
     h.fetches.slice(fetchesBefore).map((f) => f.payload.tableName),
     [...BEFORE.meta.kpi_config.map((k) => k.table), "s_ipv"],
   );
-  assert.deepEqual(records(h.sheet("s_ipv")).map((r) => r.areacode), ["54060101"]);
+  assert.deepEqual(
+    records(h.sheet("s_ipv")).map((r) => r.areacode),
+    ["54060101"],
+  );
 });
 
 test("single-sheet mode serves PA units only: ?sheet=s_ipv is refused even though s_ipv is a sync unit", () => {

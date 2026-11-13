@@ -81,9 +81,7 @@
   console.log("hdc-catalog-export: fetching categories…");
   const categoriesResult = await getJsonArray(CATEGORIES_PATH);
   if (!categoriesResult.ok) {
-    console.error(
-      `hdc-catalog-export: categories failed (status ${categoriesResult.status}); nothing exported.`,
-    );
+    console.error(`hdc-catalog-export: categories failed (status ${categoriesResult.status}); nothing exported.`);
     return;
   }
   const categories = categoriesResult.data
@@ -109,9 +107,7 @@
 
   const now = new Date();
   const ymd =
-    String(now.getFullYear()) +
-    String(now.getMonth() + 1).padStart(2, "0") +
-    String(now.getDate()).padStart(2, "0");
+    String(now.getFullYear()) + String(now.getMonth() + 1).padStart(2, "0") + String(now.getDate()).padStart(2, "0");
   const fileName = `hdc-catalog-${ymd}.json`;
   const payload = {
     exported_at: now.toISOString(),

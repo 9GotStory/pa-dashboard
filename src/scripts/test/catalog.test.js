@@ -42,7 +42,10 @@ function loadWithTopics(topics) {
 // The admin typing value into (row, column by header name) of a sheet.
 function setCell(h, sheetName, row, column, value) {
   const col = h.sheet(sheetName)[0].indexOf(column) + 1;
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(row, col).setValues([[value]]);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(sheetName)
+    .getRange(row, col)
+    .setValues([[value]]);
 }
 
 function saveCatalog(h, body) {
@@ -70,9 +73,22 @@ test("setup=datacenter twice: the first creates the 3 sheets and 2 settings colu
   ]);
   assert.deepEqual(h.sheet("hdc_reports"), [
     [
-      "opendata_id", "report_name", "source_table", "enabled", "subgroup", "order", "report_type", "goal",
-      "col_target", "col_result", "cat_id", "category_name", "main_report_id", "main_report_name",
-      "catalog_status", "last_seen_at",
+      "opendata_id",
+      "report_name",
+      "source_table",
+      "enabled",
+      "subgroup",
+      "order",
+      "report_type",
+      "goal",
+      "col_target",
+      "col_result",
+      "cat_id",
+      "category_name",
+      "main_report_id",
+      "main_report_name",
+      "catalog_status",
+      "last_seen_at",
     ],
   ]);
   assert.deepEqual(h.sheet("sync_status"), [["table", "b_year", "sheet", "row_count", "max_date_com", "synced_at"]]);
@@ -83,8 +99,12 @@ test("setup=datacenter twice: the first creates the 3 sheets and 2 settings colu
 
   // The admin fills in a topic and a setting between the two runs.
   const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
-  ss.getSheetByName("hdc_topics").getRange(2, 1, 1, 2).setValues([["4df360514655f79f13901ef1181ca1c7", 20]]);
-  ss.getSheetByName("settings").getRange(2, 4).setValues([[5406]]);
+  ss.getSheetByName("hdc_topics")
+    .getRange(2, 1, 1, 2)
+    .setValues([["4df360514655f79f13901ef1181ca1c7", 20]]);
+  ss.getSheetByName("settings")
+    .getRange(2, 4)
+    .setValues([[5406]]);
   const before = Object.fromEntries(h.sheetNames().map((name) => [name, h.sheet(name)]));
 
   const second = setupDatacenter(h);
@@ -99,7 +119,9 @@ test("setup=datacenter twice: the first creates the 3 sheets and 2 settings colu
 // the diag response may not be kept. It stops where the run of 30 Oct 2569
 // did, at hdc_reports; system_logs exists already, as in PA-Data.
 test("setup=datacenter that stops part way (insertSheet throws at hdc_reports) → error: … in the response and an ERROR row with the error in system_logs", () => {
-  const h = loadGas({ sheets: { settings: SETTINGS_BEFORE_F01, system_logs: [["Timestamp", "Type", "Message", "Details"]] } });
+  const h = loadGas({
+    sheets: { settings: SETTINGS_BEFORE_F01, system_logs: [["Timestamp", "Type", "Message", "Details"]] },
+  });
   const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
   const insertSheet = ss.insertSheet;
   ss.insertSheet = (name) => {
@@ -111,7 +133,10 @@ test("setup=datacenter that stops part way (insertSheet throws at hdc_reports) �
 
   assert.match(res, /^error: .*Service Spreadsheets timed out/);
   const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
-  assert.deepEqual(errors.map((r) => r.Message), ["setup=datacenter failed"]);
+  assert.deepEqual(
+    errors.map((r) => r.Message),
+    ["setup=datacenter failed"],
+  );
   assert.match(errors[0].Details, /Service Spreadsheets timed out/);
 });
 
@@ -123,12 +148,18 @@ test("first save_catalog of the vaccine topic (46 rows) → added 34, every repo
   assert.deepEqual(res, { status: "success", added: 34, updated: 0, removed: 0, skipped: 0 });
   const reports = records(h.sheet("hdc_reports"));
   assert.equal(reports.length, 34);
-  assert.ok(reports.every((r) => r.enabled === false), "every new report is enabled = FALSE (opt-in)");
+  assert.ok(
+    reports.every((r) => r.enabled === false),
+    "every new report is enabled = FALSE (opt-in)",
+  );
   assert.ok(reports.every((r) => r.catalog_status === "active"));
   assert.ok(reports.every((r) => r.cat_id === EPI));
   // Admin columns stay blank on a new row (SCHEMA §2.3).
   for (const col of ["subgroup", "order", "report_type", "goal", "col_target", "col_result"]) {
-    assert.ok(reports.every((r) => r[col] === ""), col);
+    assert.ok(
+      reports.every((r) => r[col] === ""),
+      col,
+    );
   }
   const epi2 = reports.find((r) => r.opendata_id === "71e49e4b61aafee17761601c506d5f85");
   assert.equal(epi2.source_table, "s_epi2");
@@ -148,7 +179,8 @@ test("first save_catalog of the vaccine topic (46 rows) → added 34, every repo
 test("re-send after ticking enabled and typing subgroup on one row → updated 34, the admin's values stay", () => {
   const h = loadWithTopics([[EPI, 20]]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
-  const row = records(h.sheet("hdc_reports")).findIndex((r) => r.opendata_id === "28dd2c7955ce926456240b2ff0100bde") + 2;
+  const row =
+    records(h.sheet("hdc_reports")).findIndex((r) => r.opendata_id === "28dd2c7955ce926456240b2ff0100bde") + 2;
   setCell(h, "hdc_reports", row, "enabled", true);
   setCell(h, "hdc_reports", row, "subgroup", "กลุ่มอายุ 1 ปี");
 
@@ -230,7 +262,9 @@ test("short ids with upper case and _ (T81yHkXJY8lk8nGZQqldk, iEds82J3Z67JHB8KLE
   const byId = Object.fromEntries(reports.map((r) => [r.opendata_id, r]));
   assert.equal(byId.T81yHkXJY8lk8nGZQqldk?.source_table, "s_pregnant_anemia_coverage");
   assert.equal(byId.iEds82J3Z67JHB8KLETD_?.source_table, "s_labor_anemia");
-  assert.ok(!reports.some((r) => r.opendata_id === "t81yhkxjy8lk8nggzqqldk" || r.opendata_id === "ieds82j3z67jhb8kletd_"));
+  assert.ok(
+    !reports.some((r) => r.opendata_id === "t81yhkxjy8lk8nggzqqldk" || r.opendata_id === "ieds82j3z67jhb8kletd_"),
+  );
 });
 
 test("names from HDC lose <font> tags, tabs and repeated spaces, in hdc_reports and hdc_topics; a bare < stays", () => {
@@ -247,17 +281,26 @@ test("names from HDC lose <font> tags, tabs and repeated spaces, in hdc_reports 
     main_report_name: "ส่งเสริมป้องกัน  ",
   };
   // Real report names with < that is not a tag (SCHEMA §5.2 export).
-  const ldl = { ...base, opendata_id: "aaaaaaaabbbbbbbbcccccccceeeeeeee",
-    report_name: "อัตราผู้ป่วยเบาหวานที่ได้รับการตรวจไขมัน LDL และมีค่า LDL < 100 mg/dl" };
-  const egfr = { ...base, opendata_id: "aaaaaaaabbbbbbbbccccccccffffffff",
-    report_name: "ร้อยละของผู้ป่วย CKD ที่มีอัตราการลดลงของ eGFR<5 ml/min/1.73m2/yr" };
+  const ldl = {
+    ...base,
+    opendata_id: "aaaaaaaabbbbbbbbcccccccceeeeeeee",
+    report_name: "อัตราผู้ป่วยเบาหวานที่ได้รับการตรวจไขมัน LDL และมีค่า LDL < 100 mg/dl",
+  };
+  const egfr = {
+    ...base,
+    opendata_id: "aaaaaaaabbbbbbbbccccccccffffffff",
+    report_name: "ร้อยละของผู้ป่วย CKD ที่มีอัตราการลดลงของ eGFR<5 ml/min/1.73m2/yr",
+  };
 
   const res = saveCatalog(h, { cat_id: EPI, reports: [dirty, ldl, egfr, ...EPI_REPORTS] });
 
   assert.equal(res.status, "success", res.message);
   const byId = Object.fromEntries(records(h.sheet("hdc_reports")).map((r) => [r.opendata_id, r]));
   const saved = byId[dirty.opendata_id];
-  assert.equal(saved.report_name, "ผู้สูงอายุที่ผิดปกติได้รับการจัดทำ Care Plan และให้โปรแกรมส่งเสริมสุขภาพ (Intervension STEP3 BigRock4)");
+  assert.equal(
+    saved.report_name,
+    "ผู้สูงอายุที่ผิดปกติได้รับการจัดทำ Care Plan และให้โปรแกรมส่งเสริมสุขภาพ (Intervension STEP3 BigRock4)",
+  );
   assert.equal(saved.category_name, "การสร้างเสริมภูมิคุ้มกันโรค");
   assert.equal(saved.main_report_name, "ส่งเสริมป้องกัน");
   assert.equal(byId[ldl.opendata_id].report_name, ldl.report_name);
@@ -279,9 +322,16 @@ test("a report already in another topic is left there (first topic wins) → ski
   // As abt2t2k4z4xeqzytwbave, listed by HDC under both สุขภาพช่องปาก and
   // แพทย์แผนไทย (SCHEMA §6): the second topic's response has the same
   // opendata_id with its own cat_id.
-  const h = loadWithTopics([[EPI, 20], [NUTRITION, 10]]);
+  const h = loadWithTopics([
+    [EPI, 20],
+    [NUTRITION, 10],
+  ]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
-  const shared = { ...EPI_REPORTS.find((r) => r.source_table === "s_epi2"), cat_id: NUTRITION, category_name: "งานโภชนาการ" };
+  const shared = {
+    ...EPI_REPORTS.find((r) => r.source_table === "s_epi2"),
+    cat_id: NUTRITION,
+    category_name: "งานโภชนาการ",
+  };
 
   const res = saveCatalog(h, { cat_id: NUTRITION, reports: [...NUTRITION_REPORTS, shared] });
 
@@ -318,15 +368,31 @@ test("hdc_reports keeps the admin's column order and extra columns; a missing co
   // The admin moved enabled first, added a note column, and deleted last_seen_at.
   const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
   const header = [
-    "enabled", "note", "opendata_id", "report_name", "source_table", "subgroup", "order", "report_type", "goal",
-    "col_target", "col_result", "cat_id", "category_name", "main_report_id", "main_report_name", "catalog_status",
+    "enabled",
+    "note",
+    "opendata_id",
+    "report_name",
+    "source_table",
+    "subgroup",
+    "order",
+    "report_type",
+    "goal",
+    "col_target",
+    "col_result",
+    "cat_id",
+    "category_name",
+    "main_report_id",
+    "main_report_name",
+    "catalog_status",
   ];
   const sheet = ss.getSheetByName("hdc_reports");
   sheet.clear();
-  sheet.getRange(1, 1, 2, header.length).setValues([
-    header,
-    [true, "ตรวจแล้ว", "71e49e4b61aafee17761601c506d5f85", "", "", "", "", "", "", "", "", EPI, "", "", "", "active"],
-  ]);
+  sheet
+    .getRange(1, 1, 2, header.length)
+    .setValues([
+      header,
+      [true, "ตรวจแล้ว", "71e49e4b61aafee17761601c506d5f85", "", "", "", "", "", "", "", "", EPI, "", "", "", "active"],
+    ]);
 
   const res = saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
 
@@ -397,7 +463,10 @@ function saveExpectingInvalidValue(h, body) {
   assert.deepEqual(h.sheet("hdc_reports"), before.reports);
   assert.deepEqual(h.sheet("hdc_topics"), before.topics);
   const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
-  assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [[`Catalog rejected ${body.cat_id}`, "Invalid value"]]);
+  assert.deepEqual(
+    errors.map((r) => [r.Message, r.Details]),
+    [[`Catalog rejected ${body.cat_id}`, "Invalid value"]],
+  );
   assert.ok(!JSON.stringify(h.sheet("system_logs")).includes("="), "the raw value must not reach system_logs");
 }
 
@@ -451,7 +520,10 @@ for (const [what, categoryName] of [
 // The report the vaccine topic already has, sent again by the nutrition topic:
 // the first topic keeps it (step 5).
 function loadWithSharedReport() {
-  const h = loadWithTopics([[EPI, 20], [NUTRITION, 10]]);
+  const h = loadWithTopics([
+    [EPI, 20],
+    [NUTRITION, 10],
+  ]);
   saveCatalog(h, { cat_id: EPI, reports: EPI_REPORTS });
   return { h, shared: { ...EPI2_REPORT, cat_id: NUTRITION } };
 }
@@ -475,7 +547,11 @@ test("= only in rows that are not written (bad pattern, another cat_id, duplicat
     { ...shared, ...ALL_FORMULAS },
   ];
 
-  const res = saveCatalog(h, { cat_id: NUTRITION, category_name: "งานโภชนาการ", reports: [...NUTRITION_REPORTS, ...notWritten] });
+  const res = saveCatalog(h, {
+    cat_id: NUTRITION,
+    category_name: "งานโภชนาการ",
+    reports: [...NUTRITION_REPORTS, ...notWritten],
+  });
 
   assert.equal(res.status, "success", res.message);
   assert.equal(res.skipped, 4);
