@@ -1,6 +1,6 @@
 # Prettier checks the whole repo (npm run lint) apart from these and .gitignore.
 
-# PA files, frozen (CODING_STANDARDS §1), and PA's own scripts
+# PA files, frozen (CODING_STANDARDS §1), and PA's own scripts; keep in step with §1
 src/components/*
 !src/components/dc/
 src/lib/*
@@ -17,7 +17,8 @@ src/scripts/verify-all.js
 src/lib/dc/fixtures/
 src/scripts/test/fixtures/
 
-# Markdown and JSON: Prettier would realign the Thai tables of SPEC and FEATURES
+# Markdown and JSON, kept as written: Prettier would realign the Thai tables of SPEC
+# and FEATURES, and public/ holds the snapshot
 *.md
 *.json
 public/
