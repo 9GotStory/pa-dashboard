@@ -6,11 +6,11 @@ import { Fragment, type ReactNode } from "react";
  * report's: an HDC report names its source table and links HDC.
  */
 export default function ReportAbout(props: {
-  source: { term: string; detail: ReactNode }[];
+  sourceRows: { term: string; detail: ReactNode }[];
   method: ReactNode;
   limits: ReactNode;
 }) {
-  const { source, method, limits } = props;
+  const { sourceRows, method, limits } = props;
   return (
     <section
       aria-labelledby="about-title"
@@ -23,7 +23,7 @@ export default function ReportAbout(props: {
         <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-white p-4">
           <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">แหล่งข้อมูล</h3>
           <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
-            {source.map((s) => (
+            {sourceRows.map((s) => (
               <Fragment key={s.term}>
                 <dt className="text-dc-text-secondary">{s.term}</dt>
                 <dd>{s.detail}</dd>

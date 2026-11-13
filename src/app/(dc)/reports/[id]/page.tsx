@@ -92,7 +92,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         topic={topic.category_name}
         title={report.report_name}
         subgroup={group.subgroup}
-        source="HDC Open Data"
+        credit="ข้อมูลจาก HDC Open Data"
       />
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0">
@@ -104,7 +104,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         />
 
         <ReportAbout
-          source={[
+          sourceRows={[
             { term: "ตารางต้นทาง", detail: report.source_table },
             { term: "รหัสรายงาน", detail: report.opendata_id },
             {
