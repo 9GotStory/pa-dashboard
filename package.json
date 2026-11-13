@@ -20,6 +20,7 @@
     "pa:compare": "node src/scripts/pa-check.mjs compare",
     "dc:check": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON src/scripts/dc-check.mjs",
     "dc:budget": "node src/scripts/dc-budget.mjs",
+    "dc:lcp": "node src/scripts/dc-lcp.mjs",
     "dc:sync-local": "node src/scripts/dc-sync-local.mjs"
   },
   "dependencies": {

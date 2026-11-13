@@ -1,6 +1,6 @@
 # Page checks by hand
 
-Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playwright script of your own against `out/` or the live site, or the local LCP comparison with `main` that SPEC §9.6 asks of a ticket changing the home page. The script itself is not committed; its output goes in the PR's Evidence or the issue's record.
+Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playwright script of your own against `out/` or the live site, or the local LCP comparison with `main` that SPEC §9.6 asks of a ticket changing the home page. A Playwright script of your own is not committed; its output, like `dc:lcp`'s, goes in the PR's Evidence or the issue's record.
 
 ## A Playwright script in the scratchpad
 
@@ -16,13 +16,13 @@ A ticket that changes how a page looks: screenshot the reference HTML in `docs/r
 
 ## LCP against `main` (SPEC §9.6)
 
-1. Commit the branch. Build it from the snapshot (`npx next build`) and copy `out/` to the scratchpad.
-2. `git checkout main`, `npx next build`, copy `out/` to the scratchpad, `git checkout -` back. Both builds then read the same `public/data/`.
-   - A `git worktree` of `main` with `node_modules` symlinked from the repo does not build: Turbopack refuses files outside the worktree's root.
-3. Serve the two copies on two ports and run the SPEC §9.6 Lighthouse command against each: 3 rounds as SPEC §9.6 sets, one run of each per round, swapping which goes first every round. Add `--output=json --output-path=<file> --quiet` to read the result:
-   - LCP in ms: `audits["largest-contentful-paint"].numericValue`.
-   - The LCP element: Lighthouse 13 has no `largest-contentful-paint-element` audit; the element's `nodeLabel` and `snippet` are inside `audits["lcp-breakdown-insight"].details`.
-4. Record both medians and the LCP element of each in the PR. Note the load average: this machine is shared.
+`npm run dc:lcp -- <page> ...` (default `/`), for example `npm run dc:lcp -- / /reports/c88658f4d09acb8c76e6c06ffb58ebaf`.
+
+- Run it on the branch with everything committed and `public/data/` in place; it stops before building otherwise, or when HEAD is `main`. It builds the local `main`, so pull `main` when it warns that `main` is behind `origin/main`.
+- It ends on the branch it started from, with `out/` and `.next/` from the branch's build: `dc:check` and `dc:budget` can run next.
+- One line per Lighthouse run comes first. The block after the blank line goes in the PR's Evidence: both SHAs, the load average before and after (this machine is shared: under a high or changing load, run again), and per page both medians, the difference, pass or FAIL by SPEC §9.6's 10%, and the LCP element of each side's median run.
+- It exits 1 when a page fails. The last line names the temp directory that keeps every run's Lighthouse JSON.
+- It does not measure the live site: < 2.5 s is checked there, below.
 
 ## On the live site
 
