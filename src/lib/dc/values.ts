@@ -202,6 +202,11 @@ function rowsIn(block: DcYearBlock, area: string): Cell[][] {
   return block.rows.filter((row) => tambonOf(row[at]) === area);
 }
 
+/** ร้อยละ = R / T × 100 when T > 0, else null: "—" (SCHEMA §4.4) */
+function pctOf(result: number, target: number): number | null {
+  return target > 0 ? (result / target) * 100 : null;
+}
+
 /** Σ target and Σ result over the rows, then ร้อยละ = R / T × 100 when T > 0 (SCHEMA §4.4) */
 function sum(block: DcYearBlock, cols: Columns, rows: Cell[][]): Totals {
   const at = (column: string) => block.headers.indexOf(column);
@@ -213,7 +218,7 @@ function sum(block: DcYearBlock, cols: Columns, rows: Cell[][]): Totals {
     for (const i of targetAt) target += n(row[i]);
     for (const i of resultAt) result += n(row[i]);
   }
-  return { target, result, pct: target > 0 ? (result / target) * 100 : null };
+  return { target, result, pct: pctOf(result, target) };
 }
 
 /**
@@ -291,7 +296,11 @@ function unitRows(block: DcYearBlock, query: Pick<ReportQuery, "area" | "by">, n
   return [...units].sort(([a], [b]) => (a < b ? -1 : 1)).map(([key, rows]) => ({ key, name: unit.nameOf(key), rows }));
 }
 
-/** A column that is a count alone, without a เป้าหมาย: ด้าน k of s_aged9 is result{k} (SCHEMA §4.6.7) */
+/**
+ * A column that is a count alone, without a เป้าหมาย: ด้าน k of s_aged9 is
+ * result{k} (SCHEMA §4.6.7), and so is ผลงาน รายไตรมาส k of s_dm_screen and
+ * s_ht_screen (SCHEMA §4.6.8)
+ */
 function countColumns(column: string): Columns {
   return { target: [], result: [column] };
 }
@@ -316,6 +325,24 @@ export function countsBy(
   const cols = countColumns(column);
   if (!collected(block, cols)) return null;
   return unitRows(block, query, names).map(({ key, name, rows }) => ({ key, name, count: sum(block, cols, rows).result }));
+}
+
+/**
+ * ร้อยละสะสม (SPEC §9.4) of ผลงาน columns in order that have no เป้าหมาย of
+ * their own, as result1–4 of s_dm_screen and s_ht_screen (SCHEMA §4.6.8): for
+ * each, its ผลงาน and the Σ of it and those before it over the rows of an
+ * area, as n(v) reads each cell, ÷ the เป้าหมาย of the area × 100; pct null
+ * when that is 0. An empty column adds 0, so the last is the ทั้งปี ร้อยละ
+ * when the columns add up to result.
+ */
+export function cumulative(block: DcYearBlock, columns: readonly string[], area: string, target: number) {
+  const rows = rowsIn(block, area);
+  let sofar = 0;
+  return columns.map((column) => {
+    const result = sum(block, countColumns(column), rows).result;
+    sofar += result;
+    return { result, cumulative: sofar, pct: pctOf(sofar, target) };
+  });
 }
 
 /** Totals of every block ปี with the same area, period and measure (SCHEMA §4.4), oldest year first */

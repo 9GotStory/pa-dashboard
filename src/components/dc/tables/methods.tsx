@@ -211,6 +211,32 @@ function Aged9Limits() {
   );
 }
 
+/** ผลงาน of s_dm_screen and s_ht_screen (SCHEMA §4.6.8) */
+const SCREEN_RESULTS: Record<string, string> = {
+  s_dm_screen: "ประชากรตามเป้าหมายที่ได้รับการคัดกรองเบาหวาน",
+  s_ht_screen: "ประชากรตามเป้าหมายที่ได้รับการคัดกรองโรคความดันโลหิตสูง",
+};
+
+function ScreenMethod({ report, districtCode }: MethodProps) {
+  const result = SCREEN_RESULTS[report.source_table];
+  return (
+    <ul className="list-disc pl-4">
+      <li>
+        รวมทุกแถว (หนึ่งแถวต่อหมู่บ้าน) ที่ areacode ขึ้นต้นด้วย {districtCode} หรือ 6 หลักแรกตรงกับตำบลที่เลือก
+      </li>
+      <li>เป้าหมาย: ประชากรอายุ 35 ปีขึ้นไปในเขตรับผิดชอบ (คอลัมน์ target){result && ` · ผลงาน: ${result} (คอลัมน์ result)`}</li>
+      <li>
+        ร้อยละ = ผลรวมผลงาน ÷ ผลรวมเป้าหมาย × 100 ไม่เฉลี่ยร้อยละของแต่ละพื้นที่ · เป้าหมายเป็น 0 แสดง “—”
+        {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
+      </li>
+      <li>
+        ผลงานรายไตรมาส (คอลัมน์ result1–4) ไม่มีเป้าหมายรายไตรมาส จึงแสดงเป็นร้อยละสะสม = ผลงานไตรมาส 1 ถึงไตรมาสนั้นรวมกัน ÷ เป้าหมายทั้งปี × 100
+        ของพื้นที่ที่เลือก ไม่ใช่ร้อยละของแต่ละไตรมาส · ผลงาน 4 ไตรมาสรวมกันเท่าทั้งปี ร้อยละสะสมไตรมาส 4 จึงเท่าร้อยละทั้งปี · ไตรมาสที่ไม่มีผลงานนับเป็น 0
+      </li>
+    </ul>
+  );
+}
+
 /** วิธีคำนวณ of a page */
 export function TableMethod({ page, ...props }: MethodProps & { page: NonNullable<ReturnType<typeof tablePage>> }) {
   switch (page) {
@@ -222,6 +248,8 @@ export function TableMethod({ page, ...props }: MethodProps & { page: NonNullabl
       return <EpiMethod {...props} />;
     case "aged9":
       return <Aged9Method {...props} />;
+    case "screen":
+      return <ScreenMethod {...props} />;
   }
 }
 
@@ -236,5 +264,7 @@ export function TableLimits({ page, report }: { page: NonNullable<ReturnType<typ
       return <EpiLimits report={report} />;
     case "aged9":
       return <Aged9Limits />;
+    case "screen":
+      return null;
   }
 }
