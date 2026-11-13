@@ -1,15 +1,16 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { startTransition, useOptimistic, useRef, useState } from "react";
+import { useState } from "react";
 import { formatCount, formatPct } from "@/lib/dc/format";
 import { populationReport, populationSearch } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
 import type { PopulationChange, PopulationQuery, PopulationReport, PopulationReportData } from "@/lib/dc/types";
+import TrendChart from "../charts/TrendChart";
+import TrendList from "../charts/TrendList";
 import ReportLoader from "../report/ReportLoader";
 import { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
-import { CountTrendChart, CountTrendList } from "./CountTrend";
+import { useUrlQuery } from "../report/useUrlQuery";
 
 /**
  * ผลรายงาน of รายงานประชากร (SPEC §9.4.1): reports/population.json loaded
@@ -21,23 +22,13 @@ export default function PopulationResults() {
 }
 
 function Results({ data }: { data: PopulationReportData }) {
-  const params = useSearchParams();
-  // As useReportQuery does for the HDC reports: the query แสดงผล applies is
-  // shown at once while Next.js takes the new URL in a transition, and back,
-  // forward and a shared link show the same result.
-  const [search, setSearch] = useOptimistic(`?${params}`);
-  const heading = useRef<HTMLHeadingElement>(null);
-  const report = populationReport(data, { year: new URLSearchParams(search).get("year") ?? "" });
-  const apply = (q: PopulationQuery) => {
-    const next = populationSearch(q);
-    if (next !== search) {
-      startTransition(() => {
-        setSearch(next);
-        window.history.pushState(null, "", next);
-      });
-    }
-    heading.current?.focus({ preventScroll: true });
-  };
+  const {
+    query: asked,
+    search,
+    apply,
+    heading,
+  } = useUrlQuery<PopulationQuery>((params) => ({ year: params.get("year") ?? "" }), populationSearch);
+  const report = populationReport(data, asked);
   const { query, shown, change } = report;
 
   return (
@@ -172,10 +163,10 @@ function Trend({ report }: { report: PopulationReport }) {
           <div key={s.title} className="min-w-0 rounded-[9px] border border-dc-border-subtle bg-white p-4">
             <h3 className="mb-3 font-prompt text-sm font-semibold text-dc-brand-deep">{s.title}</h3>
             <div className="sm:hidden">
-              <CountTrendList title={s.title} points={s.points} />
+              <TrendList title={s.title} points={s.points} goal={null} unit="count" />
             </div>
             <div className="hidden sm:block">
-              <CountTrendChart title={s.title} points={s.points} />
+              <TrendChart title={s.title} points={s.points} goal={null} unit="count" />
             </div>
           </div>
         ))}
