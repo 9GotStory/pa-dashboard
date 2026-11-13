@@ -11,15 +11,16 @@ import type { PopulationReport, PopulationUnit } from "./types";
 
 /**
  * The CSV download of รายงานประชากร (SPEC §9.4.1): its header lines (the
- * report, the area, the ปีข้อมูล, the source) before the เปรียบเทียบ table
- * in the order shown, units × every ปีข้อมูล with the change from each
- * unit's first year, "—" for a year without rows. Named
- * SHDC-population-{ปีข้อมูล}-{area code}.csv, the district_code for the
- * whole อำเภอ.
+ * report, the area, the ปีข้อมูล, the source) before the table shown. The
+ * อำเภอ or a ตำบล: the เปรียบเทียบ table in the order shown (units), units ×
+ * every ปีข้อมูล with the change from each unit's first year. A หมู่บ้าน,
+ * which has no units: a row a year of its ชาย หญิง รวม บ้าน. "—" for a year
+ * without rows. Named SHDC-population-{ปีข้อมูล}-{area code}.csv, the
+ * district_code for the whole อำเภอ.
  */
 export function populationCsv(
   report: PopulationReport,
-  units: PopulationUnit[],
+  units: PopulationUnit[] | null,
   districtCode: string,
 ): { name: string; text: string } {
   const { years, query } = report;
@@ -33,15 +34,23 @@ export function populationCsv(
         ["ปีข้อมูล", yearAsOf(query.year)],
         ["แหล่งข้อมูล", "กรมการปกครอง stat.bora"],
       ],
-      [
-        [populationUnitLabel(report), ...years, `${change} (คน)`, `${change} (ร้อยละ)`],
-        ...units.map((u) => [
-          u.name,
-          ...u.totals.map((t) => t ?? "—"),
-          u.change?.count ?? "—",
-          u.change?.pct == null ? "—" : formatPct(u.change.pct),
-        ]),
-      ],
+      units
+        ? [
+            [populationUnitLabel(report), ...years, `${change} (คน)`, `${change} (ร้อยละ)`],
+            ...units.map((u) => [
+              u.name,
+              ...u.totals.map((t) => t ?? "—"),
+              u.change?.count ?? "—",
+              u.change?.pct == null ? "—" : formatPct(u.change.pct),
+            ]),
+          ]
+        : [
+            ["ปีข้อมูล", "ชาย", "หญิง", "รวม", "บ้าน"],
+            ...report.trend.map(({ year, totals }) => [
+              year,
+              ...(["male", "female", "total", "house"] as const).map((v) => totals?.[v] ?? "—"),
+            ]),
+          ],
     ),
   };
 }

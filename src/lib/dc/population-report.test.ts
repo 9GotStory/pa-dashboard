@@ -112,7 +112,7 @@ test("the whole อำเภอ in 2568 → เปรียบเทียบ of
   const report = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "all" }, AREAS);
 
   assert.deepEqual(
-    report.units.map((u) => [u.key, u.name, u.unspecified, u.totals]),
+    report.units?.map((u) => [u.key, u.name, u.unspecified, u.totals]),
     [
       ["540601", "บ้านหนุน", false, [7877, 7765, 7624, 7495, 7399]],
       ["540602", "บ้านกลาง", false, [7182, 7069, 6945, 6809, 6686]],
@@ -129,7 +129,7 @@ test("the whole อำเภอ in 2568 → เปรียบเทียบ of
 
 test("บ้านหนุน in the เปรียบเทียบ of 2568 → changed 2564 → 2568 by −478 people (−6.07%); in 2564, its first year, no change", () => {
   const unit = (year: string) =>
-    populationReport(POPULATION_REPORT_DATA, { year, area: "all" }, AREAS).units.find((u) => u.key === "540601");
+    populationReport(POPULATION_REPORT_DATA, { year, area: "all" }, AREAS).units?.find((u) => u.key === "540601");
 
   const change = unit("2568")?.change;
   assert.ok(change);
@@ -141,11 +141,11 @@ test("บ้านกลาง in 2568 → เปรียบเทียบ of 
   const { units } = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "540602" }, AREAS);
 
   assert.deepEqual(
-    units.map((u) => u.key),
+    units?.map((u) => u.key),
     [...Array.from({ length: 12 }, (_, k) => `540602${String(k + 1).padStart(2, "0")}`), "54060200"],
   );
-  assert.ok(units.slice(0, 12).every((u) => !u.unspecified));
-  assert.deepEqual(units.at(-1), {
+  assert.ok(units?.slice(0, 12).every((u) => !u.unspecified));
+  assert.deepEqual(units?.at(-1), {
     key: "54060200",
     name: "ไม่ระบุหมู่",
     unspecified: true,
@@ -156,13 +156,13 @@ test("บ้านกลาง in 2568 → เปรียบเทียบ of 
 
 test("บ้านหนุน in 2568 → หมู่ 4 ศรีมูลเรือง, both สำนักทะเบียน added up: 1,092 · 1,069 · 1,064 · 1,034 · 1,031, −61 (−5.59%) from 2564", () => {
   const { units } = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "540601" }, AREAS);
-  const moo4 = units.find((u) => u.key === "54060104");
+  const moo4 = units?.find((u) => u.key === "54060104");
 
   assert.equal(moo4?.name, "หมู่ 4 ศรีมูลเรือง");
   assert.deepEqual(moo4?.totals, [1092, 1069, 1064, 1034, 1031]);
   assert.ok(moo4?.change);
   assert.deepEqual(shown(moo4.change), [-61, "-5.59"]);
-  assert.equal(units.length, 11);
+  assert.equal(units?.length, 11);
 });
 
 /** The fixture with the rows of a หมู่บ้าน code cut out of some years */
@@ -174,7 +174,7 @@ const without = (code: string, yymms: string[]) => ({
 
 test('หมู่ 4 ศรีมูลเรือง cut out of 2564 and 2566 → null ("—") in those years, never 0, its change counted from 2565, and partial', () => {
   const report = populationReport(without("54060104", ["6412", "6612"]), { year: "2568", area: "540601" }, AREAS);
-  const moo4 = report.units.find((u) => u.key === "54060104");
+  const moo4 = report.units?.find((u) => u.key === "54060104");
 
   assert.deepEqual(moo4?.totals, [null, 1069, null, 1034, 1031]);
   assert.ok(moo4?.change);
@@ -185,7 +185,7 @@ test('หมู่ 4 ศรีมูลเรือง cut out of 2564 and 2566 
 test("หมู่ 4 ศรีมูลเรือง cut out of 2568 → named as in its latest year with rows, no change in 2568, and its first year 2565 gives no change", () => {
   const data = without("54060104", ["6412", "6812"]);
   const moo4 = (year: string) =>
-    populationReport(data, { year, area: "540601" }, AREAS).units.find((u) => u.key === "54060104");
+    populationReport(data, { year, area: "540601" }, AREAS).units?.find((u) => u.key === "54060104");
 
   assert.equal(moo4("2568")?.name, "หมู่ 4 ศรีมูลเรือง");
   assert.equal(moo4("2568")?.change, null);
@@ -196,7 +196,7 @@ test("the 8 ตำบล of 2568 by จำนวน → most people first: เ�
   const report = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "all" }, AREAS);
 
   assert.deepEqual(
-    sortUnits(report, "count").map((u) => u.name),
+    sortUnits(report, "count")?.map((u) => u.name),
     ["เตาปูน", "ห้วยหม้าย", "บ้านหนุน", "บ้านกลาง", "หัวเมือง", "สะเอียบ", "ทุ่งน้าว", "แดนชุมพล"],
   );
 });
@@ -205,7 +205,7 @@ test("the 8 ตำบล of 2568 by การเปลี่ยนแปลง �
   const report = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "all" }, AREAS);
 
   assert.deepEqual(
-    sortUnits(report, "change").map((u) => u.name),
+    sortUnits(report, "change")?.map((u) => u.name),
     ["เตาปูน", "หัวเมือง", "สะเอียบ", "ห้วยหม้าย", "แดนชุมพล", "ทุ่งน้าว", "บ้านหนุน", "บ้านกลาง"],
   );
 });
@@ -214,7 +214,7 @@ test("2564, the first year, by การเปลี่ยนแปลง → no
   const report = populationReport(POPULATION_REPORT_DATA, { year: "2564", area: "all" }, AREAS);
 
   assert.deepEqual(
-    sortUnits(report, "change").map((u) => u.key),
+    sortUnits(report, "change")?.map((u) => u.key),
     AREAS.map((a) => a.id),
   );
 });
@@ -222,11 +222,11 @@ test("2564, the first year, by การเปลี่ยนแปลง → no
 test("บ้านกลาง by code, จำนวน or การเปลี่ยนแปลง → ไม่ระบุหมู่ last every time", () => {
   const report = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "540602" }, AREAS);
 
-  assert.deepEqual(report.units.at(-1)?.key, "54060200");
+  assert.deepEqual(report.units?.at(-1)?.key, "54060200");
   for (const sort of ["code", "count", "change"] as const) {
     const units = sortUnits(report, sort);
-    assert.equal(units.length, 13, sort);
-    assert.equal(units.at(-1)?.name, "ไม่ระบุหมู่", sort);
+    assert.equal(units?.length, 13, sort);
+    assert.equal(units?.at(-1)?.name, "ไม่ระบุหมู่", sort);
   }
 });
 
@@ -239,7 +239,7 @@ test("?area= not a ตำบล of areas (999999, abc, empty) → the whole อ�
     assert.equal(report.shown?.total, 46527, area);
     assert.equal(report.share, null, area);
     assert.equal(report.parent, null, area);
-    assert.equal(report.units.length, 8, area);
+    assert.equal(report.units?.length, 8, area);
   }
 });
 
@@ -251,6 +251,78 @@ test("บ้านหนุน's แนวโน้ม → 7,877 · 7,765 · 7,6
     [7877, 7765, 7624, 7495, 7399],
   );
   assert.equal(trend[0].totals?.house, 3378);
+});
+
+// FEATURES F69: the หมู่บ้าน level, ?area= an 8-digit code.
+
+test("?area=54060104, หมู่ 4 ศรีมูลเรือง in 2568 → 1,031 people (192 + 839 of the two สำนักทะเบียน) and 538 บ้าน, ร้อยละ 13.93 of บ้านหนุน's 7,399, −3 (−0.29%) from 2567", () => {
+  const report = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "54060104" }, AREAS);
+
+  assert.deepEqual(report.query, { year: "2568", area: "54060104" });
+  assert.equal(report.level, "village");
+  assert.equal(report.name, "หมู่ 4 ศรีมูลเรือง");
+  assert.deepEqual(report.parent, { key: "540601", name: "บ้านหนุน" });
+  assert.equal(report.shown?.total, 1031);
+  assert.equal(report.shown?.house, 538);
+  assert.ok(report.share !== null);
+  assert.equal(formatPct(report.share), "13.93");
+  assert.ok(report.change);
+  assert.deepEqual(shown(report.change.total), [-3, "-0.29"]);
+});
+
+test("หมู่ 4 ศรีมูลเรือง's แนวโน้ม → 1,092 · 1,069 · 1,064 · 1,034 · 1,031 people and 524 · 529 · 532 · 536 · 538 บ้าน, with no เปรียบเทียบ below a หมู่บ้าน", () => {
+  const report = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: "54060104" }, AREAS);
+
+  assert.deepEqual(
+    report.trend.map((p) => [p.year, p.totals?.total, p.totals?.house]),
+    [
+      ["2564", 1092, 524],
+      ["2565", 1069, 529],
+      ["2566", 1064, 532],
+      ["2567", 1034, 536],
+      ["2568", 1031, 538],
+    ],
+  );
+  assert.equal(report.units, null);
+  assert.equal(report.partial, false);
+});
+
+test("the หมู่บ้าน to pick in บ้านกลาง → its 12 หมู่ by หมู่ที่, without ไม่ระบุหมู่, at the ตำบล and at one of its หมู่บ้าน; none for the อำเภอ", () => {
+  const twelve = Array.from({ length: 12 }, (_, k) => `540602${String(k + 1).padStart(2, "0")}`);
+  const villages = (area: string) => populationReport(POPULATION_REPORT_DATA, { year: "2568", area }, AREAS).villages;
+
+  assert.deepEqual(
+    villages("540602").map((v) => v.key),
+    twelve,
+  );
+  assert.deepEqual(villages("54060207"), villages("540602"));
+  assert.ok(villages("540602").every((v) => /^หมู่ \d+ \S/.test(v.name)));
+  assert.deepEqual(villages("all"), []);
+});
+
+test("หมู่ 4 ศรีมูลเรือง cut out of 2566 → its แนวโน้ม has null in 2566, never 0, and 2567 has no change from the year before", () => {
+  const data = without("54060104", ["6612"]);
+  const report = (year: string) => populationReport(data, { year, area: "54060104" }, AREAS);
+
+  assert.deepEqual(
+    report("2568").trend.map((p) => p.totals?.total ?? null),
+    [1092, 1069, null, 1034, 1031],
+  );
+  assert.equal(report("2567").shown?.total, 1034);
+  assert.equal(report("2567").change, null);
+  assert.equal(report("2566").shown, null);
+});
+
+test("?area= an 8-digit code that is not a หมู่บ้าน → its ตำบล: 54060199 (no such หมู่) gives บ้านหนุน, 54060200 (ไม่ระบุหมู่) gives บ้านกลาง; 99999999 gives the whole อำเภอ", () => {
+  const area = (code: string) => {
+    const { query, level } = populationReport(POPULATION_REPORT_DATA, { year: "2568", area: code }, AREAS);
+    return [query.area, level];
+  };
+
+  assert.deepEqual(area("54060199"), ["540601", "tambon"]);
+  assert.deepEqual(area("54060200"), ["540602", "tambon"]);
+  assert.deepEqual(area("99999999"), ["all", "district"]);
+  assert.deepEqual(area("5406010"), ["all", "district"]);
 });
 
 // รายงานประชากร's CSV (FEATURES F68, SPEC §9.4.1): the units × years table shown.
@@ -294,4 +366,26 @@ test("CSV file name of รายงานประชากร → SHDC-populati
 
   assert.equal(name("all"), "SHDC-population-2568-5406.csv");
   assert.equal(name("540601"), "SHDC-population-2568-540601.csv");
+});
+
+test("CSV of หมู่ 4 ศรีมูลเรือง in 2568 → the header lines, then a row a year of ชาย หญิง รวม บ้าน, named SHDC-population-2568-54060104.csv", () => {
+  const report = population("54060104");
+  const { name, text } = populationCsv(report, null, "5406");
+  const lines = text.split("\r\n");
+
+  assert.equal(name, "SHDC-population-2568-54060104.csv");
+  assert.deepEqual(lines.slice(2, 4), ['"พื้นที่","หมู่ 4 ศรีมูลเรือง ตำบลบ้านหนุน"', '"ปีข้อมูล","ณ 31 ธ.ค. 2568"']);
+  assert.equal(lines[6], '"ปีข้อมูล","ชาย","หญิง","รวม","บ้าน"');
+  assert.equal(lines[7].split(",")[0], '"2564"');
+  assert.deepEqual(
+    lines.slice(7).map((l) => l.split(",")[3]),
+    ['"1092"', '"1069"', '"1064"', '"1034"', '"1031"'],
+  );
+  assert.equal(lines[11].split(",")[4], '"538"');
+});
+
+test('CSV of หมู่ 4 ศรีมูลเรือง cut out of 2566 → "—" in every column of 2566, never 0', () => {
+  const report = populationReport(without("54060104", ["6612"]), { year: "2568", area: "54060104" }, AREAS);
+
+  assert.equal(populationCsv(report, null, "5406").text.split("\r\n")[9], '"2566","—","—","—","—"');
 });
