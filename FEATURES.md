@@ -23,6 +23,7 @@
 - ห้ามแก้ไฟล์ PA เดิม (รายการทางการใน CODING_STANDARDS §1: ไฟล์ที่มีอยู่ก่อนใต้ `src/components/` และ `src/lib/`) ยกเว้นย้ายไฟล์ใน F13 · ใน `รหัส.js` แก้เฉพาะจุดที่ SPEC §12.4 ระบุ
 - โค้ดของ Data Center ใต้ `src/lib/dc/` และ `src/components/dc/` ไม่ import จากไฟล์ PA (CODING_STANDARDS §4) ฟังก์ชันที่ต้องให้ผลเหมือน PA (`formatPct`, `formatThaiDate`) อยู่ใน `src/lib/dc/format.ts` · snippet สำหรับเบราว์เซอร์อยู่ใน `tools/` ไม่ใช่ `src/scripts/`
 - ทุก PR ต้อง `npm test`, `npm run lint`, `npm run build`, `npm run dc:budget` และ `npm run dc:check` ผ่าน (CI รัน test และ build ตั้งแต่ F01, lint ตั้งแต่ retro ของ Track A, dc:budget ตั้งแต่ retro ของ Track D และ dc:check ตั้งแต่ retro ของ Track F ทั้งหมดบน Node 24 · `lint` ตรวจวลีที่ GLOSSARY ให้เลี่ยง และ import ของโค้ด Data Center ด้วย · ตั้งแต่ F14 ci.yml รัน prebuild จริง จึงต้องส่ง `NEXT_PUBLIC_GAS_SCRIPT_URL` จาก GitHub secrets เข้า build step และ prebuild จะล้มถ้ายังไม่มีรายงานที่ใช้งานพร้อมข้อมูลปีปัจจุบัน F14 จึงต้องรอ F12)
+- ตัวเลขในเกณฑ์ตรวจรับผูกกับ snapshot ที่ระบุวันที่: ticket ที่เขียนตัวเลข (แบบ F48) ตัด fixture ของตารางที่ใช้จาก snapshot นั้นเข้า `src/lib/dc/fixtures/` ใน PR เดียวกัน เพราะ `public/data/` ถูกเขียนทับทุก build · ถ้า build ของ ticket ได้ตัวเลขใหม่กว่า FEATURES/SCHEMA คงตัวเลขเดิมไว้เป็นบันทึกตามวันที่ และบอกความต่างใน PR (retro ของ Track J)
 - ลำดับ: Track A → B → C ต้องเสร็จก่อนขึ้นเว็บจริง ส่วน Track D: F13, F17 ทำคู่ขนานได้ตั้งแต่ต้น F15 รอแค่ F01 (ต่อสคริปต์ `npm test`) F14 ขึ้นไปรอ F12 และ Track E ทำท้ายสุด
 
 | Track | งาน | ขึ้นกับ |
