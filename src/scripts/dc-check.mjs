@@ -1,6 +1,7 @@
 // Data Center page check (CODING_STANDARDS §4–5, FEATURES F16). After
 // npm run build, opens every built page of /, /reports, /reports/population
-// and /reports/[id] in out/ at 360 px wide and exits 1, naming the page, when
+// and /reports/[id] in out/, and /reports/population at a ตำบล and at a
+// หมู่บ้าน, at 360 px wide and exits 1, naming the page, when
 // a page breaks a rule that shows on the rendered page. The home page,
 // /reports, /reports/population (and at a ตำบล and a หมู่บ้าน) and a report of each source table with a page
 // of its own (src/lib/dc/tables/index.ts) are opened at V7.6's review widths
@@ -471,13 +472,16 @@ const POPULATION_TAMBON = "/reports/population?area=540603";
 // รายงานประชากร at a หมู่บ้าน: หมู่ 17 ห้วยหม้ายหล่ายห้วย, the longest name, in
 // the หมู่บ้าน <select> and the results' area at 320 px (FEATURES F69)
 const POPULATION_VILLAGE = "/reports/population?area=54060317";
+// Built pages, then รายงานประชากร at a ตำบล and a หมู่บ้าน: only there does the
+// หมู่บ้าน <select> show, and only at a หมู่บ้าน its results
+const checkedPaths = [...urlPaths, POPULATION_TAMBON, POPULATION_VILLAGE];
 const server = await serveOut();
 const origin = `http://127.0.0.1:${server.address().port}`;
 const problems = [];
 let browser;
 try {
   browser = await chromium.launch({ channel: "chrome" });
-  for (const urlPath of urlPaths) {
+  for (const urlPath of checkedPaths) {
     const scripts = new Set();
     for (const problem of await checkPage(browser, origin + urlPath, scripts)) problems.push(`${urlPath}: ${problem}`);
     if (reportPages.has(urlPath)) {
@@ -508,7 +512,9 @@ try {
 }
 if (problems.length > 0) {
   problems.forEach((problem) => console.error(`dc-check: ${problem}`));
-  fail(`${problems.length} problem(s) on ${urlPaths.length} page(s) checked; the rules are in CODING_STANDARDS §4–5`);
+  fail(
+    `${problems.length} problem(s) on ${checkedPaths.length} page(s) checked; the rules are in CODING_STANDARDS §4–5`,
+  );
 }
 const populationResult = !shownYear
   ? "no population data, so no population rules"
@@ -516,7 +522,7 @@ const populationResult = !shownYear
     ? "population totals, the ตำบล chart and pyramids agree"
     : "population totals and the ตำบล chart agree";
 console.log(
-  `dc-check: ${urlPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON}, ${POPULATION_VILLAGE} and a report of each of ${wideReports.length} table(s) ` +
+  `dc-check: ${checkedPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON}, ${POPULATION_VILLAGE} and a report of each of ${wideReports.length} table(s) ` +
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
     `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
 );

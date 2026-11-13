@@ -73,9 +73,8 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
         <div className="space-y-4 px-4 pb-6 sm:px-6">
           <Summary year={query.year} shown={shown} change={change} share={share} level={report.level} />
           <Trend report={report} />
-          {units ? (
-            <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />
-          ) : (
+          {units && <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />}
+          {report.level === "village" && (
             <section aria-labelledby="population-age">
               <h2 id="population-age" className="mb-2 font-prompt text-base font-semibold text-dc-brand-deep">
                 โครงสร้างอายุ
