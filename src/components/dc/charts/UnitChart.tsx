@@ -31,14 +31,28 @@ export default function UnitChart({ title, units, goal }: { title: string; units
               <rect width={`${Math.min(u.totals.pct, 100)}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
             )}
           </svg>
-          <text x="100%" y={i * ROW + ROW / 2} dominantBaseline="middle" textAnchor="end" className="fill-dc-brand-deep font-semibold tabular-nums">
+          <text
+            x="100%"
+            y={i * ROW + ROW / 2}
+            dominantBaseline="middle"
+            textAnchor="end"
+            className="fill-dc-brand-deep font-semibold tabular-nums"
+          >
             {u.totals.pct === null ? "—" : formatPct(u.totals.pct)}
           </text>
         </g>
       ))}
       {goal !== null && (
         <svg x={BARS_X} width={BARS_WIDTH} height={height}>
-          <line x1={`${goal}%`} x2={`${goal}%`} y1="0" y2="100%" strokeWidth="2" strokeDasharray="4 3" className="stroke-dc-gold" />
+          <line
+            x1={`${goal}%`}
+            x2={`${goal}%`}
+            y1="0"
+            y2="100%"
+            strokeWidth="2"
+            strokeDasharray="4 3"
+            className="stroke-dc-gold"
+          />
         </svg>
       )}
     </svg>

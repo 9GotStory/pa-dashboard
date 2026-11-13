@@ -111,7 +111,12 @@ function records(values) {
 
 // find's output: a tab-separated table with a header row.
 function findRows(stdout) {
-  return records(stdout.trimEnd().split("\n").map((line) => line.split("\t")));
+  return records(
+    stdout
+      .trimEnd()
+      .split("\n")
+      .map((line) => line.split("\t")),
+  );
 }
 
 // GAS with PA-Data as the admin leaves it before a refresh (SPEC §13 steps
@@ -181,15 +186,14 @@ test("find prints names as save_catalog writes them: no <font> tags, tabs, line 
   assert.equal(res.code, 0, res.stderr);
   const printed = findRows(res.stdout).map((r) => [r.category_name, r.report_name]);
   assert.deepEqual(printed, [
-    [
-      "การสร้างเสริมภูมิคุ้มกันโรค",
-      "ผู้สูงอายุที่ผิดปกติได้รับการจัดทำ Care Plan และให้โปรแกรมส่งเสริมสุขภาพ (Intervension STEP3 BigRock4)",
-    ],
+    ["การสร้างเสริมภูมิคุ้มกันโรค", "ผู้สูงอายุที่ผิดปกติได้รับการจัดทำ Care Plan และให้โปรแกรมส่งเสริมสุขภาพ (Intervension STEP3 BigRock4)"],
     ["การสร้างเสริมภูมิคุ้มกันโรค", "อัตราผู้ป่วยเบาหวานที่ได้รับการตรวจไขมัน LDL และมีค่า LDL < 100 mg/dl"],
   ]);
   // find cleans names with its own copy of dcCleanName: the two must agree.
   const h = gasWithTopics([[EPI, 20]]);
-  h.gas.doPost({ postData: { contents: JSON.stringify({ action: "save_catalog", cat_id: EPI, reports: [dirty, ldl] }) } });
+  h.gas.doPost({
+    postData: { contents: JSON.stringify({ action: "save_catalog", cat_id: EPI, reports: [dirty, ldl] }) },
+  });
   assert.deepEqual(
     printed,
     records(h.sheet("hdc_reports")).map((r) => [r.category_name, r.report_name]),
@@ -200,7 +204,10 @@ test("find on a table in no topic → the tables found still print, then exit 1 
   const res = await run(["find", "--from", writeExport(EXPORT), "s_epi7", "s_no_such_table"]);
 
   assert.equal(res.code, 1);
-  assert.deepEqual(findRows(res.stdout).map((r) => r.source_table), ["s_epi7"]);
+  assert.deepEqual(
+    findRows(res.stdout).map((r) => r.source_table),
+    ["s_epi7"],
+  );
   assert.match(res.stderr, /s_no_such_table/);
 });
 
@@ -210,7 +217,10 @@ test("find from an export that failed to get a topic → a warning naming it, ev
   const res = await run(["find", "--from", writeExport(exportWithError(NUTRITION, 429)), "s_epi7"]);
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(findRows(res.stdout).map((r) => r.source_table), ["s_epi7"]);
+  assert.deepEqual(
+    findRows(res.stdout).map((r) => r.source_table),
+    ["s_epi7"],
+  );
   assert.match(res.stderr, new RegExp(`${NUTRITION}.*429`));
 });
 
@@ -224,14 +234,24 @@ test("refresh without NEXT_PUBLIC_GAS_SCRIPT_URL → exit 1 with a message namin
 test("refresh with the 6 seed topics in hdc_topics → save_catalog per topic, top row first, a summary per topic, report_count filled (vaccine topic 34)", async (t) => {
   // Rows in neither the export's order nor by `order`: refresh goes top to
   // bottom, as the first topic to save a report keeps it (SPEC §5.3).
-  const topics = [[DENTAL, 60], [MCH, 10], [EPI, 20], [NCD, 50], [SURVEILLANCE, 30], [SCREENING, 40]];
+  const topics = [
+    [DENTAL, 60],
+    [MCH, 10],
+    [EPI, 20],
+    [NCD, 50],
+    [SURVEILLANCE, 30],
+    [SCREENING, 40],
+  ];
   const h = gasWithTopics(topics);
   const server = await startGas(t, h);
 
   const res = await run(["refresh", "--from", writeExport(EXPORT)], { NEXT_PUBLIC_GAS_SCRIPT_URL: server.url });
 
   assert.equal(res.code, 0, res.stderr);
-  assert.deepEqual(server.posts.map((p) => p.cat_id), topics.map(([catId]) => catId));
+  assert.deepEqual(
+    server.posts.map((p) => p.cat_id),
+    topics.map(([catId]) => catId),
+  );
   // The topic's rows as the export has them, duplicates included (SCHEMA §5.5).
   assert.deepEqual(server.posts[2], {
     action: "save_catalog",
@@ -251,7 +271,13 @@ test("refresh with the 6 seed topics in hdc_topics → save_catalog per topic, t
 test("refresh: a topic in the export's errors, with no key, or with an empty list → not sent, with a message; the others are saved; exit 1", async (t) => {
   // A cat_id typed into hdc_topics that the export does not have.
   const UNKNOWN = "0123456789abcdef0123456789abcdef";
-  const h = gasWithTopics([[EPI, 20], [NUTRITION, 70], [UNKNOWN, 80], [DENTAL, 60], [MCH, 10]]);
+  const h = gasWithTopics([
+    [EPI, 20],
+    [NUTRITION, 70],
+    [UNKNOWN, 80],
+    [DENTAL, 60],
+    [MCH, 10],
+  ]);
   const server = await startGas(t, h);
   // NUTRITION is in errors yet keeps its rows, as in a merged or hand-edited
   // file: being in errors is enough to skip it (SCHEMA §5.5).
@@ -264,7 +290,10 @@ test("refresh: a topic in the export's errors, with no key, or with an empty lis
   const res = await run(["refresh", "--from", writeExport(exported)], { NEXT_PUBLIC_GAS_SCRIPT_URL: server.url });
 
   assert.equal(res.code, 1);
-  assert.deepEqual(server.posts.map((p) => p.cat_id), [EPI, MCH]);
+  assert.deepEqual(
+    server.posts.map((p) => p.cat_id),
+    [EPI, MCH],
+  );
   assert.equal(savedLines(res.stdout).length, 2, res.stdout);
   assert.match(res.stderr, new RegExp(`${NUTRITION}.*429`));
   assert.match(res.stderr, new RegExp(UNKNOWN));
@@ -289,7 +318,11 @@ test("refresh from a file without exported_at, or not JSON → exit 1 saying it 
 });
 
 test("refresh --cat <cat_id> → only that topic is saved; a cat_id not in hdc_topics → exit 1, nothing sent", async (t) => {
-  const h = gasWithTopics([[MCH, 10], [EPI, 20], [DENTAL, 60]]);
+  const h = gasWithTopics([
+    [MCH, 10],
+    [EPI, 20],
+    [DENTAL, 60],
+  ]);
   const server = await startGas(t, h);
   const env = { NEXT_PUBLIC_GAS_SCRIPT_URL: server.url };
   const file = writeExport(EXPORT);
@@ -297,7 +330,10 @@ test("refresh --cat <cat_id> → only that topic is saved; a cat_id not in hdc_t
   const one = await run(["refresh", "--from", file, "--cat", EPI], env);
 
   assert.equal(one.code, 0, one.stderr);
-  assert.deepEqual(server.posts.map((p) => p.cat_id), [EPI]);
+  assert.deepEqual(
+    server.posts.map((p) => p.cat_id),
+    [EPI],
+  );
 
   const notInTopics = await run(["refresh", "--from", file, "--cat", NUTRITION], env);
 
@@ -307,7 +343,13 @@ test("refresh --cat <cat_id> → only that topic is saved; a cat_id not in hdc_t
 });
 
 test("arguments that do not fit the command → usage and exit 1: find with no table, refresh with a cat_id but no --cat (nothing sent)", async (t) => {
-  const server = await startGas(t, gasWithTopics([[MCH, 10], [EPI, 20]]));
+  const server = await startGas(
+    t,
+    gasWithTopics([
+      [MCH, 10],
+      [EPI, 20],
+    ]),
+  );
   const file = writeExport(EXPORT);
 
   const noTable = await run(["find", "--from", file]);
@@ -367,15 +409,24 @@ test("refresh when GAS gives no topic list (busy, unreachable, not JSON, JSON wi
 });
 
 test("refresh: GAS refuses one topic's list → that topic is not refreshed, with GAS's message; the next topic is still saved; exit 1", async (t) => {
-  const h = gasWithTopics([[DENTAL, 60], [EPI, 20]]);
+  const h = gasWithTopics([
+    [DENTAL, 60],
+    [EPI, 20],
+  ]);
   const server = await startGas(t, h);
   // A list with no row passing the patterns (SCHEMA §3.4 step 3).
-  const exported = { ...EXPORT, reports: { ...EXPORT.reports, [DENTAL]: [{ ...SEED.reports[DENTAL][0], source_table: "dental" }] } };
+  const exported = {
+    ...EXPORT,
+    reports: { ...EXPORT.reports, [DENTAL]: [{ ...SEED.reports[DENTAL][0], source_table: "dental" }] },
+  };
 
   const res = await run(["refresh", "--from", writeExport(exported)], { NEXT_PUBLIC_GAS_SCRIPT_URL: server.url });
 
   assert.equal(res.code, 1);
   assert.match(res.stderr, new RegExp(`${DENTAL}.*No valid reports`));
-  assert.deepEqual(server.posts.map((p) => p.cat_id), [DENTAL, EPI]);
+  assert.deepEqual(
+    server.posts.map((p) => p.cat_id),
+    [DENTAL, EPI],
+  );
   assert.match(savedLines(res.stdout).join("\n"), new RegExp(`${EPI}.*added 34`));
 });

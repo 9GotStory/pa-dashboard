@@ -13,7 +13,12 @@ import { goalFor, measureLabel, passes, periods, shownMeasures, totals, totalsBy
  * area and ช่วงเวลา of the query. There is no เปรียบเทียบตาม (SPEC §9.4):
  * ทั้งอำเภอ is by ตำบล and a ตำบล by หน่วยบริการ, whatever ?by= says.
  */
-export function epiValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function epiValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   const shown: ReportQuery = { ...query, by: query.area === "all" ? "area" : "hosp" };
   const block = yearBlock(data, query.year);
   return {
@@ -24,7 +29,10 @@ export function epiValues(data: DcReportData, query: ReportQuery, names: Pick<Dc
     /** ภาพรวม: each รายการ of the year in column order */
     rows: block ? shownMeasures(data, block).map((measure) => measureRow(data, block, { ...shown, measure })) : [],
     /** รายละเอียด of query.measure, null for ภาพรวม */
-    detail: block && shown.measure !== null ? measureDetail(data, block, { ...shown, measure: shown.measure }, names, years) : null,
+    detail:
+      block && shown.measure !== null
+        ? measureDetail(data, block, { ...shown, measure: shown.measure }, names, years)
+        : null,
   };
 }
 

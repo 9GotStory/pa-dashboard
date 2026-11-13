@@ -36,11 +36,17 @@ export default function QuarterFigures(props: {
             <UnitTable unitLabel={unitLabel} units={units} total={total} totalLabel={totalLabel} />
           </>
         ) : (
-          <p className="text-sm text-dc-text-secondary lg:col-span-2">ไม่มีข้อมูลในปีงบประมาณ {year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</p>
+          <p className="text-sm text-dc-text-secondary lg:col-span-2">
+            ไม่มีข้อมูลในปีงบประมาณ {year}: ผลงานรวมทั้งอำเภอว่างทั้งปี
+          </p>
         )}
         <TrendPanel points={trend} goal={goal} />
         {total && steps.length > 0 && (
-          <PeriodPanel year={year} stepName={stepName} points={steps.map((s) => ({ label: PERIOD_LABELS[s.period].short, totals: s.totals }))} />
+          <PeriodPanel
+            year={year}
+            stepName={stepName}
+            points={steps.map((s) => ({ label: PERIOD_LABELS[s.period].short, totals: s.totals }))}
+          />
         )}
         {children}
       </div>

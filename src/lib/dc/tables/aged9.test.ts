@@ -41,7 +41,14 @@ const NAMES = {
   ],
   hospitals: [],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null };
+const DISTRICT_2569: ReportQuery = {
+  year: "2569",
+  area: "all",
+  period: "year",
+  measure: null,
+  by: "area",
+  domain: null,
+};
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
@@ -58,23 +65,36 @@ test("s_aged9 2569 ทั้งอำเภอ ด้าน 1–9 → 12,039 · 
   const { domains } = aged9Values(AGED9, DISTRICT_2569, NAMES, YEARS);
   assert.deepEqual(
     domains.map((d) => [d.domain, d.count]),
-    [[1, 12039], [2, 12038], [3, 12037], [4, 12045], [5, 12038], [6, 11968], [7, 12021], [8, 12038], [9, 12002]],
+    [
+      [1, 12039],
+      [2, 12038],
+      [3, 12037],
+      [4, 12045],
+      [5, 12038],
+      [6, 11968],
+      [7, 12021],
+      [8, 12038],
+      [9, 12002],
+    ],
   );
 });
 
 test("ชื่อด้านตาม SCHEMA §4.6.7: 1 การมองเห็น … 6 ภาวะซึมเศร้า (2Q) … 9 ภาวะขาดสารอาหาร", () => {
   const { domains } = aged9Values(AGED9, DISTRICT_2569, NAMES, YEARS);
-  assert.deepEqual(domains.map((d) => d.label), [
-    "การมองเห็น",
-    "การกลั้นปัสสาวะ",
-    "การได้ยิน",
-    "การปฏิบัติกิจวัตรประจำวัน",
-    "ความคิดความจำ",
-    "ภาวะซึมเศร้า (2Q)",
-    "การเคลื่อนไหว",
-    "สุขภาพช่องปาก",
-    "ภาวะขาดสารอาหาร",
-  ]);
+  assert.deepEqual(
+    domains.map((d) => d.label),
+    [
+      "การมองเห็น",
+      "การกลั้นปัสสาวะ",
+      "การได้ยิน",
+      "การปฏิบัติกิจวัตรประจำวัน",
+      "ความคิดความจำ",
+      "ภาวะซึมเศร้า (2Q)",
+      "การเคลื่อนไหว",
+      "สุขภาพช่องปาก",
+      "ภาวะขาดสารอาหาร",
+    ],
+  );
 });
 
 test("s_aged9 2565 → ความครอบคลุมไม่มีข้อมูล (ผลงานว่างทั้งปี) and ด้าน 9 ไม่มีข้อมูล, the other ด้าน as counted", () => {
@@ -99,36 +119,62 @@ test("ตำบลเตาปูน 2565 → ด้าน 3 198, and ห้ว�
 test("s_aged9 2569 รายตำบล → 8 ตำบล, บ้านหนุน 2,169/2,108 and บ้านกลาง 2,004/1,984", () => {
   const { units } = aged9Values(AGED9, DISTRICT_2569, NAMES, YEARS);
   assert.equal(units?.length, 8);
-  assert.deepEqual(units?.slice(0, 2).map((u) => [u.name, pair(u.totals)]), [["บ้านหนุน", "2169/2108"], ["บ้านกลาง", "2004/1984"]]);
+  assert.deepEqual(
+    units?.slice(0, 2).map((u) => [u.name, pair(u.totals)]),
+    [
+      ["บ้านหนุน", "2169/2108"],
+      ["บ้านกลาง", "2004/1984"],
+    ],
+  );
 });
 
 test("ตำบลสะเอียบ 2569 → รายหน่วยบริการ 06423 662/658, 06424 221/221, 06425 297/289", () => {
   const { units } = aged9Values(AGED9, { ...DISTRICT_2569, area: "540606", by: "hosp" }, NAMES, YEARS);
-  assert.deepEqual(units?.map((u) => [u.key, pair(u.totals)]), [["06423", "662/658"], ["06424", "221/221"], ["06425", "297/289"]]);
+  assert.deepEqual(
+    units?.map((u) => [u.key, pair(u.totals)]),
+    [
+      ["06423", "662/658"],
+      ["06424", "221/221"],
+      ["06425", "297/289"],
+    ],
+  );
 });
 
 test("แนวโน้มทั้งอำเภอ → 2565 —, 2566 93.26, 2567 96.36, 2568 97.05, 2569 98.39", () => {
   const { trend } = aged9Values(AGED9, DISTRICT_2569, NAMES, YEARS);
-  assert.deepEqual(trend.map((p) => [p.b_year, p.totals?.pct?.toFixed(2) ?? null]), [
-    ["2565", null],
-    ["2566", "93.26"],
-    ["2567", "96.36"],
-    ["2568", "97.05"],
-    ["2569", "98.39"],
-  ]);
+  assert.deepEqual(
+    trend.map((p) => [p.b_year, p.totals?.pct?.toFixed(2) ?? null]),
+    [
+      ["2565", null],
+      ["2566", "93.26"],
+      ["2567", "96.36"],
+      ["2568", "97.05"],
+      ["2569", "98.39"],
+    ],
+  );
 });
 
 test("ด้าน 8 (สุขภาพช่องปาก) 2569 ทั้งอำเภอ → รายละเอียดรายตำบล บ้านหนุน 2,144 … ทุ่งน้าว 915, รวม 12,038", () => {
   const { detail } = aged9Values(AGED9, { ...DISTRICT_2569, domain: 8 }, NAMES, YEARS);
   assert.equal(detail?.label, "สุขภาพช่องปาก");
   assert.equal(detail?.count, 12038);
-  assert.deepEqual(detail?.units?.map((u) => u.count), [2144, 1984, 1975, 1657, 1591, 1169, 603, 915]);
+  assert.deepEqual(
+    detail?.units?.map((u) => u.count),
+    [2144, 1984, 1975, 1657, 1591, 1169, 603, 915],
+  );
 });
 
 test("ด้าน 8 ตำบลสะเอียบ 2569 → รายหน่วยบริการ 658 · 221 · 290, รวม 1,169", () => {
   const { detail } = aged9Values(AGED9, { ...DISTRICT_2569, area: "540606", by: "hosp", domain: 8 }, NAMES, YEARS);
   assert.equal(detail?.count, 1169);
-  assert.deepEqual(detail?.units?.map((u) => [u.key, u.count]), [["06423", 658], ["06424", 221], ["06425", 290]]);
+  assert.deepEqual(
+    detail?.units?.map((u) => [u.key, u.count]),
+    [
+      ["06423", 658],
+      ["06424", 221],
+      ["06425", 290],
+    ],
+  );
 });
 
 test("ภาพรวม (domain null) → no รายละเอียด · ด้าน 9 ปี 2565 → รายละเอียดที่ไม่มีข้อมูล (count and units null)", () => {

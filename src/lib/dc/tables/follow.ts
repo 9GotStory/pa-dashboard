@@ -24,7 +24,12 @@ const BP_METHODS = [
  * ช่วงเวลา, always ทั้งอำเภอ by หน่วยบริการ, as childdevValues gives them,
  * and the count of each วิธีวัด of s_ht_screen_follow
  */
-export function followValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function followValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   const values = childdevValues(data, query, names, years);
   const { block, total, query: shown } = values;
   const ofPeriod = (column: string) => (shown.period === "year" ? column : `${column}_${shown.period}`);

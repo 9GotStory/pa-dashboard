@@ -139,8 +139,13 @@ function saveTableYear(tableName, year, rows, options) {
     return dcInDistrict(row.areacode, settings);
   });
   if (inDistrict.length === 0) {
-    return dcRejectSave("WARNING", tableName, y, "No rows for district " + settings.district_code,
-      "keeping the existing sheet");
+    return dcRejectSave(
+      "WARNING",
+      tableName,
+      y,
+      "No rows for district " + settings.district_code,
+      "keeping the existing sheet",
+    );
   }
 
   // b_year is compared as a string; a row without it belongs to the year sent.
@@ -153,21 +158,30 @@ function saveTableYear(tableName, year, rows, options) {
     }
   });
   if (kept.length < inDistrict.length) {
-    logToSheet("WARNING", "Dropped rows " + tableName + " " + y,
-      (inDistrict.length - kept.length) + " rows with b_year other than " + y);
+    logToSheet(
+      "WARNING",
+      "Dropped rows " + tableName + " " + y,
+      inDistrict.length - kept.length + " rows with b_year other than " + y,
+    );
   }
   if (kept.length === 0) {
     return dcRejectSave("WARNING", tableName, y, "No rows for year " + y, "keeping the existing sheet");
   }
 
-  const maxDateCom = dcMaxDateCom(kept.map(function (row) {
-    return row.date_com;
-  }));
+  const maxDateCom = dcMaxDateCom(
+    kept.map(function (row) {
+      return row.date_com;
+    }),
+  );
   if (opts.force !== true) {
     const existing = dcFindSyncStatus(dcReadSyncStatus(), tableName, y);
     if (existing && existing.max_date_com > maxDateCom) {
-      return dcRejectSave("ERROR", tableName, y,
-        "Stale data: existing " + existing.max_date_com + " > incoming " + maxDateCom);
+      return dcRejectSave(
+        "ERROR",
+        tableName,
+        y,
+        "Stale data: existing " + existing.max_date_com + " > incoming " + maxDateCom,
+      );
     }
   }
 
@@ -199,7 +213,14 @@ function saveTableYear(tableName, year, rows, options) {
 
   Logger.log("Success: Synced " + kept.length + " rows for " + tableName + " " + y + " to " + sheetName);
   logToSheet("SUCCESS", "Synced " + tableName + " " + y, kept.length + " rows");
-  return { status: "success", year: y, sheet: sheetName, received: rows.length, count: kept.length, archived: archived };
+  return {
+    status: "success",
+    year: y,
+    sheet: sheetName,
+    received: rows.length,
+    count: kept.length,
+    archived: archived,
+  };
 }
 
 /**
@@ -216,7 +237,9 @@ function dcArchiveOldYears(tableName, year, settings) {
   const values = sheet.getDataRange().getValues();
   const header = values[0];
   const names = header.map(function (h) {
-    return String(h || "").trim().toLowerCase();
+    return String(h || "")
+      .trim()
+      .toLowerCase();
   });
   const iYear = names.indexOf("b_year");
   if (iYear === -1) return [];
@@ -238,34 +261,47 @@ function dcArchiveOldYears(tableName, year, settings) {
     (byYear[z] = byYear[z] || []).push(row);
   });
   if (outsideDistrict > 0) {
-    logToSheet("WARNING", "Archive dropped rows " + tableName,
-      outsideDistrict + " rows outside district " + settings.district_code);
+    logToSheet(
+      "WARNING",
+      "Archive dropped rows " + tableName,
+      outsideDistrict + " rows outside district " + settings.district_code,
+    );
   }
 
   const window = getYearWindow(settings);
   const iDate = names.indexOf("date_com");
   const status = dcReadSyncStatus();
   const archived = [];
-  Object.keys(byYear).sort().forEach(function (z) {
-    const rows = byYear[z];
-    if (window.indexOf(z) === -1) {
-      logToSheet("WARNING", "Archive dropped rows " + tableName, rows.length + " rows of " + z + " outside the window");
-      return;
-    }
-    const target = sheetNameFor(tableName, z, settings);
-    const maxDateCom = dcMaxDateCom(rows.map(function (row) {
-      return iDate > -1 ? row[iDate] : "";
-    }));
-    const existing = dcFindSyncStatus(status, tableName, z);
-    if (existing && existing.sheet === target && existing.max_date_com >= maxDateCom) {
-      Logger.log("Archive: " + target + " already has " + existing.max_date_com + " >= " + maxDateCom + ", not overwritten");
-      return;
-    }
-    dcWriteSheet(target, header, rows, DC_TEXT_COLUMNS);
-    dcUpsertSyncStatus(tableName, z, target, rows.length, maxDateCom, window);
-    logToSheet("SUCCESS", "Archived " + tableName + " " + z, rows.length + " rows to " + target);
-    archived.push(z);
-  });
+  Object.keys(byYear)
+    .sort()
+    .forEach(function (z) {
+      const rows = byYear[z];
+      if (window.indexOf(z) === -1) {
+        logToSheet(
+          "WARNING",
+          "Archive dropped rows " + tableName,
+          rows.length + " rows of " + z + " outside the window",
+        );
+        return;
+      }
+      const target = sheetNameFor(tableName, z, settings);
+      const maxDateCom = dcMaxDateCom(
+        rows.map(function (row) {
+          return iDate > -1 ? row[iDate] : "";
+        }),
+      );
+      const existing = dcFindSyncStatus(status, tableName, z);
+      if (existing && existing.sheet === target && existing.max_date_com >= maxDateCom) {
+        Logger.log(
+          "Archive: " + target + " already has " + existing.max_date_com + " >= " + maxDateCom + ", not overwritten",
+        );
+        return;
+      }
+      dcWriteSheet(target, header, rows, DC_TEXT_COLUMNS);
+      dcUpsertSyncStatus(tableName, z, target, rows.length, maxDateCom, window);
+      logToSheet("SUCCESS", "Archived " + tableName + " " + z, rows.length + " rows to " + target);
+      archived.push(z);
+    });
   return archived;
 }
 
@@ -341,20 +377,25 @@ function dcReadSyncStatus() {
   if (!sheet) return [];
   const values = sheet.getDataRange().getValues();
   const header = values[0].map(function (h) {
-    return String(h || "").trim().toLowerCase();
+    return String(h || "")
+      .trim()
+      .toLowerCase();
   });
-  return values.slice(1).map(function (row) {
-    const out = {};
-    DC_SYNC_STATUS_HEADERS.forEach(function (key) {
-      const i = header.indexOf(key);
-      out[key] = i > -1 ? row[i] : "";
+  return values
+    .slice(1)
+    .map(function (row) {
+      const out = {};
+      DC_SYNC_STATUS_HEADERS.forEach(function (key) {
+        const i = header.indexOf(key);
+        out[key] = i > -1 ? row[i] : "";
+      });
+      out.b_year = String(out.b_year);
+      out.max_date_com = String(out.max_date_com);
+      return out;
+    })
+    .filter(function (row) {
+      return row.table !== "";
     });
-    out.b_year = String(out.b_year);
-    out.max_date_com = String(out.max_date_com);
-    return out;
-  }).filter(function (row) {
-    return row.table !== "";
-  });
 }
 
 /** The sync_status row of (table, year), or null. */
@@ -384,9 +425,14 @@ function dcUpsertSyncStatus(table, year, sheetName, rowCount, maxDateCom, window
     return row.table !== table || (row.b_year !== year && window.indexOf(row.b_year) > -1);
   });
   rows.push(entry);
-  dcWriteSheet(DC_SYNC_STATUS_SHEET, DC_SYNC_STATUS_HEADERS, rows.map(function (row) {
-    return DC_SYNC_STATUS_HEADERS.map(function (key) {
-      return row[key];
-    });
-  }), DC_SYNC_STATUS_TEXT_COLUMNS);
+  dcWriteSheet(
+    DC_SYNC_STATUS_SHEET,
+    DC_SYNC_STATUS_HEADERS,
+    rows.map(function (row) {
+      return DC_SYNC_STATUS_HEADERS.map(function (key) {
+        return row[key];
+      });
+    }),
+    DC_SYNC_STATUS_TEXT_COLUMNS,
+  );
 }

@@ -44,7 +44,10 @@ function post(h, body) {
 // The admin typing value into (row, column by header name) of a sheet.
 function setCell(h, sheetName, row, column, value) {
   const col = h.sheet(sheetName)[0].indexOf(column) + 1;
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(row, col).setValues([[value]]);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(sheetName)
+    .getRange(row, col)
+    .setValues([[value]]);
 }
 
 // The admin typing value into a report's column of hdc_reports.
@@ -64,7 +67,9 @@ function enable(h, opendataId) {
 // export, tick the given reports. All at 08:00, so a test that sets a later
 // time sees the 60 s settings cache run out.
 function loadWithCatalog(topics, enabledIds) {
-  const h = loadGas({ sheets: { settings: SETTINGS, tambon_master: TAMBON_MASTER, hospitals: HOSPITALS, kpi_epi: KPI_EPI } });
+  const h = loadGas({
+    sheets: { settings: SETTINGS, tambon_master: TAMBON_MASTER, hospitals: HOSPITALS, kpi_epi: KPI_EPI },
+  });
   h.clock.now = Date.parse("2026-10-30T08:00:00+07:00");
   h.gas.doGet({ parameter: { action: "diag", pin: vm.runInContext("CONFIG.DIAG_PIN", h.gas), setup: "datacenter" } });
   topics.forEach(([catId, order], i) => {
@@ -122,14 +127,24 @@ test("areas are the tambon_master rows of district_code as { id, name_th }; hosp
     { id: "540608", name_th: "ทุ่งน้าว" },
   ]);
   assert.equal(catalog.hospitals.length, 17);
-  assert.deepEqual(catalog.hospitals.find((x) => x.hospcode === "06413"),
-    { hospcode: "06413", hospname: "บ้านหนุน", tambon_id: "540601" });
-  assert.deepEqual(catalog.hospitals.find((x) => x.hospcode === "11170"),
-    { hospcode: "11170", hospname: "สอง", tambon_id: "540601" });
+  assert.deepEqual(
+    catalog.hospitals.find((x) => x.hospcode === "06413"),
+    { hospcode: "06413", hospname: "บ้านหนุน", tambon_id: "540601" },
+  );
+  assert.deepEqual(
+    catalog.hospitals.find((x) => x.hospcode === "11170"),
+    { hospcode: "11170", hospname: "สอง", tambon_id: "540601" },
+  );
 });
 
 test("reports are only the active ones: enabled = TRUE and the topic in hdc_topics; topics are the hdc_topics rows", () => {
-  const h = loadWithCatalog([[EPI, 20], [NUTRITION, 15]], [...SEED_EPI, ANEMIA]);
+  const h = loadWithCatalog(
+    [
+      [EPI, 20],
+      [NUTRITION, 15],
+    ],
+    [...SEED_EPI, ANEMIA],
+  );
 
   const withNutrition = getCatalog(h);
   // The admin deletes the nutrition row from hdc_topics (SCHEMA §2.2).
@@ -138,20 +153,23 @@ test("reports are only the active ones: enabled = TRUE and the topic in hdc_topi
 
   assert.deepEqual(ids(withNutrition.reports), [...SEED_EPI, ANEMIA].sort());
   assert.deepEqual(ids(catalog.reports), [...SEED_EPI].sort());
-  assert.deepEqual(catalog.topics, [{
-    cat_id: EPI,
-    category_name: "การสร้างเสริมภูมิคุ้มกันโรค",
-    main_report_id: "73daf277928bc32a1b3c8e772192543c",
-    main_report_name: "ส่งเสริมป้องกัน",
-    order: 20,
-  }]);
+  assert.deepEqual(catalog.topics, [
+    {
+      cat_id: EPI,
+      category_name: "การสร้างเสริมภูมิคุ้มกันโรค",
+      main_report_id: "73daf277928bc32a1b3c8e772192543c",
+      main_report_name: "ส่งเสริมป้องกัน",
+      order: 20,
+    },
+  ]);
 });
 
 test("measure_goals: the kpi_epi rows of the report's source_table that have a value_prefix → { [value_prefix]: target }", () => {
   const h = loadWithCatalog([[EPI, 20]], SEED_EPI);
   // A pcv4 row added back with its target left blank: pcv4 is left out, so
   // the report's own goal applies to it (SCHEMA §3.1).
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("kpi_epi")
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName("kpi_epi")
     .appendRow(["s_epi2__pcv4", "เด็กครบ 2 ปี ได้รับวัคซีน PCV4", "", 126, "", "กลุ่มอายุ 2 ปี", "s_epi2", "pcv4", ""]);
 
   const byId = Object.fromEntries(getCatalog(h).reports.map((r) => [r.opendata_id, r]));
@@ -170,8 +188,15 @@ test("measure_goals: the kpi_epi rows of the report's source_table that have a v
 // MOPH rows of s_epi2 for one year: n in อำเภอ 5406 and one of 5401, which is
 // not saved.
 function epi2Rows(year, dateCom, n) {
-  const row = (hospcode, areacode) =>
-    ({ id: EPI2, hospcode, areacode, date_com: dateCom, b_year: year, target: 5, result: 4 });
+  const row = (hospcode, areacode) => ({
+    id: EPI2,
+    hospcode,
+    areacode,
+    date_com: dateCom,
+    b_year: year,
+    target: 5,
+    result: 4,
+  });
   return [row("10701", "54010101"), ...Array.from({ length: n }, (_, i) => row("06413", "5406010" + (i + 1)))];
 }
 
@@ -185,8 +210,20 @@ test("years: the report's source_table rows of sync_status inside the window, ol
   h.clock.now = Date.parse("2026-10-30T09:00:00+07:00");
   save(h, "s_epi2", "2569", epi2Rows("2569", "202610290915", 3));
   // s_epi_complete holds the 4 fully immunized reports.
-  save(h, "s_epi_complete", "2569", COMPLETE.map((id) =>
-    ({ id, hospcode: "06413", areacode: "54060101", date_com: "202610290915", b_year: "2569", target: 10, result: 9 })));
+  save(
+    h,
+    "s_epi_complete",
+    "2569",
+    COMPLETE.map((id) => ({
+      id,
+      hospcode: "06413",
+      areacode: "54060101",
+      date_com: "202610290915",
+      b_year: "2569",
+      target: 10,
+      result: 9,
+    })),
+  );
   h.clock.now = Date.parse("2026-10-30T09:10:00+07:00");
   save(h, "s_epi2", "2565", epi2Rows("2565", "202209301200", 2));
   h.clock.now = Date.parse("2026-10-30T09:20:00+07:00");
@@ -204,8 +241,11 @@ test("years: the report's source_table rows of sync_status inside the window, ol
     { b_year: "2569", row_count: 3, max_date_com: "202610290915", synced_at: "2026-10-30T02:00:00.000Z" },
   ]);
   for (const id of COMPLETE) {
-    assert.deepEqual(byId[id].years,
-      [{ b_year: "2569", row_count: 4, max_date_com: "202610290915", synced_at: "2026-10-30T02:00:00.000Z" }], id);
+    assert.deepEqual(
+      byId[id].years,
+      [{ b_year: "2569", row_count: 4, max_date_com: "202610290915", synced_at: "2026-10-30T02:00:00.000Z" }],
+      id,
+    );
   }
   assert.deepEqual(byId[EPI1].years, []);
 });
@@ -215,7 +255,10 @@ test("years: the report's source_table rows of sync_status inside the window, ol
 const str = (v) => typeof v === "string";
 const num = (v) => typeof v === "number" && Number.isFinite(v);
 const orNull = (check) => (v) => v === null || check(v);
-const oneOf = (...values) => (v) => values.includes(v);
+const oneOf =
+  (...values) =>
+  (v) =>
+    values.includes(v);
 const isoTime = (v) => str(v) && new Date(v).toISOString() === v;
 const recordOf = (check) => (v) =>
   v !== null && typeof v === "object" && !Array.isArray(v) && Object.values(v).every(check);
@@ -224,13 +267,24 @@ const GAS_CATALOG = {
   areas: [{ id: str, name_th: str }],
   hospitals: [{ hospcode: str, hospname: str, tambon_id: str }],
   topics: [{ cat_id: str, category_name: str, main_report_id: str, main_report_name: str, order: orNull(num) }],
-  reports: [{
-    opendata_id: str, report_name: str, source_table: str, cat_id: str, main_report_id: str, subgroup: str,
-    order: orNull(num), report_type: oneOf("coverage", "workload", null), goal: orNull(num),
-    col_target: orNull(str), col_result: orNull(str), measure_goals: recordOf(num),
-    catalog_status: oneOf("active", "removed"),
-    years: [{ b_year: str, row_count: num, max_date_com: str, synced_at: isoTime }],
-  }],
+  reports: [
+    {
+      opendata_id: str,
+      report_name: str,
+      source_table: str,
+      cat_id: str,
+      main_report_id: str,
+      subgroup: str,
+      order: orNull(num),
+      report_type: oneOf("coverage", "workload", null),
+      goal: orNull(num),
+      col_target: orNull(str),
+      col_result: orNull(str),
+      measure_goals: recordOf(num),
+      catalog_status: oneOf("active", "removed"),
+      years: [{ b_year: str, row_count: num, max_date_com: str, synced_at: isoTime }],
+    },
+  ],
 };
 
 // Acceptance 1's small check: walk the JSON against the shape.
@@ -260,22 +314,25 @@ test("the response is a GasCatalog (SCHEMA §9): every field of the type, of its
   const catalog = getCatalog(h);
 
   assertShape(catalog, GAS_CATALOG, "catalog");
-  assert.deepEqual(catalog.reports.find((r) => r.opendata_id === EPI2), {
-    opendata_id: EPI2,
-    report_name: "ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส",
-    source_table: "s_epi2",
-    cat_id: EPI,
-    main_report_id: "73daf277928bc32a1b3c8e772192543c",
-    subgroup: "กลุ่มอายุ 2 ปี",
-    order: 20,
-    report_type: "coverage",
-    goal: 90,
-    col_target: null,
-    col_result: null,
-    measure_goals: { dtp4: 90, opv4: 90, mmr1: 95, mmr2: 95, je2: 90 },
-    catalog_status: "active",
-    years: [{ b_year: "2569", row_count: 3, max_date_com: "202610290915", synced_at: "2026-10-30T02:00:00.000Z" }],
-  });
+  assert.deepEqual(
+    catalog.reports.find((r) => r.opendata_id === EPI2),
+    {
+      opendata_id: EPI2,
+      report_name: "ความครอบคลุมของเด็กอายุครบ 2 ปีที่ได้รับวัคซีนแต่ละชนิด รายไตรมาส",
+      source_table: "s_epi2",
+      cat_id: EPI,
+      main_report_id: "73daf277928bc32a1b3c8e772192543c",
+      subgroup: "กลุ่มอายุ 2 ปี",
+      order: 20,
+      report_type: "coverage",
+      goal: 90,
+      col_target: null,
+      col_result: null,
+      measure_goals: { dtp4: 90, opv4: 90, mmr1: 95, mmr2: 95, je2: 90 },
+      catalog_status: "active",
+      years: [{ b_year: "2569", row_count: 3, max_date_com: "202610290915", synced_at: "2026-10-30T02:00:00.000Z" }],
+    },
+  );
 });
 
 test("a report ticked after a call shows on the next call (no cache), while BATCH_ALL's 60 s DC units cache still lags", () => {
@@ -332,18 +389,24 @@ test("while another execution holds the script lock past the 30 s wait → error
   const res = getCatalog(h);
 
   assert.deepEqual(res, { status: "error", message: "Busy" });
-  assert.deepEqual(CATALOG_SHEETS.map((name) => h.reads(name)), before);
+  assert.deepEqual(
+    CATALOG_SHEETS.map((name) => h.reads(name)),
+    before,
+  );
 });
 
 test("a Sheets error while reading → JSON error (SCHEMA §3), and the lock is released", () => {
   const h = loadWithCatalog([[EPI, 20]], SEED_EPI);
   const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
   const getSheetByName = ss.getSheetByName;
-  ss.getSheetByName = (name) => name !== "kpi_epi" ? getSheetByName(name) : {
-    getDataRange: () => {
-      throw new Error("Service Spreadsheets timed out while accessing document");
-    },
-  };
+  ss.getSheetByName = (name) =>
+    name !== "kpi_epi"
+      ? getSheetByName(name)
+      : {
+          getDataRange: () => {
+            throw new Error("Service Spreadsheets timed out while accessing document");
+          },
+        };
 
   const res = getCatalog(h);
 
@@ -363,7 +426,10 @@ test("hospitals and tambon_master are read by header name (trim + lower case), i
         ["5401", "54000", "ในเวียง", "540101"],
         ["5406", "54120", "บ้านหนุน", "540601"],
       ],
-      hospitals: [["Tambon_ID", "HOSPNAME", " hospcode "], ["540601", "สอง", "11170"]],
+      hospitals: [
+        ["Tambon_ID", "HOSPNAME", " hospcode "],
+        ["540601", "สอง", "11170"],
+      ],
     },
   });
 
@@ -382,9 +448,15 @@ test("an hdc_topics row whose cat_id fails the pattern is no topic; a hand-edite
 
   const catalog = getCatalog(h);
 
-  assert.deepEqual(catalog.topics.map((t) => t.cat_id), [EPI]);
+  assert.deepEqual(
+    catalog.topics.map((t) => t.cat_id),
+    [EPI],
+  );
   assert.deepEqual(ids(catalog.reports), SEED_EPI.filter((id) => id !== EPI5).sort());
-  assert.ok(h.logs.some((m) => m.startsWith("WARNING") && m.includes(EPI5)), h.logs.join("\n"));
+  assert.ok(
+    h.logs.some((m) => m.startsWith("WARNING") && m.includes(EPI5)),
+    h.logs.join("\n"),
+  );
   // Not system_logs: the catalog is read on every build (SCHEMA §2.3).
   assert.ok(!JSON.stringify(h.sheet("system_logs")).includes(EPI5));
 });

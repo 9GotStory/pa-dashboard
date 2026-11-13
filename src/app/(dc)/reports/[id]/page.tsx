@@ -24,7 +24,9 @@ type Entry = { main: Main; topic: Topic; group: Group; report: DcReport };
 /** Every report of the catalog in its order (SPEC §5.4) */
 function entries(catalog: DcCatalog): Entry[] {
   return catalog.mains.flatMap((main) =>
-    main.topics.flatMap((topic) => topic.groups.flatMap((group) => group.reports.map((report) => ({ main, topic, group, report })))),
+    main.topics.flatMap((topic) =>
+      topic.groups.flatMap((group) => group.reports.map((report) => ({ main, topic, group, report }))),
+    ),
   );
 }
 
@@ -89,13 +91,19 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
       <header className="mb-4 rounded-[10px] border border-l-4 border-dc-border-subtle border-l-dc-brand-accent bg-white px-4 py-5 sm:px-7 sm:py-6">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-[5px] bg-dc-highlight-soft px-2.5 py-1 text-xs font-bold text-dc-brand-deep">{report.source_table}</span>
+          <span className="rounded-[5px] bg-dc-highlight-soft px-2.5 py-1 text-xs font-bold text-dc-brand-deep">
+            {report.source_table}
+          </span>
           {report.catalog_status === "removed" && (
-            <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">HDC ไม่แสดงรายงานนี้แล้ว</span>
+            <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">
+              HDC ไม่แสดงรายงานนี้แล้ว
+            </span>
           )}
         </div>
         <p className="mb-1.5 text-xs font-bold text-dc-brand-primary">{topic.category_name}</p>
-        <h1 className="font-prompt text-[22px] font-semibold leading-snug text-dc-brand-deep sm:text-[28px]">{report.report_name}</h1>
+        <h1 className="font-prompt text-[22px] font-semibold leading-snug text-dc-brand-deep sm:text-[28px]">
+          {report.report_name}
+        </h1>
         <p className="mt-3 border-t border-dc-border-subtle pt-3 text-xs text-dc-text-secondary">
           {group.subgroup && `${group.subgroup} · `}อำเภอสอง จังหวัดแพร่ · ข้อมูลจาก HDC Open Data
         </p>
@@ -109,7 +117,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           years={catalog.meta.years}
         />
 
-        <section aria-labelledby="about-title" className="border-t border-dc-border-subtle bg-dc-canvas/60 px-4 py-5 sm:px-6">
+        <section
+          aria-labelledby="about-title"
+          className="border-t border-dc-border-subtle bg-dc-canvas/60 px-4 py-5 sm:px-6"
+        >
           <h2 id="about-title" className="font-prompt text-[15px] font-semibold text-dc-brand-deep">
             เกี่ยวกับรายงานนี้
           </h2>
@@ -155,7 +166,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       </div>
 
       {others.length > 0 && (
-        <section aria-labelledby="related-title" className="mt-6 rounded-[10px] border border-dc-border-subtle bg-white p-4 sm:p-5 print:hidden">
+        <section
+          aria-labelledby="related-title"
+          className="mt-6 rounded-[10px] border border-dc-border-subtle bg-white p-4 sm:p-5 print:hidden"
+        >
           <h2 id="related-title" className="font-prompt text-base font-semibold text-dc-brand-deep">
             รายงานที่เกี่ยวข้อง
           </h2>
@@ -167,7 +181,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   href={`/reports/${e.report.opendata_id}`}
                   className="flex h-full flex-col rounded-lg border border-dc-border-subtle bg-dc-canvas/40 p-3 hover:border-dc-brand-primary"
                 >
-                  <strong className="text-[13px] leading-snug font-semibold text-dc-brand-deep">{e.report.report_name}</strong>
+                  <strong className="text-[13px] leading-snug font-semibold text-dc-brand-deep">
+                    {e.report.report_name}
+                  </strong>
                   <small className="mt-1 text-[11px] text-dc-text-secondary">
                     {e.report.source_table}
                     {e.group.subgroup && ` · ${e.group.subgroup}`}

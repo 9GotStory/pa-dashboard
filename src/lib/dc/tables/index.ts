@@ -51,7 +51,9 @@ export function shownCatalog(catalog: DcCatalog): DcCatalog {
 
 /** The reports of a catalog, in its order */
 export function catalogReports(catalog: DcCatalog) {
-  return catalog.mains.flatMap((main) => main.topics.flatMap((topic) => topic.groups.flatMap((group) => group.reports)));
+  return catalog.mains.flatMap((main) =>
+    main.topics.flatMap((topic) => topic.groups.flatMap((group) => group.reports)),
+  );
 }
 
 /** One warning per รายงานที่รอวิเคราะห์ of catalog.json, naming the report and its source table (SPEC §5.2) */

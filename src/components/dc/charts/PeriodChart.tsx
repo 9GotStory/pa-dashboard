@@ -16,7 +16,13 @@ function niceMax(v: number): number {
  * กราฟ C (SPEC §9.4): เป้าหมาย beside ผลงาน for each ไตรมาส or month of the
  * year shown, after R6's monthly epi chart.
  */
-export default function PeriodChart({ title, points }: { title: string; points: { label: string; totals: Totals | null }[] }) {
+export default function PeriodChart({
+  title,
+  points,
+}: {
+  title: string;
+  points: { label: string; totals: Totals | null }[];
+}) {
   const top = niceMax(Math.max(0, ...points.flatMap((p) => (p.totals ? [p.totals.target, p.totals.result] : []))));
   const ticks = Number.isInteger(top / 2) ? [0, top / 2, top] : [0, top];
   // The plot as a share of the width, right of the count axis, which is wider
@@ -28,12 +34,23 @@ export default function PeriodChart({ title, points }: { title: string; points: 
   const label =
     `${title}: ` +
     points
-      .map((p) => (p.totals ? `${p.label} เป้าหมาย ${formatCount(p.totals.target)} ผลงาน ${formatCount(p.totals.result)}` : `${p.label} —`))
+      .map((p) =>
+        p.totals
+          ? `${p.label} เป้าหมาย ${formatCount(p.totals.target)} ผลงาน ${formatCount(p.totals.result)}`
+          : `${p.label} —`,
+      )
       .join(", ");
   return (
     <svg role="img" aria-label={label} width="100%" height={HEIGHT} className="block text-xs">
       {ticks.map((t) => (
-        <text key={t} x={`${plotX - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-text-secondary tabular-nums">
+        <text
+          key={t}
+          x={`${plotX - 2}%`}
+          y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT}
+          dominantBaseline="middle"
+          textAnchor="end"
+          className="fill-dc-text-secondary tabular-nums"
+        >
           {formatCount(t)}
         </text>
       ))}
@@ -57,8 +74,20 @@ export default function PeriodChart({ title, points }: { title: string; points: 
           (p, i) =>
             p.totals && (
               <g key={p.label}>
-                <rect x={`${(i + 0.14) * slot}%`} y={`${y(p.totals.target)}%`} width={`${0.34 * slot}%`} height={`${100 - y(p.totals.target)}%`} className="fill-dc-brand-deep" />
-                <rect x={`${(i + 0.52) * slot}%`} y={`${y(p.totals.result)}%`} width={`${0.34 * slot}%`} height={`${100 - y(p.totals.result)}%`} className="fill-dc-brand-accent" />
+                <rect
+                  x={`${(i + 0.14) * slot}%`}
+                  y={`${y(p.totals.target)}%`}
+                  width={`${0.34 * slot}%`}
+                  height={`${100 - y(p.totals.target)}%`}
+                  className="fill-dc-brand-deep"
+                />
+                <rect
+                  x={`${(i + 0.52) * slot}%`}
+                  y={`${y(p.totals.result)}%`}
+                  width={`${0.34 * slot}%`}
+                  height={`${100 - y(p.totals.result)}%`}
+                  className="fill-dc-brand-accent"
+                />
               </g>
             ),
         )}

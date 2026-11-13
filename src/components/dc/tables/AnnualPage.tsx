@@ -55,7 +55,9 @@ function Annual({ data, names, years }: { data: DcReportData; names: Names; year
       {!block ? (
         <NoYear year={query.year} />
       ) : units?.length === 0 ? (
-        <ReportStatus>ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}</ReportStatus>
+        <ReportStatus>
+          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+        </ReportStatus>
       ) : (
         <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={[]} year={query.year}>
           {total && ageMonths && <AgeMonthsPanel year={query.year} result={total.result} ageMonths={ageMonths} />}

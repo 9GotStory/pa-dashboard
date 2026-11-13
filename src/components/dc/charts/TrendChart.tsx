@@ -18,7 +18,15 @@ export function trendTop(pcts: (number | null)[]): number {
  * after R6's ncd view. A year without a value is "—" and breaks the line
  * (SCHEMA §4.2). The scale is 0–trendTop.
  */
-export default function TrendChart({ title, points, goal }: { title: string; points: TrendPoint[]; goal: number | null }) {
+export default function TrendChart({
+  title,
+  points,
+  goal,
+}: {
+  title: string;
+  points: TrendPoint[];
+  goal: number | null;
+}) {
   const pcts = points.map((p) => p.totals?.pct ?? null);
   const top = trendTop(pcts);
   const ticks = Array.from({ length: top / 25 + 1 }, (_, k) => k * 25);
@@ -31,12 +39,25 @@ export default function TrendChart({ title, points, goal }: { title: string; poi
   return (
     <svg role="img" aria-label={label} width="100%" height={HEIGHT} className="block text-xs">
       {ticks.map((t) => (
-        <text key={t} x={`${PLOT_X - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-text-secondary tabular-nums">
+        <text
+          key={t}
+          x={`${PLOT_X - 2}%`}
+          y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT}
+          dominantBaseline="middle"
+          textAnchor="end"
+          className="fill-dc-text-secondary tabular-nums"
+        >
           {t}
         </text>
       ))}
       {points.map((p, i) => (
-        <text key={p.b_year} x={`${PLOT_X + (PLOT_WIDTH * x(i)) / 100}%`} y={HEIGHT - 10} textAnchor="middle" className="fill-dc-brand-deep">
+        <text
+          key={p.b_year}
+          x={`${PLOT_X + (PLOT_WIDTH * x(i)) / 100}%`}
+          y={HEIGHT - 10}
+          textAnchor="middle"
+          className="fill-dc-brand-deep"
+        >
           {p.b_year}
         </text>
       ))}
@@ -45,14 +66,31 @@ export default function TrendChart({ title, points, goal }: { title: string; poi
           <line key={t} x1="0" x2="100%" y1={`${y(t)}%`} y2={`${y(t)}%`} className="stroke-dc-border-subtle" />
         ))}
         {goal !== null && (
-          <line x1="0" x2="100%" y1={`${y(goal)}%`} y2={`${y(goal)}%`} strokeWidth="2" strokeDasharray="7 6" className="stroke-dc-gold" />
+          <line
+            x1="0"
+            x2="100%"
+            y1={`${y(goal)}%`}
+            y2={`${y(goal)}%`}
+            strokeWidth="2"
+            strokeDasharray="7 6"
+            className="stroke-dc-gold"
+          />
         )}
         {pcts.slice(1).map((v, k) => {
           const prev = pcts[k];
           return (
             prev !== null &&
             v !== null && (
-              <line key={k} x1={`${x(k)}%`} y1={`${y(prev)}%`} x2={`${x(k + 1)}%`} y2={`${y(v)}%`} strokeWidth="3" strokeLinecap="round" className="stroke-dc-brand-primary" />
+              <line
+                key={k}
+                x1={`${x(k)}%`}
+                y1={`${y(prev)}%`}
+                x2={`${x(k + 1)}%`}
+                y2={`${y(v)}%`}
+                strokeWidth="3"
+                strokeLinecap="round"
+                className="stroke-dc-brand-primary"
+              />
             )
           );
         })}
@@ -63,7 +101,13 @@ export default function TrendChart({ title, points, goal }: { title: string; poi
             </text>
           ) : (
             <g key={i}>
-              <circle cx={`${x(i)}%`} cy={`${y(v)}%`} r="5" strokeWidth="3" className="fill-white stroke-dc-brand-primary" />
+              <circle
+                cx={`${x(i)}%`}
+                cy={`${y(v)}%`}
+                r="5"
+                strokeWidth="3"
+                className="fill-white stroke-dc-brand-primary"
+              />
               {/* A white edge keeps the value legible where it crosses the line or the เกณฑ์ */}
               <text
                 x={`${x(i)}%`}

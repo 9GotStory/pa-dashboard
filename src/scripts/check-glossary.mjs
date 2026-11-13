@@ -40,7 +40,10 @@ if (phrases.length === 0) {
 
 if (checkFile) {
   report(
-    fs.readFileSync(checkFile, "utf8").split("\n").map((line, i) => [`${checkFile}:${i + 1}`, line]),
+    fs
+      .readFileSync(checkFile, "utf8")
+      .split("\n")
+      .map((line, i) => [`${checkFile}:${i + 1}`, line]),
     checkFile,
   );
 }
@@ -49,7 +52,9 @@ let mergeBase;
 try {
   mergeBase = git("merge-base", base, "HEAD").trim();
 } catch {
-  console.error(`check-glossary: no merge base with ${base}. Run git fetch origin main, or check out with fetch-depth: 0 in CI.`);
+  console.error(
+    `check-glossary: no merge base with ${base}. Run git fetch origin main, or check out with fetch-depth: 0 in CI.`,
+  );
   process.exit(1);
 }
 

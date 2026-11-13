@@ -38,7 +38,14 @@ const NAMES = {
   ],
   hospitals: [],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null };
+const DISTRICT_2569: ReportQuery = {
+  year: "2569",
+  area: "all",
+  period: "year",
+  measure: null,
+  by: "area",
+  domain: null,
+};
 
 test("2569 ทั้งอำเภอ → c 1,361 · b 954 · a 795 · ฟันดีไม่มีผุ 83.33% เกณฑ์ 80 ผ่าน · ตรวจช่องปาก 70.10%", () => {
   const cavity = cavityValues(CAVITY, DISTRICT_2569, NAMES);
@@ -76,7 +83,10 @@ test("2569 รายตำบล → c/b/a ของ 8 ตำบลตามร�
 
 test("2569 ตำบลแดนชุมพล รายหน่วยบริการ → กรวย 68/65/60 · ตรวจช่องปาก 95.59% · หน่วยบริการ 06426 หน่วยเดียว", () => {
   const cavity = cavityValues(CAVITY, { ...DISTRICT_2569, area: "540607", by: "hosp" }, NAMES);
-  assert.deepEqual(cavity.funnel && [cavity.funnel.children, cavity.funnel.screened, cavity.funnel.cavityFree], [68, 65, 60]);
+  assert.deepEqual(
+    cavity.funnel && [cavity.funnel.children, cavity.funnel.screened, cavity.funnel.cavityFree],
+    [68, 65, 60],
+  );
   assert.equal(cavity.funnel?.screenedPct?.toFixed(2), "95.59");
   assert.deepEqual(
     cavity.units?.map((u) => [u.name, u.funnel.children, u.funnel.screened, u.funnel.cavityFree]),

@@ -20,21 +20,23 @@ const EPI = "4df360514655f79f13901ef1181ca1c7";
 const DENTAL = "db30e434e30565c12fbac44958e338d5";
 const CATALOG = {
   [EPI]: EXPORT.reports[EPI],
-  [DENTAL]: [{
-    id: 970,
-    report_id: 948,
-    report_name: "ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)",
-    cat_id: DENTAL,
-    source_table: "s_dental_0_5_cavity_free",
-    main_report_id: "02e752187c7282ebc9315123aa1cabbe",
-    category_name: "ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก",
-    main_report_name: "ข้อมูลตอบสนอง Service Plan",
-    opendata_id: "abt2t2k4z4xeqzytwbave",
-    view_count: 964,
-    last_synced_at: "2026-10-29T19:00:24.000Z",
-    created_at: "2026-06-11T03:33:11.000Z",
-    updated_at: "2026-10-29T19:00:24.000Z",
-  }],
+  [DENTAL]: [
+    {
+      id: 970,
+      report_id: 948,
+      report_name: "ร้อยละของเด็กอายุ0-5 ปี ฟันดีไม่มีผุ (Cavity Free) (คน)",
+      cat_id: DENTAL,
+      source_table: "s_dental_0_5_cavity_free",
+      main_report_id: "02e752187c7282ebc9315123aa1cabbe",
+      category_name: "ข้อมูลเพื่อตอบสนอง Service Plan สาขาสุขภาพช่องปาก",
+      main_report_name: "ข้อมูลตอบสนอง Service Plan",
+      opendata_id: "abt2t2k4z4xeqzytwbave",
+      view_count: 964,
+      last_synced_at: "2026-10-29T19:00:24.000Z",
+      created_at: "2026-06-11T03:33:11.000Z",
+      updated_at: "2026-10-29T19:00:24.000Z",
+    },
+  ],
 };
 
 const EPI1 = "c88658f4d09acb8c76e6c06ffb58ebaf"; // s_epi1
@@ -50,13 +52,30 @@ const CAVITY_FREE = "abt2t2k4z4xeqzytwbave"; // s_dental_0_5_cavity_free
 const MONTHS = ["10", "11", "12", "01", "02", "03", "04", "05", "06", "07", "08", "09"];
 // Headers of the PA-Data sheets, read 30 Oct 2569.
 const EPI2_HEADER = [
-  "id", "hospcode", "areacode", "flag_sent", "date_com", "b_year", ...MONTHS.map((m) => "target" + m),
-  ...MONTHS.flatMap((m) => ["dtp4_" + m, "opv4_" + m, "je2_" + m]), ...MONTHS.map((m) => "mmr1_" + m), "ip",
-  ...MONTHS.map((m) => "mmr2_" + m), ...MONTHS.map((m) => "pcv4_" + m),
+  "id",
+  "hospcode",
+  "areacode",
+  "flag_sent",
+  "date_com",
+  "b_year",
+  ...MONTHS.map((m) => "target" + m),
+  ...MONTHS.flatMap((m) => ["dtp4_" + m, "opv4_" + m, "je2_" + m]),
+  ...MONTHS.map((m) => "mmr1_" + m),
+  "ip",
+  ...MONTHS.map((m) => "mmr2_" + m),
+  ...MONTHS.map((m) => "pcv4_" + m),
 ];
 const COMPLETE_HEADER = [
-  "id", "hospcode", "areacode", "flag_sent", "date_com", "b_year", "target", "result",
-  ...MONTHS.flatMap((m) => ["target" + m, "result" + m]), "ip",
+  "id",
+  "hospcode",
+  "areacode",
+  "flag_sent",
+  "date_com",
+  "b_year",
+  "target",
+  "result",
+  ...MONTHS.flatMap((m) => ["target" + m, "result" + m]),
+  "ip",
 ];
 
 function getReport(h, id) {
@@ -74,7 +93,10 @@ function post(h, body) {
 // The admin typing value into (row, column by header name) of a sheet.
 function setCell(h, sheetName, row, column, value) {
   const col = h.sheet(sheetName)[0].indexOf(column) + 1;
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(row, col).setValues([[value]]);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(sheetName)
+    .getRange(row, col)
+    .setValues([[value]]);
 }
 
 // The admin ticking `enabled` on a report in hdc_reports.
@@ -89,7 +111,9 @@ function enable(h, opendataId) {
 // CATALOG, tick the given reports. All at 08:00, so a test that sets a later
 // time sees the 60 s caches run out.
 function loadWithCatalog(topics, enabledIds) {
-  const h = loadGas({ sheets: { settings: SETTINGS, tambon_master: TAMBON_MASTER, hospitals: HOSPITALS, kpi_epi: KPI_EPI } });
+  const h = loadGas({
+    sheets: { settings: SETTINGS, tambon_master: TAMBON_MASTER, hospitals: HOSPITALS, kpi_epi: KPI_EPI },
+  });
   h.clock.now = Date.parse("2026-10-30T08:00:00+07:00");
   h.gas.doGet({ parameter: { action: "diag", pin: vm.runInContext("CONFIG.DIAG_PIN", h.gas), setup: "datacenter" } });
   topics.forEach(([catId, order], i) => {
@@ -117,9 +141,17 @@ function mophRow(header, values) {
 // MOPH rows of s_epi_complete for one year: for each fully immunized report,
 // 3 rows in อำเภอ 5406 and 1 in 5401, which is not saved.
 function completeRows(year, dateCom) {
-  const places = [["14436", "54010104"], ["06413", "54060101"], ["06415", "54060201"], ["06419", "54060401"]];
-  return [COMPLETE_1Y, COMPLETE_2Y, COMPLETE_3Y, COMPLETE_5Y].flatMap((id) => places.map(([hospcode, areacode]) =>
-    mophRow(COMPLETE_HEADER, { id, hospcode, areacode, date_com: dateCom, b_year: year, target: 10, result: 9 })));
+  const places = [
+    ["14436", "54010104"],
+    ["06413", "54060101"],
+    ["06415", "54060201"],
+    ["06419", "54060401"],
+  ];
+  return [COMPLETE_1Y, COMPLETE_2Y, COMPLETE_3Y, COMPLETE_5Y].flatMap((id) =>
+    places.map(([hospcode, areacode]) =>
+      mophRow(COMPLETE_HEADER, { id, hospcode, areacode, date_com: dateCom, b_year: year, target: 10, result: 9 }),
+    ),
+  );
 }
 
 // A block's rows as objects keyed by its headers.
@@ -134,17 +166,38 @@ test("fully immunized 1 ปี → every row of every block has its id and an ar
   save(h, "s_epi_complete", "2567", completeRows("2567", "202409301200"));
   // A row of อำเภอ 5401 left in the ชีตปีปัจจุบัน, e.g. typed in by hand
   // (SCHEMA §3.2 step 3.1).
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("s_epi_complete").appendRow(Object.values(mophRow(
-    COMPLETE_HEADER,
-    { id: COMPLETE_1Y, hospcode: "14436", areacode: "54010104", date_com: "202610290051", b_year: "2569", target: 10, result: 9 },
-  )));
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName("s_epi_complete")
+    .appendRow(
+      Object.values(
+        mophRow(COMPLETE_HEADER, {
+          id: COMPLETE_1Y,
+          hospcode: "14436",
+          areacode: "54010104",
+          date_com: "202610290051",
+          b_year: "2569",
+          target: 10,
+          result: 9,
+        }),
+      ),
+    );
 
   const res = getReport(h, COMPLETE_1Y);
 
-  assert.deepEqual(res.years.map((block) => block.b_year), ["2565", "2567", "2569"]);
+  assert.deepEqual(
+    res.years.map((block) => block.b_year),
+    ["2565", "2567", "2569"],
+  );
   for (const block of res.years) {
-    assert.deepEqual(records(block).map((r) => [r.id, r.areacode]),
-      [[COMPLETE_1Y, "54060101"], [COMPLETE_1Y, "54060201"], [COMPLETE_1Y, "54060401"]], block.b_year);
+    assert.deepEqual(
+      records(block).map((r) => [r.id, r.areacode]),
+      [
+        [COMPLETE_1Y, "54060101"],
+        [COMPLETE_1Y, "54060201"],
+        [COMPLETE_1Y, "54060401"],
+      ],
+      block.b_year,
+    );
     assert.equal(block.sheet_rows, 12, block.b_year);
     assert.equal(block.expected_rows, 12, block.b_year);
   }
@@ -164,8 +217,14 @@ test("s_epi2 → only rows whose id is the opendata_id exactly, though no other 
 
   const [block] = getReport(h, EPI2).years;
 
-  assert.deepEqual(records(block).map((r) => [r.id, r.hospcode, r.dtp4_10]),
-    [[EPI2, "06413", 2], [EPI2, "06416", 2], [EPI2, "06419", 2]]);
+  assert.deepEqual(
+    records(block).map((r) => [r.id, r.hospcode, r.dtp4_10]),
+    [
+      [EPI2, "06413", 2],
+      [EPI2, "06416", 2],
+      [EPI2, "06419", 2],
+    ],
+  );
   assert.deepEqual(block.headers, EPI2_HEADER);
   // sheet_rows counts the district's rows before the id filter.
   assert.equal(block.sheet_rows, 4);
@@ -173,7 +232,13 @@ test("s_epi2 → only rows whose id is the opendata_id exactly, though no other 
 });
 
 test("s_dental_0_5_cavity_free has no id column → the block holds every row of the district", () => {
-  const h = loadWithCatalog([[EPI, 20], [DENTAL, 60]], [CAVITY_FREE]);
+  const h = loadWithCatalog(
+    [
+      [EPI, 20],
+      [DENTAL, 60],
+    ],
+    [CAVITY_FREE],
+  );
   // Rows in the shape of the PA-Data sheet (header read 30 Oct 2569): no id.
   save(h, "s_dental_0_5_cavity_free", "2569", [
     { hospcode: "14436", b_year: "2569", areacode: "54010104", date_com: "202610300838", c: 10, b: 7, a: 4 },
@@ -184,18 +249,20 @@ test("s_dental_0_5_cavity_free has no id column → the block holds every row of
 
   const res = getReport(h, CAVITY_FREE);
 
-  assert.deepEqual(res.years, [{
-    b_year: "2569",
-    headers: ["hospcode", "b_year", "areacode", "date_com", "c", "b", "a"],
-    rows: [
-      ["06413", "2569", "54060101", "202610300838", 15, 12, 11],
-      ["06415", "2569", "54060201", "202610300838", 12, 9, 9],
-      ["06419", "2569", "54060401", "202610300838", 8, 8, 6],
-    ],
-    max_date_com: "202610300838",
-    sheet_rows: 3,
-    expected_rows: 3,
-  }]);
+  assert.deepEqual(res.years, [
+    {
+      b_year: "2569",
+      headers: ["hospcode", "b_year", "areacode", "date_com", "c", "b", "a"],
+      rows: [
+        ["06413", "2569", "54060101", "202610300838", 15, 12, 11],
+        ["06415", "2569", "54060201", "202610300838", 12, 9, 9],
+        ["06419", "2569", "54060401", "202610300838", 8, 8, 6],
+      ],
+      max_date_com: "202610300838",
+      sheet_rows: 3,
+      expected_rows: 3,
+    },
+  ]);
 });
 
 test("an id that is not enabled, not in hdc_reports, differs from the stored one only in case, or fails the pattern → error Unknown report", () => {
@@ -215,7 +282,10 @@ test("an active report whose table has no data yet → { report, years: [] }, re
   assert.equal(res.report.opendata_id, EPI1);
   assert.equal(res.report.measure_goals.mmr, 95);
   assert.deepEqual(res.report.years, []);
-  assert.deepEqual(res.report, getCatalog(h).reports.find((r) => r.opendata_id === EPI1));
+  assert.deepEqual(
+    res.report,
+    getCatalog(h).reports.find((r) => r.opendata_id === EPI1),
+  );
   assert.deepEqual(Object.keys(res).sort(), ["report", "years"]);
 });
 
@@ -223,35 +293,93 @@ test("2569 in s_epi2 and 2568 in s_epi2_y2568 → 2 blocks, each with its own sh
   const h = loadWithCatalog([[EPI, 20]], [EPI2]);
   // 2568 as if synced before HDC added the pcv4 columns.
   const header2568 = EPI2_HEADER.filter((key) => !key.startsWith("pcv4_"));
-  save(h, "s_epi2", "2569", [["06413", "54060101"], ["06415", "54060201"], ["06419", "54060401"]].map(
-    ([hospcode, areacode]) => mophRow(EPI2_HEADER,
-      { id: EPI2, hospcode, areacode, date_com: "202610290051", b_year: "2569", target10: 2, pcv4_10: 1 })));
-  save(h, "s_epi2", "2568", [["06413", "54060101"], ["06416", "54060301"]].map(
-    ([hospcode, areacode]) => mophRow(header2568,
-      { id: EPI2, hospcode, areacode, date_com: "202509300900", b_year: "2568", target10: 3, mmr2_10: 3 })));
+  save(
+    h,
+    "s_epi2",
+    "2569",
+    [
+      ["06413", "54060101"],
+      ["06415", "54060201"],
+      ["06419", "54060401"],
+    ].map(([hospcode, areacode]) =>
+      mophRow(EPI2_HEADER, {
+        id: EPI2,
+        hospcode,
+        areacode,
+        date_com: "202610290051",
+        b_year: "2569",
+        target10: 2,
+        pcv4_10: 1,
+      }),
+    ),
+  );
+  save(
+    h,
+    "s_epi2",
+    "2568",
+    [
+      ["06413", "54060101"],
+      ["06416", "54060301"],
+    ].map(([hospcode, areacode]) =>
+      mophRow(header2568, {
+        id: EPI2,
+        hospcode,
+        areacode,
+        date_com: "202509300900",
+        b_year: "2568",
+        target10: 3,
+        mmr2_10: 3,
+      }),
+    ),
+  );
 
   const [y2568, y2569] = getReport(h, EPI2).years;
 
-  assert.deepEqual(h.sheetNames().filter((name) => name.startsWith("s_epi2")).sort(), ["s_epi2", "s_epi2_y2568"]);
+  assert.deepEqual(
+    h
+      .sheetNames()
+      .filter((name) => name.startsWith("s_epi2"))
+      .sort(),
+    ["s_epi2", "s_epi2_y2568"],
+  );
   assert.equal(y2568.b_year, "2568");
   assert.deepEqual(y2568.headers, header2568);
   assert.ok(y2568.rows.every((row) => row.length === header2568.length));
-  assert.deepEqual(records(y2568).map((r) => [r.hospcode, r.target10, r.mmr2_10, "pcv4_10" in r]),
-    [["06413", 3, 3, false], ["06416", 3, 3, false]]);
+  assert.deepEqual(
+    records(y2568).map((r) => [r.hospcode, r.target10, r.mmr2_10, "pcv4_10" in r]),
+    [
+      ["06413", 3, 3, false],
+      ["06416", 3, 3, false],
+    ],
+  );
   assert.deepEqual([y2568.sheet_rows, y2568.expected_rows], [2, 2]);
   assert.equal(y2569.b_year, "2569");
   assert.deepEqual(y2569.headers, EPI2_HEADER);
   assert.ok(y2569.rows.every((row) => row.length === EPI2_HEADER.length));
-  assert.deepEqual(records(y2569).map((r) => [r.hospcode, r.target10, r.pcv4_10]),
-    [["06413", 2, 1], ["06415", 2, 1], ["06419", 2, 1]]);
+  assert.deepEqual(
+    records(y2569).map((r) => [r.hospcode, r.target10, r.pcv4_10]),
+    [
+      ["06413", 2, 1],
+      ["06415", 2, 1],
+      ["06419", 2, 1],
+    ],
+  );
   assert.deepEqual([y2569.sheet_rows, y2569.expected_rows], [3, 3]);
 });
 
 // s_epi2 enabled, with one row of 2569 saved.
 function loadWithEpi2() {
   const h = loadWithCatalog([[EPI, 20]], [EPI2]);
-  save(h, "s_epi2", "2569", [mophRow(EPI2_HEADER,
-    { id: EPI2, hospcode: "06413", areacode: "54060101", date_com: "202610290051", b_year: "2569", target10: 2 })]);
+  save(h, "s_epi2", "2569", [
+    mophRow(EPI2_HEADER, {
+      id: EPI2,
+      hospcode: "06413",
+      areacode: "54060101",
+      date_com: "202610290051",
+      b_year: "2569",
+      target10: 2,
+    }),
+  ]);
   return h;
 }
 
@@ -266,7 +394,10 @@ test("while another execution holds the script lock past the 30 s wait → error
   const res = getReport(h, EPI2);
 
   assert.deepEqual(res, { status: "error", message: "Busy" });
-  assert.deepEqual(REPORT_SHEETS.map((name) => h.reads(name)), before);
+  assert.deepEqual(
+    REPORT_SHEETS.map((name) => h.reads(name)),
+    before,
+  );
 });
 
 test("a table without an id column that two active reports share → error Shared table without id column", () => {
@@ -282,8 +413,13 @@ test("a table without an id column that two active reports share → error Share
 
 test("a year whose sheet is gone is left out with a WARNING in system_logs; the other years still answer", () => {
   const h = loadWithCatalog([[EPI, 20]], [EPI2]);
-  const rows = (year, dateCom) => [["06413", "54060101"], ["06415", "54060201"]].map(([hospcode, areacode]) =>
-    mophRow(EPI2_HEADER, { id: EPI2, hospcode, areacode, date_com: dateCom, b_year: year, target10: 2 }));
+  const rows = (year, dateCom) =>
+    [
+      ["06413", "54060101"],
+      ["06415", "54060201"],
+    ].map(([hospcode, areacode]) =>
+      mophRow(EPI2_HEADER, { id: EPI2, hospcode, areacode, date_com: dateCom, b_year: year, target10: 2 }),
+    );
   save(h, "s_epi2", "2569", rows("2569", "202610290051"));
   save(h, "s_epi2", "2568", rows("2568", "202509300900"));
   // The admin deletes the ชีตปีย้อนหลัง by hand.
@@ -292,11 +428,20 @@ test("a year whose sheet is gone is left out with a WARNING in system_logs; the 
 
   const res = getReport(h, EPI2);
 
-  assert.deepEqual(res.years.map((block) => block.b_year), ["2569"]);
+  assert.deepEqual(
+    res.years.map((block) => block.b_year),
+    ["2569"],
+  );
   // report.years is the catalog's, from sync_status: it still lists 2568.
-  assert.deepEqual(res.report.years.map((y) => y.b_year), ["2568", "2569"]);
+  assert.deepEqual(
+    res.report.years.map((y) => y.b_year),
+    ["2568", "2569"],
+  );
   const warnings = h.sheet("system_logs").filter((row) => row[1] === "WARNING");
-  assert.ok(warnings.some((row) => row.join(" ").includes("s_epi2_y2568")), JSON.stringify(warnings));
+  assert.ok(
+    warnings.some((row) => row.join(" ").includes("s_epi2_y2568")),
+    JSON.stringify(warnings),
+  );
 });
 
 test("a block's max_date_com is the latest date_com of its own rows (\"\" with none); report.years keeps the table's", () => {

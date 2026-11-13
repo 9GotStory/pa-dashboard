@@ -49,12 +49,16 @@ export default function EpiPage({ id, names, years }: { id: string; names: Names
 function Epi({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query: asked, search, apply, push, heading } = useReportQuery(data, names);
   const { query, block, rows, detail } = epiValues(data, asked, names, years);
-  const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.measure, (measure) => push({ ...query, measure }));
+  const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.measure, (measure) =>
+    push({ ...query, measure }),
+  );
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
     names,
-    block && detail?.total && detail.units ? { dateCom: block.max_date_com, units: detail.units, total: detail.total } : null,
+    block && detail?.total && detail.units
+      ? { dateCom: block.max_date_com, units: detail.units, total: detail.total }
+      : null,
     { fields: FIELDS, part: detail?.measure },
   );
 
@@ -64,7 +68,9 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
       <ReportFilters key={search} data={data} names={names} query={query} onApply={apply} fields={FIELDS} />
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         {/* The CSV of what is shown: the รายการ of ภาพรวม, or the unit table of the รายการ open */}
-        <ReportActions csv={!block ? null : detail ? csv : measuresCsv(data.report, query.year, summary, block.max_date_com, rows)} />
+        <ReportActions
+          csv={!block ? null : detail ? csv : measuresCsv(data.report, query.year, summary, block.max_date_com, rows)}
+        />
       </ResultsHeader>
       {block ? (
         <div className="px-4 pb-6 sm:px-6">
@@ -82,7 +88,9 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
             eyebrow="รายละเอียดเฉพาะวัคซีนที่เลือก"
             context={describe({ ...query, measure: null }, names, FIELDS)}
           >
-            {detail && <MeasureFigures detail={detail} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />}
+            {detail && (
+              <MeasureFigures detail={detail} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />
+            )}
           </Detail>
         </div>
       ) : (
@@ -108,7 +116,10 @@ function Overview(props: {
   const [search, setSearch] = useState("");
   const found = findMeasures(rows, search);
   return (
-    <section aria-labelledby="overview-title" className="overflow-hidden rounded-[9px] border border-dc-border-subtle bg-white">
+    <section
+      aria-labelledby="overview-title"
+      className="overflow-hidden rounded-[9px] border border-dc-border-subtle bg-white"
+    >
       <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <h3
@@ -128,7 +139,10 @@ function Overview(props: {
             <label htmlFor="measure-search" className="sr-only">
               ค้นหาชื่อวัคซีน
             </label>
-            <Search aria-hidden="true" className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-dc-text-secondary" />
+            <Search
+              aria-hidden="true"
+              className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-dc-text-secondary"
+            />
             <input
               id="measure-search"
               type="search"
@@ -156,7 +170,9 @@ function Overview(props: {
                   <Verdict passed={r.passed} />
                 </span>
                 <span className="mt-3 flex items-center gap-3">
-                  <strong className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{pctText(r.total?.pct ?? null)}</strong>
+                  <strong className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
+                    {pctText(r.total?.pct ?? null)}
+                  </strong>
                   <PctBar pct={r.total?.pct ?? null} passed={r.passed} />
                 </span>
                 <span className="mt-2 flex flex-wrap items-center justify-between gap-x-3 text-xs text-dc-text-secondary">
@@ -185,7 +201,9 @@ function Overview(props: {
                   </span>
                   <span className="mt-2 flex items-center gap-3">
                     <PctBar pct={r.total?.pct ?? null} passed={r.passed} />
-                    <strong className="text-[15px] text-dc-brand-deep tabular-nums">{pctText(r.total?.pct ?? null)}</strong>
+                    <strong className="text-[15px] text-dc-brand-deep tabular-nums">
+                      {pctText(r.total?.pct ?? null)}
+                    </strong>
                   </span>
                   <span className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 text-[11px] text-dc-text-secondary">
                     <span>
@@ -201,7 +219,12 @@ function Overview(props: {
               </li>
             ))}
           </ul>
-          <div role="region" tabIndex={0} aria-label="ตารางภาพรวมการได้รับวัคซีน (เลื่อนดูแนวนอนได้)" className="hidden overflow-x-auto md:block">
+          <div
+            role="region"
+            tabIndex={0}
+            aria-label="ตารางภาพรวมการได้รับวัคซีน (เลื่อนดูแนวนอนได้)"
+            className="hidden overflow-x-auto md:block"
+          >
             <table className="w-full border-collapse text-xs tabular-nums">
               <caption className="sr-only">เป้าหมาย ผลงาน ร้อยละ เกณฑ์ และผลประเมินรายวัคซีน</caption>
               <thead className="bg-dc-highlight-soft text-dc-brand-deep">
@@ -228,7 +251,10 @@ function Overview(props: {
               </thead>
               <tbody>
                 {found.map((r) => (
-                  <tr key={r.measure} className={`border-t border-dc-border-subtle ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}>
+                  <tr
+                    key={r.measure}
+                    className={`border-t border-dc-border-subtle ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
+                  >
                     <th scope="row" className="px-4 py-2.5 text-left">
                       <button
                         {...buttonProps(r.measure)}
@@ -243,7 +269,9 @@ function Overview(props: {
                     <td className="px-3 py-2.5">
                       <span className="flex min-w-36 items-center gap-2">
                         <PctBar pct={r.total?.pct ?? null} passed={r.passed} />
-                        <strong className="w-14 shrink-0 text-right font-semibold text-dc-brand-deep">{pctText(r.total?.pct ?? null)}</strong>
+                        <strong className="w-14 shrink-0 text-right font-semibold text-dc-brand-deep">
+                          {pctText(r.total?.pct ?? null)}
+                        </strong>
                       </span>
                     </td>
                     <td className="px-3 py-2.5 text-right whitespace-nowrap">{goalText(r.goal)}</td>
@@ -270,7 +298,12 @@ function verdictFill(passed: boolean | null): string {
 function PctBar({ pct, passed }: { pct: number | null; passed: boolean | null }) {
   return (
     <span aria-hidden="true" className="block h-2 w-full flex-1 overflow-hidden rounded-full bg-dc-surface-muted">
-      {pct !== null && <span className={`block h-full rounded-full ${verdictFill(passed)}`} style={{ width: `${Math.min(pct, 100)}%` }} />}
+      {pct !== null && (
+        <span
+          className={`block h-full rounded-full ${verdictFill(passed)}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+      )}
     </span>
   );
 }
@@ -291,7 +324,12 @@ function Verdict({ passed }: { passed: boolean | null }) {
  * หน่วยบริการ beside its table, แนวโน้ม and เป้าหมาย/ผลงาน by เดือน or by
  * ไตรมาส; "—" and the trend alone when the district has no ผลงาน of it that year
  */
-function MeasureFigures(props: { detail: NonNullable<Values["detail"]>; year: string; unitLabel: string; totalLabel: string }) {
+function MeasureFigures(props: {
+  detail: NonNullable<Values["detail"]>;
+  year: string;
+  unitLabel: string;
+  totalLabel: string;
+}) {
   const { detail, year, unitLabel, totalLabel } = props;
   const { label, total, goal, units, trend, byQuarter, steps } = detail;
   return (

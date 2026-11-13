@@ -9,13 +9,32 @@
 
 const DC_HDC_TOPICS_SHEET = "hdc_topics";
 const DC_HDC_TOPICS_HEADERS = [
-  "cat_id", "order", "category_name", "main_report_id", "main_report_name", "report_count", "last_refreshed_at",
+  "cat_id",
+  "order",
+  "category_name",
+  "main_report_id",
+  "main_report_name",
+  "report_count",
+  "last_refreshed_at",
 ];
 const DC_HDC_REPORTS_SHEET = "hdc_reports";
 const DC_HDC_REPORTS_HEADERS = [
-  "opendata_id", "report_name", "source_table", "enabled", "subgroup", "order", "report_type", "goal",
-  "col_target", "col_result", "cat_id", "category_name", "main_report_id", "main_report_name",
-  "catalog_status", "last_seen_at",
+  "opendata_id",
+  "report_name",
+  "source_table",
+  "enabled",
+  "subgroup",
+  "order",
+  "report_type",
+  "goal",
+  "col_target",
+  "col_result",
+  "cat_id",
+  "category_name",
+  "main_report_id",
+  "main_report_name",
+  "catalog_status",
+  "last_seen_at",
 ];
 const DC_SETTINGS_COLUMNS = ["district_code", "deploy_hook_url"];
 
@@ -49,11 +68,15 @@ function dcSetupDatacenter() {
     // new header reads as its default.
     const settings = ss.getSheetByName("settings");
     const lastColumn = settings.getLastColumn();
-    const existing = lastColumn > 0
-      ? settings.getRange(1, 1, 1, lastColumn).getValues()[0].map(function (h) {
-        return String(h || "").trim();
-      })
-      : [];
+    const existing =
+      lastColumn > 0
+        ? settings
+            .getRange(1, 1, 1, lastColumn)
+            .getValues()[0]
+            .map(function (h) {
+              return String(h || "").trim();
+            })
+        : [];
     const added = DC_SETTINGS_COLUMNS.filter(function (name) {
       return existing.indexOf(name) === -1;
     });
@@ -148,7 +171,12 @@ function dcSetupSeed() {
 
 // Columns of hdc_reports that come from the catalog API (SCHEMA §3.4 step 5).
 const DC_CATALOG_API_COLUMNS = [
-  "report_name", "source_table", "cat_id", "category_name", "main_report_id", "main_report_name",
+  "report_name",
+  "source_table",
+  "cat_id",
+  "category_name",
+  "main_report_id",
+  "main_report_name",
 ];
 // Ids written as plain text so Sheets never turns one into a number.
 const DC_CATALOG_TEXT_COLUMNS = ["opendata_id", "cat_id", "main_report_id"];
@@ -161,17 +189,19 @@ const DC_SOURCE_TABLE_PATTERN = /^s_[a-z0-9_]+$/;
  * read by header name. [] if the sheet does not exist yet.
  */
 function readHdcTopics() {
-  return dcSheetRecords(DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS).map(function (row) {
-    return {
-      cat_id: sanitizeHdcId(row.cat_id),
-      category_name: String(row.category_name),
-      main_report_id: String(row.main_report_id).trim(),
-      main_report_name: String(row.main_report_name),
-      order: parsePositiveInt(row.order),
-    };
-  }).filter(function (topic) {
-    return topic.cat_id !== null;
-  });
+  return dcSheetRecords(DC_HDC_TOPICS_SHEET, DC_HDC_TOPICS_HEADERS)
+    .map(function (row) {
+      return {
+        cat_id: sanitizeHdcId(row.cat_id),
+        category_name: String(row.category_name),
+        main_report_id: String(row.main_report_id).trim(),
+        main_report_name: String(row.main_report_name),
+        order: parsePositiveInt(row.order),
+      };
+    })
+    .filter(function (topic) {
+      return topic.cat_id !== null;
+    });
 }
 
 /**
@@ -221,8 +251,9 @@ function readHdcReports() {
     });
   });
   if (invalid.length > 0) {
-    Logger.log("WARNING readHdcReports: skipped enabled rows with an invalid opendata_id or source_table: " +
-      invalid.join(", "));
+    Logger.log(
+      "WARNING readHdcReports: skipped enabled rows with an invalid opendata_id or source_table: " + invalid.join(", "),
+    );
   }
   return reports;
 }
@@ -246,11 +277,13 @@ function dcGetCatalog(settings) {
       district_code: settings.district_code,
       generated_at: new Date().toISOString(),
     },
-    areas: dcSheetRecords("tambon_master", ["id", "name_th", "district_id"]).filter(function (row) {
-      return String(row.district_id).trim() === settings.district_code;
-    }).map(function (row) {
-      return { id: String(row.id).trim(), name_th: String(row.name_th) };
-    }),
+    areas: dcSheetRecords("tambon_master", ["id", "name_th", "district_id"])
+      .filter(function (row) {
+        return String(row.district_id).trim() === settings.district_code;
+      })
+      .map(function (row) {
+        return { id: String(row.id).trim(), name_th: String(row.name_th) };
+      }),
     hospitals: dcSheetRecords("hospitals", ["hospcode", "hospname", "tambon_id"]).map(function (row) {
       return {
         hospcode: String(row.hospcode).trim(),
@@ -316,9 +349,11 @@ function dcCatalogReports(window, status) {
  */
 function dcSaveCatalog(catIdRaw, categoryName, reports) {
   const catId = sanitizeHdcId(catIdRaw);
-  const known = catId !== null && readHdcTopics().some(function (topic) {
-    return topic.cat_id === catId;
-  });
+  const known =
+    catId !== null &&
+    readHdcTopics().some(function (topic) {
+      return topic.cat_id === catId;
+    });
   if (!known) return dcRejectCatalog(catId, "Topic not in hdc_topics");
   // An empty list is what a failed catalog fetch looks like: refuse it rather
   // than set the whole topic to removed (step 2).
@@ -400,8 +435,11 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   // Step 6: this topic's active rows that the API no longer lists.
   let removed = 0;
   reportsTable.rows.forEach(function (row) {
-    if (String(row[c.cat_id]).trim() === catId && !seen[sanitizeHdcId(row[c.opendata_id])] &&
-      String(row[c.catalog_status]).trim() === "active") {
+    if (
+      String(row[c.cat_id]).trim() === catId &&
+      !seen[sanitizeHdcId(row[c.opendata_id])] &&
+      String(row[c.catalog_status]).trim() === "active"
+    ) {
       row[c.catalog_status] = "removed";
       removed++;
     }
@@ -440,8 +478,11 @@ function dcSaveCatalog(catIdRaw, categoryName, reports) {
   if (inOtherTopic.length > 0) {
     logToSheet("INFO", "Catalog " + catId + " reports kept in another topic", inOtherTopic.join(", "));
   }
-  logToSheet("SUCCESS", "Saved catalog " + catId,
-    "added " + added + ", updated " + updated + ", removed " + removed + ", skipped " + skipped);
+  logToSheet(
+    "SUCCESS",
+    "Saved catalog " + catId,
+    "added " + added + ", updated " + updated + ", removed " + removed + ", skipped " + skipped,
+  );
   return { status: "success", added: added, updated: updated, removed: removed, skipped: skipped };
 }
 
@@ -487,12 +528,17 @@ function dcGoal(v) {
  * the catalog, §5.2).
  */
 function dcCleanName(v) {
-  return String(v || "").replace(/<\/?[A-Za-z][^<>]*>/g, "").replace(/\s+/g, " ").trim();
+  return String(v || "")
+    .replace(/<\/?[A-Za-z][^<>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 /** A header cell as a lookup name: trim + lowercase (SCHEMA §1). */
 function dcHeaderName(h) {
-  return String(h || "").trim().toLowerCase();
+  return String(h || "")
+    .trim()
+    .toLowerCase();
 }
 
 /**

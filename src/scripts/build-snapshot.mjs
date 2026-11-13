@@ -234,18 +234,43 @@ if (problems.length > 0) {
 // The columns of each registry sheet that every row of
 // ?action=registry_population has (SCHEMA §2.6–2.8, §3.9), uploaded_at left
 // out. A village row has a population row's columns.
-const POPULATION_COLUMNS = ["yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name", "male", "female", "total", "house"];
+const POPULATION_COLUMNS = [
+  "yymm",
+  "cc",
+  "cc_name",
+  "rcode",
+  "rcode_name",
+  "tt",
+  "tt_name",
+  "mm",
+  "mm_name",
+  "male",
+  "female",
+  "total",
+  "house",
+];
 const REGISTRY_COLUMNS = {
   population: POPULATION_COLUMNS,
   village: POPULATION_COLUMNS,
   age: [
-    "yymm", "rcode", "tt", "tt_name",
+    "yymm",
+    "rcode",
+    "tt",
+    "tt_name",
     // m0, f0 … m101, f101 (101 = over 100 years)
     ...Array.from({ length: 102 }, (_, age) => [`m${age}`, `f${age}`]).flat(),
-    ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [`${group}_m`, `${group}_f`, `${group}_t`]),
+    ...["lunar", "central", "nonthai", "moving", "total"].flatMap((group) => [
+      `${group}_m`,
+      `${group}_f`,
+      `${group}_t`,
+    ]),
   ],
 };
-const REGISTRY_SHEETS = { population: "registry_population", village: "registry_population_village", age: "registry_population_age" };
+const REGISTRY_SHEETS = {
+  population: "registry_population",
+  village: "registry_population_village",
+  age: "registry_population_age",
+};
 
 // Why GAS's ?action=registry_population answer has the wrong shape (SCHEMA
 // §7), or "" when it is right.
@@ -297,7 +322,9 @@ function villageMismatches({ population, village }) {
       .map((key) => `${REGISTRY_SHEETS.village} has no row for ${key}, which ${REGISTRY_SHEETS.population} has`),
     ...[...villageRows.keys()]
       .filter((key) => !populationRows.has(key))
-      .map((key) => `${REGISTRY_SHEETS.village} has rows for ${key}, which ${REGISTRY_SHEETS.population} does not have`),
+      .map(
+        (key) => `${REGISTRY_SHEETS.village} has rows for ${key}, which ${REGISTRY_SHEETS.population} does not have`,
+      ),
     ...[...villageRows].flatMap(([key, rows]) => {
       const pair = populationRows.get(key)?.[0];
       if (!pair) return [];
@@ -337,7 +364,11 @@ function ageMismatches({ population, age }) {
     ...age.flatMap((row) => {
       const pair = populationRows.get(rowKey(row))?.[0];
       if (!pair) return [];
-      return [["total_m", "male"], ["total_f", "female"], ["total_t", "total"]]
+      return [
+        ["total_m", "male"],
+        ["total_f", "female"],
+        ["total_t", "total"],
+      ]
         .filter(([ageColumn, column]) => row[ageColumn] !== pair[column])
         .map(
           ([ageColumn, column]) =>
@@ -414,7 +445,14 @@ const meta = {
 // Each file as written, with its size limit (SPEC §6.1, before gzip).
 const files = [
   ["meta.json", meta, 1 * KB],
-  ["catalog.json", nest(catalog, fetched.map((data) => data.report)), 100 * KB],
+  [
+    "catalog.json",
+    nest(
+      catalog,
+      fetched.map((data) => data.report),
+    ),
+    100 * KB,
+  ],
   ...[...answers].map(([id, data]) => [`reports/${id}.json`, data, 500 * KB]),
   ["population.json", population, 100 * KB],
 ].map(([file, content, maxBytes]) => {

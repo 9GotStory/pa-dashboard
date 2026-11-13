@@ -48,7 +48,8 @@ function turnNotes(transcriptPath, last) {
     if (e.isMeta || (e.origin?.kind ?? "human") !== "human") return false;
     return typeof content === "string" || (Array.isArray(content) && !content.some((c) => c.type === "tool_result"));
   };
-  const feedback = (e) => e.isMeta && typeof e.message?.content === "string" && e.message.content.startsWith("Stop hook feedback:");
+  const feedback = (e) =>
+    e.isMeta && typeof e.message?.content === "string" && e.message.content.startsWith("Stop hook feedback:");
   const start = entries.findLastIndex((e) => e.type === "user" && (typed(e) || feedback(e)));
   return entries
     .slice(start + 1)
@@ -64,7 +65,9 @@ function block(reason) {
 
 const last = String(input.last_assistant_message ?? "");
 if (mostlyEnglish(last)) {
-  block("CLAUDE.md: write to the user in Thai. Your last reply was mostly English: send the same reply again in Thai, with the same content.");
+  block(
+    "CLAUDE.md: write to the user in Thai. Your last reply was mostly English: send the same reply again in Thai, with the same content.",
+  );
 }
 const english = turnNotes(input.transcript_path, last).filter(mostlyEnglish);
 if (english.length > 0) {

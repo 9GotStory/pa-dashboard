@@ -36,7 +36,17 @@ function GoalKey({ goal }: { goal: number | null }) {
 }
 
 /** กราฟ A: ร้อยละ (named pctLabel) of each ตำบล or หน่วยบริการ (unitLabel), with the เกณฑ์ */
-export function UnitPanel({ unitLabel, units, goal, pctLabel = "ร้อยละ" }: { unitLabel: string; units: UnitTotals[]; goal: number | null; pctLabel?: string }) {
+export function UnitPanel({
+  unitLabel,
+  units,
+  goal,
+  pctLabel = "ร้อยละ",
+}: {
+  unitLabel: string;
+  units: UnitTotals[];
+  goal: number | null;
+  pctLabel?: string;
+}) {
   const title = `${pctLabel}ราย${unitLabel}`;
   return (
     <Surface title={title}>
@@ -58,7 +68,9 @@ export function TrendPanel({ points, goal }: { points: TrendPoint[]; goal: numbe
     <Surface title="แนวโน้มร้อยละรายปี">
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
         {/* A bar like TrendList's on a phone, the line of TrendChart from sm up */}
-        <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">ร้อยละรายปี</Key>
+        <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">
+          ร้อยละรายปี
+        </Key>
         <GoalKey goal={goal} />
       </p>
       <div className="sm:hidden">
@@ -72,7 +84,11 @@ export function TrendPanel({ points, goal }: { points: TrendPoint[]; goal: numbe
 }
 
 /** กราฟ C: เป้าหมาย beside ผลงาน for each step (stepName: เดือน or ไตรมาส) of the year */
-export function PeriodPanel(props: { year: string; stepName: string; points: { label: string; totals: Totals | null }[] }) {
+export function PeriodPanel(props: {
+  year: string;
+  stepName: string;
+  points: { label: string; totals: Totals | null }[];
+}) {
   const { year, stepName, points } = props;
   return (
     <Surface title={`เป้าหมายและผลงานราย${stepName} ปีงบประมาณ ${year}`}>
@@ -105,7 +121,9 @@ export function CumulativePanel(props: {
   return (
     <Surface title={`ร้อยละสะสมรายไตรมาส ปีงบประมาณ ${year}`}>
       <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
-        <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">ร้อยละสะสม</Key>
+        <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">
+          ร้อยละสะสม
+        </Key>
         <GoalKey goal={goal} />
       </p>
       <div className="sm:hidden">
@@ -183,7 +201,12 @@ function CountCards({ grid, cards }: { grid: string; cards: { label: string; cou
  * ช่วงเวลา, not a ร้อยละ: one person may have both, so they may add up to
  * more than ผลงาน (result), which the note says
  */
-export function BpMethodsPanel(props: { year: string; period: Period; result: number; bpMethods: { label: string; count: number }[] }) {
+export function BpMethodsPanel(props: {
+  year: string;
+  period: Period;
+  result: number;
+  bpMethods: { label: string; count: number }[];
+}) {
   const { year, period, result, bpMethods } = props;
   return (
     <Surface title={`จำนวนตามวิธีวัดความดัน ${PERIOD_LABELS[period].short} ปีงบประมาณ ${year}`}>
@@ -204,7 +227,10 @@ export function AgeMonthsPanel(props: { year: string; result: number; ageMonths:
   const { year, result, ageMonths } = props;
   return (
     <Surface title={`ตอบว่ากินนมแม่อย่างเดียวตามเดือนอายุ ปีงบประมาณ ${year}`}>
-      <CountCards grid="grid-cols-2 sm:grid-cols-3" cards={ageMonths.map((m) => ({ label: `อายุ ${m.month} เดือน`, count: m.count }))} />
+      <CountCards
+        grid="grid-cols-2 sm:grid-cols-3"
+        cards={ageMonths.map((m) => ({ label: `อายุ ${m.month} เดือน`, count: m.count }))}
+      />
       <p className="mt-3 text-[11px] text-dc-text-secondary">
         นับเด็กที่ตอบว่ากินนมแม่อย่างเดียวในแต่ละช่วงอายุ เด็กคนหนึ่งนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน ({formatCount(result)} คน) ได้
       </p>

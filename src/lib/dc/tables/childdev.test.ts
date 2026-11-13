@@ -59,13 +59,25 @@ const NAMES = {
     { hospcode: "11760", hospname: "หนองเสี้ยว", tambon_id: "540605" },
   ],
 };
-const DISTRICT_2569: ReportQuery = { year: "2569", area: "all", period: "year", measure: null, by: "hosp", domain: null };
+const DISTRICT_2569: ReportQuery = {
+  year: "2569",
+  area: "all",
+  period: "year",
+  measure: null,
+  by: "hosp",
+  domain: null,
+};
 
 /** เป้าหมาย/ผลงาน as SCHEMA writes them, null for no data */
 const pair = (t: { target: number; result: number } | null) => t && `${t.target}/${t.result}`;
 /** The quarters added up, as เป้าหมาย/ผลงาน */
 const quarterSum = (quarters: { totals: { target: number; result: number } | null }[]) =>
-  pair(quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), { target: 0, result: 0 }));
+  pair(
+    quarters.reduce((s, q) => ({ target: s.target + q.totals!.target, result: s.result + q.totals!.result }), {
+      target: 0,
+      result: 0,
+    }),
+  );
 
 test("s_kpi_childdev4 2569 ทั้งปี → 1,083/861, 79.50%, เกณฑ์ 87 ไม่ผ่าน", () => {
   const dev = childdevValues(CHILDDEV4, DISTRICT_2569, NAMES, YEARS);
@@ -79,7 +91,12 @@ test("s_kpi_childdev4 2569 รายไตรมาส → 286/276, 297/264, 258
   const { quarters } = childdevValues(CHILDDEV4, DISTRICT_2569, NAMES, YEARS);
   assert.deepEqual(
     quarters.map((q) => [q.period, pair(q.totals)]),
-    [["q1", "286/276"], ["q2", "297/264"], ["q3", "258/218"], ["q4", "242/103"]],
+    [
+      ["q1", "286/276"],
+      ["q2", "297/264"],
+      ["q3", "258/218"],
+      ["q4", "242/103"],
+    ],
   );
   assert.equal(quarterSum(quarters), "1083/861");
 });
@@ -90,12 +107,16 @@ test("s_kpi_childdev2 2569 → 906/168, 18.54%, เกณฑ์ 20 ไม่ผ�
   assert.equal(dev.total?.pct?.toFixed(2), "18.54");
   assert.equal(dev.goal, 20);
   assert.equal(dev.passed, false);
-  assert.deepEqual(dev.quarters.map((q) => pair(q.totals)), ["278/57", "279/48", "228/37", "121/26"]);
+  assert.deepEqual(
+    dev.quarters.map((q) => pair(q.totals)),
+    ["278/57", "279/48", "228/37", "121/26"],
+  );
   assert.equal(quarterSum(dev.quarters), "906/168");
 });
 
 test("s_kpi_childdev2 ผ่านเมื่อร้อยละ ≥ เกณฑ์: a เกณฑ์ equal to 168 ÷ 906 × 100 passes, one a hair above does not", () => {
-  const at = (goal: number) => childdevValues({ ...CHILDDEV2, report: { ...CHILDDEV2.report, goal } }, DISTRICT_2569, NAMES, YEARS).passed;
+  const at = (goal: number) =>
+    childdevValues({ ...CHILDDEV2, report: { ...CHILDDEV2.report, goal } }, DISTRICT_2569, NAMES, YEARS).passed;
   assert.equal(at((168 / 906) * 100), true);
   assert.equal(at(18.55), false);
 });
@@ -144,7 +165,8 @@ test("?period=q4 → ไตรมาส 4 242/103 (42.56%) with its 17 หน่
 });
 
 test("แนวโน้ม ทั้งปี → s_kpi_childdev4 85.82, 71.23, 69.50, 71.08, 79.50 · s_kpi_childdev2 19.46, 15.11, 10.80, 8.84, 18.54", () => {
-  const line = (data: DcReportData) => childdevValues(data, DISTRICT_2569, NAMES, YEARS).trend.map((p) => p.totals?.pct?.toFixed(2));
+  const line = (data: DcReportData) =>
+    childdevValues(data, DISTRICT_2569, NAMES, YEARS).trend.map((p) => p.totals?.pct?.toFixed(2));
   assert.deepEqual(line(CHILDDEV4), ["85.82", "71.23", "69.50", "71.08", "79.50"]);
   assert.deepEqual(line(CHILDDEV2), ["19.46", "15.11", "10.80", "8.84", "18.54"]);
 });

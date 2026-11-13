@@ -45,9 +45,26 @@ const PAGE_MARK = /"data-table-page":"([^"]+)"/g;
 // CamelCase ones are Chrome's own roles for native date, time and colour
 // inputs and <summary>.
 const CONTROL_ROLES = new Set([
-  "button", "link", "textbox", "searchbox", "combobox", "listbox", "checkbox",
-  "radio", "switch", "slider", "spinbutton", "tab", "menuitem", "menuitemcheckbox",
-  "menuitemradio", "Date", "DateTime", "InputTime", "ColorWell", "DisclosureTriangle",
+  "button",
+  "link",
+  "textbox",
+  "searchbox",
+  "combobox",
+  "listbox",
+  "checkbox",
+  "radio",
+  "switch",
+  "slider",
+  "spinbutton",
+  "tab",
+  "menuitem",
+  "menuitemcheckbox",
+  "menuitemradio",
+  "Date",
+  "DateTime",
+  "InputTime",
+  "ColorWell",
+  "DisclosureTriangle",
 ]);
 const TYPES = {
   ".html": "text/html; charset=utf-8",
@@ -71,8 +88,17 @@ function fail(message) {
 // always has all three, since the prebuild fails with no active report.
 function dcPages() {
   const reports = path.join(OUT, "reports");
-  const ids = fs.existsSync(reports) ? fs.readdirSync(reports).filter((f) => f.endsWith(".html")).sort() : [];
-  if (!fs.existsSync(path.join(OUT, "index.html")) || !fs.existsSync(path.join(OUT, "reports.html")) || ids.length === 0) {
+  const ids = fs.existsSync(reports)
+    ? fs
+        .readdirSync(reports)
+        .filter((f) => f.endsWith(".html"))
+        .sort()
+    : [];
+  if (
+    !fs.existsSync(path.join(OUT, "index.html")) ||
+    !fs.existsSync(path.join(OUT, "reports.html")) ||
+    ids.length === 0
+  ) {
     fail("out/ lacks /, /reports or any /reports/{id} page: run npm run build first");
   }
   return ["/", "/reports", ...ids.map((f) => `/reports/${f.replace(/\.html$/, "")}`)];
@@ -131,11 +157,19 @@ function domRules() {
   const text = [
     document.title,
     body.textContent,
-    ...[...document.querySelectorAll(attrs.map((a) => `[${a}]`).join(","))].flatMap((el) => attrs.map((a) => el.getAttribute(a) ?? "")),
+    ...[...document.querySelectorAll(attrs.map((a) => `[${a}]`).join(","))].flatMap((el) =>
+      attrs.map((a) => el.getAttribute(a) ?? ""),
+    ),
   ].join("\n");
   for (const word of ["จำลอง", "ตัวอย่าง"]) {
     const at = text.indexOf(word);
-    if (at >= 0) found.push(`word "${word}" in "${text.slice(Math.max(0, at - 20), at + word.length + 20).replace(/\s+/g, " ").trim()}"`);
+    if (at >= 0)
+      found.push(
+        `word "${word}" in "${text
+          .slice(Math.max(0, at - 20), at + word.length + 20)
+          .replace(/\s+/g, " ")
+          .trim()}"`,
+      );
   }
   return found;
 }
@@ -206,7 +240,8 @@ async function overflowProblems(browser, url) {
         const { scrollWidth, clientWidth } = document.documentElement;
         return { scrollWidth, clientWidth };
       });
-      if (scrollWidth > clientWidth) problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
+      if (scrollWidth > clientWidth)
+        problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
     }
   } finally {
     await page.close();
@@ -221,7 +256,6 @@ function readBuiltCatalog() {
   return JSON.parse(fs.readFileSync(file, "utf8"));
 }
 
-
 // The table pages whose chunk one of the scripts holds: the views name
 // themselves in it (PAGE_MARK).
 const marks = new Map();
@@ -231,7 +265,10 @@ function pagesIn(scripts) {
       if (!marks.has(src)) {
         const file = path.join(OUT, src);
         const text = fs.existsSync(file) ? fs.readFileSync(file, "utf8") : "";
-        marks.set(src, [...text.matchAll(PAGE_MARK)].map((m) => m[1]));
+        marks.set(
+          src,
+          [...text.matchAll(PAGE_MARK)].map((m) => m[1]),
+        );
       }
       return marks.get(src);
     }),
@@ -268,7 +305,10 @@ function shownPopulation(picker) {
     return digits ? Number(digits.replaceAll(",", "")) : null;
   };
   const listedCount = (scope, label) =>
-    parseCount([...document.querySelectorAll(`${scope} dt`)].find((dt) => dt.textContent.trim() === label)?.nextElementSibling?.textContent);
+    parseCount(
+      [...document.querySelectorAll(`${scope} dt`)].find((dt) => dt.textContent.trim() === label)?.nextElementSibling
+        ?.textContent,
+    );
   // The table and the chart of the ตำบล are both on the page, one of them hidden (SPEC §9.2).
   const table = [...document.querySelectorAll("table")].find((t) => t.caption?.textContent.includes("ประชากรรายตำบล"));
   const chart = document.querySelector('[role="group"][aria-label^="กราฟประชากรรายตำบล"]');
@@ -279,7 +319,11 @@ function shownPopulation(picker) {
   const pyramid = document.querySelector('[role="group"][aria-label^="พีระมิดประชากร "]');
   const select = [...document.querySelectorAll("select")].find((s) => s.labels[0]?.textContent.trim() === picker);
   return {
-    figures: [["ประชากรทั้งหมด", "รวม (คน)"], ["ประชากรชาย", "ชาย (คน)"], ["ประชากรหญิง", "หญิง (คน)"]].map(([label, column]) => {
+    figures: [
+      ["ประชากรทั้งหมด", "รวม (คน)"],
+      ["ประชากรชาย", "ชาย (คน)"],
+      ["ประชากรหญิง", "หญิง (คน)"],
+    ].map(([label, column]) => {
       const at = columns.indexOf(column);
       return {
         label,
@@ -296,7 +340,10 @@ function shownPopulation(picker) {
     })),
     pickable: [...(select?.options ?? [])].filter((option) => option.value).map((option) => option.textContent.trim()),
     panel: listedCount('section[aria-labelledby="area-title"]', "ประชากรทั้งหมด"),
-    bands: [...(pyramid?.querySelectorAll("button") ?? [])].flatMap((row) => [parseCount(row.children[1]?.textContent), parseCount(row.children[3]?.textContent)]),
+    bands: [...(pyramid?.querySelectorAll("button") ?? [])].flatMap((row) => [
+      parseCount(row.children[1]?.textContent),
+      parseCount(row.children[3]?.textContent),
+    ]),
     unsplit: parseCount(pyramid?.closest("section")?.textContent.match(/ไม่รวมประชากรที่ไม่แยกอายุ ([\d,]+) คน/)?.[1]),
   };
 }
@@ -328,7 +375,13 @@ function chartProblems({ figures, tambonNames, bars }) {
   const charted = new Set(bars.map((bar) => bar.name));
   return [
     ...bars.flatMap(({ name, count }) =>
-      mismatchProblems(`ตำบล${name}`, "the figure by its bar", count, "รวม (คน) in the table", inTable.get(name) ?? null),
+      mismatchProblems(
+        `ตำบล${name}`,
+        "the figure by its bar",
+        count,
+        "รวม (คน) in the table",
+        inTable.get(name) ?? null,
+      ),
     ),
     ...tambonNames.filter((name) => !charted.has(name)).map((name) => `ตำบล${name}: no bar in the ตำบล chart`),
   ];
@@ -383,7 +436,8 @@ async function checkPopulation(browser, url, hasAge) {
       if (district.pickable.length === 0) problems.push(`${area}: no ตำบล to pick in ${PICKER}`);
       for (const name of district.pickable) {
         area = `ตำบล${name}`;
-        if (await pickTambon(page, name)) problems.push(...pyramidProblems(area, await page.evaluate(shownPopulation, PICKER)));
+        if (await pickTambon(page, name))
+          problems.push(...pyramidProblems(area, await page.evaluate(shownPopulation, PICKER)));
         else problems.push(`${area}: the pyramid does not show it after picking it in ${PICKER}`);
       }
     }
@@ -418,7 +472,8 @@ try {
     const scripts = new Set();
     for (const problem of await checkPage(browser, origin + urlPath, scripts)) problems.push(`${urlPath}: ${problem}`);
     if (reportPages.has(urlPath)) {
-      for (const problem of foreignChunkProblems(reportPages.get(urlPath), scripts)) problems.push(`${urlPath}: ${problem}`);
+      for (const problem of foreignChunkProblems(reportPages.get(urlPath), scripts))
+        problems.push(`${urlPath}: ${problem}`);
     }
   }
   for (const urlPath of ["/", "/reports", ...wideReports]) {

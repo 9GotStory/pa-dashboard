@@ -131,7 +131,8 @@ export default function RegistryPopulationUpload() {
       .then((answer) => {
         if ("status" in answer) throw new Error(answer.message);
         if (!Array.isArray(answer.years)) throw new Error("คำตอบของ GAS ไม่มี years");
-        const yearsOf = (kind: "population" | "age") => answer.years.filter((y) => y[kind].length > 0).map((y) => registryYear(y.yymm));
+        const yearsOf = (kind: "population" | "age") =>
+          answer.years.filter((y) => y[kind].length > 0).map((y) => registryYear(y.yymm));
         return { population: yearsOf("population"), age: yearsOf("age") };
       })
       .then(
@@ -206,22 +207,31 @@ export default function RegistryPopulationUpload() {
   const finished = !saving && picked.some((p) => p.outcome);
 
   return (
-    <section aria-labelledby="registry-population" className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep">
+    <section
+      aria-labelledby="registry-population"
+      className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep"
+    >
       <h2 id="registry-population" className="font-prompt text-lg font-bold text-dc-brand-deep">
         ประชากรทะเบียนราษฎร (กรมการปกครอง)
       </h2>
       <p className="mt-2 text-dc-text-secondary">
         ดาวน์โหลดไฟล์ <code>stat_m{"{ปี}"}.txt</code> จาก{" "}
-        <a href="https://stat.bora.dopa.go.th/" target="_blank" rel="noopener noreferrer" className="font-semibold text-dc-brand-primary underline underline-offset-2">
+        <a
+          href="https://stat.bora.dopa.go.th/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="font-semibold text-dc-brand-primary underline underline-offset-2"
+        >
           stat.bora
         </a>{" "}
-        เมนู ดาวน์โหลดสถิติ → จำนวนประชากร → ปี → ระดับหมู่บ้าน Text File เช่น <code>stat_m68.txt</code> คือยอด ณ 31 ธ.ค. 2568
-        (ไฟล์ <code>stat_t</code> ระดับตำบลไม่มีหมู่บ้าน จึงใช้ไม่ได้)
-        และไฟล์อายุ <code>{"{ปี}"}12cc{"{จังหวัด}"}.txt</code> เมนู ดาวน์โหลดสถิติ → จำนวนประชากรแยกรายอายุ → ปี → จังหวัด เช่น{" "}
-        <code>6812cc54.txt</code> ซึ่งต้องเลือกพร้อม stat_m ของปีเดียวกัน
-        เลือกได้หลายปีพร้อมกัน ระบบตรวจไฟล์ก่อนส่ง และบันทึกปีเดิมซ้ำจะแทนที่ของเดิม
-        ยกเว้นปีที่มีแถวอายุแล้วและตัวเลขเปลี่ยน ต้องลบแถวของปีนั้นในชีต <code>registry_population_age</code> ก่อน
-        แล้วเลือกทั้งสองไฟล์ใหม่พร้อมกัน
+        เมนู ดาวน์โหลดสถิติ → จำนวนประชากร → ปี → ระดับหมู่บ้าน Text File เช่น <code>stat_m68.txt</code> คือยอด ณ 31 ธ.ค. 2568 (ไฟล์{" "}
+        <code>stat_t</code> ระดับตำบลไม่มีหมู่บ้าน จึงใช้ไม่ได้) และไฟล์อายุ{" "}
+        <code>
+          {"{ปี}"}12cc{"{จังหวัด}"}.txt
+        </code>{" "}
+        เมนู ดาวน์โหลดสถิติ → จำนวนประชากรแยกรายอายุ → ปี → จังหวัด เช่น <code>6812cc54.txt</code> ซึ่งต้องเลือกพร้อม stat_m
+        ของปีเดียวกัน เลือกได้หลายปีพร้อมกัน ระบบตรวจไฟล์ก่อนส่ง และบันทึกปีเดิมซ้ำจะแทนที่ของเดิม ยกเว้นปีที่มีแถวอายุแล้วและตัวเลขเปลี่ยน
+        ต้องลบแถวของปีนั้นในชีต <code>registry_population_age</code> ก่อน แล้วเลือกทั้งสองไฟล์ใหม่พร้อมกัน
       </p>
 
       <div className="mt-3 rounded-lg bg-dc-canvas px-3 py-2">
@@ -232,13 +242,19 @@ export default function RegistryPopulationUpload() {
         ) : sheetYears.state === "failed" ? (
           <p>
             อ่านปีที่มีในชีตไม่ได้: {sheetYears.error}{" "}
-            <button type="button" onClick={reloadYears} className="font-semibold text-dc-brand-primary underline underline-offset-2">
+            <button
+              type="button"
+              onClick={reloadYears}
+              className="font-semibold text-dc-brand-primary underline underline-offset-2"
+            >
               ลองอีกครั้ง
             </button>
           </p>
         ) : (
           <>
-            <p>ปีที่มีในชีตแล้ว: {sheetYears.value.population.length > 0 ? sheetYears.value.population.join(" · ") : "ยังไม่มี"}</p>
+            <p>
+              ปีที่มีในชีตแล้ว: {sheetYears.value.population.length > 0 ? sheetYears.value.population.join(" · ") : "ยังไม่มี"}
+            </p>
             <p>ปีที่มีแถวอายุแล้ว: {sheetYears.value.age.length > 0 ? sheetYears.value.age.join(" · ") : "ยังไม่มี"}</p>
           </>
         )}
@@ -268,10 +284,20 @@ export default function RegistryPopulationUpload() {
         <ul aria-live="polite" className="mt-4 space-y-2">
           {picked.map(({ read, outcome }, i) => {
             const ok = outcome ? outcome.ok : read.ok;
-            const label = outcome ? (outcome.ok ? "บันทึกแล้ว" : outcome.partial ? "บันทึกบางส่วน" : "ไม่บันทึก") : read.ok ? "ผ่านการตรวจ" : "ไม่รับไฟล์";
+            const label = outcome
+              ? outcome.ok
+                ? "บันทึกแล้ว"
+                : outcome.partial
+                  ? "บันทึกบางส่วน"
+                  : "ไม่บันทึก"
+              : read.ok
+                ? "ผ่านการตรวจ"
+                : "ไม่รับไฟล์";
             return (
               <li key={i} className="rounded-lg border border-dc-border-subtle px-3 py-2">
-                <span className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}>
+                <span
+                  className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
+                >
                   {label}
                 </span>
                 <span className="font-semibold break-all">{read.name}</span>
@@ -283,7 +309,10 @@ export default function RegistryPopulationUpload() {
       )}
 
       {rebuild && (
-        <p role="status" className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}>
+        <p
+          role="status"
+          className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
+        >
           {rebuild.text}
         </p>
       )}

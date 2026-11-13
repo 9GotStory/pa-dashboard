@@ -18,8 +18,15 @@ function settings(currentYear) {
 
 // A province-wide MOPH response of 700 rows: 85 of them in อำเภอ 5406.
 const ROWS_PER_DISTRICT = {
-  5401: 140, 5402: 90, 5403: 75, 5404: 60, 5405: 70,
-  5406: 85, 5407: 80, 5408: 50, 5409: 50,
+  5401: 140,
+  5402: 90,
+  5403: 75,
+  5404: 60,
+  5405: 70,
+  5406: 85,
+  5407: 80,
+  5408: 50,
+  5409: 50,
 };
 const DISTRICT_ROWS = 85;
 
@@ -108,10 +115,10 @@ test("saving 2568 creates s_x_y2568, leaves s_x as it was, and sync_status has 2
   assert.deepEqual(h.sheet("s_x"), before);
 
   const status = records(h.sheet("sync_status"));
-  assert.deepEqual(
-    status.map((r) => [r.table, String(r.b_year), r.sheet]).sort(),
-    [["s_x", "2568", "s_x_y2568"], ["s_x", "2569", "s_x"]],
-  );
+  assert.deepEqual(status.map((r) => [r.table, String(r.b_year), r.sheet]).sort(), [
+    ["s_x", "2568", "s_x_y2568"],
+    ["s_x", "2569", "s_x"],
+  ]);
 });
 
 test("saving 2568 again with a newer date_com replaces s_x_y2568 as a whole", () => {
@@ -124,7 +131,10 @@ test("saving 2568 again with a newer date_com replaces s_x_y2568 as a whole", ()
 
   assert.equal(res.status, "success", res.message);
   const saved = records(h.sheet("s_x_y2568"));
-  assert.deepEqual(saved.map((r) => r.areacode), ["54060101", "54060202", "54060303"]);
+  assert.deepEqual(
+    saved.map((r) => r.areacode),
+    ["54060101", "54060202", "54060303"],
+  );
   assert.ok(saved.every((r) => String(r.date_com) === "202512150800"));
   const status = records(h.sheet("sync_status")).find((r) => String(r.b_year) === "2568");
   assert.equal(Number(status.row_count), 3);
@@ -143,7 +153,10 @@ test("no sync_status sheet before the first save → it is created with its head
 // Every sheet except system_logs (logToSheet writes there on purpose).
 function dataSheets(h) {
   return Object.fromEntries(
-    h.sheetNames().filter((n) => n !== "system_logs").map((n) => [n, h.sheet(n)]),
+    h
+      .sheetNames()
+      .filter((n) => n !== "system_logs")
+      .map((n) => [n, h.sheet(n)]),
   );
 }
 
@@ -189,8 +202,9 @@ test("no rows of อำเภอ 5406 → error, the existing sheet and sync_sta
   const h = load();
   h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
   const before = dataSheets(h);
-  const otherDistricts = provinceRows({ year: "2569", dateCom: "202610310930" })
-    .filter((r) => !r.areacode.startsWith("5406"));
+  const otherDistricts = provinceRows({ year: "2569", dateCom: "202610310930" }).filter(
+    (r) => !r.areacode.startsWith("5406"),
+  );
 
   const res = h.gas.saveTableYear("s_x", "2569", otherDistricts, {});
 
@@ -212,7 +226,10 @@ test("rows without b_year get the year sent; rows of another b_year are dropped"
   assert.equal(res.count, 2);
   assert.deepEqual(
     records(h.sheet("s_x_y2568")).map((r) => [r.areacode, String(r.b_year)]),
-    [["54060101", "2568"], ["54060103", "2568"]],
+    [
+      ["54060101", "2568"],
+      ["54060103", "2568"],
+    ],
   );
 });
 
@@ -224,7 +241,10 @@ test("an older date_com than sync_status has → error Stale data; again with fo
 
   const stale = h.gas.saveTableYear("s_x", "2568", older, {});
 
-  assert.deepEqual({ ...stale }, { status: "error", message: "Stale data: existing 202512150800 > incoming 202510010800" });
+  assert.deepEqual(
+    { ...stale },
+    { status: "error", message: "Stale data: existing 202512150800 > incoming 202510010800" },
+  );
   assert.deepEqual(dataSheets(h), before);
 
   const forced = h.gas.saveTableYear("s_x", "2568", older, { force: true });
@@ -237,7 +257,10 @@ test("an older date_com than sync_status has → error Stale data; again with fo
 
 // The admin edits settings.current_year; the next read must see it.
 function changeCurrentYear(h, year) {
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("settings").getRange(2, 2).setValues([[year]]);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName("settings")
+    .getRange(2, 2)
+    .setValues([[year]]);
   h.gas.clearConfigCache();
 }
 
@@ -317,25 +340,47 @@ test("saving a table deletes its sync_status rows outside the window, not other 
   h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
 
   assert.deepEqual(
-    records(h.sheet("sync_status")).map((r) => [r.table, String(r.b_year)]).sort(),
-    [["s_x", "2569"], ["s_y", "2564"]],
+    records(h.sheet("sync_status"))
+      .map((r) => [r.table, String(r.b_year)])
+      .sort(),
+    [
+      ["s_x", "2569"],
+      ["s_y", "2564"],
+    ],
   );
 });
 
 test("2568 and 2569 with different columns → each sheet has its own header, no blank columns", () => {
   const h = load();
   // 2569 adds result_q1 and has no flag_sent.
-  const rows2569 = provinceRows({ year: "2569", dateCom: "202610300930", extra: { result_q1: 3 } })
-    .map((r) => {
-      const row = { ...r };
-      delete row.flag_sent;
-      return row;
-    });
+  const rows2569 = provinceRows({ year: "2569", dateCom: "202610300930", extra: { result_q1: 3 } }).map((r) => {
+    const row = { ...r };
+    delete row.flag_sent;
+    return row;
+  });
   h.gas.saveTableYear("s_x", "2568", provinceRows({ year: "2568", dateCom: "202510010800" }), {});
   h.gas.saveTableYear("s_x", "2569", rows2569, {});
 
-  assert.deepEqual(h.sheet("s_x_y2568")[0], ["id", "hospcode", "areacode", "flag_sent", "date_com", "b_year", "target", "result"]);
-  assert.deepEqual(h.sheet("s_x")[0], ["id", "hospcode", "areacode", "date_com", "b_year", "target", "result", "result_q1"]);
+  assert.deepEqual(h.sheet("s_x_y2568")[0], [
+    "id",
+    "hospcode",
+    "areacode",
+    "flag_sent",
+    "date_com",
+    "b_year",
+    "target",
+    "result",
+  ]);
+  assert.deepEqual(h.sheet("s_x")[0], [
+    "id",
+    "hospcode",
+    "areacode",
+    "date_com",
+    "b_year",
+    "target",
+    "result",
+    "result_q1",
+  ]);
 });
 
 test("after a write every sheet has data rows + 1 rows, no blank rows left (new sheet, old 1000-row sheet, archive, sync_status)", () => {
@@ -398,7 +443,11 @@ function warmCachesAndResetLock(h) {
 test("doPost with cold settings/kpi_master caches never calls tryLock while it holds the lock", () => {
   const h = load();
 
-  const res = post(h, { action: "save_kpi_data", tableName: "s_x", data: provinceRows({ year: "2569", dateCom: "202610300930" }) });
+  const res = post(h, {
+    action: "save_kpi_data",
+    tableName: "s_x",
+    data: provinceRows({ year: "2569", dateCom: "202610300930" }),
+  });
 
   assert.equal(res.status, "success", res.message);
   assert.equal(h.lock.nested, 0);
@@ -415,7 +464,14 @@ test("doPost save_kpi_data takes the script lock once and releases it; year defa
     data: { data: provinceRows({ year: "2569", dateCom: "202610300930" }), total: "700" },
   });
 
-  assert.deepEqual(res, { status: "success", year: "2569", sheet: "s_x", received: 700, count: DISTRICT_ROWS, archived: [] });
+  assert.deepEqual(res, {
+    status: "success",
+    year: "2569",
+    sheet: "s_x",
+    received: 700,
+    count: DISTRICT_ROWS,
+    archived: [],
+  });
   assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });
 
@@ -534,7 +590,10 @@ for (const [what, change] of FORMULA_CELLS) {
     assert.deepEqual(res, { status: "error", message: "Invalid value" });
     assert.deepEqual(dataSheets(h), before);
     const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
-    assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [["Save rejected s_x 2570", "Invalid value"]]);
+    assert.deepEqual(
+      errors.map((r) => [r.Message, r.Details]),
+      [["Save rejected s_x 2570", "Invalid value"]],
+    );
     assert.ok(!JSON.stringify(h.sheet("system_logs")).includes("=1+1"), "the raw value must not reach system_logs");
   });
 }
@@ -558,7 +617,10 @@ test("= after the first character is not a formula: the value is saved as sent",
   const h = load();
 
   const res = h.gas.saveTableYear(
-    "s_x", "2569", withDistrictRow({ year: "2569", dateCom: "202610300930" }, { flag_sent: "a=b" }), {},
+    "s_x",
+    "2569",
+    withDistrictRow({ year: "2569", dateCom: "202610300930" }, { flag_sent: "a=b" }),
+    {},
   );
 
   assert.equal(res.status, "success", res.message);
@@ -575,5 +637,8 @@ test("syncAllData: MOPH rows with a value beginning with = are not saved, and sy
 
   assert.deepEqual(dataSheets(h), before);
   const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
-  assert.deepEqual(errors.map((r) => [r.Message, r.Details]), [["Save rejected s_x 2569", "Invalid value"]]);
+  assert.deepEqual(
+    errors.map((r) => [r.Message, r.Details]),
+    [["Save rejected s_x 2569", "Invalid value"]],
+  );
 });

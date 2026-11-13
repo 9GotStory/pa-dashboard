@@ -12,7 +12,12 @@ import { ancValues } from "./anc";
  * Every value the ครบตามเกณฑ์ page shows for a query: the ANC page's, with
  * the 12 months of the year and area whatever ช่วงเวลา is picked
  */
-export function completeValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function completeValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   // Not the ANC page's quarters: M_A has none (SCHEMA §4.1)
   const { block, total, goal, passed, units, trend } = ancValues(data, query, names, years);
   return {

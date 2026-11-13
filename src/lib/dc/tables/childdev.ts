@@ -12,7 +12,12 @@ import { ancValues } from "./anc";
  * always ทั้งอำเภอ by หน่วยบริการ, as areacode is where the หน่วยบริการ is
  * (SCHEMA §4.6.1); an old link's ?area= or ?by=area gets that too (SPEC §9.4)
  */
-export function childdevValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function childdevValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   const district: ReportQuery = { ...query, area: "all", by: "hosp" };
   return {
     /** The query shown: query with ทั้งอำเภอ by หน่วยบริการ */

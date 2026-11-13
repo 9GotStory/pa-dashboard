@@ -67,7 +67,14 @@ export function measuresCsv(
       dateCom,
       table: [
         ["รายการ", "เป้าหมาย", "ผลงาน", "ร้อยละ", "เกณฑ์", "ผลประเมิน"],
-        ...rows.map((r) => [r.label, r.total?.target ?? "—", r.total?.result ?? "—", pctText(r.total?.pct ?? null), goalText(r.goal), passText(r.passed)]),
+        ...rows.map((r) => [
+          r.label,
+          r.total?.target ?? "—",
+          r.total?.result ?? "—",
+          pctText(r.total?.pct ?? null),
+          goalText(r.goal),
+          passText(r.passed),
+        ]),
       ],
     });
 }
@@ -116,6 +123,10 @@ export function countsCsv(
       part: `domain${domain}`,
       filters: summary,
       dateCom,
-      table: [[table.unitLabel, "จำนวนรายการ"], ...table.units.map((u) => [u.name, u.count]), [table.totalLabel, table.total]],
+      table: [
+        [table.unitLabel, "จำนวนรายการ"],
+        ...table.units.map((u) => [u.name, u.count]),
+        [table.totalLabel, table.total],
+      ],
     });
 }

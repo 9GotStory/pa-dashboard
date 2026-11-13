@@ -31,7 +31,9 @@ export default function SummaryTiles({ total, goal }: { total: Totals | null; go
           <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{goalText(goal)}</dd>
         )}
         {passed !== null && (
-          <dd className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${passed ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}>
+          <dd
+            className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${passed ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
+          >
             {passText(passed)}
           </dd>
         )}

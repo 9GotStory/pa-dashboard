@@ -11,8 +11,19 @@ const DC_REGISTRY_POPULATION_SHEET = "registry_population";
 // The 13 values of a stat_m line in file order (SCHEMA §2.6); the sheet adds
 // uploaded_at after them.
 const DC_REGISTRY_POPULATION_COLUMNS = [
-  "yymm", "cc", "cc_name", "rcode", "rcode_name", "tt", "tt_name", "mm", "mm_name",
-  "male", "female", "total", "house",
+  "yymm",
+  "cc",
+  "cc_name",
+  "rcode",
+  "rcode_name",
+  "tt",
+  "tt_name",
+  "mm",
+  "mm_name",
+  "male",
+  "female",
+  "total",
+  "house",
 ];
 // Codes written as plain text so Sheets keeps them as strings (SCHEMA §2.6).
 const DC_REGISTRY_POPULATION_TEXT_COLUMNS = ["yymm", "cc", "rcode", "tt", "mm"];
@@ -41,7 +52,9 @@ const DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS = (function () {
   });
   return columns;
 })();
-const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].concat(DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS);
+const DC_REGISTRY_POPULATION_AGE_COLUMNS = ["yymm", "rcode", "tt", "tt_name"].concat(
+  DC_REGISTRY_POPULATION_AGE_COUNT_COLUMNS,
+);
 
 // The layout of the sheet each kind of save_registry_population writes
 // (SCHEMA §3.8): its name, its columns in sheet order without uploaded_at,
@@ -94,8 +107,8 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
     return dcRejectRegistryPopulation(kind, null, "Invalid yymm");
   }
   const yymm = yymmRaw;
-  const error = dcRegistryRowsError(kind, rows, yymm, readSettings().district_code) ||
-    dcRegistryOtherSheetError(kind, rows, yymm);
+  const error =
+    dcRegistryRowsError(kind, rows, yymm, readSettings().district_code) || dcRegistryOtherSheetError(kind, rows, yymm);
   if (error) return dcRejectRegistryPopulation(kind, yymm, error);
 
   const header = layout.columns.concat(["uploaded_at"]);
@@ -112,11 +125,16 @@ function dcSaveRegistryPopulation(kindRaw, yymmRaw, rows) {
     const y = String(b.yymm).trim();
     return x < y ? -1 : x > y ? 1 : 0;
   });
-  dcWriteSheet(layout.name, header, all.map(function (row) {
-    return header.map(function (column) {
-      return row[column];
-    });
-  }), layout.text);
+  dcWriteSheet(
+    layout.name,
+    header,
+    all.map(function (row) {
+      return header.map(function (column) {
+        return row[column];
+      });
+    }),
+    layout.text,
+  );
   logToSheet("SUCCESS", "Saved " + layout.name + " " + yymm, rows.length + " rows");
   return { status: "success", kind: kind, yymm: yymm, count: rows.length };
 }
@@ -145,9 +163,11 @@ function dcGetRegistryPopulation() {
     });
   });
   return {
-    years: Object.keys(years).sort().map(function (yymm) {
-      return years[yymm];
-    }),
+    years: Object.keys(years)
+      .sort()
+      .map(function (yymm) {
+        return years[yymm];
+      }),
   };
 }
 
@@ -176,23 +196,33 @@ function dcRegistryRows(sheetName, columns, countColumns) {
     return countColumns.indexOf(column) > -1;
   });
   const hasYymm = header.indexOf("yymm") > -1;
-  return values.slice(1).filter(function (cells) {
-    return !hasYymm || at.some(function (i) {
-      return i !== -1 && String(cells[i]).trim() !== "";
+  return values
+    .slice(1)
+    .filter(function (cells) {
+      return (
+        !hasYymm ||
+        at.some(function (i) {
+          return i !== -1 && String(cells[i]).trim() !== "";
+        })
+      );
+    })
+    .map(function (cells) {
+      const row = {};
+      columns.forEach(function (column, k) {
+        if (at[k] === -1) return;
+        const v = cells[at[k]];
+        if (!isCount[k]) {
+          row[column] = String(v).trim();
+        } else if (
+          (typeof v === "number" || typeof v === "string") &&
+          String(v).trim() !== "" &&
+          Number.isFinite(Number(v))
+        ) {
+          row[column] = Number(v);
+        }
+      });
+      return row;
     });
-  }).map(function (cells) {
-    const row = {};
-    columns.forEach(function (column, k) {
-      if (at[k] === -1) return;
-      const v = cells[at[k]];
-      if (!isCount[k]) {
-        row[column] = String(v).trim();
-      } else if ((typeof v === "number" || typeof v === "string") && String(v).trim() !== "" && Number.isFinite(Number(v))) {
-        row[column] = Number(v);
-      }
-    });
-    return row;
-  });
 }
 
 /**
@@ -204,28 +234,50 @@ function dcRegistryRowsError(kind, rows, yymm, districtCode) {
   const layout = DC_REGISTRY_LAYOUTS[kind];
   const columns = layout.columns;
   const keysMatch = rows.every(function (row) {
-    return row !== null && typeof row === "object" && !Array.isArray(row) &&
-      Object.keys(row).length === columns.length && columns.every(function (column) {
+    return (
+      row !== null &&
+      typeof row === "object" &&
+      !Array.isArray(row) &&
+      Object.keys(row).length === columns.length &&
+      columns.every(function (column) {
         return Object.prototype.hasOwnProperty.call(row, column);
-      });
+      })
+    );
   });
   if (!keysMatch) return "Row keys do not match the header";
-  if (!rows.every(function (row) {
-    return row.yymm === yymm;
-  })) return "Row of another yymm";
-  if (!rows.every(function (row) {
-    return dcRegistryValuesValid(row, layout);
-  })) return "Invalid value";
-  if (!rows.every(function (row) {
-    return /^\d{8}$/.test(row.tt) && row.tt.indexOf(districtCode) === 0;
-  })) return "Row outside district";
-  if (kind === "population" && !rows.every(function (row) {
-    return row.mm === "0";
-  })) return "Not a tambon row";
+  if (
+    !rows.every(function (row) {
+      return row.yymm === yymm;
+    })
+  )
+    return "Row of another yymm";
+  if (
+    !rows.every(function (row) {
+      return dcRegistryValuesValid(row, layout);
+    })
+  )
+    return "Invalid value";
+  if (
+    !rows.every(function (row) {
+      return /^\d{8}$/.test(row.tt) && row.tt.indexOf(districtCode) === 0;
+    })
+  )
+    return "Row outside district";
+  if (
+    kind === "population" &&
+    !rows.every(function (row) {
+      return row.mm === "0";
+    })
+  )
+    return "Not a tambon row";
   // A หมู่บ้าน code is 8 digits, the first 6 those of its ตำบล.
-  if (kind === "village" && !rows.every(function (row) {
-    return /^\d{8}$/.test(row.mm) && row.mm.slice(0, 6) === row.tt.slice(0, 6);
-  })) return "Not a village row";
+  if (
+    kind === "village" &&
+    !rows.every(function (row) {
+      return /^\d{8}$/.test(row.mm) && row.mm.slice(0, 6) === row.tt.slice(0, 6);
+    })
+  )
+    return "Not a village row";
   // Null prototype: a key such as "constructor" must not hit Object.prototype.
   const seen = Object.create(null);
   const unique = rows.every(function (row) {
@@ -235,13 +287,20 @@ function dcRegistryRowsError(kind, rows, yymm, districtCode) {
     return true;
   });
   if (!unique) return kind === "village" ? "Duplicate village row" : "Duplicate tambon row";
-  if (!rows.every(kind !== "age" ? function (row) {
-    return row.male + row.female === row.total;
-  } : function (row) {
-    return DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.every(function (group) {
-      return row[group + "_m"] + row[group + "_f"] === row[group + "_t"];
-    });
-  })) return "Male + female does not equal total";
+  if (
+    !rows.every(
+      kind !== "age"
+        ? function (row) {
+            return row.male + row.female === row.total;
+          }
+        : function (row) {
+            return DC_REGISTRY_POPULATION_UNSPLIT_AND_TOTAL.every(function (group) {
+              return row[group + "_m"] + row[group + "_f"] === row[group + "_t"];
+            });
+          },
+    )
+  )
+    return "Male + female does not equal total";
   if (kind === "age" && !rows.every(dcAgesAddUp)) return "Ages do not add up to total";
   return null;
 }
@@ -299,15 +358,21 @@ function dcVillagesAddUp(population, villages) {
     });
   });
   const tambons = Object.create(null);
-  return population.every(function (row) {
-    const key = row.rcode + "/" + row.tt;
-    tambons[key] = true;
-    return sums[key] !== undefined && DC_REGISTRY_POPULATION_COUNT_COLUMNS.every(function (column) {
-      return sums[key][column] === row[column];
-    });
-  }) && Object.keys(sums).every(function (key) {
-    return tambons[key];
-  });
+  return (
+    population.every(function (row) {
+      const key = row.rcode + "/" + row.tt;
+      tambons[key] = true;
+      return (
+        sums[key] !== undefined &&
+        DC_REGISTRY_POPULATION_COUNT_COLUMNS.every(function (column) {
+          return sums[key][column] === row[column];
+        })
+      );
+    }) &&
+    Object.keys(sums).every(function (key) {
+      return tambons[key];
+    })
+  );
 }
 
 /**
@@ -322,12 +387,16 @@ function dcRegistryRowsAgree(population, age) {
     byTambon[row.rcode + "/" + row.tt] = row;
   });
   const paired = Object.create(null);
-  return age.every(function (row) {
-    const key = row.rcode + "/" + row.tt;
-    const pair = byTambon[key];
-    paired[key] = true;
-    return pair !== undefined && row.total_m === pair.male && row.total_f === pair.female && row.total_t === pair.total;
-  }) && Object.keys(paired).length === Object.keys(byTambon).length;
+  return (
+    age.every(function (row) {
+      const key = row.rcode + "/" + row.tt;
+      const pair = byTambon[key];
+      paired[key] = true;
+      return (
+        pair !== undefined && row.total_m === pair.male && row.total_f === pair.female && row.total_t === pair.total
+      );
+    }) && Object.keys(paired).length === Object.keys(byTambon).length
+  );
 }
 
 /**

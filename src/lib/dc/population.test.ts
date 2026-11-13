@@ -3,7 +3,15 @@ import test from "node:test";
 import { AGE_6812, AGE_6812_LINES } from "./fixtures/age-6812cc54-20261106";
 import { STAT_M68, STAT_M68_LINES } from "./fixtures/stat-m68-20261111";
 import { formatPct } from "./format";
-import { ageRowsTotals, homePopulation, populationTotals, readRegistryFiles, registryAsOf, registryYear, villageCount } from "./population";
+import {
+  ageRowsTotals,
+  homePopulation,
+  populationTotals,
+  readRegistryFiles,
+  registryAsOf,
+  registryYear,
+  villageCount,
+} from "./population";
 import type { AgeBand, PopulationSnapshot, RegistryPopulationRow } from "./types";
 
 // FEATURES F24, F44: reading and checking stat_m files in the /sync upload
@@ -25,7 +33,10 @@ test("stat_m68.txt → 94 หมู่บ้าน rows of อำเภอสอ
   assert.ok(read.ok && read.kind === "population", !read.ok ? read.reason : "");
 
   assert.equal(read.villages.length, 94);
-  assert.deepEqual([read.villages.filter((r) => r.rcode === "5406").length, read.villages.filter((r) => r.rcode === "5489").length], [81, 13]);
+  assert.deepEqual(
+    [read.villages.filter((r) => r.rcode === "5406").length, read.villages.filter((r) => r.rcode === "5489").length],
+    [81, 13],
+  );
   assert.equal(villageCount(read.villages), 85);
 });
 
@@ -35,15 +46,45 @@ test("the หมู่บ้าน rows as SCHEMA §2.8 keeps them: หมู่
 
   const row = (rcode: string, mm: string) => read.villages.find((r) => r.rcode === rcode && r.mm === mm);
   assert.deepEqual(row("5406", "54060104"), {
-    yymm: "6812", cc: "54", cc_name: "จังหวัดแพร่", rcode: "5406", rcode_name: "อำเภอสอง",
-    tt: "54060100", tt_name: "ตำบลบ้านหนุน", mm: "54060104", mm_name: "ศรีมูลเรือง", male: 94, female: 98, total: 192, house: 128,
+    yymm: "6812",
+    cc: "54",
+    cc_name: "จังหวัดแพร่",
+    rcode: "5406",
+    rcode_name: "อำเภอสอง",
+    tt: "54060100",
+    tt_name: "ตำบลบ้านหนุน",
+    mm: "54060104",
+    mm_name: "ศรีมูลเรือง",
+    male: 94,
+    female: 98,
+    total: 192,
+    house: 128,
   });
   assert.deepEqual([row("5489", "54060104")?.total, row("5489", "54060104")?.house], [839, 410]);
   assert.deepEqual(row("5406", "54060200"), {
-    yymm: "6812", cc: "54", cc_name: "จังหวัดแพร่", rcode: "5406", rcode_name: "อำเภอสอง",
-    tt: "54060200", tt_name: "ตำบลบ้านกลาง", mm: "54060200", mm_name: "บ้านกลาง", male: 0, female: 0, total: 0, house: 1,
+    yymm: "6812",
+    cc: "54",
+    cc_name: "จังหวัดแพร่",
+    rcode: "5406",
+    rcode_name: "อำเภอสอง",
+    tt: "54060200",
+    tt_name: "ตำบลบ้านกลาง",
+    mm: "54060200",
+    mm_name: "บ้านกลาง",
+    male: 0,
+    female: 0,
+    total: 0,
+    house: 1,
   });
-  assert.deepEqual([row("5489", "54060200")?.male, row("5489", "54060200")?.female, row("5489", "54060200")?.total, row("5489", "54060200")?.house], [9, 5, 14, 2]);
+  assert.deepEqual(
+    [
+      row("5489", "54060200")?.male,
+      row("5489", "54060200")?.female,
+      row("5489", "54060200")?.total,
+      row("5489", "54060200")?.house,
+    ],
+    [9, 5, 14, 2],
+  );
 });
 
 test("the rows are the district's ตำบล lines as SCHEMA §2.6 keeps them: 8 of 5406 adding up to its total line (40,389) and 2 of 5489 to its own (6,138); other districts' ตำบลน้ำชำ and ตำบลสูงเม่น are cut", () => {
@@ -51,15 +92,38 @@ test("the rows are the district's ตำบล lines as SCHEMA §2.6 keeps them:
   assert.ok(read.ok && read.kind === "population");
 
   const of = (rcode: string) => read.rows.filter((r) => r.rcode === rcode);
-  assert.deepEqual(read.rows.map((r) => r.tt), [
-    "54060100", "54060200", "54060300", "54060400", "54060500", "54060600", "54060700", "54060800", "54060100", "54060200",
-  ]);
+  assert.deepEqual(
+    read.rows.map((r) => r.tt),
+    [
+      "54060100",
+      "54060200",
+      "54060300",
+      "54060400",
+      "54060500",
+      "54060600",
+      "54060700",
+      "54060800",
+      "54060100",
+      "54060200",
+    ],
+  );
   assert.deepEqual(populationTotals(of("5406")), { male: 19692, female: 20697, total: 40389, house: 16904 });
   assert.deepEqual(populationTotals(of("5489")), { male: 2783, female: 3355, total: 6138, house: 3197 });
   // Text trimmed and " " read as "", numbers without commas.
   assert.deepEqual(of("5489")[0], {
-    yymm: "6812", cc: "54", cc_name: "จังหวัดแพร่", rcode: "5489", rcode_name: "ท้องถิ่นเทศบาลตำบลสอง",
-    tt: "54060100", tt_name: "ตำบลบ้านหนุน", mm: "0", mm_name: "", male: 1306, female: 1557, total: 2863, house: 1336,
+    yymm: "6812",
+    cc: "54",
+    cc_name: "จังหวัดแพร่",
+    rcode: "5489",
+    rcode_name: "ท้องถิ่นเทศบาลตำบลสอง",
+    tt: "54060100",
+    tt_name: "ตำบลบ้านหนุน",
+    mm: "0",
+    mm_name: "",
+    male: 1306,
+    female: 1557,
+    total: 2863,
+    house: 1336,
   });
 });
 
@@ -129,12 +193,15 @@ test("a stat_m without the total line of 5406 → refused", () => {
 });
 
 test("a download cut off mid-way through its last line (11 values, no line end) → refused, naming the line", () => {
-  const lines = [...STAT_M68_LINES.slice(0, -1), "6812|54|จังหวัดแพร่ |5492|ท้องถิ่นเทศบาลตำบลสูงเม่น|54040100|ตำบลสูงเม่น |54040108|สูงเม่น|256|2"];
+  const lines = [
+    ...STAT_M68_LINES.slice(0, -1),
+    "6812|54|จังหวัดแพร่ |5492|ท้องถิ่นเทศบาลตำบลสูงเม่น|54040100|ตำบลสูงเม่น |54040108|สูงเม่น|256|2",
+  ];
 
   assert.equal(refusal("\uFEFF" + lines.join("\n")), "บรรทัดที่ 241 มี 11 ค่า ไฟล์ stat_m มีบรรทัดละ 13 ค่า");
 });
 
-test("a count that is no number (\"2,1x6\") → refused, naming the line", () => {
+test('a count that is no number ("2,1x6") → refused, naming the line', () => {
   const changed = changeLine("5406", "54060100", (v) => [...v.slice(0, 9), "2,1x6", ...v.slice(10)]);
 
   assert.equal(refusal(fileOf(changed)), "บรรทัดที่ 129 มีค่าที่ไม่ใช่ตัวเลข: 2,1x6");
@@ -165,11 +232,17 @@ test("stat_m68 (1).txt, a second download the browser renamed → read like stat
 
 test("two files of 6812 in one pick → the first is read, the second refused, so each year is saved once", () => {
   const reads = readRegistryFiles(
-    [{ name: "stat_m68.txt", text: STAT_M68 }, { name: "stat_m68 (1).txt", text: STAT_M68 }],
+    [
+      { name: "stat_m68.txt", text: STAT_M68 },
+      { name: "stat_m68 (1).txt", text: STAT_M68 },
+    ],
     "5406",
   );
 
-  assert.deepEqual(reads.map((r) => r.ok), [true, false]);
+  assert.deepEqual(
+    reads.map((r) => r.ok),
+    [true, false],
+  );
   assert.equal(!reads[1].ok && reads[1].reason, "ปี 2568 ซ้ำกับไฟล์ stat_m68.txt ที่เลือกไว้");
 });
 
@@ -260,14 +333,62 @@ test("ตำบล of 2568 → the 8 of areas by code, each adding up every ส�
   assert.ok(home);
   // The file's ตำบล lines; บ้านหนุน and บ้านกลาง add the line of 5406 and the line of 5489.
   assert.deepEqual(home.areas, [
-    { key: "540601", name: "บ้านหนุน", totals: { male: 3442, female: 3957, total: 7399, house: 3499 }, age: null, villages: null },
-    { key: "540602", name: "บ้านกลาง", totals: { male: 3152, female: 3534, total: 6686, house: 3335 }, age: null, villages: null },
-    { key: "540603", name: "ห้วยหม้าย", totals: { male: 3564, female: 3903, total: 7467, house: 3096 }, age: null, villages: null },
-    { key: "540604", name: "เตาปูน", totals: { male: 3903, female: 4089, total: 7992, house: 2954 }, age: null, villages: null },
-    { key: "540605", name: "หัวเมือง", totals: { male: 2975, female: 3062, total: 6037, house: 2297 }, age: null, villages: null },
-    { key: "540606", name: "สะเอียบ", totals: { male: 2692, female: 2643, total: 5335, house: 2555 }, age: null, villages: null },
-    { key: "540607", name: "แดนชุมพล", totals: { male: 1181, female: 1230, total: 2411, house: 957 }, age: null, villages: null },
-    { key: "540608", name: "ทุ่งน้าว", totals: { male: 1566, female: 1634, total: 3200, house: 1408 }, age: null, villages: null },
+    {
+      key: "540601",
+      name: "บ้านหนุน",
+      totals: { male: 3442, female: 3957, total: 7399, house: 3499 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540602",
+      name: "บ้านกลาง",
+      totals: { male: 3152, female: 3534, total: 6686, house: 3335 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540603",
+      name: "ห้วยหม้าย",
+      totals: { male: 3564, female: 3903, total: 7467, house: 3096 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540604",
+      name: "เตาปูน",
+      totals: { male: 3903, female: 4089, total: 7992, house: 2954 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540605",
+      name: "หัวเมือง",
+      totals: { male: 2975, female: 3062, total: 6037, house: 2297 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540606",
+      name: "สะเอียบ",
+      totals: { male: 2692, female: 2643, total: 5335, house: 2555 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540607",
+      name: "แดนชุมพล",
+      totals: { male: 1181, female: 1230, total: 2411, house: 957 },
+      age: null,
+      villages: null,
+    },
+    {
+      key: "540608",
+      name: "ทุ่งน้าว",
+      totals: { male: 1566, female: 1634, total: 3200, house: 1408 },
+      age: null,
+      villages: null,
+    },
   ]);
 });
 
@@ -288,7 +409,10 @@ test("population.json without a year (nothing uploaded yet) → null: the home p
 });
 
 test("a ตำบล that areas lacks → named by its tt_name, its people still in the อำเภอ's 46,527", () => {
-  const home = homePopulation(snapshotOf(ROWS_6812), AREAS.filter((a) => a.id !== "540602"));
+  const home = homePopulation(
+    snapshotOf(ROWS_6812),
+    AREAS.filter((a) => a.id !== "540602"),
+  );
 
   assert.ok(home);
   assert.equal(home.areas.find((a) => a.key === "540602")?.name, "ตำบลบ้านกลาง");
@@ -311,18 +435,21 @@ test("6812cc54.txt picked with stat_m68.txt → the age rows of ปี 2568, one
 
   assert.ok(read.ok && read.kind === "age", read.ok ? `read as ${read.kind}` : read.reason);
   assert.equal(registryYear(read.yymm), "2568");
-  assert.deepEqual(read.rows.map((r) => `${r.rcode} ${r.tt} ${r.tt_name}`), [
-    "5406 54060100 ตำบลบ้านหนุน",
-    "5406 54060200 ตำบลบ้านกลาง",
-    "5406 54060300 ตำบลห้วยหม้าย",
-    "5406 54060400 ตำบลเตาปูน",
-    "5406 54060500 ตำบลหัวเมือง",
-    "5406 54060600 ตำบลสะเอียบ",
-    "5406 54060700 ตำบลแดนชุมพล",
-    "5406 54060800 ตำบลทุ่งน้าว",
-    "5489 54060100 ตำบลบ้านหนุน",
-    "5489 54060200 ตำบลบ้านกลาง",
-  ]);
+  assert.deepEqual(
+    read.rows.map((r) => `${r.rcode} ${r.tt} ${r.tt_name}`),
+    [
+      "5406 54060100 ตำบลบ้านหนุน",
+      "5406 54060200 ตำบลบ้านกลาง",
+      "5406 54060300 ตำบลห้วยหม้าย",
+      "5406 54060400 ตำบลเตาปูน",
+      "5406 54060500 ตำบลหัวเมือง",
+      "5406 54060600 ตำบลสะเอียบ",
+      "5406 54060700 ตำบลแดนชุมพล",
+      "5406 54060800 ตำบลทุ่งน้าว",
+      "5489 54060100 ตำบลบ้านหนุน",
+      "5489 54060200 ตำบลบ้านกลาง",
+    ],
+  );
   assert.deepEqual(ageRowsTotals(read.rows), { male: 22475, female: 24052, total: 46527 });
 });
 
@@ -336,19 +463,39 @@ test("the age rows keep the file's counts under the names of SCHEMA §2.7: ages 
       for (let age = from; age <= 101; age++) sum += row[`${sex}${age}`];
       return sum;
     }, 0);
-  const groupTotal = (group: "lunar" | "central" | "nonthai" | "moving") => read.rows.reduce((sum, row) => sum + row[`${group}_t`], 0);
+  const groupTotal = (group: "lunar" | "central" | "nonthai" | "moving") =>
+    read.rows.reduce((sum, row) => sum + row[`${group}_t`], 0);
   assert.deepEqual([ages("m", 0), ages("f", 0)], [22363, 23999]);
   assert.deepEqual([ages("m", 60), ages("f", 60)], [5896, 7591]);
   assert.deepEqual(
-    { nonthai: groupTotal("nonthai"), central: groupTotal("central"), moving: groupTotal("moving"), lunar: groupTotal("lunar") },
+    {
+      nonthai: groupTotal("nonthai"),
+      central: groupTotal("central"),
+      moving: groupTotal("moving"),
+      lunar: groupTotal("lunar"),
+    },
     { nonthai: 81, central: 75, moving: 9, lunar: 0 },
   );
   // ตำบลบ้านกลาง of 5406: the last 15 values of its line.
   const banKlang = read.rows[1];
   assert.deepEqual(
-    [banKlang.lunar_m, banKlang.lunar_f, banKlang.lunar_t, banKlang.central_m, banKlang.central_f, banKlang.central_t,
-      banKlang.nonthai_m, banKlang.nonthai_f, banKlang.nonthai_t, banKlang.moving_m, banKlang.moving_f, banKlang.moving_t,
-      banKlang.total_m, banKlang.total_f, banKlang.total_t],
+    [
+      banKlang.lunar_m,
+      banKlang.lunar_f,
+      banKlang.lunar_t,
+      banKlang.central_m,
+      banKlang.central_f,
+      banKlang.central_t,
+      banKlang.nonthai_m,
+      banKlang.nonthai_f,
+      banKlang.nonthai_t,
+      banKlang.moving_m,
+      banKlang.moving_f,
+      banKlang.moving_t,
+      banKlang.total_m,
+      banKlang.total_f,
+      banKlang.total_t,
+    ],
     [0, 0, 0, 50, 12, 62, 7, 2, 9, 2, 3, 5, 1675, 1736, 3411],
   );
 });
@@ -366,7 +513,13 @@ test("อำเภอสูงเม่น (5404), whose ตำบลน้ำ�
 
 // Why readRegistryFiles refuses the age file (text, named name), picked with stat_m68.txt.
 function ageRefusal(text: string, name = "6812cc54.txt"): string {
-  const [read] = readRegistryFiles([{ name, text }, { name: "stat_m68.txt", text: STAT_M68 }], "5406");
+  const [read] = readRegistryFiles(
+    [
+      { name, text },
+      { name: "stat_m68.txt", text: STAT_M68 },
+    ],
+    "5406",
+  );
   assert.ok(!read.ok, "the age file was read");
   return read.reason;
 }
@@ -376,9 +529,27 @@ test("6812cc54.txt without a stat_m of 2568 that passed (picked alone, with stat
   const stat68Refused = fileOf(STAT_M68_LINES.filter((line) => !line.includes("|54060800|")));
   const reasons = [
     readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }], "5406"),
-    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_m67.txt", text: stat67 }], "5406"),
-    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_m68.txt", text: stat68Refused }], "5406"),
-    readRegistryFiles([{ name: "6812cc54.txt", text: AGE_6812 }, { name: "stat_t68.txt", text: STAT_T68 }], "5406"),
+    readRegistryFiles(
+      [
+        { name: "6812cc54.txt", text: AGE_6812 },
+        { name: "stat_m67.txt", text: stat67 },
+      ],
+      "5406",
+    ),
+    readRegistryFiles(
+      [
+        { name: "6812cc54.txt", text: AGE_6812 },
+        { name: "stat_m68.txt", text: stat68Refused },
+      ],
+      "5406",
+    ),
+    readRegistryFiles(
+      [
+        { name: "6812cc54.txt", text: AGE_6812 },
+        { name: "stat_t68.txt", text: STAT_T68 },
+      ],
+      "5406",
+    ),
   ].map(([read]) => (read.ok ? "read" : read.reason));
 
   const reason = "ไม่มีไฟล์ stat_m68.txt ที่ผ่านการตรวจในชุดที่เลือก ไฟล์อายุต้องเลือกพร้อม stat_m ของปีเดียวกัน";
@@ -394,7 +565,13 @@ test("6812cc53.txt, the age file of another จังหวัด (53) → refus
 });
 
 test("6812cc54 (1).txt, a second download the browser renamed → read like 6812cc54.txt", () => {
-  const [read] = readRegistryFiles([{ name: "6812cc54 (1).txt", text: AGE_6812 }, { name: "stat_m68.txt", text: STAT_M68 }], "5406");
+  const [read] = readRegistryFiles(
+    [
+      { name: "6812cc54 (1).txt", text: AGE_6812 },
+      { name: "stat_m68.txt", text: STAT_M68 },
+    ],
+    "5406",
+  );
 
   assert.ok(read.ok && read.kind === "age", read.ok ? `read as ${read.kind}` : read.reason);
   assert.equal(read.yymm, "6812");
@@ -404,7 +581,10 @@ test("6812cc54 (1).txt, a second download the browser renamed → read like 6812
 test("two age files of 6812 with stat_m68.txt in one pick → the first is read, the second refused, so each year's age rows are saved once", () => {
   const reads = readRegistryFiles([...PICK_6812, { name: "6812cc54 (1).txt", text: AGE_6812 }], "5406");
 
-  assert.deepEqual(reads.map((r) => r.ok), [true, true, false]);
+  assert.deepEqual(
+    reads.map((r) => r.ok),
+    [true, true, false],
+  );
   assert.equal(!reads[2].ok && reads[2].reason, "ปี 2568 ซ้ำกับไฟล์ 6812cc54.txt ที่เลือกไว้");
 });
 
@@ -477,7 +657,10 @@ function plusOne(values: string[], ...at: number[]): string[] {
 test("ตำบลบ้านหนุน of อำเภอสอง with one more boy aged 0, ชาย 2,137 รวม 4,537 → refused: not the 2,136 of stat_m68.txt", () => {
   const changed = changeAgeLine(SONG_BAN_NUN, (v) => plusOne(v, M0, TOTAL_M, TOTAL_T));
 
-  assert.equal(ageRefusal(fileOf(changed)), "ยอดของ ตำบลบ้านหนุน ในบล็อก อำเภอสอง ไม่ตรงกับ stat_m68.txt: ชาย 2,137 แต่ stat_m 2,136");
+  assert.equal(
+    ageRefusal(fileOf(changed)),
+    "ยอดของ ตำบลบ้านหนุน ในบล็อก อำเภอสอง ไม่ตรงกับ stat_m68.txt: ชาย 2,137 แต่ stat_m 2,136",
+  );
 });
 
 test("the line of อำเภอสอง with รวม 40,390 → refused: not the total line of สำนักทะเบียน 5406 in stat_m68.txt (40,389)", () => {
@@ -512,10 +695,13 @@ test("ตำบลบ้านหนุน of อำเภอสอง with one 
 
 // The 10 age rows of 2568 (SCHEMA §2.7), one for each of ROWS_6812.
 const [ageRead68] = readRegistryFiles(PICK_6812, "5406");
-if (!ageRead68.ok || ageRead68.kind !== "age") throw new Error(ageRead68.ok ? `read as ${ageRead68.kind}` : ageRead68.reason);
+if (!ageRead68.ok || ageRead68.kind !== "age")
+  throw new Error(ageRead68.ok ? `read as ${ageRead68.kind}` : ageRead68.reason);
 
 // population.json of 2568 with its age rows, as the prebuild writes its latest year (SCHEMA §7).
-const SNAPSHOT_6812: PopulationSnapshot = { years: [{ yymm: "6812", population: ROWS_6812, village: [], age: ageRead68.rows }] };
+const SNAPSHOT_6812: PopulationSnapshot = {
+  years: [{ yymm: "6812", population: ROWS_6812, village: [], age: ageRead68.rows }],
+};
 
 // ชาย and หญิง of bands added up.
 function bandsTotal(bands: AgeBand[]): { male: number; female: number } {
@@ -526,10 +712,28 @@ test("the อำเภอ of 2568 → its pyramid: 17 ช่วงอายุ 0
   const age = homePopulation(SNAPSHOT_6812, AREAS)?.district.age;
 
   assert.ok(age);
-  assert.deepEqual(age.bands.map((b) => b.label), [
-    "0–4", "5–9", "10–14", "15–19", "20–24", "25–29", "30–34", "35–39", "40–44",
-    "45–49", "50–54", "55–59", "60–64", "65–69", "70–74", "75–79", "80+",
-  ]);
+  assert.deepEqual(
+    age.bands.map((b) => b.label),
+    [
+      "0–4",
+      "5–9",
+      "10–14",
+      "15–19",
+      "20–24",
+      "25–29",
+      "30–34",
+      "35–39",
+      "40–44",
+      "45–49",
+      "50–54",
+      "55–59",
+      "60–64",
+      "65–69",
+      "70–74",
+      "75–79",
+      "80+",
+    ],
+  );
   assert.deepEqual(bandsTotal(age.bands), { male: 22363, female: 23999 });
   assert.equal(age.age_total, 46362);
   assert.deepEqual(bandsTotal(age.bands.slice(12)), { male: 5896, female: 7591 });
@@ -549,8 +753,14 @@ test("the 8 ตำบล of 2568 → a pyramid each, and together they hold the 
   assert.ok(home);
   const ages = home.areas.map((a) => a.age);
   assert.equal(ages.filter((age) => age !== null).length, 8);
-  assert.equal(ages.reduce((sum, age) => sum + (age?.age_total ?? 0), 0), 46362);
-  assert.equal(ages.reduce((sum, age) => sum + (age?.aged60 ?? 0), 0), 13487);
+  assert.equal(
+    ages.reduce((sum, age) => sum + (age?.age_total ?? 0), 0),
+    46362,
+  );
+  assert.equal(
+    ages.reduce((sum, age) => sum + (age?.aged60 ?? 0), 0),
+    13487,
+  );
 });
 
 test("บ้านหนุน and บ้านกลาง of 2568, each with a line of 5406 and one of 5489 → a pyramid of both lines: บ้านหนุน 7,384 counted by year of age (ชาย 3,432 หญิง 3,952) and ไม่ใช่สัญชาติไทย 15 (10 + 5); บ้านกลาง 6,589 (ชาย 3,079 หญิง 3,510), ทะเบียนบ้านกลาง 75 (62 + 13), ไม่ใช่สัญชาติไทย 15 (9 + 6) and ระหว่างการย้าย 7 (5 + 2)", () => {
@@ -583,14 +793,17 @@ test("ages at the edges of the ช่วงอายุ (ตำบลแดน�
   const age = homePopulation({ years: [{ yymm: "6812", population, village: [], age: [edges] }] }, AREAS)?.district.age;
 
   assert.ok(age);
-  assert.deepEqual(age.bands.filter((b) => b.male + b.female > 0), [
-    { label: "0–4", male: 0, female: 5 },
-    { label: "5–9", male: 0, female: 6 },
-    { label: "55–59", male: 0, female: 7 },
-    { label: "60–64", male: 0, female: 8 },
-    { label: "75–79", male: 1, female: 0 },
-    { label: "80+", male: 2 + 3 + 4, female: 0 },
-  ]);
+  assert.deepEqual(
+    age.bands.filter((b) => b.male + b.female > 0),
+    [
+      { label: "0–4", male: 0, female: 5 },
+      { label: "5–9", male: 0, female: 6 },
+      { label: "55–59", male: 0, female: 7 },
+      { label: "60–64", male: 0, female: 8 },
+      { label: "75–79", male: 1, female: 0 },
+      { label: "80+", male: 2 + 3 + 4, female: 0 },
+    ],
+  );
   assert.equal(age.aged60, 1 + 2 + 3 + 4 + 8);
 });
 
@@ -598,7 +811,10 @@ test("population.json whose latest year has no age rows, as before F29 uploads t
   const home = homePopulation(snapshotOf(ROWS_6812), AREAS);
 
   assert.ok(home);
-  assert.deepEqual([home.district, ...home.areas].map((a) => a.age), Array(9).fill(null));
+  assert.deepEqual(
+    [home.district, ...home.areas].map((a) => a.age),
+    Array(9).fill(null),
+  );
 });
 
 // FEATURES F46: the หมู่บ้าน of the ตำบล panel (SCHEMA §11.3), on the real
@@ -606,7 +822,9 @@ test("population.json whose latest year has no age rows, as before F29 uploads t
 // Expected values come from the file's หมู่บ้าน and ตำบล lines (SCHEMA §11.4).
 
 // population.json of 2568 with its village rows, as the prebuild writes its latest year (SCHEMA §7).
-const VILLAGE_SNAPSHOT_6812: PopulationSnapshot = { years: [{ yymm: "6812", population: ROWS_6812, village: read68.villages, age: [] }] };
+const VILLAGE_SNAPSHOT_6812: PopulationSnapshot = {
+  years: [{ yymm: "6812", population: ROWS_6812, village: read68.villages, age: [] }],
+};
 
 test("บ้านหนุน of 2568 → 11 หมู่บ้าน, and หมู่ 4 ศรีมูลเรือง, with a line under 5406 and one under 5489, is 1,031 คน 538 บ้าน (192 + 839, 128 + 410)", () => {
   const villages = homePopulation(VILLAGE_SNAPSHOT_6812, AREAS)?.areas.find((a) => a.key === "540601")?.villages;
@@ -614,17 +832,25 @@ test("บ้านหนุน of 2568 → 11 หมู่บ้าน, and ห�
   assert.ok(villages);
   assert.equal(villages.count, 11);
   const moo4 = villages.list.find((v) => v.moo === 4);
-  assert.deepEqual([moo4?.code, moo4?.name, moo4?.totals.total, moo4?.totals.house], ["54060104", "ศรีมูลเรือง", 1031, 538]);
+  assert.deepEqual(
+    [moo4?.code, moo4?.name, moo4?.totals.total, moo4?.totals.house],
+    ["54060104", "ศรีมูลเรือง", 1031, 538],
+  );
 });
 
 test("บ้านกลาง of 2568, its rows last to first → 12 หมู่บ้าน by หมู่ที่ 1 … 12, then ไม่ระบุหมู่ 54060200 last: 14 คน (ชาย 9 หญิง 5) 3 บ้าน (0 + 14 คน, 1 + 2 บ้าน of 5406 and 5489), not counted", () => {
-  const reversed: PopulationSnapshot = { years: [{ ...VILLAGE_SNAPSHOT_6812.years[0], village: [...read68.villages].reverse() }] };
+  const reversed: PopulationSnapshot = {
+    years: [{ ...VILLAGE_SNAPSHOT_6812.years[0], village: [...read68.villages].reverse() }],
+  };
 
   const villages = homePopulation(reversed, AREAS)?.areas.find((a) => a.key === "540602")?.villages;
 
   assert.ok(villages);
   assert.equal(villages.count, 12);
-  assert.deepEqual(villages.list.map((v) => v.moo), [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null]);
+  assert.deepEqual(
+    villages.list.map((v) => v.moo),
+    [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, null],
+  );
   assert.deepEqual(villages.list.at(-1), {
     code: "54060200",
     moo: null,
@@ -638,7 +864,10 @@ test("the อำเภอ of 2568 → 85 หมู่บ้าน, its 8 ตำ�
 
   assert.ok(home);
   assert.deepEqual(home.district.villages, { count: 85, list: [] });
-  assert.deepEqual(home.areas.map((a) => a.villages?.count), [11, 12, 17, 12, 13, 10, 4, 6]);
+  assert.deepEqual(
+    home.areas.map((a) => a.villages?.count),
+    [11, 12, 17, 12, 13, 10, 4, 6],
+  );
 });
 
 test("each ตำบล of 2568 → its หมู่บ้าน, ไม่ระบุหมู่ included, add up to the ตำบล: บ้านหนุน 7,399 คน 3,499 บ้าน, บ้านกลาง 6,686 คน 3,335 บ้าน, and so the other 6", () => {
@@ -647,18 +876,35 @@ test("each ตำบล of 2568 → its หมู่บ้าน, ไม่ร�
   assert.ok(home);
   const sums = home.areas.map((area) =>
     area.villages!.list.reduce(
-      (s, v) => ({ male: s.male + v.totals.male, female: s.female + v.totals.female, total: s.total + v.totals.total, house: s.house + v.totals.house }),
+      (s, v) => ({
+        male: s.male + v.totals.male,
+        female: s.female + v.totals.female,
+        total: s.total + v.totals.total,
+        house: s.house + v.totals.house,
+      }),
       { male: 0, female: 0, total: 0, house: 0 },
     ),
   );
-  assert.deepEqual(sums.slice(0, 2).map((s) => [s.total, s.house]), [[7399, 3499], [6686, 3335]]);
+  assert.deepEqual(
+    sums.slice(0, 2).map((s) => [s.total, s.house]),
+    [
+      [7399, 3499],
+      [6686, 3335],
+    ],
+  );
   // area.totals come from the ตำบล lines, never from the หมู่บ้าน lines.
-  assert.deepEqual(sums, home.areas.map((a) => a.totals));
+  assert.deepEqual(
+    sums,
+    home.areas.map((a) => a.totals),
+  );
 });
 
 test("population.json whose latest year has no village rows, as before F45 uploads stat_m → villages null for the อำเภอ and all 8 ตำบล: the home page hides the list and count of หมู่บ้าน", () => {
   const home = homePopulation(snapshotOf(ROWS_6812), AREAS);
 
   assert.ok(home);
-  assert.deepEqual([home.district, ...home.areas].map((a) => a.villages), Array(9).fill(null));
+  assert.deepEqual(
+    [home.district, ...home.areas].map((a) => a.villages),
+    Array(9).fill(null),
+  );
 });

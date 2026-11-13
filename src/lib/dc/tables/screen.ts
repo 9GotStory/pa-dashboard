@@ -21,7 +21,12 @@ const QUARTERS = [
  * page's for ทั้งปี (reportQuery gives no other ช่วงเวลา, as the tables have
  * no quarter family), and ร้อยละสะสม รายไตรมาส of the area
  */
-export function screenValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function screenValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   // Not the ANC page's quarters: result1–4 have no target1–4 (SCHEMA §4.2)
   const { block, total, goal, passed, units, trend } = ancValues(data, query, names, years);
   return {
@@ -35,8 +40,14 @@ export function screenValues(data: DcReportData, query: ReportQuery, names: Pick
      * ไตรมาส 1–4 of the year and area: its ผลงาน, ผลงานสะสม to it, and
      * ร้อยละสะสม = ผลงานสะสม ÷ the ทั้งปี เป้าหมาย × 100 (SPEC §9.4); [] with total null
      */
-    quarters: block && total
-      ? cumulative(block, QUARTERS.map((q) => q.column), query.area, total.target).map((q, i) => ({ period: QUARTERS[i].period, ...q }))
-      : [],
+    quarters:
+      block && total
+        ? cumulative(
+            block,
+            QUARTERS.map((q) => q.column),
+            query.area,
+            total.target,
+          ).map((q, i) => ({ period: QUARTERS[i].period, ...q }))
+        : [],
   };
 }

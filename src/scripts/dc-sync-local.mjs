@@ -24,7 +24,9 @@ if (!fs.existsSync(path.resolve("public/data/catalog.json"))) {
 const { url } = await startGas(null, loadGas({ sheets: PA_SHEETS }), ({ action, kind, yymm }) => {
   console.log(`dc-sync-local: POST ${[action, kind, yymm].filter(Boolean).join(" ")}`);
 });
-console.log(`dc-sync-local: open http://localhost:${port}/sync with PIN ${PIN}; GAS harness at ${url}; Ctrl-C or kill ${process.pid} stops both`);
+console.log(
+  `dc-sync-local: open http://localhost:${port}/sync with PIN ${PIN}; GAS harness at ${url}; Ctrl-C or kill ${process.pid} stops both`,
+);
 
 const next = spawn(process.execPath, [path.resolve("node_modules/next/dist/bin/next"), "dev", "-p", port], {
   stdio: "inherit",

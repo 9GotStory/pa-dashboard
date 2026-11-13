@@ -72,7 +72,9 @@ function Library({ mains }: { mains: Mains }) {
     heading.current?.scrollIntoView({ block: "start" });
     heading.current?.focus({ preventScroll: true });
   };
-  return <Directory mains={mains} query={libraryQuery(mains, new URLSearchParams(search))} actions={{ go, pick, heading }} />;
+  return (
+    <Directory mains={mains} query={libraryQuery(mains, new URLSearchParams(search))} actions={{ go, pick, heading }} />
+  );
 }
 
 /**
@@ -158,7 +160,12 @@ function Directory({
             </div>
             <nav aria-labelledby="library-nav-title" className="mt-2 border-t border-dc-border-subtle pt-2">
               <div className="pb-4">
-                <Pick to={{ ...query, main: null, cat: null }} actions={actions} current={all} className={barItem(all, false)}>
+                <Pick
+                  to={{ ...query, main: null, cat: null }}
+                  actions={actions}
+                  current={all}
+                  className={barItem(all, false)}
+                >
                   <span className="min-w-0">รายงานทั้งหมด</span>
                   <Count n={count(topics)} />
                 </Pick>
@@ -221,13 +228,24 @@ function Directory({
                   </optgroup>
                 ))}
               </select>
-              <ChevronDown aria-hidden="true" className="pointer-events-none absolute top-4 right-4 size-4 text-dc-brand-primary" />
+              <ChevronDown
+                aria-hidden="true"
+                className="pointer-events-none absolute top-4 right-4 size-4 text-dc-brand-primary"
+              />
             </div>
           </div>
 
-          <section aria-labelledby="library-title" className="min-w-0 rounded-[22px] bg-dc-surface px-5 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-9 xl:px-10">
+          <section
+            aria-labelledby="library-title"
+            className="min-w-0 rounded-[22px] bg-dc-surface px-5 pt-5 pb-6 sm:px-8 sm:pt-7 sm:pb-9 xl:px-10"
+          >
             <div className="flex flex-wrap items-center justify-between gap-2 border-b border-dc-border-subtle pb-5 sm:pb-6">
-              <h2 id="library-title" ref={actions?.heading} tabIndex={-1} className="font-prompt text-[21px] font-semibold sm:text-[23px]">
+              <h2
+                id="library-title"
+                ref={actions?.heading}
+                tabIndex={-1}
+                className="font-prompt text-[21px] font-semibold sm:text-[23px]"
+              >
                 {title}
               </h2>
               {/* Read out as the list changes */}
@@ -271,8 +289,14 @@ function Directory({
                     >
                       <div className="flex flex-wrap items-start justify-between gap-2 pb-2">
                         <div className="flex min-w-0 items-start gap-3">
-                          <span aria-hidden="true" className="mt-[11px] h-1 w-[17px] shrink-0 rounded-full bg-dc-brand-accent" />
-                          <h3 id={`topic-${t.cat_id}`} className="max-w-[670px] font-prompt text-base leading-[1.65] font-semibold sm:text-lg">
+                          <span
+                            aria-hidden="true"
+                            className="mt-[11px] h-1 w-[17px] shrink-0 rounded-full bg-dc-brand-accent"
+                          />
+                          <h3
+                            id={`topic-${t.cat_id}`}
+                            className="max-w-[670px] font-prompt text-base leading-[1.65] font-semibold sm:text-lg"
+                          >
                             {t.category_name}
                           </h3>
                         </div>
@@ -282,7 +306,11 @@ function Directory({
                       </div>
                       {section.map((g) => (
                         <div key={g.subgroup}>
-                          {g.subgroup && <h4 className="pt-4 pb-1 font-prompt text-xs font-medium text-dc-text-secondary sm:pt-5">{g.subgroup}</h4>}
+                          {g.subgroup && (
+                            <h4 className="pt-4 pb-1 font-prompt text-xs font-medium text-dc-text-secondary sm:pt-5">
+                              {g.subgroup}
+                            </h4>
+                          )}
                           <ul>
                             {g.reports.map((r) => (
                               <li key={r.opendata_id}>
@@ -370,7 +398,9 @@ function Row({ report, q }: { report: DcReport; q: string }) {
         {report.catalog_status === "removed" && (
           <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">HDC ไม่แสดงรายงานนี้แล้ว</span>
         )}
-        {report.years.length === 0 && <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">ยังไม่มีข้อมูล</span>}
+        {report.years.length === 0 && (
+          <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">ยังไม่มีข้อมูล</span>
+        )}
       </span>
       <ArrowRight
         aria-hidden="true"

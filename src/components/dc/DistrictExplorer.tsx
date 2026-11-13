@@ -76,7 +76,10 @@ export default function DistrictExplorer({
               onLoad={(ok) => setMapStatus(ok ? "ready" : "failed")}
             />
             {mapStatus !== "ready" && (
-              <p role="status" className="absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-text-secondary">
+              <p
+                role="status"
+                className="absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-text-secondary"
+              >
                 {mapStatus === "loading" ? "กำลังโหลดแผนที่…" : "โหลดขอบเขตตำบลไม่สำเร็จ เลือกตำบลจากรายการได้"}
               </p>
             )}
@@ -111,9 +114,7 @@ export default function DistrictExplorer({
             </select>
 
             <div className="mt-5">
-              <h3 className="font-prompt text-lg font-semibold text-dc-brand-deep">
-                {title}
-              </h3>
+              <h3 className="font-prompt text-lg font-semibold text-dc-brand-deep">{title}</h3>
               {area ? (
                 <>
                   <p className="text-xs text-dc-text-secondary">รหัสตำบล {area.id}</p>
@@ -129,7 +130,9 @@ export default function DistrictExplorer({
                           className="flex justify-between gap-3 border-t border-dc-border-subtle py-2 text-[13px] first:border-t-0"
                         >
                           <span className="font-semibold text-dc-brand-deep">{h.hospname}</span>
-                          <span className="text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">รหัส {h.hospcode}</span>
+                          <span className="text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">
+                            รหัส {h.hospcode}
+                          </span>
                         </li>
                       ))}
                     </ul>
@@ -169,12 +172,7 @@ export default function DistrictExplorer({
         />
       )}
       {panelPopulation?.age && (
-        <PopulationPyramid
-          scope={scope}
-          age={panelPopulation.age}
-          source={source}
-          onClear={() => setSelected(null)}
-        />
+        <PopulationPyramid scope={scope} age={panelPopulation.age} source={source} onClear={() => setSelected(null)} />
       )}
     </div>
   );
@@ -190,9 +188,14 @@ function PopulationRows({ totals }: { totals: PopulationTotals }) {
   return (
     <dl className="mt-2.5">
       {rows.map(([label, value]) => (
-        <div key={label} className="flex items-baseline justify-between gap-2.5 border-t border-dc-border-subtle py-1.5 text-xs text-dc-text-secondary">
+        <div
+          key={label}
+          className="flex items-baseline justify-between gap-2.5 border-t border-dc-border-subtle py-1.5 text-xs text-dc-text-secondary"
+        >
           <dt>{label}</dt>
-          <dd className="font-prompt text-[15px] font-semibold whitespace-nowrap text-dc-brand-deep tabular-nums">{value}</dd>
+          <dd className="font-prompt text-[15px] font-semibold whitespace-nowrap text-dc-brand-deep tabular-nums">
+            {value}
+          </dd>
         </div>
       ))}
     </dl>
@@ -211,9 +214,15 @@ function VillageRows({ villages }: { villages: AreaVillages }) {
             key={v.code}
             className="flex items-baseline gap-3 border-t border-dc-border-subtle py-2 text-[13px] first:border-t-0"
           >
-            <span className="min-w-0 flex-1 font-semibold text-dc-brand-deep">{v.moo === null ? "ไม่ระบุหมู่" : `หมู่ ${v.moo} ${v.name}`}</span>
-            <span className="text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">{formatCount(v.totals.total)} คน</span>
-            <span className="w-16 text-right text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">{formatCount(v.totals.house)} บ้าน</span>
+            <span className="min-w-0 flex-1 font-semibold text-dc-brand-deep">
+              {v.moo === null ? "ไม่ระบุหมู่" : `หมู่ ${v.moo} ${v.name}`}
+            </span>
+            <span className="text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">
+              {formatCount(v.totals.total)} คน
+            </span>
+            <span className="w-16 text-right text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">
+              {formatCount(v.totals.house)} บ้าน
+            </span>
           </li>
         ))}
       </ul>

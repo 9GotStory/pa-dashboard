@@ -26,31 +26,31 @@ const CATALOG = { [EPI]: SUBSET.reports[EPI], ...SEED_TOPICS.reports };
 const SEED = {
   // อนามัยแม่และเด็ก
   "1c1b8e24aff59258a806f122e264031e": ["", 10, 75, "", ""], // s_kpi_anc12
-  "bd63b8d99f7054560fcf9c3b96f39c13": ["", 20, 75, "", ""], // s_anc5
+  bd63b8d99f7054560fcf9c3b96f39c13: ["", 20, 75, "", ""], // s_anc5
   "1b60d68b1cb5b003fcba38a4a0e4027b": ["", 30, 87, "", ""], // s_kpi_childdev4
   "684e99dc7538c8b1a97f19f91a100f08": ["", 40, 20, "", ""], // s_kpi_childdev2
   // การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม
   "4164a7c49fcb2b8c3ccca67dcdf28bd0": ["", 10, 50, "", ""], // s_kpi_food
   // การคัดกรอง
-  "aa86b13e8cb60cae6c3216b7e3e5f151": ["", 10, 80, "", ""], // s_aged9
+  aa86b13e8cb60cae6c3216b7e3e5f151: ["", 10, 80, "", ""], // s_aged9
   // Service Plan สาขาโรคไม่ติดต่อ
   "626c89f6b8d9f7ed90c72c719775eb07": ["", 10, 90, "", ""], // s_dm_screen
   "9702fa28cd2ec73ecc6af89d14f46874": ["", 20, 90, "", ""], // s_ht_screen
-  "e9e461e793e8258f47d46d6956f12832": ["", 30, 70, "", ""], // s_ncd_screen_repleate1
-  "b57439ff27302ade8c38d1dd189644a4": ["", 40, 80, "", ""], // s_ht_screen_follow
+  e9e461e793e8258f47d46d6956f12832: ["", 30, 70, "", ""], // s_ncd_screen_repleate1
+  b57439ff27302ade8c38d1dd189644a4: ["", 40, 80, "", ""], // s_ht_screen_follow
   // Service Plan สาขาสุขภาพช่องปาก
   abt2t2k4z4xeqzytwbave: ["", 10, 80, "b", "a"], // s_dental_0_5_cavity_free
-  "e07a6ff3cd63d34a759be4bff5c1a4c6": ["", 20, 25, "", ""], // s_kpi_dental28
+  e07a6ff3cd63d34a759be4bff5c1a4c6: ["", 20, 25, "", ""], // s_kpi_dental28
   "1fb6b46f1d1fd42362f97072f4b3b653": ["", 30, 50, "", ""], // s_kpi_dental33
   // การสร้างเสริมภูมิคุ้มกันโรค
-  "c88658f4d09acb8c76e6c06ffb58ebaf": ["กลุ่มอายุ 1 ปี", 10, 90, "", ""], // s_epi1
+  c88658f4d09acb8c76e6c06ffb58ebaf: ["กลุ่มอายุ 1 ปี", 10, 90, "", ""], // s_epi1
   "28dd2c7955ce926456240b2ff0100bde": ["กลุ่มอายุ 1 ปี", 11, 90, "", ""], // s_epi_complete
   "71e49e4b61aafee17761601c506d5f85": ["กลุ่มอายุ 2 ปี", 20, 90, "", ""], // s_epi2
   "35f4a8d465e6e1edc05f3d8ab658c551": ["กลุ่มอายุ 2 ปี", 21, 90, "", ""], // s_epi_complete
   "267ce09f2a704eb7783997e25d1f18ba": ["กลุ่มอายุ 3 ปี", 30, 90, "", ""], // s_epi3
-  "d1fe173d08e959397adf34b1d77e88d7": ["กลุ่มอายุ 3 ปี", 31, 90, "", ""], // s_epi_complete
-  "c47283d3c2c1e6528ddcf88c254f21b3": ["กลุ่มอายุ 5 ปี", 50, 90, "", ""], // s_epi5
-  "f033ab37c30201f73f142449d037028d": ["กลุ่มอายุ 5 ปี", 51, 90, "", ""], // s_epi_complete
+  d1fe173d08e959397adf34b1d77e88d7: ["กลุ่มอายุ 3 ปี", 31, 90, "", ""], // s_epi_complete
+  c47283d3c2c1e6528ddcf88c254f21b3: ["กลุ่มอายุ 5 ปี", 50, 90, "", ""], // s_epi5
+  f033ab37c30201f73f142449d037028d: ["กลุ่มอายุ 5 ปี", 51, 90, "", ""], // s_epi_complete
 };
 
 function diag(h, setup) {
@@ -65,7 +65,10 @@ function seed(h) {
 // The admin typing value into (row, column by header name) of a sheet.
 function setCell(h, sheetName, row, column, value) {
   const col = h.sheet(sheetName)[0].indexOf(column) + 1;
-  h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName(sheetName).getRange(row, col).setValues([[value]]);
+  h.gas.SpreadsheetApp.getActiveSpreadsheet()
+    .getSheetByName(sheetName)
+    .getRange(row, col)
+    .setValues([[value]]);
 }
 
 // The admin's steps before the seed (SPEC §13 steps 2–4): setup=datacenter,
@@ -114,14 +117,23 @@ test("a seed report whose row is cut from hdc_reports → applied: 20, not_found
   const res = seed(h);
 
   assert.deepEqual(res, { applied: 20, not_found: [cavityFree] });
-  assert.deepEqual(records(h.sheet("hdc_reports")).map((r) => r.opendata_id), before);
+  assert.deepEqual(
+    records(h.sheet("hdc_reports")).map((r) => r.opendata_id),
+    before,
+  );
 });
 
 test("dc_seed twice → the same answer and sheet; the API columns, the rows outside the seed and hdc_topics are not touched", () => {
   const h = loadRefreshed();
   // The admin ticked a report outside the seed (s_ipv), then seeds at 08:05.
   const ipv = "d8976d09a8e90349cf356e1135b36c2e";
-  setCell(h, "hdc_reports", records(h.sheet("hdc_reports")).findIndex((r) => r.opendata_id === ipv) + 2, "enabled", true);
+  setCell(
+    h,
+    "hdc_reports",
+    records(h.sheet("hdc_reports")).findIndex((r) => r.opendata_id === ipv) + 2,
+    "enabled",
+    true,
+  );
   h.clock.now = Date.parse("2026-10-30T08:05:00+07:00");
   const before = h.sheet("hdc_reports");
   const topics = h.sheet("hdc_topics");
@@ -133,8 +145,15 @@ test("dc_seed twice → the same answer and sheet; the API columns, the rows out
   assert.deepEqual(second, first);
   assert.deepEqual(h.sheet("hdc_reports"), once);
   const api = [
-    "opendata_id", "report_name", "source_table", "cat_id", "category_name", "main_report_id", "main_report_name",
-    "catalog_status", "last_seen_at",
+    "opendata_id",
+    "report_name",
+    "source_table",
+    "cat_id",
+    "category_name",
+    "main_report_id",
+    "main_report_name",
+    "catalog_status",
+    "last_seen_at",
   ];
   const apiColumns = (values) => values.map((row) => api.map((name) => row[values[0].indexOf(name)]));
   assert.deepEqual(apiColumns(once), apiColumns(before));
@@ -162,6 +181,9 @@ test("setup=dc_seed whose write to hdc_reports throws → error: … in the resp
 
   assert.match(res, /^error: .*Service Spreadsheets timed out/);
   const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
-  assert.deepEqual(errors.map((r) => r.Message), ["setup=dc_seed failed"]);
+  assert.deepEqual(
+    errors.map((r) => r.Message),
+    ["setup=dc_seed failed"],
+  );
   assert.match(errors[0].Details, /Service Spreadsheets timed out/);
 });

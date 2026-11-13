@@ -48,7 +48,9 @@ export default function PopulationComparison({
   const { district } = population;
   // population.areas is by code already.
   const areas: AreaPopulation[] =
-    sort === "code" ? population.areas : population.areas.toSorted((a, b) => b.totals.total - a.totals.total || a.key.localeCompare(b.key));
+    sort === "code"
+      ? population.areas
+      : population.areas.toSorted((a, b) => b.totals.total - a.totals.total || a.key.localeCompare(b.key));
   const top = Math.max(...areas.map((a) => a.totals.total));
 
   return (
@@ -91,7 +93,9 @@ export default function PopulationComparison({
                       style={{ width: `${(a.totals.total / top) * 100}%` }}
                     />
                   </span>
-                  <span className="text-right font-semibold text-dc-brand-deep tabular-nums">{formatCount(a.totals.total)}</span>
+                  <span className="text-right font-semibold text-dc-brand-deep tabular-nums">
+                    {formatCount(a.totals.total)}
+                  </span>
                 </button>
               );
             })}
@@ -136,13 +140,20 @@ export default function PopulationComparison({
                     >
                       <th scope="row" className="py-1 pr-3 pl-2 text-left font-semibold text-dc-brand-deep sm:pl-3">
                         {/* No onClick of its own: its click reaches the row's. */}
-                        <button type="button" aria-pressed={picked} disabled={!canPick} className="min-h-10 rounded px-2 text-left">
+                        <button
+                          type="button"
+                          aria-pressed={picked}
+                          disabled={!canPick}
+                          className="min-h-10 rounded px-2 text-left"
+                        >
                           {a.name}
                         </button>
                       </th>
                       <td className="px-3 py-1 text-right">{formatCount(a.totals.male)}</td>
                       <td className="px-3 py-1 text-right">{formatCount(a.totals.female)}</td>
-                      <td className="px-3 py-1 text-right font-bold text-dc-brand-deep">{formatCount(a.totals.total)}</td>
+                      <td className="px-3 py-1 text-right font-bold text-dc-brand-deep">
+                        {formatCount(a.totals.total)}
+                      </td>
                       <td className="py-1 pr-4 pl-3 text-right sm:pr-5">{formatCount(a.totals.house)}</td>
                     </tr>
                   );

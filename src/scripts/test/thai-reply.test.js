@@ -17,12 +17,32 @@ const ENGLISH = "The build is running in the background while I commit the chang
 const THAI = "กำลังรอ build เต็มกับผู้รีวิวสองแกน ได้ผลครบแล้วจะรวมผลและสรุปให้";
 
 const typed = (text) => ({ type: "user", origin: { kind: "human" }, message: { role: "user", content: text } });
-const skill = { type: "user", isMeta: true, message: { role: "user", content: [{ type: "text", text: "Base directory for this skill: …" }] } };
-const peer = { type: "user", isMeta: true, origin: { kind: "peer" }, message: { role: "user", content: "Another Claude session sent a message: …" } };
-const notification = { type: "user", origin: { kind: "task-notification" }, message: { role: "user", content: "<task-notification>…" } };
+const skill = {
+  type: "user",
+  isMeta: true,
+  message: { role: "user", content: [{ type: "text", text: "Base directory for this skill: …" }] },
+};
+const peer = {
+  type: "user",
+  isMeta: true,
+  origin: { kind: "peer" },
+  message: { role: "user", content: "Another Claude session sent a message: …" },
+};
+const notification = {
+  type: "user",
+  origin: { kind: "task-notification" },
+  message: { role: "user", content: "<task-notification>…" },
+};
 const note = (text) => ({ type: "assistant", message: { role: "assistant", content: [{ type: "text", text }] } });
-const feedback = { type: "user", isMeta: true, message: { role: "user", content: "Stop hook feedback:\nCLAUDE.md: write to the user in Thai, …" } };
-const toolResult = { type: "user", message: { role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: "ok" }] } };
+const feedback = {
+  type: "user",
+  isMeta: true,
+  message: { role: "user", content: "Stop hook feedback:\nCLAUDE.md: write to the user in Thai, …" },
+};
+const toolResult = {
+  type: "user",
+  message: { role: "user", content: [{ type: "tool_result", tool_use_id: "t", content: "ok" }] },
+};
 
 // The hook's decision for a turn whose last reply is in Thai.
 function run(entries) {
@@ -53,7 +73,10 @@ test("an English note before the last typed message belongs to an earlier turn",
 });
 
 test("an English note the hook already quoted is not quoted again when a subagent's report wakes Claude", () => {
-  assert.equal(run([typed("/implement #233"), note(ENGLISH), feedback, note(THAI), peer, notification, note(THAI)]), null);
+  assert.equal(
+    run([typed("/implement #233"), note(ENGLISH), feedback, note(THAI), peer, notification, note(THAI)]),
+    null,
+  );
 });
 
 test("an English note after the hook's feedback is still caught", () => {

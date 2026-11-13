@@ -12,7 +12,12 @@ import { goalFor, passes, periods, totals, totalsBy, trend, yearBlock } from "..
  * เปรียบเทียบตาม of the query (measure is not used: the tables have none),
  * the trend over years (catalog.meta.years)
  */
-export function ancValues(data: DcReportData, query: ReportQuery, names: Pick<DcCatalog, "areas" | "hospitals">, years: string[]) {
+export function ancValues(
+  data: DcReportData,
+  query: ReportQuery,
+  names: Pick<DcCatalog, "areas" | "hospitals">,
+  years: string[],
+) {
   const block = yearBlock(data, query.year);
   const total = block && totals(block, data.report, query);
   const goal = goalFor(data.report, null);

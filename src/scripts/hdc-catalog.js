@@ -51,7 +51,10 @@ function readExport(file) {
 // in dc-catalog.js), which also keeps tabs and line breaks out of find's
 // tab-separated lines.
 function cleanName(v) {
-  return String(v || "").replace(/<\/?[A-Za-z][^<>]*>/g, "").replace(/\s+/g, " ").trim();
+  return String(v || "")
+    .replace(/<\/?[A-Za-z][^<>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 // One tab-separated line per report of each table, under a header row. The
