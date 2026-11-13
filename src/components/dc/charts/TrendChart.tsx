@@ -31,18 +31,18 @@ export default function TrendChart({ title, points, goal }: { title: string; poi
   return (
     <svg role="img" aria-label={label} width="100%" height={HEIGHT} className="block text-xs">
       {ticks.map((t) => (
-        <text key={t} x={`${PLOT_X - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-muted tabular-nums">
+        <text key={t} x={`${PLOT_X - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-text-secondary tabular-nums">
           {t}
         </text>
       ))}
       {points.map((p, i) => (
-        <text key={p.b_year} x={`${PLOT_X + (PLOT_WIDTH * x(i)) / 100}%`} y={HEIGHT - 10} textAnchor="middle" className="fill-dc-ink">
+        <text key={p.b_year} x={`${PLOT_X + (PLOT_WIDTH * x(i)) / 100}%`} y={HEIGHT - 10} textAnchor="middle" className="fill-dc-brand-deep">
           {p.b_year}
         </text>
       ))}
       <svg x={`${PLOT_X}%`} y={PLOT_TOP} width={`${PLOT_WIDTH}%`} height={PLOT_HEIGHT} overflow="visible">
         {ticks.map((t) => (
-          <line key={t} x1="0" x2="100%" y1={`${y(t)}%`} y2={`${y(t)}%`} className="stroke-dc-border" />
+          <line key={t} x1="0" x2="100%" y1={`${y(t)}%`} y2={`${y(t)}%`} className="stroke-dc-border-subtle" />
         ))}
         {goal !== null && (
           <line x1="0" x2="100%" y1={`${y(goal)}%`} y2={`${y(goal)}%`} strokeWidth="2" strokeDasharray="7 6" className="stroke-dc-gold" />
@@ -52,18 +52,18 @@ export default function TrendChart({ title, points, goal }: { title: string; poi
           return (
             prev !== null &&
             v !== null && (
-              <line key={k} x1={`${x(k)}%`} y1={`${y(prev)}%`} x2={`${x(k + 1)}%`} y2={`${y(v)}%`} strokeWidth="3" strokeLinecap="round" className="stroke-dc-blue" />
+              <line key={k} x1={`${x(k)}%`} y1={`${y(prev)}%`} x2={`${x(k + 1)}%`} y2={`${y(v)}%`} strokeWidth="3" strokeLinecap="round" className="stroke-dc-brand-primary" />
             )
           );
         })}
         {pcts.map((v, i) =>
           v === null ? (
-            <text key={i} x={`${x(i)}%`} y="100%" dy="-6" textAnchor="middle" className="fill-dc-muted">
+            <text key={i} x={`${x(i)}%`} y="100%" dy="-6" textAnchor="middle" className="fill-dc-text-secondary">
               —
             </text>
           ) : (
             <g key={i}>
-              <circle cx={`${x(i)}%`} cy={`${y(v)}%`} r="5" strokeWidth="3" className="fill-white stroke-dc-blue" />
+              <circle cx={`${x(i)}%`} cy={`${y(v)}%`} r="5" strokeWidth="3" className="fill-white stroke-dc-brand-primary" />
               {/* A white edge keeps the value legible where it crosses the line or the เกณฑ์ */}
               <text
                 x={`${x(i)}%`}
@@ -72,7 +72,7 @@ export default function TrendChart({ title, points, goal }: { title: string; poi
                 textAnchor="middle"
                 strokeWidth="4"
                 strokeLinejoin="round"
-                className="fill-dc-ink stroke-white font-semibold tabular-nums [paint-order:stroke]"
+                className="fill-dc-brand-deep stroke-white font-semibold tabular-nums [paint-order:stroke]"
               >
                 {formatPct(v)}
               </text>

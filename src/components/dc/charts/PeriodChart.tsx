@@ -33,7 +33,7 @@ export default function PeriodChart({ title, points }: { title: string; points: 
   return (
     <svg role="img" aria-label={label} width="100%" height={HEIGHT} className="block text-xs">
       {ticks.map((t) => (
-        <text key={t} x={`${plotX - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-muted tabular-nums">
+        <text key={t} x={`${plotX - 2}%`} y={PLOT_TOP + (y(t) / 100) * PLOT_HEIGHT} dominantBaseline="middle" textAnchor="end" className="fill-dc-text-secondary tabular-nums">
           {formatCount(t)}
         </text>
       ))}
@@ -44,21 +44,21 @@ export default function PeriodChart({ title, points }: { title: string; points: 
           x={`${plotX + (plotWidth * (i + 0.5) * slot) / 100}%`}
           y={HEIGHT - (points.length > 6 && i % 2 === 1 ? 4 : 17)}
           textAnchor="middle"
-          className="fill-dc-ink text-[11px]"
+          className="fill-dc-brand-deep text-[11px]"
         >
           {p.label}
         </text>
       ))}
       <svg x={`${plotX}%`} y={PLOT_TOP} width={`${plotWidth}%`} height={PLOT_HEIGHT}>
         {ticks.map((t) => (
-          <line key={t} x1="0" x2="100%" y1={`${y(t)}%`} y2={`${y(t)}%`} className="stroke-dc-border" />
+          <line key={t} x1="0" x2="100%" y1={`${y(t)}%`} y2={`${y(t)}%`} className="stroke-dc-border-subtle" />
         ))}
         {points.map(
           (p, i) =>
             p.totals && (
               <g key={p.label}>
-                <rect x={`${(i + 0.14) * slot}%`} y={`${y(p.totals.target)}%`} width={`${0.34 * slot}%`} height={`${100 - y(p.totals.target)}%`} className="fill-dc-navy" />
-                <rect x={`${(i + 0.52) * slot}%`} y={`${y(p.totals.result)}%`} width={`${0.34 * slot}%`} height={`${100 - y(p.totals.result)}%`} className="fill-dc-teal" />
+                <rect x={`${(i + 0.14) * slot}%`} y={`${y(p.totals.target)}%`} width={`${0.34 * slot}%`} height={`${100 - y(p.totals.target)}%`} className="fill-dc-brand-deep" />
+                <rect x={`${(i + 0.52) * slot}%`} y={`${y(p.totals.result)}%`} width={`${0.34 * slot}%`} height={`${100 - y(p.totals.result)}%`} className="fill-dc-brand-accent" />
               </g>
             ),
         )}

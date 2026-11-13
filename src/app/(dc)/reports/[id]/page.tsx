@@ -71,12 +71,12 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
   return (
     <>
       <nav aria-label="ลำดับหน้าของรายงาน" className="mb-3 print:hidden">
-        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-dc-muted">
+        <ol className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-dc-text-secondary">
           {crumbs.map((c, i) => (
             <li key={c.label} className="flex items-center gap-2">
               {i > 0 && <span aria-hidden="true">/</span>}
               {c.href ? (
-                <Link href={c.href} className="font-semibold text-dc-blue underline-offset-2 hover:underline">
+                <Link href={c.href} className="font-semibold text-dc-brand-primary underline-offset-2 hover:underline">
                   {c.label}
                 </Link>
               ) : (
@@ -87,21 +87,21 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         </ol>
       </nav>
 
-      <header className="mb-4 rounded-[10px] border border-l-4 border-dc-border border-l-dc-teal bg-white px-4 py-5 sm:px-7 sm:py-6">
+      <header className="mb-4 rounded-[10px] border border-l-4 border-dc-border-subtle border-l-dc-brand-accent bg-white px-4 py-5 sm:px-7 sm:py-6">
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <span className="rounded-[5px] bg-dc-blue-light px-2.5 py-1 text-xs font-bold text-dc-blue-dark">{report.source_table}</span>
+          <span className="rounded-[5px] bg-dc-highlight-soft px-2.5 py-1 text-xs font-bold text-dc-brand-deep">{report.source_table}</span>
           {report.catalog_status === "removed" && (
-            <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-ink">HDC ไม่แสดงรายงานนี้แล้ว</span>
+            <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">HDC ไม่แสดงรายงานนี้แล้ว</span>
           )}
         </div>
-        <p className="mb-1.5 text-xs font-bold text-dc-blue">{topic.category_name}</p>
-        <h1 className="font-prompt text-[22px] font-semibold leading-snug text-dc-navy sm:text-[28px]">{report.report_name}</h1>
-        <p className="mt-3 border-t border-dc-border pt-3 text-xs text-dc-muted">
+        <p className="mb-1.5 text-xs font-bold text-dc-brand-primary">{topic.category_name}</p>
+        <h1 className="font-prompt text-[22px] font-semibold leading-snug text-dc-brand-deep sm:text-[28px]">{report.report_name}</h1>
+        <p className="mt-3 border-t border-dc-border-subtle pt-3 text-xs text-dc-text-secondary">
           {group.subgroup && `${group.subgroup} · `}อำเภอสอง จังหวัดแพร่ · ข้อมูลจาก HDC Open Data
         </p>
       </header>
 
-      <div className="overflow-hidden rounded-[10px] border border-dc-border bg-white print:border-0">
+      <div className="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0">
         <TablePicker
           id={report.opendata_id}
           page={page}
@@ -109,40 +109,40 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           years={catalog.meta.years}
         />
 
-        <section aria-labelledby="about-title" className="border-t border-dc-border bg-dc-canvas/60 px-4 py-5 sm:px-6">
-          <h2 id="about-title" className="font-prompt text-[15px] font-semibold text-dc-navy">
+        <section aria-labelledby="about-title" className="border-t border-dc-border-subtle bg-dc-canvas/60 px-4 py-5 sm:px-6">
+          <h2 id="about-title" className="font-prompt text-[15px] font-semibold text-dc-brand-deep">
             เกี่ยวกับรายงานนี้
           </h2>
           <div className="mt-3 grid gap-3 md:grid-cols-2">
-            <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4">
-              <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">แหล่งข้อมูล</h3>
+            <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-white p-4">
+              <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">แหล่งข้อมูล</h3>
               <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
-                <dt className="text-dc-muted">ตารางต้นทาง</dt>
+                <dt className="text-dc-text-secondary">ตารางต้นทาง</dt>
                 <dd>{report.source_table}</dd>
-                <dt className="text-dc-muted">รหัสรายงาน</dt>
+                <dt className="text-dc-text-secondary">รหัสรายงาน</dt>
                 <dd>{report.opendata_id}</dd>
-                <dt className="text-dc-muted">ปีที่มีในระบบ</dt>
+                <dt className="text-dc-text-secondary">ปีที่มีในระบบ</dt>
                 <dd>{report.years.length > 0 ? report.years.map((y) => y.b_year).join(", ") : "ยังไม่มีข้อมูล"}</dd>
-                <dt className="text-dc-muted">วันที่ข้อมูลล่าสุด</dt>
+                <dt className="text-dc-text-secondary">วันที่ข้อมูลล่าสุด</dt>
                 <dd>{formatThaiDate(latest) || "—"}</dd>
-                <dt className="text-dc-muted">ต้นทาง</dt>
+                <dt className="text-dc-text-secondary">ต้นทาง</dt>
                 <dd>
-                  <a href={hdc} className="text-dc-blue underline underline-offset-2">
+                  <a href={hdc} className="text-dc-brand-primary underline underline-offset-2">
                     HDC
                   </a>{" "}
                   ·{" "}
-                  <a href={openData} className="text-dc-blue underline underline-offset-2">
+                  <a href={openData} className="text-dc-brand-primary underline underline-offset-2">
                     HDC Open Data
                   </a>
                 </dd>
               </dl>
             </div>
-            <div className="min-w-0 rounded-lg border border-dc-border bg-white p-4 text-xs leading-relaxed">
+            <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-white p-4 text-xs leading-relaxed">
               <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
               <div className="mb-3">
                 <TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />
               </div>
-              <h3 className="font-prompt text-[13px] font-semibold text-dc-navy">ข้อจำกัด</h3>
+              <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">ข้อจำกัด</h3>
               <ul className="mt-1 list-disc pl-4">
                 <li>ตัวเลขเป็นไปตามนิยามและการประมวลผลของ HDC</li>
                 {/* One year (s_dental_0_5_cavity_free) has no แนวโน้ม: nothing that reads as several years (SPEC §9.4) */}
@@ -155,20 +155,20 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       </div>
 
       {others.length > 0 && (
-        <section aria-labelledby="related-title" className="mt-6 rounded-[10px] border border-dc-border bg-white p-4 sm:p-5 print:hidden">
-          <h2 id="related-title" className="font-prompt text-base font-semibold text-dc-navy">
+        <section aria-labelledby="related-title" className="mt-6 rounded-[10px] border border-dc-border-subtle bg-white p-4 sm:p-5 print:hidden">
+          <h2 id="related-title" className="font-prompt text-base font-semibold text-dc-brand-deep">
             รายงานที่เกี่ยวข้อง
           </h2>
-          <p className="text-xs text-dc-muted">รายงานในกลุ่มและหัวข้อเดียวกัน</p>
+          <p className="text-xs text-dc-text-secondary">รายงานในกลุ่มและหัวข้อเดียวกัน</p>
           <ul className="mt-3 grid gap-3 md:grid-cols-3">
             {others.map((e) => (
               <li key={e.report.opendata_id} className="min-w-0">
                 <Link
                   href={`/reports/${e.report.opendata_id}`}
-                  className="flex h-full flex-col rounded-lg border border-dc-border bg-dc-canvas/40 p-3 hover:border-dc-blue"
+                  className="flex h-full flex-col rounded-lg border border-dc-border-subtle bg-dc-canvas/40 p-3 hover:border-dc-brand-primary"
                 >
-                  <strong className="text-[13px] leading-snug font-semibold text-dc-ink">{e.report.report_name}</strong>
-                  <small className="mt-1 text-[11px] text-dc-muted">
+                  <strong className="text-[13px] leading-snug font-semibold text-dc-brand-deep">{e.report.report_name}</strong>
+                  <small className="mt-1 text-[11px] text-dc-text-secondary">
                     {e.report.source_table}
                     {e.group.subgroup && ` · ${e.group.subgroup}`}
                   </small>
