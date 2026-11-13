@@ -1,0 +1,81 @@
+{
+  "lighthouseVersion": "13.5.0",
+  "requestedUrl": "https://songhealth-dc.pages.dev/reports/c88658f4d09acb8c76e6c06ffb58ebaf",
+  "finalDisplayedUrl": "https://songhealth-dc.pages.dev/reports/c88658f4d09acb8c76e6c06ffb58ebaf",
+  "fetchTime": "2026-11-13T04:41:14.578Z",
+  "audits": {
+    "largest-contentful-paint": {
+      "id": "largest-contentful-paint",
+      "title": "Largest Contentful Paint",
+      "description": "Largest Contentful Paint marks the time at which the largest text or image is painted. [Learn more about the Largest Contentful Paint metric](https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint/)",
+      "score": 0.96,
+      "scoreDisplayMode": "numeric",
+      "numericValue": 2057.489,
+      "numericUnit": "millisecond",
+      "displayValue": "2.1 s",
+      "scoringOptions": {
+        "p10": 2500,
+        "median": 4000
+      }
+    },
+    "lcp-breakdown-insight": {
+      "id": "lcp-breakdown-insight",
+      "title": "LCP breakdown",
+      "description": "Each [subpart has specific improvement strategies](https://developer.chrome.com/docs/performance/insights/lcp-breakdown). Ideally, most of the LCP time should be spent on loading the resources, not within delays.",
+      "score": 1,
+      "scoreDisplayMode": "informative",
+      "metricSavings": {
+        "LCP": 0
+      },
+      "details": {
+        "type": "list",
+        "items": [
+          {
+            "type": "table",
+            "headings": [
+              {
+                "key": "label",
+                "valueType": "text",
+                "label": "Subpart"
+              },
+              {
+                "key": "duration",
+                "valueType": "ms",
+                "label": "Duration"
+              }
+            ],
+            "items": [
+              {
+                "subpart": "timeToFirstByte",
+                "label": "Time to first byte",
+                "duration": 613.677
+              },
+              {
+                "subpart": "elementRenderDelay",
+                "label": "Element render delay",
+                "duration": 1443.812
+              }
+            ]
+          },
+          {
+            "type": "node",
+            "lhId": "page-0-H1",
+            "path": "1,HTML,1,BODY,1,DIV,2,MAIN,1,HEADER,2,H1",
+            "selector": "div.LtazDq_variable > main#main > header.mb-4 > h1.font-prompt",
+            "boundingRect": {
+              "top": 261,
+              "bottom": 382,
+              "left": 36,
+              "right": 379,
+              "width": 343,
+              "height": 121
+            },
+            "snippet": "<h1 class=\"font-prompt text-[22px] font-semibold leading-snug text-dc-brand-deep sm:t…\">",
+            "nodeLabel": "ความครอบคลุมของเด็กอายุครบ 1 ปีที่ได้รับวัคซีน BCG ,HBV1,DTP1,DTP3,HBV3,Hib3,โปลิโอ3, MMR1…"
+          }
+        ]
+      },
+      "guidanceLevel": 3
+    }
+  }
+}
