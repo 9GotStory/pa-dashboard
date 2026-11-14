@@ -22,6 +22,13 @@ const populationReader = {
   message:
     "Data Center code that runs in the browser does not import population.ts, which holds the /sync file reader (SPEC §9.5, §9.6): take the computed values as props, or add up with population-totals.ts.",
 };
+// values.ts loads population-report.ts on every page for POPULATION_REPORT
+// (CODING_STANDARDS §4, F68).
+const csvModule = {
+  regex: "^(@/lib/dc|\\.)/csv$",
+  message:
+    "population-report.ts does not import csv.ts: values.ts loads it on every page (CODING_STANDARDS §4). The population CSV lives in population-csv.ts.",
+};
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -60,8 +67,12 @@ const eslintConfig = defineConfig([
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
   },
   {
-    files: ["src/lib/dc/population-report.ts", "src/lib/dc/population-csv.ts", "src/lib/dc/population-totals.ts"],
+    files: ["src/lib/dc/population-csv.ts", "src/lib/dc/population-totals.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader] }] },
+  },
+  {
+    files: ["src/lib/dc/population-report.ts"],
+    rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader, csvModule] }] },
   },
   {
     files: ["src/lib/dc/**"],
