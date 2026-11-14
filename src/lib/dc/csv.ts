@@ -8,12 +8,13 @@ import type { Cell, DcReport } from "./types";
 /**
  * Rows as CSV text: a UTF-8 BOM so Excel reads Thai, CRLF line ends, every
  * cell quoted, and a ' before a cell that a spreadsheet would run as a
- * formula (R6's rule: = + - @ tab or CR, after any spaces)
+ * formula (R6's rule: = + - @ tab or CR, after any spaces), but not before a
+ * plain negative number such as -478 or -6.07, which Excel reads as a number
  */
 function toCsv(rows: Cell[][]): string {
   const cell = (v: Cell) => {
     const text = String(v);
-    const safe = /^\s*[=+\-@\t\r]/.test(text) ? "'" + text : text;
+    const safe = /^\s*[=+\-@\t\r]/.test(text) && !/^-\d+(\.\d+)?$/.test(text) ? "'" + text : text;
     return `"${safe.replaceAll('"', '""')}"`;
   };
   return "\uFEFF" + rows.map((row) => row.map(cell).join(",")).join("\r\n");

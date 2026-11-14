@@ -43,9 +43,23 @@ test("CSV cells starting with = + - @ tab or CR, after spaces too as in R6 → '
     year: "2569",
     filters: "",
     dateCom: "",
-    table: [["=SUM(A1)", "+1", "-1", "@A1", "\tx", "\rx", " =1", "—", "1-2"]],
+    table: [["=SUM(A1)", "+1", "-1+2", "-A1", "- 1", "-SUM(A1)", "@A1", "\tx", "\rx", " =1", "—", "1-2"]],
   });
-  assert.equal(csv.text.split("\r\n").at(-1), '"\'=SUM(A1)","\'+1","\'-1","\'@A1","\'\tx","\'\rx","\' =1","—","1-2"');
+  assert.equal(
+    csv.text.split("\r\n").at(-1),
+    '"\'=SUM(A1)","\'+1","\'-1+2","\'-A1","\'- 1","\'-SUM(A1)","\'@A1","\'\tx","\'\rx","\' =1","—","1-2"',
+  );
+});
+
+test("CSV cell that is a plain negative number (-478, -6.07, -1) → no ' first, so Excel reads it as a number (SPEC §9.4)", () => {
+  const csv = reportCsv({
+    report: ANC12,
+    year: "2569",
+    filters: "",
+    dateCom: "",
+    table: [["-478", "-6.07", "-1"]],
+  });
+  assert.equal(csv.text.split("\r\n").at(-1), '"-478","-6.07","-1"');
 });
 
 test("CSV file name → SHDC-{source_table}-{first 8 of opendata_id}-{year}.csv (SPEC §9.4), the id in its own letter case (SCHEMA §3)", () => {
