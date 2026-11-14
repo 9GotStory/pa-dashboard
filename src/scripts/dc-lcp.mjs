@@ -13,7 +13,13 @@
 // branch's build, so dc:check and dc:budget can follow. Not for CI, whose
 // runners are too noisy. Lighthouse and serve run through npx; neither is a
 // dependency.
-// Usage: npm run dc:lcp [-- <page> ...]   (default /)
+// With --live (#295) it builds nothing and needs neither git nor public/data/:
+// it runs Lighthouse 3 rounds on the live site, each round every page, their
+// order swapped round by round, and prints each page's runs, median and LCP
+// elements, with built_at of the live meta.json before and after. The JSON is
+// in .dc-lcp/live/. Exits 1 when a median is not under 2.5 s, or when
+// built_at changed, as a deploy landed mid-measurement.
+// Usage: npm run dc:lcp [-- [--live] <page> ...]   (default /)
 import { spawn, spawnSync } from "node:child_process";
 import crypto from "node:crypto";
 import fs from "node:fs";
@@ -23,9 +29,13 @@ import path from "node:path";
 
 const ROUNDS = 3;
 // In the repo and gitignored, so a reboot keeps them, unlike a temp dir:
-// main's build, and the Lighthouse JSON of the last run, emptied each run.
+// main's build, and the Lighthouse JSON of the last run against the local
+// builds and of the last --live run, each emptied when its mode runs.
 const MAIN_BUILD = ".dc-lcp/main";
 const LIGHTHOUSE_JSON = ".dc-lcp/local";
+const LIVE_JSON = ".dc-lcp/live";
+// Fixed: --live measures production only (#295).
+const LIVE_SITE = "https://songhealth-dc.pages.dev";
 // The one file of .next/ that dc-budget.mjs reads besides out/; the whole
 // .next/ is about 189 MB.
 const LOADABLE_MANIFEST = ".next/server/app/(dc)/reports/[id]/page/react-loadable-manifest.json";
@@ -58,6 +68,17 @@ export function medianRun(runs) {
 // Multiplying instead of dividing keeps exactly 10% exact.
 export function tooSlow(branchMs, mainMs) {
   return branchMs * 10 > mainMs * 11;
+}
+
+// SPEC §9.6: a page's median on the live site must be under 2.5 s (#295).
+const LIVE_BUDGET_MS = 2500;
+export function overLiveBudget(ms) {
+  return ms >= LIVE_BUDGET_MS;
+}
+
+// The pages in round's order: as given in odd rounds, reversed in even ones.
+export function roundOrder(pages, round) {
+  return round % 2 ? pages : pages.toReversed();
 }
 
 const sha256 = (data) => crypto.createHash("sha256").update(data).digest("hex");
@@ -151,10 +172,79 @@ function lighthouse(url, file) {
   return readLcp(JSON.parse(fs.readFileSync(file, "utf8")));
 }
 
-if (import.meta.main) {
-  const pages = process.argv.length > 2 ? process.argv.slice(2) : ["/"];
+const jsonFile = (dir, page, ...parts) => path.join(dir, `${[page.replace(/[^\w-]+/g, "_"), ...parts].join("-")}.json`);
+const loadAverage = (values) => values.map((value) => value.toFixed(2)).join(" ");
+
+function pagesFrom(args) {
+  const pages = args.length ? args : ["/"];
   const bad = pages.find((page) => !page.startsWith("/"));
   if (bad) die(`${bad}: a page is a path from the site's root, such as / or /reports`);
+  return pages;
+}
+
+// A meta.json that does not answer, or has no built_at, stops the run, so a
+// deploy mid-measurement cannot pass as two missing values.
+async function liveBuiltAt() {
+  const url = `${LIVE_SITE}/data/meta.json`;
+  let builtAt;
+  try {
+    const response = await fetch(url);
+    if (response.ok) builtAt = (await response.json()).built_at;
+  } catch {
+    // Reported below with the rest.
+  }
+  if (!builtAt) throw new Error(`could not read built_at in ${url}: check that the site answers, then run again`);
+  return builtAt;
+}
+
+async function measureLive(pages) {
+  fs.rmSync(LIVE_JSON, { recursive: true, force: true });
+  fs.mkdirSync(LIVE_JSON, { recursive: true });
+  try {
+    const builtBefore = await liveBuiltAt();
+    const loadBefore = os.loadavg();
+    const runs = Object.fromEntries(pages.map((page) => [page, []]));
+    for (let round = 1; round <= ROUNDS; round++) {
+      for (const page of roundOrder(pages, round)) {
+        const lcp = lighthouse(LIVE_SITE + page, jsonFile(LIVE_JSON, page, round));
+        console.log(`dc-lcp: ${page} round ${round} ${Math.round(lcp.ms)} ms`);
+        runs[page].push(lcp);
+      }
+    }
+    const loadAfter = os.loadavg();
+    const builtAfter = await liveBuiltAt();
+
+    console.log(
+      `\nLCP on ${LIVE_SITE}, ${ROUNDS} rounds · built_at ${builtBefore} before, ${builtAfter} after · load average ${loadAverage(loadBefore)} before, ${loadAverage(loadAfter)} after`,
+    );
+    let fail = false;
+    for (const page of pages) {
+      const median = medianRun(runs[page]).ms;
+      const over = overLiveBudget(median);
+      fail ||= over;
+      const rounds = runs[page].map(({ ms }) => Math.round(ms)).join(" · ");
+      console.log(
+        `${page}: ${rounds} ms · median ${Math.round(median)} ms · ${over ? "FAIL: not under" : "pass: under"} ${LIVE_BUDGET_MS} ms`,
+      );
+      runs[page].forEach(({ element }, i) => console.log(`  round ${i + 1} LCP element: ${element}`));
+    }
+    if (builtAfter !== builtBefore) {
+      console.error("dc-lcp: built_at changed while measuring, as a deploy landed: run again");
+      fail = true;
+    }
+    if (fail) process.exitCode = 1;
+  } catch (error) {
+    console.error(`dc-lcp: ${error.message}`);
+    process.exitCode = 1;
+  } finally {
+    console.log(`Lighthouse JSON: ${LIVE_JSON}/`);
+  }
+}
+
+if (import.meta.main && process.argv[2] === "--live") {
+  await measureLive(pagesFrom(process.argv.slice(3)));
+} else if (import.meta.main) {
+  const pages = pagesFrom(process.argv.slice(2));
 
   if (git("status", "--porcelain")) die("the working tree is not clean: commit or stash first, as main is built in it");
   const headSha = git("rev-parse", "--short", "HEAD");
@@ -231,9 +321,8 @@ if (import.meta.main) {
     for (const page of pages) {
       const runs = { main: [], branch: [] };
       for (let round = 1; round <= ROUNDS; round++) {
-        for (const side of round % 2 ? ["main", "branch"] : ["branch", "main"]) {
-          const file = path.join(LIGHTHOUSE_JSON, `${page.replace(/[^\w-]+/g, "_")}-${side}-${round}.json`);
-          const lcp = lighthouse(urls[side] + page, file);
+        for (const side of roundOrder(["main", "branch"], round)) {
+          const lcp = lighthouse(urls[side] + page, jsonFile(LIGHTHOUSE_JSON, page, side, round));
           console.log(`dc-lcp: ${page} round ${round} ${side} ${Math.round(lcp.ms)} ms`);
           runs[side].push(lcp);
         }
@@ -243,7 +332,6 @@ if (import.meta.main) {
       results.push({ page, main, branch, slow: tooSlow(branch.ms, main.ms) });
     }
 
-    const loadAverage = (values) => values.map((value) => value.toFixed(2)).join(" ");
     console.log(
       `\nLCP, median of ${ROUNDS}: main ${mainSha} vs ${start} ${headSha} · load average ${loadAverage(loadBefore)} before, ${loadAverage(os.loadavg())} after`,
     );

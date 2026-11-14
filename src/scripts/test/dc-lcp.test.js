@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
-import { medianRun, readLcp, sameBuild, snapshotHash, tooSlow } from "../dc-lcp.mjs";
+import { medianRun, overLiveBudget, readLcp, roundOrder, sameBuild, snapshotHash, tooSlow } from "../dc-lcp.mjs";
 
 // dc-lcp.mjs (#277): the pure parts that read Lighthouse's JSON and judge
 // the SPEC §9.6 rule, and since #294 those that decide on reusing main's
@@ -41,6 +41,22 @@ test("tooSlow fails a branch a little over 10% slower than main", () => {
 test("tooSlow passes a branch faster than main or as fast", () => {
   assert.equal(tooSlow(2035.568, 2051.382), false);
   assert.equal(tooSlow(2051.382, 2051.382), false);
+});
+
+// #295, SPEC §9.6: a page on the live site passes when its median is under
+// 2.5 s.
+test("overLiveBudget passes a page just under 2500 ms and fails one at 2500 ms", () => {
+  assert.equal(overLiveBudget(2499), false);
+  assert.equal(overLiveBudget(2500), true);
+});
+
+// #295: each round of --live measures every page, the order swapped round
+// by round.
+test("roundOrder swaps the order of the pages each round", () => {
+  const pages = ["/", "/reports/population"];
+  assert.deepEqual(roundOrder(pages, 1), ["/", "/reports/population"]);
+  assert.deepEqual(roundOrder(pages, 2), ["/reports/population", "/"]);
+  assert.deepEqual(roundOrder(pages, 3), ["/", "/reports/population"]);
 });
 
 // #294: main's build in .dc-lcp/main/ is reused only for the same snapshot.
