@@ -29,10 +29,12 @@ import path from "node:path";
 
 const ROUNDS = 3;
 // In the repo and gitignored, so a reboot keeps them, unlike a temp dir:
-// main's build, and the Lighthouse JSON of the last run, emptied each run.
+// main's build, and the Lighthouse JSON of the last run against the local
+// builds and of the last --live run, each emptied when its mode runs.
 const MAIN_BUILD = ".dc-lcp/main";
 const LIGHTHOUSE_JSON = ".dc-lcp/local";
 const LIVE_JSON = ".dc-lcp/live";
+// Fixed: --live measures production only (#295).
 const LIVE_SITE = "https://songhealth-dc.pages.dev";
 // The one file of .next/ that dc-budget.mjs reads besides out/; the whole
 // .next/ is about 189 MB.
@@ -180,10 +182,19 @@ function pagesFrom(args) {
   return pages;
 }
 
+// A meta.json that does not answer, or has no built_at, stops the run, so a
+// deploy mid-measurement cannot pass as two missing values.
 async function liveBuiltAt() {
-  const response = await fetch(`${LIVE_SITE}/data/meta.json`);
-  if (!response.ok) throw new Error(`${LIVE_SITE}/data/meta.json answered ${response.status}`);
-  return (await response.json()).built_at;
+  const url = `${LIVE_SITE}/data/meta.json`;
+  let builtAt;
+  try {
+    const response = await fetch(url);
+    if (response.ok) builtAt = (await response.json()).built_at;
+  } catch {
+    // Reported below with the rest.
+  }
+  if (!builtAt) throw new Error(`could not read built_at in ${url}: check that the site answers, then run again`);
+  return builtAt;
 }
 
 async function measureLive(pages) {
@@ -310,7 +321,7 @@ if (import.meta.main && process.argv[2] === "--live") {
     for (const page of pages) {
       const runs = { main: [], branch: [] };
       for (let round = 1; round <= ROUNDS; round++) {
-        for (const side of round % 2 ? ["main", "branch"] : ["branch", "main"]) {
+        for (const side of roundOrder(["main", "branch"], round)) {
           const lcp = lighthouse(urls[side] + page, jsonFile(LIGHTHOUSE_JSON, page, side, round));
           console.log(`dc-lcp: ${page} round ${round} ${side} ${Math.round(lcp.ms)} ms`);
           runs[side].push(lcp);
