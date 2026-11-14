@@ -53,3 +53,6 @@ catalog-exports/
 
 # Data Center snapshot from src/scripts/build-snapshot.mjs (SPEC §6.1)
 public/data/
+
+# main's build and the Lighthouse JSON from src/scripts/dc-lcp.mjs (docs/agents/page-checks.md)
+.dc-lcp/

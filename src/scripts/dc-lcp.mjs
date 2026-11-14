@@ -3,18 +3,32 @@
 // (npx next build, both from the same public/data/), serves the two out/ on
 // free ports, runs Lighthouse 3 rounds per page with one run of each side per
 // round, swapping which side goes first, and prints each page's medians.
-// Exits 1 when a branch median is over 10% slower than main's. Ends on the
-// branch it started from, with out/ and .next/ from the branch's build, so
-// dc:check and dc:budget can follow. Not for CI, whose runners are too noisy.
-// Lighthouse and serve run through npx; neither is a dependency.
+// main's build is kept in .dc-lcp/main/ (#294) and reused while main's SHA,
+// the snapshot and node_modules/.package-lock.json are those it was built
+// from. After both builds it runs this branch's dc-budget.mjs on each side
+// and prints both outputs in the summary; they do not change the exit code,
+// as CI checks dc:budget. The Lighthouse JSON of the last run is in
+// .dc-lcp/local/. Exits 1 when a branch median is over 10% slower than
+// main's. Ends on the branch it started from, with out/ and .next/ from the
+// branch's build, so dc:check and dc:budget can follow. Not for CI, whose
+// runners are too noisy. Lighthouse and serve run through npx; neither is a
+// dependency.
 // Usage: npm run dc:lcp [-- <page> ...]   (default /)
 import { spawn, spawnSync } from "node:child_process";
+import crypto from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 
 const ROUNDS = 3;
+// In the repo and gitignored, so a reboot keeps them, unlike a temp dir:
+// main's build, and the Lighthouse JSON of the last run, emptied each run.
+const MAIN_BUILD = ".dc-lcp/main";
+const LIGHTHOUSE_JSON = ".dc-lcp/local";
+// The one file of .next/ that dc-budget.mjs reads besides out/; the whole
+// .next/ is about 189 MB.
+const LOADABLE_MANIFEST = ".next/server/app/(dc)/reports/[id]/page/react-loadable-manifest.json";
 // SPEC §9.6's command. Blocking the map tiles changes nothing on a page
 // without the map.
 const LIGHTHOUSE = [
@@ -44,6 +58,34 @@ export function medianRun(runs) {
 // Multiplying instead of dividing keeps exactly 10% exact.
 export function tooSlow(branchMs, mainMs) {
   return branchMs * 10 > mainMs * 11;
+}
+
+const sha256 = (data) => crypto.createHash("sha256").update(data).digest("hex");
+
+// The hash of a directory's files: each relative path, sorted, then the hash
+// of its content, so a renamed file or a moved boundary between two files
+// changes it too.
+export function snapshotHash(dir) {
+  const files = fs
+    .readdirSync(dir, { recursive: true })
+    .filter((file) => fs.statSync(path.join(dir, file)).isFile())
+    .map((file) => file.split(path.sep).join("/"))
+    .sort();
+  return sha256(files.map((file) => `${file}\0${sha256(fs.readFileSync(path.join(dir, file)))}\n`).join(""));
+}
+
+// Whether built-from.json names the build that key describes: main's SHA,
+// the snapshot's hash and the hash of node_modules/.package-lock.json. A
+// file cut short names none, so main is built again.
+export function sameBuild(file, key) {
+  if (!fs.existsSync(file)) return false;
+  let saved;
+  try {
+    saved = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return false;
+  }
+  return saved.main === key.main && saved.snapshot === key.snapshot && saved.packages === key.packages;
 }
 
 function run(command, args, options) {
@@ -94,6 +136,16 @@ async function serve(dir) {
   throw new Error(`serve ${dir} did not answer on ${url} within 2 minutes`);
 }
 
+// The output of this branch's dc-budget.mjs run in dir, so both sides are
+// counted the same way, with its error when it fails.
+function budget(dir) {
+  const { stdout, stderr } = spawnSync(process.execPath, [path.join(import.meta.dirname, "dc-budget.mjs")], {
+    cwd: dir,
+    encoding: "utf8",
+  });
+  return (stdout + stderr).trim();
+}
+
 function lighthouse(url, file) {
   run("npx", [...LIGHTHOUSE, `--output-path=${file}`, url], { stdio: ["ignore", "ignore", "inherit"] });
   return readLcp(JSON.parse(fs.readFileSync(file, "utf8")));
@@ -109,6 +161,8 @@ if (import.meta.main) {
   const mainSha = git("rev-parse", "--short", "main");
   if (headSha === mainSha) die("HEAD is main's commit: run this on a branch to compare it with main");
   if (!fs.existsSync("public/data")) die("public/data/ is missing: run npm run snapshot first");
+  if (!fs.existsSync("node_modules/.package-lock.json"))
+    die("node_modules/.package-lock.json is missing: run npm ci first");
   const behind = spawnSync("git", ["rev-list", "--count", "main..origin/main"], { encoding: "utf8" }).stdout?.trim();
   if (behind && behind !== "0") {
     console.warn(`dc-lcp: warning: main is ${behind} commits behind origin/main; pull main to compare with the latest`);
@@ -135,32 +189,50 @@ if (import.meta.main) {
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => process.exit(128 + os.constants.signals[signal]));
 
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "dc-lcp-"));
+  const key = {
+    main: git("rev-parse", "main"),
+    snapshot: snapshotHash("public/data"),
+    packages: sha256(fs.readFileSync("node_modules/.package-lock.json")),
+  };
+  const builtFrom = path.join(MAIN_BUILD, "built-from.json");
+  fs.rmSync(LIGHTHOUSE_JSON, { recursive: true, force: true });
+  fs.mkdirSync(LIGHTHOUSE_JSON, { recursive: true });
   try {
-    // main is built in this working tree: a git worktree of main with
-    // node_modules symlinked does not build, as Turbopack refuses files
-    // outside the worktree's root.
-    console.log(`dc-lcp: building main (${mainSha})`);
-    git("checkout", "--quiet", "main");
-    onMain = true;
-    run("npx", ["next", "build"], { stdio: "inherit" });
-    const mainOut = path.join(tmp, "main-out");
-    fs.cpSync("out", mainOut, { recursive: true });
-    // When the branch's build fails, no out/ of main is left for dc:check.
-    fs.rmSync("out", { recursive: true });
-    git("checkout", "--quiet", start);
-    onMain = false;
+    if (sameBuild(builtFrom, key)) {
+      console.log(`dc-lcp: reusing main's build of ${mainSha} in ${MAIN_BUILD}/`);
+    } else {
+      fs.rmSync(MAIN_BUILD, { recursive: true, force: true });
+      // main is built in this working tree: a git worktree of main with
+      // node_modules symlinked does not build, as Turbopack refuses files
+      // outside the worktree's root.
+      console.log(`dc-lcp: building main (${mainSha})`);
+      git("checkout", "--quiet", "main");
+      onMain = true;
+      run("npx", ["next", "build"], { stdio: "inherit" });
+      fs.cpSync("out", path.join(MAIN_BUILD, "out"), { recursive: true });
+      fs.cpSync(LOADABLE_MANIFEST, path.join(MAIN_BUILD, LOADABLE_MANIFEST));
+      // Last, so a copy cut short is built again next time.
+      fs.writeFileSync(builtFrom, `${JSON.stringify(key, null, 2)}\n`);
+      // When the branch's build fails, no out/ of main is left for dc:check.
+      fs.rmSync("out", { recursive: true });
+      git("checkout", "--quiet", start);
+      onMain = false;
+    }
     console.log(`dc-lcp: building ${start} (${headSha})`);
     run("npx", ["next", "build"], { stdio: "inherit" });
+    const budgets = [
+      [`main ${mainSha}`, budget(MAIN_BUILD)],
+      [`${start} ${headSha}`, budget(".")],
+    ];
 
-    const urls = { main: await serve(mainOut), branch: await serve("out") };
+    const urls = { main: await serve(path.join(MAIN_BUILD, "out")), branch: await serve("out") };
     const loadBefore = os.loadavg();
     const results = [];
     for (const page of pages) {
       const runs = { main: [], branch: [] };
       for (let round = 1; round <= ROUNDS; round++) {
         for (const side of round % 2 ? ["main", "branch"] : ["branch", "main"]) {
-          const file = path.join(tmp, `${page.replace(/[^\w-]+/g, "_")}-${side}-${round}.json`);
+          const file = path.join(LIGHTHOUSE_JSON, `${page.replace(/[^\w-]+/g, "_")}-${side}-${round}.json`);
           const lcp = lighthouse(urls[side] + page, file);
           console.log(`dc-lcp: ${page} round ${round} ${side} ${Math.round(lcp.ms)} ms`);
           runs[side].push(lcp);
@@ -184,11 +256,12 @@ if (import.meta.main) {
       console.log(`  main LCP element: ${main.element}`);
       console.log(`  branch LCP element: ${branch.element}`);
     }
+    for (const [label, output] of budgets) console.log(`dc:budget ${label}\n${output.replace(/^/gm, "  ")}`);
     if (results.some(({ slow }) => slow)) process.exitCode = 1;
   } catch (error) {
     console.error(`dc-lcp: ${error.message}`);
     process.exitCode = 1;
   } finally {
-    console.log(`Lighthouse JSON: ${tmp}`);
+    console.log(`Lighthouse JSON: ${LIGHTHOUSE_JSON}/`);
   }
 }
