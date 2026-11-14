@@ -342,8 +342,8 @@ test("CSV of รายงานประชากร, the whole อำเภอ 
     "",
     '"ตำบล","2564","2565","2566","2567","2568","เปลี่ยนแปลงจากปีแรกถึง 2568 (คน)","เปลี่ยนแปลงจากปีแรกถึง 2568 (ร้อยละ)"',
   ]);
-  // A change below 0 starts with -, so it is kept as text (R6's rule)
-  assert.equal(lines[7], '"บ้านหนุน","7877","7765","7624","7495","7399","\'-478","\'-6.07"');
+  // A change below 0 is a plain number, so it has no ' first (SPEC §9.4)
+  assert.equal(lines[7], '"บ้านหนุน","7877","7765","7624","7495","7399","-478","-6.07"');
   // 8 ตำบล, then a blank line before the ช่วงอายุ table
   assert.equal(lines[15], "");
 });
@@ -356,7 +356,7 @@ test('CSV of บ้านกลาง → หมู่บ้าน × ปีข�
   assert.equal(lines[6].split(",")[0], '"หมู่บ้าน"');
   // The last หมู่บ้าน row, before the blank line of the ช่วงอายุ table
   const lastUnit = (csvLines: string[]) => csvLines[csvLines.lastIndexOf("") - 1];
-  assert.equal(lastUnit(lines), '"ไม่ระบุหมู่","16","14","15","16","14","\'-2","\'-12.50"');
+  assert.equal(lastUnit(lines), '"ไม่ระบุหมู่","16","14","15","16","14","-2","-12.50"');
 
   const cut = {
     years: POPULATION_REPORT_DATA.years.map((y) => ({ ...y, village: y.yymm === "6612" ? [] : y.village })),
