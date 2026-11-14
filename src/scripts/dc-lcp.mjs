@@ -7,7 +7,8 @@
 // the snapshot and node_modules/.package-lock.json are those it was built
 // from. After both builds it runs this branch's dc-budget.mjs on each side
 // and prints both outputs in the summary; they do not change the exit code,
-// as CI checks dc:budget. Exits 1 when a branch median is over 10% slower than
+// as CI checks dc:budget. The Lighthouse JSON of the last run is in
+// .dc-lcp/local/. Exits 1 when a branch median is over 10% slower than
 // main's. Ends on the branch it started from, with out/ and .next/ from the
 // branch's build, so dc:check and dc:budget can follow. Not for CI, whose
 // runners are too noisy. Lighthouse and serve run through npx; neither is a
@@ -74,10 +75,16 @@ export function snapshotHash(dir) {
 }
 
 // Whether built-from.json names the build that key describes: main's SHA,
-// the snapshot's hash and the hash of node_modules/.package-lock.json.
+// the snapshot's hash and the hash of node_modules/.package-lock.json. A
+// file cut short names none, so main is built again.
 export function sameBuild(file, key) {
   if (!fs.existsSync(file)) return false;
-  const saved = JSON.parse(fs.readFileSync(file, "utf8"));
+  let saved;
+  try {
+    saved = JSON.parse(fs.readFileSync(file, "utf8"));
+  } catch {
+    return false;
+  }
   return saved.main === key.main && saved.snapshot === key.snapshot && saved.packages === key.packages;
 }
 
@@ -132,7 +139,7 @@ async function serve(dir) {
 // The output of this branch's dc-budget.mjs run in dir, so both sides are
 // counted the same way, with its error when it fails.
 function budget(dir) {
-  const { stdout, stderr } = spawnSync("node", [path.join(import.meta.dirname, "dc-budget.mjs")], {
+  const { stdout, stderr } = spawnSync(process.execPath, [path.join(import.meta.dirname, "dc-budget.mjs")], {
     cwd: dir,
     encoding: "utf8",
   });
@@ -154,6 +161,8 @@ if (import.meta.main) {
   const mainSha = git("rev-parse", "--short", "main");
   if (headSha === mainSha) die("HEAD is main's commit: run this on a branch to compare it with main");
   if (!fs.existsSync("public/data")) die("public/data/ is missing: run npm run snapshot first");
+  if (!fs.existsSync("node_modules/.package-lock.json"))
+    die("node_modules/.package-lock.json is missing: run npm ci first");
   const behind = spawnSync("git", ["rev-list", "--count", "main..origin/main"], { encoding: "utf8" }).stdout?.trim();
   if (behind && behind !== "0") {
     console.warn(`dc-lcp: warning: main is ${behind} commits behind origin/main; pull main to compare with the latest`);

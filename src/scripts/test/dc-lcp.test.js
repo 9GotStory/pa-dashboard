@@ -6,7 +6,8 @@ import test, { after } from "node:test";
 import { medianRun, readLcp, sameBuild, snapshotHash, tooSlow } from "../dc-lcp.mjs";
 
 // dc-lcp.mjs (#277): the pure parts that read Lighthouse's JSON and judge
-// the SPEC §9.6 rule. The fixture is cut from a Lighthouse 13.5.0 run against
+// the SPEC §9.6 rule, and since #294 those that decide on reusing main's
+// build, against files in temp dirs. The fixture is cut from a Lighthouse 13.5.0 run against
 // /reports/c88658f4d09acb8c76e6c06ffb58ebaf on 13 Nov 2569 (.wizard/f64/lcp/run1.json).
 const RUN1 = JSON.parse(fs.readFileSync(new URL("./fixtures/lighthouse-lcp-20261113.json", import.meta.url), "utf8"));
 
@@ -43,11 +44,12 @@ test("tooSlow passes a branch faster than main or as fast", () => {
 });
 
 // #294: main's build in .dc-lcp/main/ is reused only for the same snapshot.
-// Each test writes a small snapshot of public/data/'s shape in a temp dir.
+// Each test writes its files, such as a small snapshot of public/data/'s
+// shape, in a temp dir.
 const dirs = [];
 after(() => dirs.forEach((dir) => fs.rmSync(dir, { recursive: true })));
 
-function snapshot(files) {
+function tempDir(files) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "dc-lcp-test-"));
   dirs.push(dir);
   for (const [file, text] of files) {
@@ -65,20 +67,20 @@ const FILES = [
 
 test("snapshotHash changes when a file's content changes", () => {
   const edited = FILES.map(([file, text]) => [file, file === "reports/a1.json" ? '{"rows":[2]}' : text]);
-  assert.notEqual(snapshotHash(snapshot(FILES)), snapshotHash(snapshot(edited)));
+  assert.notEqual(snapshotHash(tempDir(FILES)), snapshotHash(tempDir(edited)));
 });
 
 test("snapshotHash changes when a file is added", () => {
-  assert.notEqual(snapshotHash(snapshot(FILES)), snapshotHash(snapshot([...FILES, ["reports/b2.json", "{}"]])));
+  assert.notEqual(snapshotHash(tempDir(FILES)), snapshotHash(tempDir([...FILES, ["reports/b2.json", "{}"]])));
 });
 
 test("snapshotHash changes when a file is renamed", () => {
   const renamed = FILES.map(([file, text]) => [file === "reports/a1.json" ? "reports/a2.json" : file, text]);
-  assert.notEqual(snapshotHash(snapshot(FILES)), snapshotHash(snapshot(renamed)));
+  assert.notEqual(snapshotHash(tempDir(FILES)), snapshotHash(tempDir(renamed)));
 });
 
 test("snapshotHash is the same for the same files written in another order", () => {
-  assert.equal(snapshotHash(snapshot(FILES)), snapshotHash(snapshot(FILES.toReversed())));
+  assert.equal(snapshotHash(tempDir(FILES)), snapshotHash(tempDir(FILES.toReversed())));
 });
 
 // The key of main's build in .dc-lcp/main/built-from.json: main's SHA, the
@@ -90,13 +92,13 @@ const KEY = {
 };
 
 test("sameBuild is true when built-from.json holds the same three values", () => {
-  const dir = snapshot([["built-from.json", JSON.stringify(KEY)]]);
+  const dir = tempDir([["built-from.json", JSON.stringify(KEY)]]);
   assert.equal(sameBuild(path.join(dir, "built-from.json"), { ...KEY }), true);
 });
 
 for (const field of Object.keys(KEY)) {
   test(`sameBuild is false when ${field} differs`, () => {
-    const dir = snapshot([["built-from.json", JSON.stringify(KEY)]]);
+    const dir = tempDir([["built-from.json", JSON.stringify(KEY)]]);
     assert.equal(
       sameBuild(path.join(dir, "built-from.json"), { ...KEY, [field]: "0".repeat(KEY[field].length) }),
       false,
@@ -105,6 +107,11 @@ for (const field of Object.keys(KEY)) {
 }
 
 test("sameBuild is false when there is no built-from.json", () => {
-  const dir = snapshot([]);
+  const dir = tempDir([]);
+  assert.equal(sameBuild(path.join(dir, "built-from.json"), KEY), false);
+});
+
+test("sameBuild is false when built-from.json is cut short", () => {
+  const dir = tempDir([["built-from.json", JSON.stringify(KEY).slice(0, 40)]]);
   assert.equal(sameBuild(path.join(dir, "built-from.json"), KEY), false);
 });
