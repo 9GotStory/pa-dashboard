@@ -13,6 +13,7 @@ import type {
   LibraryReport,
   ReportQuery,
   TrendPoint,
+  UnitTotals,
 } from "./types";
 import {
   dataYears,
@@ -31,6 +32,7 @@ import {
   reportQuery,
   reportSearch,
   shownMeasures,
+  sortedUnits,
   totals,
   totalsBy,
   trend,
@@ -909,4 +911,28 @@ test("a report name split at the search, as typed in the name: เบาหว�
   assert.deepEqual(libraryNameParts("การคัดกรองผู้สูงอายุ 9 ด้าน", "s_aged9"), [
     { text: "การคัดกรองผู้สูงอายุ 9 ด้าน", mark: false },
   ]);
+});
+
+/** A unit of a เปรียบเทียบ section with its ร้อยละ alone, as the sort reads it */
+const unit = (key: string, pct: number | null): UnitTotals => ({
+  key,
+  name: key,
+  totals: { target: 0, result: 0, pct },
+});
+
+// SPEC §9.4 "การเรียง": 5 ตำบล in code order, one without a ร้อยละ and two with the same
+const UNITS = [unit("540601", 80), unit("540602", null), unit("540603", 90), unit("540604", 80), unit("540605", 95)];
+
+test('by value → the largest ร้อยละ first, 95 · 90 · 80 · 80, the two 80s by code, and the ตำบล without a ร้อยละ ("—") last', () => {
+  assert.deepEqual(
+    sortedUnits(UNITS, "value", (u) => u.totals.pct).map((u) => u.key),
+    ["540605", "540603", "540601", "540604", "540602"],
+  );
+});
+
+test("by code → the order the units come in, 540601 to 540605, the ตำบล without a ร้อยละ in its place", () => {
+  assert.deepEqual(
+    sortedUnits(UNITS, "code", (u) => u.totals.pct).map((u) => u.key),
+    ["540601", "540602", "540603", "540604", "540605"],
+  );
 });

@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { ancValues } from "@/lib/dc/tables/anc";
-import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { areaLabel } from "../report/labels";
 import QuarterFigures from "../report/QuarterFigures";
 import ReportActions from "../report/ReportActions";
@@ -33,6 +34,8 @@ export default function AncPage({ id, names, years }: { id: string; names: Names
 
 function Anc({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
+  // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
   const { block, total, goal, units, trend, quarters } = ancValues(data, query, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
@@ -55,7 +58,12 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
           ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
         </ReportStatus>
       ) : (
-        <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={quarters} year={query.year} />
+        <QuarterFigures
+          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          onSort={setSort}
+          steps={quarters}
+          year={query.year}
+        />
       )}
     </>
   );

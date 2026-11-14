@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { followValues } from "@/lib/dc/tables/follow";
-import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { BpMethodsPanel } from "../report/panels";
 import QuarterFigures from "../report/QuarterFigures";
 import ReportActions from "../report/ReportActions";
@@ -34,6 +35,8 @@ export default function FollowPage({ id, names, years }: { id: string; names: Na
 
 function Follow({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query: asked, search, apply, heading } = useReportQuery(data, names);
+  // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
   const { query, block, total, goal, units, trend, quarters, bpMethods } = followValues(data, asked, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
@@ -50,7 +53,12 @@ function Follow({ data, names, years }: { data: DcReportData; names: Names; year
         <ReportActions csv={csv} />
       </ResultsHeader>
       {block ? (
-        <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={quarters} year={query.year}>
+        <QuarterFigures
+          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          onSort={setSort}
+          steps={quarters}
+          year={query.year}
+        >
           {total && bpMethods && (
             <BpMethodsPanel year={query.year} period={query.period} result={total.result} bpMethods={bpMethods} />
           )}

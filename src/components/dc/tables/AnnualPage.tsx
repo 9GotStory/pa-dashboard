@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { annualValues } from "@/lib/dc/tables/annual";
-import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { areaLabel } from "../report/labels";
 import { AgeMonthsPanel } from "../report/panels";
 import QuarterFigures from "../report/QuarterFigures";
@@ -36,6 +37,8 @@ export default function AnnualPage({ id, names, years }: { id: string; names: Na
 
 function Annual({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
+  // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
   const { block, total, goal, units, trend, ageMonths } = annualValues(data, query, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
@@ -59,7 +62,12 @@ function Annual({ data, names, years }: { data: DcReportData; names: Names; year
           ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
         </ReportStatus>
       ) : (
-        <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={[]} year={query.year}>
+        <QuarterFigures
+          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          onSort={setSort}
+          steps={[]}
+          year={query.year}
+        >
           {total && ageMonths && <AgeMonthsPanel year={query.year} result={total.result} ageMonths={ageMonths} />}
         </QuarterFigures>
       )}

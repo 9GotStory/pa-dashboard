@@ -154,6 +154,9 @@ export interface TrendPoint {
   totals: Totals | null; // null = no usable columns or no data that year (SPEC §9.4), shown as "—"
 }
 
+/** How a เปรียบเทียบ section of a report page orders its units (SPEC §9.4, Track L), not in the URL: by code (the default, the order they come in) or by the section's value, the largest first, null last, ties by code · the total row is not ordered */
+export type ReportSort = "code" | "value";
+
 /* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.8, §3.8–3.9, §11) ---------- */
 
 /** A registry_population row without uploaded_at: the rows of the POST, the GET and population.json */
