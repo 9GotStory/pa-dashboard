@@ -1,6 +1,6 @@
 # Page checks by hand
 
-Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playwright script of your own against `out/` or the live site, or the local LCP comparison with `main` that SPEC §9.6 asks of a ticket changing the home page. A Playwright script of your own is not committed; its output, like `dc:lcp`'s, goes in the PR's Evidence or the issue's record.
+Use this for a FEATURES acceptance check that `dc:check` does not cover: a Playwright script of your own against `out/` or the live site, or the LCP checks of SPEC §9.6: the local comparison with `main` that a ticket changing a page's top or JavaScript runs, and < 2.5 s on the live site. A Playwright script of your own is not committed; its output, like `dc:lcp`'s, goes in the PR's Evidence or the issue's record.
 
 ## A Playwright script in the scratchpad
 
@@ -24,12 +24,13 @@ A ticket that changes how a page looks: screenshot the reference HTML in `docs/r
 - It ends on the branch it started from, with `out/` and `.next/` from the branch's build: `dc:check` and `dc:budget` can run next.
 - One line per Lighthouse run comes first. The block after the blank line goes in the PR's Evidence: both SHAs, the load average before and after (this machine is shared: under a high or changing load, run again), and per page both medians, the difference, pass or FAIL by SPEC §9.6's 10%, and the LCP element of each side's median run. Then two `dc:budget` blocks, `main <sha>` and `<branch> <sha>`: the branch's `dc-budget.mjs` run on `main`'s build and on the branch's, so both are counted the same way. A side that fails, such as a page `main` does not have yet, shows its error; neither changes the exit code.
 - It exits 1 when a page fails. The last line names `.dc-lcp/local/`, which keeps every Lighthouse JSON of the last run.
-- It does not measure the live site: < 2.5 s is checked there, below.
+- For < 2.5 s on the live site, add `--live`: below.
 
 ## On the live site
 
 - Wait for the deploy of the last merge: `gh api repos/9GotStory/pa-dashboard/commits/main/check-runs --jq '.check_runs[] | select(.name == "Cloudflare Pages") | .status + " " + .conclusion'` reads `completed success`. Before that, `built_at` is the previous build's both before and after the check.
 - Name the build you checked: read `built_at` in `https://songhealth-dc.pages.dev/data/meta.json` before and after. A merge to `main`, docs-only included, redeploys Cloudflare Pages, and a redeploy can land mid-measurement; when `built_at` changed, check again.
+- LCP (SPEC §9.6): `npm run dc:lcp -- --live <page> ...` (default `/`), for example `npm run dc:lcp -- --live / /reports/population`. It builds nothing and needs neither a clean tree nor `public/data/`. It runs the same Lighthouse command, tiles blocked on every page, 3 rounds, each round every page, the order swapped round by round, one line per run. The block after the blank line goes in the record: `built_at` and the load average before and after, and per page the 3 runs, the median, pass or FAIL by < 2500 ms, and the LCP element of each round. It reads `built_at` itself and exits 1 when it changed, saying to run again, or when a page fails. The last line names `.dc-lcp/live/`, emptied each run, which keeps every Lighthouse JSON; `.dc-lcp/main/` and `.dc-lcp/local/` are left alone.
 - Save screenshots in `.wizard/<ticket>/` (gitignored, kept across reboots), not the scratchpad, which `/tmp` loses on reboot, and write a placeholder per image in the record (`[ภาพ <name>.png]`). `gh` cannot upload images. With the user's go-ahead and Chrome open, upload them through Claude in Chrome on the issue page (F71); otherwise the user drags them into the comment by hand:
   1. GitHub's file input is hidden from `file_upload`. Inject one with `javascript_tool` (`<input type="file" multiple id="claude-upload">`, `position:fixed;top:0;left:0;z-index:99999`), `find` it, and `file_upload` every path into it in one call (17 files, 8.3 MB in F71).
   2. Paste them into the new-comment textarea: `const dt = new DataTransfer(); for (const f of input.files) dt.items.add(f); textarea.dispatchEvent(new ClipboardEvent("paste", { clipboardData: dt, bubbles: true, cancelable: true }))`. Poll the textarea until it holds one `user-attachments/assets/<id>` per file and no `Uploading`.
