@@ -325,8 +325,9 @@ function Verdict({ passed }: { passed: boolean | null }) {
 
 /**
  * The รายละเอียด of a รายการ (SPEC §9.4): ตัวเลขสรุป, ร้อยละรายตำบลหรือราย
- * หน่วยบริการ beside its table in the order of sort, แนวโน้ม and เป้าหมาย/ผลงาน by เดือน or by
- * ไตรมาส; "—" and the trend alone when the district has no ผลงาน of it that year
+ * หน่วยบริการ beside its table in the order of sort, แนวโน้ม and เป้าหมาย/
+ * ผลงาน by เดือน or by ไตรมาส; "—" and the trend alone when the district has
+ * no ผลงาน of it that year
  */
 function MeasureFigures(props: {
   detail: NonNullable<Values["detail"]>;

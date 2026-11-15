@@ -47,7 +47,8 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
     query.domain === null ? null : String(query.domain),
     (domain) => push({ ...query, domain: domain === null ? null : Number(domain) }),
   );
-  // The order of each เปรียบเทียบ section, ความครอบคลุม and the ด้าน open, kept here so it stays through แสดงผล and another ด้าน (SPEC §9.4)
+  // The order of each เปรียบเทียบ section, ความครอบคลุม and the ด้าน open,
+  // kept here so it stays through แสดงผล and another ด้าน (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const [domainSort, setDomainSort] = useState<ReportSort>("code");
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
@@ -172,8 +173,7 @@ function Domains(props: {
 /**
  * The รายละเอียด of a ด้าน (SPEC §9.4): the warning that it is จำนวนรายการ,
  * and the count of each ตำบล or หน่วยบริการ beside its table in the order of
- * sort; a note when the
- * district has no ผลงาน of it that year
+ * sort; a note when the district has no ผลงาน of it that year
  */
 function DomainFigures(props: {
   detail: NonNullable<Values["detail"]>;
@@ -184,15 +184,15 @@ function DomainFigures(props: {
   onSort: (sort: ReportSort) => void;
 }) {
   const { detail, year, unitLabel, totalLabel, sort, onSort } = props;
-  const units = detail.units && sortedUnits(detail.units, sort, (u) => u.count);
+  const shown = detail.units && sortedUnits(detail.units, sort, (u) => u.count);
   return (
     <>
       {/* What a ด้าน counts (SPEC §9.4, GLOSSARY "ด้าน") */}
       <p className="mb-4 text-xs font-semibold text-dc-brand-deep">จำนวนรายการตามข้อมูลต้นทาง ไม่ใช่จำนวนผู้มีความเสี่ยง</p>
-      {detail.count !== null && units ? (
+      {detail.count !== null && shown ? (
         <Comparison unitLabel={unitLabel} valueLabel="จำนวน" sort={sort} onSort={onSort}>
-          <CountPanel unitLabel={unitLabel} units={units} />
-          <CountTable unitLabel={unitLabel} units={units} total={detail.count} totalLabel={totalLabel} />
+          <CountPanel unitLabel={unitLabel} units={shown} />
+          <CountTable unitLabel={unitLabel} units={shown} total={detail.count} totalLabel={totalLabel} />
         </Comparison>
       ) : (
         <p className="text-sm text-dc-text-secondary">

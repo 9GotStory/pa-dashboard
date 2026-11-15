@@ -7,7 +7,7 @@ import Segmented from "../Segmented";
  * its table (children, both in the order of sort, from sortedUnits) under
  * one control that orders them by รหัส{unitLabel} or by the section's value
  * (valueLabel). The page keeps sort, so it stays through แสดงผล and another
- * รายการ or ด้าน. It spans both columns of the grid it is in.
+ * รายการ or ด้าน. Inside a page's grid of panels, it spans both columns.
  */
 export default function Comparison(props: {
   unitLabel: string;

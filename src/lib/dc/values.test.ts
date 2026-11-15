@@ -936,3 +936,10 @@ test("by code → the order the units come in, 540601 to 540605, the ตำบ�
     ["540601", "540602", "540603", "540604", "540605"],
   );
 });
+
+test("by value, two units on the same ร้อยละ that come in out of code order → by code, 540601 before 540604", () => {
+  assert.deepEqual(
+    sortedUnits([unit("540604", 80), unit("540601", 80)], "value", (u) => u.totals.pct).map((u) => u.key),
+    ["540601", "540604"],
+  );
+});
