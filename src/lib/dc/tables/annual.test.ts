@@ -157,22 +157,24 @@ test("s_kpi_food 2568 ทั้งอำเภอ (112/65) → จากปี 2
   );
 });
 
-// FEATURES F75: ร้อยละสอบถาม of s_kpi_food (GLOSSARY, SPEC §9.4). total is
-// from the snapshot of 14 Nov 2569; the district's figures are SCHEMA §4.6.6's.
+// FEATURES F75: ร้อยละสอบถาม of s_kpi_food (GLOSSARY, SPEC §9.4), on the
+// column total of the snapshot of 14 Nov 2569. The district's figures are
+// SCHEMA §4.6.6's, which has none by ตำบล: those are the sums of the
+// snapshot's rows, added up apart from this code.
 
 /** เด็กอายุครบ 6 เดือน/ถูกสอบถาม and ร้อยละสอบถาม as shown, "—" for null */
-const asked = (s: { children: number; asked: number; pct: number | null }) =>
+const askingText = (s: { children: number; asked: number; pct: number | null }) =>
   `${s.children}/${s.asked} ${s.pct?.toFixed(2) ?? "—"}`;
 
 test("s_kpi_food 2568 ทั้งอำเภอ → เด็กอายุครบ 6 เดือน 208, ถูกสอบถาม 112, ร้อยละสอบถาม 53.85", () => {
-  const { survey } = annualValues(FOOD, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
-  assert.equal(survey && asked(survey), "208/112 53.85");
+  const { asking } = annualValues(FOOD, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
+  assert.equal(asking && askingText(asking), "208/112 53.85");
 });
 
 test("s_kpi_food 2568 รายตำบล → each ตำบล's เด็กอายุครบ 6 เดือน, ถูกสอบถาม and ร้อยละสอบถาม, summed before dividing", () => {
   const { units } = annualValues(FOOD, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
   assert.deepEqual(
-    units?.map((u) => [u.key, u.survey && asked(u.survey)]),
+    units?.map((u) => [u.key, u.asking && askingText(u.asking)]),
     [
       ["540601", "33/30 90.91"],
       ["540602", "23/19 82.61"],
@@ -187,8 +189,8 @@ test("s_kpi_food 2568 รายตำบล → each ตำบล's เด็ก
 });
 
 test("s_kpi_food 2568 ตำบลเตาปูน → 49, 5, 10.20: ร้อยละสอบถาม is of the area picked", () => {
-  const { survey } = annualValues(FOOD, { ...DISTRICT_2569, year: "2568", area: "540604", by: "hosp" }, NAMES, YEARS);
-  assert.equal(survey && asked(survey), "49/5 10.20");
+  const { asking } = annualValues(FOOD, { ...DISTRICT_2569, year: "2568", area: "540604", by: "hosp" }, NAMES, YEARS);
+  assert.equal(asking && askingText(asking), "49/5 10.20");
 });
 
 /** S_KPI_FOOD with a cell of 2568 emptied in the rows of a ตำบล, or of the whole district ("5406") */
@@ -202,31 +204,31 @@ function food2568Without(column: string, area: string): DcReportData {
 test("s_kpi_food: a ตำบล whose total is 0 (none in the snapshot: แดนชุมพล 2568 emptied) → ร้อยละสอบถาม —, the counts as they are", () => {
   const query: ReportQuery = { ...DISTRICT_2569, year: "2568" };
   const food = annualValues(food2568Without("total", "540607"), query, NAMES, YEARS);
-  assert.equal(food.units?.[6].survey && asked(food.units[6].survey), "0/6 —");
+  assert.equal(food.units?.[6].asking && askingText(food.units[6].asking), "0/6 —");
   // The district without แดนชุมพล's 9: 112 ÷ 199
-  assert.equal(food.survey && asked(food.survey), "199/112 56.28");
+  assert.equal(food.asking && askingText(food.asking), "199/112 56.28");
   const tambon = annualValues(
     food2568Without("total", "540607"),
     { ...query, area: "540607", by: "hosp" },
     NAMES,
     YEARS,
   );
-  assert.equal(tambon.survey && asked(tambon.survey), "0/6 —");
+  assert.equal(tambon.asking && askingText(tambon.asking), "0/6 —");
 });
 
 test("s_kpi_food: a year the district has no ผลงาน (2568 emptied) has no ร้อยละสอบถาม, as no เดือนอายุ", () => {
   const food = annualValues(food2568Without("result", "5406"), { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
   assert.equal(food.total, null);
   assert.equal(food.ageMonths, null);
-  assert.equal(food.survey, null);
+  assert.equal(food.asking, null);
 });
 
 test("s_kpi_dental28 and s_kpi_dental33 have no ร้อยละสอบถาม, of the area or of a unit", () => {
   for (const data of [DENTAL28, DENTAL33]) {
     const dental = annualValues(data, DISTRICT_2569, NAMES, YEARS);
-    assert.equal(dental.survey, null);
+    assert.equal(dental.asking, null);
     assert.deepEqual(
-      dental.units?.map((u) => u.survey),
+      dental.units?.map((u) => u.asking),
       Array(8).fill(null),
     );
   }

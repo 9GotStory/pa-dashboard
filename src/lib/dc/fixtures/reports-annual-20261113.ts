@@ -7,9 +7,9 @@ import type { Cell, DcReport } from "../types";
 // and result, and for s_kpi_food the empty quarter family target1–result4 and
 // r1–r6 (SCHEMA §4.6.6, §4.6.12); a row lists only its cells that are not ""
 // (HDC keeps 0 as "", SCHEMA §4.6.1). headers keeps the real order of the
-// columns kept. total of s_kpi_food (F75) is from the snapshot built on 15 Nov
-// 2569 (latest_date_com 202611140600, SCHEMA §4.6.6's "snapshot 14 พ.ย."),
-// whose blocks hold the same rows on the other columns kept.
+// columns kept. total of s_kpi_food (F75) is from the snapshot of 14 Nov 2569
+// (meta.json latest_date_com 202611140600, the one SCHEMA §4.6.6's ร้อยละสอบถาม
+// is from), whose blocks hold the same rows on the other columns kept.
 
 export const S_KPI_FOOD: { report: DcReport; headers: string[]; years: Record<string, Record<string, Cell>[]> } = {
   report: {"opendata_id":"4164a7c49fcb2b8c3ccca67dcdf28bd0","report_name":"ร้อยละของเด็กแรกเกิด - ต่ำกว่า 6 เดือน กินนมแม่อย่างเดียว","source_table":"s_kpi_food","cat_id":"bebf866fceaef84c4078965eaf619565","main_report_id":"73daf277928bc32a1b3c8e772192543c","subgroup":"","order":10,"report_type":"coverage","goal":50,"col_target":null,"col_result":null,"catalog_status":"active","measure_goals":{},"years":[{"b_year":"2565","row_count":69,"max_date_com":"202211161432","synced_at":"2026-11-02T10:22:12.107Z"},{"b_year":"2566","row_count":77,"max_date_com":"202311061227","synced_at":"2026-11-02T10:27:15.982Z"},{"b_year":"2567","row_count":71,"max_date_com":"202411161451","synced_at":"2026-11-02T10:31:26.414Z"},{"b_year":"2568","row_count":72,"max_date_com":"202511162105","synced_at":"2026-11-02T10:35:15.513Z"},{"b_year":"2569","row_count":66,"max_date_com":"202611111901","synced_at":"2026-11-12T07:55:03.194Z"}]},

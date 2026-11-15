@@ -187,7 +187,12 @@ function Cards({ grid, cards }: { grid: string; cards: { label: string; value: s
           <dt className="text-xs text-dc-text-secondary">{c.label}</dt>
           <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
             {c.value}
-            {c.unit && <span className="text-xs font-normal text-dc-text-secondary"> {c.unit}</span>}
+            {c.unit && (
+              <>
+                {" "}
+                <span className="text-xs font-normal text-dc-text-secondary">{c.unit}</span>
+              </>
+            )}
           </dd>
         </div>
       ))}
@@ -245,19 +250,19 @@ export function AgeMonthsPanel(props: { year: string; result: number; ageMonths:
 /**
  * ร้อยละสอบถาม (GLOSSARY) of s_kpi_food in the area: เด็กอายุครบ 6 เดือน,
  * those ถูกสอบถาม and ถูกสอบถาม ÷ เด็กอายุครบ 6 เดือน, "—" with no children.
- * How far the asking reached, not the report's ร้อยละ: no เกณฑ์, no แนวโน้ม
- * and no การเปลี่ยนแปลงจากปีก่อน (SPEC §9.4), which the note says
+ * How far the asking reached, not the report's ร้อยละ, so no เกณฑ์, which
+ * the note says, and no แนวโน้ม or การเปลี่ยนแปลงจากปีก่อน (SPEC §9.4)
  */
-export function SurveyPanel(props: { year: string; survey: { children: number; asked: number; pct: number | null } }) {
-  const { year, survey } = props;
+export function AskingPanel(props: { year: string; asking: { children: number; asked: number; pct: number | null } }) {
+  const { year, asking } = props;
   return (
     <Surface title={`ร้อยละสอบถาม ปีงบประมาณ ${year}`}>
       <Cards
         grid="sm:grid-cols-3"
         cards={[
-          { label: "เด็กอายุครบ 6 เดือน", value: formatCount(survey.children), unit: "คน" },
-          { label: "ถูกสอบถาม", value: formatCount(survey.asked), unit: "คน" },
-          { label: "ร้อยละสอบถาม", value: pctText(survey.pct) },
+          { label: "เด็กอายุครบ 6 เดือน", value: formatCount(asking.children), unit: "คน" },
+          { label: "ถูกสอบถาม", value: formatCount(asking.asked), unit: "คน" },
+          { label: "ร้อยละสอบถาม", value: pctText(asking.pct) },
         ]}
       />
       <p className="mt-3 text-[11px] text-dc-text-secondary">

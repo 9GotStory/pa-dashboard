@@ -5,7 +5,7 @@ import { reportCsv } from "@/lib/dc/csv";
 import { annualValues } from "@/lib/dc/tables/annual";
 import type { Cell, DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { areaLabel, pctText } from "../report/labels";
-import { AgeMonthsPanel, SurveyPanel } from "../report/panels";
+import { AgeMonthsPanel, AskingPanel } from "../report/panels";
 import QuarterFigures from "../report/QuarterFigures";
 import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
@@ -16,17 +16,17 @@ import { resultsText, unitTable } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
-type Survey = ReturnType<typeof annualValues>["survey"];
+type Asking = ReturnType<typeof annualValues>["asking"];
 
 /** The filters of the ตัวชี้วัดเดียวรายปี page (SPEC §9.4): no ช่วงเวลา, as the tables have ทั้งปี alone */
 const FIELDS: (keyof ReportQuery)[] = ["year", "area", "by"];
 
 /** The columns the CSV of s_kpi_food adds to the unit table (SPEC §9.4) */
-const SURVEY_COLUMNS = ["เด็กอายุครบ 6 เดือน", "ร้อยละสอบถาม"];
+const ASKING_COLUMNS = ["เด็กอายุครบ 6 เดือน", "ร้อยละสอบถาม"];
 
-/** The cells of SURVEY_COLUMNS in a row of the CSV; none for a table without ร้อยละสอบถาม (the dental tables) */
-function surveyCells(survey: Survey): Cell[] {
-  return survey ? [survey.children, pctText(survey.pct)] : [];
+/** The cells of ASKING_COLUMNS in a row of the CSV; none for a table without ร้อยละสอบถาม (the dental tables) */
+function askingCells(asking: Asking): Cell[] {
+  return asking ? [asking.children, pctText(asking.pct)] : [];
 }
 
 /**
@@ -49,19 +49,19 @@ function Annual({ data, names, years }: { data: DcReportData; names: Names; year
   const { query, search, apply, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
-  const { block, total, change, goal, units, trend, ageMonths, survey } = annualValues(data, query, names, years);
+  const { block, total, change, goal, units, trend, ageMonths, asking } = annualValues(data, query, names, years);
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
   const csv =
     block && total && units
       ? () => {
-          // What s_kpi_food adds to each row of unitTable: the column names, each unit, then the total row
-          const more = [survey ? SURVEY_COLUMNS : [], ...units.map((u) => surveyCells(u.survey)), surveyCells(survey)];
+          // What s_kpi_food adds to each row of unitTable, in its order: the column names, each unit, then the total row
+          const added = [asking ? ASKING_COLUMNS : [], ...units.map((u) => askingCells(u.asking)), askingCells(asking)];
           return reportCsv({
             report: data.report,
             year: query.year,
             filters: summary,
             dateCom: block.max_date_com,
-            table: unitTable(unitLabel, units, total, totalLabel).map((row, i) => [...row, ...more[i]]),
+            table: unitTable(unitLabel, units, total, totalLabel).map((row, i) => [...row, ...added[i]]),
           });
         }
       : null;
@@ -86,11 +86,11 @@ function Annual({ data, names, years }: { data: DcReportData; names: Names; year
           steps={[]}
           year={query.year}
         >
-          {total && (ageMonths || survey) && (
+          {total && (ageMonths || asking) && (
             // One cell of the grid, beside แนวโน้ม: the two panels of s_kpi_food
             <div className="grid min-w-0 content-start gap-4">
               {ageMonths && <AgeMonthsPanel year={query.year} result={total.result} ageMonths={ageMonths} />}
-              {survey && <SurveyPanel year={query.year} survey={survey} />}
+              {asking && <AskingPanel year={query.year} asking={asking} />}
             </div>
           )}
         </QuarterFigures>
