@@ -18,7 +18,7 @@
 | ชีตข้อมูลปีย้อนหลัง `s_*_y{YYYY}` | ใหม่ | GAS | GAS (report) |
 | `hdc_topics` | ใหม่ | ผู้ดูแล + GAS | GAS |
 | `hdc_reports` | ใหม่ | GAS (คอลัมน์จาก API) + ผู้ดูแล | GAS |
-| `sync_status` | ใหม่ | GAS | GAS, ผู้ดูแล |
+| `sync_status` | ใหม่ | GAS | GAS (รวม `sync_status` ของหน้า `/sync`, Track M), ผู้ดูแล |
 | `registry_population` | ใหม่ (เฟส 2) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
 | `registry_population_age` | ใหม่ (เฟส 2) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
 | `registry_population_village` | ใหม่ (Track I) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
@@ -99,6 +99,7 @@
 
 - key = (`table`, `b_year`) และ GAS เป็นผู้เขียนคนเดียว
 - เมื่อบันทึกตารางใด GAS ลบแถวของตารางนั้นที่ `b_year` อยู่นอก window และเมื่อย้ายปี (§2.5) อัปเดต `sheet` ของแถวปีที่ถูกย้าย
+- หน้า `/sync` อ่านชีตนี้ผ่าน GET `?action=sync_status` (§3.10, Track M) แล้วแสดง `max_date_com` เป็นวันที่ข้อมูลของ (ตาราง, ปีที่เลือก) (SPEC §12.1)
 
 ### 2.5 ชีตข้อมูล `s_*` และ `s_*_y{YYYY}`
 
@@ -185,12 +186,12 @@
 
 - GET ส่งค่าทาง query เท่านั้น และ POST ใช้ `Content-Type: text/plain` โดย body เป็น JSON
 - ทุก response เป็น HTTP 200 กรณีผิดพลาดตอบ `{ "status": "error", "message": "…" }` (`createJsonError` เดิม)
-- `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` → `registry_population` (เฟส 2) ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`, `save_registry_population` (เฟส 2)
+- `doGet` ตรวจ `action` ตามลำดับ `diag` → `catalog` → `report` → `registry_population` (เฟส 2) → `sync_status` (Track M) ก่อนดู `sheet` · `doPost` แยกตาม `action`: `save_kpi_data`, `save_catalog`, `rebuild`, `save_registry_population` (เฟส 2)
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + `^[A-Za-z0-9_-]{8,64}$` ไม่แปลงตัวพิมพ์ ใช้กับ `cat_id` และ `opendata_id` · รหัสใช้ตัวพิมพ์ตามจริงทุกที่ (ชีต, `?action=report&id=`, URL `/reports/{id}`, ลิงก์ HDC/Open Data, ชื่อไฟล์ CSV) เพราะรหัสสั้นของ HDC มีตัวพิมพ์ใหญ่ และคอลัมน์ `id` ในข้อมูลดิบเก็บตามนั้น (§5.2) ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
 - ฟังก์ชันใหม่ `dcCleanName(v)` = ตัดแท็ก HTML → แทนช่องว่างทุกชนิดที่ติดกัน (รวม tab และขึ้นบรรทัด) ด้วยช่องว่างเดียว → trim ใช้กับ `report_name`, `category_name`, `main_report_name` ตอน `save_catalog` (§3.4) ไม่แปลง HTML entity เพราะไม่พบในแค็ตตาล็อก (§5.2)
 - ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
-- `catalog`, `report` และ `registry_population` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` หรือ `save_registry_population` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
-- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`/`registry_population`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่ handler จึงเรียกสองฟังก์ชันนี้ก่อนถือ lock (เติมแคช) และ `syncAllData` ซึ่งรันนานกว่าอายุแคช 60 วินาที อ่านครั้งเดียวก่อนถือ lock แล้วส่งค่าต่อให้ `saveTableYear` (`options.settings`, `options.kpiCfg`) และ `requestRebuild(reason, settings)` ฟังก์ชันภายในอ่านเองเฉพาะเมื่อไม่ได้รับค่า (#136)
+- `catalog`, `report`, `registry_population` และ `sync_status` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` หรือ `save_registry_population` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
+- ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`/`registry_population`/`sync_status`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่ handler จึงเรียกสองฟังก์ชันนี้ก่อนถือ lock (เติมแคช) และ `syncAllData` ซึ่งรันนานกว่าอายุแคช 60 วินาที อ่านครั้งเดียวก่อนถือ lock แล้วส่งค่าต่อให้ `saveTableYear` (`options.settings`, `options.kpiCfg`) และ `requestRebuild(reason, settings)` ฟังก์ชันภายในอ่านเองเฉพาะเมื่อไม่ได้รับค่า (#136)
 
 ### 3.1 `GET ?action=catalog`
 
@@ -355,6 +356,18 @@ Response: `{ status: "success"; kind: "population" | "village" | "age"; yymm: st
 3. ตอบ `GasRegistryPopulation` (§9): `{ years }` คือทุก `yymm` ที่มีแถวในชีตใดชีตหนึ่ง เรียงน้อยไปมาก แต่ละปีเป็น `{ yymm, population, village, age }` คือแถวของปีนั้นจากแต่ละชีตตามลำดับในชีต (`[]` ถ้าชีตนั้นไม่มีหรือไม่มีแถวของปีนั้น เช่น `village` ของปีที่ยังไม่ได้อัปโหลดด้วย `stat_m`)
 4. ยังไม่มีทั้งสามชีต → `years: []` ไม่ใช่ error
 5. ไม่แคช
+
+### 3.10 `GET ?action=sync_status` (ใหม่ Track M)
+
+ผู้เรียกคือหน้า `/sync` ตอน login และหลัง sync จบ เพื่อแสดงวันที่ข้อมูลของปีที่เลือก (SPEC §12.1) · โค้ดอยู่ใน `src/scripts/dc-storage.js` คู่กับตัวอ่าน `sync_status` เดิม
+
+1. ถือ script lock แบบ `catalog` (§3) ถ้าไม่ได้ตอบ error `Busy`
+2. อ่าน `sync_status` (§2.4) ตามชื่อ header (§1) ชีตที่ยังไม่มีถือว่าไม่มีแถว
+3. ตอบ `GasSyncStatus` (§9): `rows` คือทุกแถวที่ `b_year` อยู่ใน window ตามลำดับในชีต ครบทุกคอลัมน์ของ §2.4 · `b_year` และ `max_date_com` เป็น string · `row_count` เป็น number · `synced_at` เป็น ISO
+4. ยังไม่มีชีตหรือไม่มีแถวใน window → `rows: []` ไม่ใช่ error
+5. ไม่แคช · error อื่นตอบเป็น JSON ตาม §3 (`createJsonError`)
+
+GAS ที่ยังไม่มี action นี้ (ก่อน deploy ของ F79) ไม่รู้จัก `action=sync_status` จึงไปทางเดิมที่ดู `sheet` และตอบ error `Missing "sheet" parameter` หน้า `/sync` ถือเป็น GET ล้มเหมือน error อื่น (SPEC §12.1)
 
 ## 4. กติกาคำนวณรายงานชนิด `coverage`
 
@@ -665,8 +678,8 @@ Response: `{ status: "success"; kind: "population" | "village" | "age"; yymm: st
 
 | Endpoint | สถานะการตรวจ |
 |---|---|
-| `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริงจากเบราว์เซอร์ 29 ต.ค. 2569 · 30 ต.ค. 2569 ทดสอบจากเครื่องผู้ดูแล: เบราว์เซอร์ได้ข้อมูล, `curl` ได้ 403, `fetch` ของ node ได้ 403 → endpoint นี้กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ ดึงผ่าน snippet ใน DevTools เท่านั้น (SPEC §12.3, ADR-0010) |
-| `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีนจากเบราว์เซอร์ 29 ต.ค. 2569 · กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์เช่นเดียวกับ `categories` |
+| `GET /opendata_api/reports/categories` | ยืนยันแล้วด้วย response จริงจากเบราว์เซอร์ 29 ต.ค. 2569 · 30 ต.ค. 2569 ทดสอบจากเครื่องผู้ดูแล: เบราว์เซอร์ได้ข้อมูล, `curl` ได้ 403, `fetch` ของ node ได้ 403 → endpoint นี้กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ ดึงจากเบราว์เซอร์ของผู้ดูแลเท่านั้น (ADR-0010) · 15 พ.ย. 2569 `fetch` แบบ GET จากหน้าบน `https://songhealth-dc.pages.dev` ได้ 200 และอ่าน JSON ได้ (CORS ยอมรับต้นทางนี้) จึงดึงจากหน้า `/sync` ได้ (SPEC §12.1) ส่วน snippet ใน DevTools เป็นทางสำรอง (SPEC §12.3) |
+| `GET /opendata_api/reports/categorie/by-category-id/{cat_id}` | ยืนยันแล้วด้วย response จริงของหัวข้อวัคซีนจากเบราว์เซอร์ 29 ต.ค. 2569 · กันไคลเอนต์ที่ไม่ใช่เบราว์เซอร์เช่นเดียวกับ `categories` · ทดสอบ CORS จาก `https://songhealth-dc.pages.dev` ผ่าน 15 พ.ย. 2569 เช่นเดียวกัน |
 | `POST /api/report_data` | ใช้งานอยู่แล้ว เรียกจากสคริปต์ได้ (`curl` จากเครื่องผู้ดูแลได้ 201, 30 ต.ค. 2569) · 429 ที่พบคือการจำกัดความถี่ ให้ retry และเว้นช่วงตาม SPEC §7.1 · ส่วน `total` ใน response พบในตัวอย่างของ R6 และต้องยืนยันในขั้นตรวจรับว่า `limit = 5000` ได้ครบ `total` (SPEC §13 ขั้น 6) |
 | `GET /api/report_year/{tableName}`, `GET /api/report_schema/{tableName}` | ตรวจแล้ว 6 พ.ย. 2569: `curl` จากเครื่องผู้ดูแลได้ 200 ไม่ถูกกันแบบ API แค็ตตาล็อก · ยังไม่ใช้ในเฟส 1 (§5.4) |
 
@@ -1093,6 +1106,17 @@ export type PopulationReportData = PopulationSnapshot;
 export interface GasError {
   status: "error";
   message: string;
+}
+
+/** หนึ่งแถวใน sync_status ครบทุกคอลัมน์ (§2.4) */
+export interface SyncStatusRow extends DcYearStatus {
+  table: string;
+  sheet: string;
+}
+
+/** response ของ GAS ?action=sync_status (§3.10, Track M): แถวของปีใน window ตามลำดับในชีต · [] = ยังไม่มีแถว */
+export interface GasSyncStatus {
+  rows: SyncStatusRow[];
 }
 
 /** response ของ POST ของ GAS เฉพาะส่วนที่ส่วนอัปโหลดในหน้า /sync อ่าน (§3.7, §3.8) */

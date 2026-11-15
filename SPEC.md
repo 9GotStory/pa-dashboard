@@ -1,6 +1,6 @@
 # SPEC — Song Health Data Center
 
-> สถานะ: ร่าง v1.0 · 14 พ.ย. 2569 · ขอบเขต: เฟส 1, เฟส 2 ส่วนประชากรทะเบียนราษฎร (§2.3), หน้าแรกตาม V7.6 (§2.4), หน้ารายงานสุขภาพตาม V1.4 (§2.5), ประชากรรายหมู่บ้าน (§2.6), หน้ารายงานตาม V0.4.2 (§2.7), รายงานประชากร (§2.8) และมุมมองที่เพิ่มของหน้ารายงาน (§2.9) · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
+> สถานะ: ร่าง v1.0 · 15 พ.ย. 2569 · ขอบเขต: เฟส 1, เฟส 2 ส่วนประชากรทะเบียนราษฎร (§2.3), หน้าแรกตาม V7.6 (§2.4), หน้ารายงานสุขภาพตาม V1.4 (§2.5), ประชากรรายหมู่บ้าน (§2.6), หน้ารายงานตาม V0.4.2 (§2.7), รายงานประชากร (§2.8), มุมมองที่เพิ่มของหน้ารายงาน (§2.9) และงานดูแลระบบบนหน้า `/sync` (§2.10) · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
 > เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, ไฟล์ snapshot, กติกาคำนวณ, seed), [FEATURES.md](FEATURES.md) (รายการงาน), [GLOSSARY.md](GLOSSARY.md) (คำศัพท์ที่ใช้ในเอกสารและโค้ด), [CODING_STANDARDS.md](CODING_STANDARDS.md) (มาตรฐานโค้ดที่ใช้ตรวจ PR)
 > ต้นแบบหน้าจอ: หน้าแรกและสีของทุกหน้าใช้ V7.6 (`docs/reference/v7-6/design.md` กับไฟล์ HTML, ADR-0012) · `/reports` ใช้ V1.4 (`docs/reference/reports-v1-4/` handoff กับไฟล์ HTML, ADR-0013) · `/reports/{id}` ใช้ V0.4.2 (`docs/reference/report-detail-v0-4-2/` notes ไฟล์ HTML และภาพ, ADR-0015) แทนโครงหน้าตาม R6 (`docs/reference/song-health-data-center-review-03-epi-real-response-r6.html`) ซึ่งหน้าที่ยังไม่ได้ทำใหม่ใช้อยู่ระหว่าง Track J · ทั้งหมดเป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขและข้อมูลในไฟล์เป็นข้อมูลจำลองหรือคัดลอกไว้ ไม่ใช้เป็นแหล่งข้อมูล (GLOSSARY)
 
@@ -33,7 +33,6 @@
 | ข้อมูลประชากรบนหน้าแรก | ทำในเฟส 2 (§2.3) จากประชากรทะเบียนราษฎรของกรมการปกครอง ไม่ใช้หัวข้อ "ประชากร" ของ HDC (`ac4eed1bddb23d6130746d62d2538fd0`) เพราะคนละนิยาม (ADR-0011) |
 | รายงานชนิด `workload` (นับจำนวนครั้ง) | 18 ตารางในเฟส 1 เป็นชนิด `coverage` ทั้งหมด |
 | แสดงคอลัมน์ผลแยกย่อย เช่น 9 ด้านของ `s_aged9` | ความหมายได้จาก `report_schema` แล้ว (SCHEMA §4.5) แต่ยังไม่ได้ออกแบบการแสดงผล ทำในเฟส 2 |
-| ปุ่มรีเฟรชแค็ตตาล็อกบนหน้า `/sync` | เฟส 1 ใช้ snippet ในเบราว์เซอร์ + สคริปต์ node (§12.3, ADR-0010) |
 | เทียบกับอำเภออื่นหรือภาพรวมจังหวัด | เก็บเฉพาะ `5406` ตามที่ตกลง |
 | ย้าย PA มาอ่าน snapshot แบบเดียวกับ Data Center | ได้ประโยชน์เดียวกัน แต่ผิดกฎไม่แตะ PA ทำเป็นงานแยกภายหลัง |
 | ดึงข้อมูล MOPH ด้วย Cloudflare Pages Function แทนเบราว์เซอร์ | MOPH อาจบล็อก IP ของ datacenter (น่าจะเป็นเหตุเดียวกับที่ GAS ดึงเองไม่เสถียร) ต้องทดลองก่อน |
@@ -104,6 +103,13 @@ spec issue [#172](https://github.com/9GotStory/pa-dashboard/issues/172) (6 พ.�
 - **`/reports/{id}`** (§9.4): เรียงส่วนเปรียบเทียบตามรหัสหรือตามค่า · การเปลี่ยนแปลงจากปีก่อนบนตัวเลขสรุป · ร้อยละสอบถามของ `s_kpi_food` · ข้อมูลเดิมใน `reports/{id}.json` ไม่มีข้อมูลหรือ endpoint ใหม่ snapshot (§6) และ `ReportQuery` (SCHEMA §9) เหมือนเดิม
 - **ไม่ทำ:** การเรียงใน URL · สีหรือคำว่าดีขึ้นหรือแย่ลงบนการเปลี่ยนแปลง · เทียบกับปีที่เก่ากว่าปีก่อนหน้าหนึ่งปี · แนวโน้มและการเปลี่ยนแปลงจากปีก่อนของฟันดีไม่มีผุ (มีปีเดียว) และคอลัมน์ร้อยละสอบถามในตารางรายหน่วยบนหน้า ซึ่งมีแค่ใน CSV (FEATURES "งานที่รอ") · `/`, `/reports`, รายงานประชากร (§9.4.1), `/pa`, `/sync`, GAS และชีตไม่เปลี่ยน
 
+### 2.10 งานดูแลระบบบนหน้า `/sync` (Track M)
+
+ไม่มี spec issue และไม่มี ADR ใหม่: มาจาก grill 15 พ.ย. 2569 ผลทดสอบ CORS เพิ่มใน ADR-0010 · คำศัพท์ใน GLOSSARY ("รีเฟรชแค็ตตาล็อก", "วันที่ข้อมูล") · ticket F76–F79 ใน FEATURES ส่วน Track M
+
+- **`/sync`** (§12.1): วันที่ข้อมูลของ (ตาราง, ปีที่เลือก) จาก GET ใหม่ `?action=sync_status` (SCHEMA §3.10) แทนวันที่ของปีปัจจุบันเสมอ · ส่วน "แค็ตตาล็อก HDC" ที่รีเฟรชแค็ตตาล็อกจากเบราว์เซอร์ด้วยปุ่มเดียว เป็นทางหลักแทน snippet กับ `hdc-catalog.js refresh` ซึ่งคงเป็นทางสำรอง (§5.3, §12.3)
+- **ไม่ทำ:** จำนวนแถวและ `synced_at` บนหน้า · ดึงหัวข้อที่ไม่อยู่ใน `hdc_topics` และ `find` บนหน้าเว็บ · สั่ง rebuild หลังรีเฟรชแค็ตตาล็อก · หน้าของ `(dc)`, snapshot, `/pa` และชีตไม่เปลี่ยน · GAS เพิ่มแค่ GET นี้
+
 ## 3. ภาพรวมระบบ
 
 ```
@@ -111,7 +117,7 @@ HDC Open Data (opendata.moph.go.th)
    │  report_data · แค็ตตาล็อก
    ▼
 ตัวดึงข้อมูล: หน้า /sync (เบราว์เซอร์) · sync-moph-to-gas.js (node) · syncAllData (trigger ใน GAS)
-แค็ตตาล็อก: snippet ใน DevTools (เบราว์เซอร์) → ไฟล์ export → hdc-catalog.js (node)
+แค็ตตาล็อก: ปุ่มในหน้า /sync (เบราว์เซอร์, Track M) · สำรอง: snippet ใน DevTools (เบราว์เซอร์) → ไฟล์ export → hdc-catalog.js (node)
 ประชากร (เฟส 2): ไฟล์รายปีจาก stat.bora → ผู้ดูแลอัปโหลดในหน้า /sync (เบราว์เซอร์)
    │  POST (Content-Type: text/plain)
    ▼
@@ -151,7 +157,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `/reports/[id]` | หน้ารายงาน | `src/app/(dc)/reports/[id]/page.tsx` | `generateStaticParams` จาก catalog.json · เบราว์เซอร์โหลด `/data/reports/{id}.json` · query ตัวกรองใน §9.4 (ค่าที่ยอมรับ: SCHEMA §9 `ReportQuery`) |
 | `/reports/population` | รายงานประชากร (Track K) | `src/app/(dc)/reports/population/page.tsx` | กรอบหน้าตอน build · เบราว์เซอร์โหลด `/data/reports/population.json` · query `year`, `area` (§9.4.1, ค่าที่ยอมรับ: SCHEMA §9 `PopulationQuery`) |
 | `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` |
-| `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและสั่ง rebuild · เฟส 2 เพิ่มส่วนอัปโหลดประชากร (§12.1) |
+| `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและสั่ง rebuild · เฟส 2 เพิ่มส่วนอัปโหลดประชากร · Track M เพิ่มวันที่ข้อมูลของปีที่เลือกและส่วนแค็ตตาล็อก HDC (§12.1) |
 
 - `/reports/[id]` เป็น route จริงได้ เพราะรายการรายงานรู้ตอน build (catalog.json) ตั้ง `dynamicParams = false` ให้ id ที่ไม่มีเป็น 404 รายงานที่เปิดใหม่ในชีตจะปรากฏหลัง rebuild
 - `/reports/population` เป็น segment คงที่ของตัวเอง ไม่ใช่ id หนึ่งของ `[id]` (ตัดสินใน F65 จากเอกสารของ Next.js 16.4.3 ใน `node_modules/next/dist/docs/`): ทั้งสองแบบ build ได้ใน static export เพราะ `[id]` มี `generateStaticParams` กับ `dynamicParams = false` อยู่แล้ว ตามที่ `01-app/02-guides/static-exports.md` กำหนด จึงตัดสินด้วยสองข้อ: (1) `[id]` คงเป็น route ของรายงาน HDC ล้วน `generateStaticParams` ยังวนแค่ catalog.json และไม่ต้องแยกกรณีภายในหน้า (2) หน้าไม่โหลด `TablePicker` และ chunk ของหน้าตาราง HDC ส่วนรายงาน HDC ก็ไม่โหลดโค้ดของรายงานประชากร (§9.6) · เอกสารของ App Router ใน 16.4.3 ไม่ได้เขียนลำดับระหว่าง segment คงที่กับ dynamic segment ที่อยู่ระดับเดียวกัน (มีแต่ของ Pages Router: "Predefined API routes take precedence over dynamic API routes" ใน `02-pages/03-building-your-application/01-routing/07-api-routes.md`) แต่ไม่ต้องพึ่ง เพราะ `generateStaticParams` ของ `[id]` ไม่คืน `population` ใน `out/` จึงมี `reports/population.html` ไฟล์เดียว · id ของรายงาน HDC เป็น hex 32 หลัก (`opendata_id`) จึงไม่ชนกับ `population` (ADR-0016)
@@ -188,11 +194,13 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 ### 5.3 การรีเฟรชแค็ตตาล็อก
 
-- API แค็ตตาล็อกตอบ 403 ให้ไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ (SCHEMA §5) ผู้ดูแลจึงรัน snippet ใน DevTools ของเบราว์เซอร์ให้ได้ไฟล์ export แค็ตตาล็อกก่อน แล้วสั่ง `node src/scripts/hdc-catalog.js refresh --from <ไฟล์>` (§12.3) ซึ่ง POST `save_catalog` ทีละหัวข้อ สคริปต์ไม่เรียก MOPH และไม่ปลอม header เป็นเบราว์เซอร์ (ADR-0010)
+- API แค็ตตาล็อกตอบ 403 ให้ไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ (SCHEMA §5) จึงดึงจากเบราว์เซอร์ของผู้ดูแลเท่านั้น และไม่มีสคริปต์ใดปลอม header เป็นเบราว์เซอร์ (ADR-0010)
+- **ทางหลัก (Track M):** ปุ่มในส่วน "แค็ตตาล็อก HDC" ของหน้า `/sync` (§12.1) ดึงรายงานของหัวข้อใน `hdc_topics` จาก API แค็ตตาล็อกตรงจากหน้าเว็บ แล้ว POST `save_catalog` ทีละหัวข้อ · ทำได้เพราะ API ยอมรับ CORS จาก `https://songhealth-dc.pages.dev` (ทดสอบ 15 พ.ย. 2569, ADR-0010)
+- **ทางสำรอง:** รัน snippet ใน DevTools ให้ได้ไฟล์ export แค็ตตาล็อก แล้วสั่ง `node src/scripts/hdc-catalog.js refresh --from <ไฟล์>` (§12.3) ซึ่ง POST `save_catalog` ทีละหัวข้อเช่นกัน สคริปต์ไม่เรียก MOPH · คงไว้เพราะตอนจะเพิ่มหัวข้อใหม่ต้องใช้ `find` กับไฟล์ที่มีทุกหัวข้อ ซึ่งปุ่มไม่ดึง
 - จับคู่ด้วย `opendata_id` และกรองรายการซ้ำ (API ส่งซ้ำได้ เช่น หัวข้อวัคซีนมี 46 แถว แต่เป็น 34 รายงาน)
 - อัปเดตเฉพาะคอลัมน์ที่มาจาก API **ไม่แตะคอลัมน์ที่ผู้ดูแลกรอก** (`enabled`, `subgroup`, `order`, `report_type`, `goal`, `col_target`, `col_result`)
 - รายงานที่หายไปจาก API ตั้ง `catalog_status = removed` และไม่ลบแถว เพื่อให้ข้อมูลปีเก่ายังดูได้
-- หนึ่ง `opendata_id` อยู่ได้หัวข้อเดียว คือหัวข้อแรกที่บันทึก (`refresh` ไล่หัวข้อตามลำดับแถวใน `hdc_topics` บนลงล่าง)
+- หนึ่ง `opendata_id` อยู่ได้หัวข้อเดียว คือหัวข้อแรกที่บันทึก (ปุ่มและ `refresh` ไล่หัวข้อตามลำดับแถวใน `hdc_topics` บนลงล่าง)
 - อัลกอริทึมเต็ม: SCHEMA §3.4
 
 ### 5.4 การเรียงลำดับ
@@ -294,19 +302,20 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 | Method | เรียก | ผู้ใช้ | สถานะ |
 |---|---|---|---|
-| GET | `?action=catalog` | prebuild script, `hdc-catalog.js` | ใหม่ |
+| GET | `?action=catalog` | prebuild script, `hdc-catalog.js`, ส่วนแค็ตตาล็อก HDC ในหน้า `/sync` | ใหม่ |
 | GET | `?action=report&id={opendata_id}` | prebuild script | ใหม่ |
 | GET | `?action=registry_population` | prebuild script, ส่วนอัปโหลดประชากรในหน้า `/sync` | ใหม่ (เฟส 2) |
+| GET | `?action=sync_status` | หน้า `/sync` (วันที่ข้อมูลของปีที่เลือก) | ใหม่ (Track M) |
 | GET | `?sheet=BATCH_ALL` | PA, `/sync`, node | แก้เล็กน้อย: เพิ่ม `meta.years` และรายการ DC ใน `meta.kpi_config` การคำนวณไม่แก้ |
 | GET | `?sheet=hospitals` ฯลฯ | PA | เดิม |
 | GET | `?action=diag&pin=…` | ผู้ดูแล | เพิ่ม `setup=datacenter` และ `setup=dc_seed` |
 | POST | `save_kpi_data` | `/sync`, node, `syncAllData` | แก้: รับ `year`, `total`, `force` และบันทึกลงชีตตามปี |
-| POST | `save_catalog` | `hdc-catalog.js` | ใหม่ |
+| POST | `save_catalog` | `hdc-catalog.js`, ส่วนแค็ตตาล็อก HDC ในหน้า `/sync` | ใหม่ |
 | POST | `rebuild` | `/sync`, node, `syncAllData`, ผู้ดูแล | ใหม่ |
 | POST | `save_registry_population` | ส่วนอัปโหลดประชากรในหน้า `/sync` | ใหม่ (เฟส 2) |
 
 - ไม่มีการยืนยันตัวตนฝั่ง server เหมือนเดิม (D5, §14)
-- เว็บสาธารณะไม่เรียก endpoint ใดเลย `catalog`/`report`/`registry_population` จึงไม่ต้องแคช · ยกเว้นรายชื่อ DC units (ชื่อตารางจาก `hdc_reports`) ซึ่ง `getSyncUnits` ต้องใช้ทุกครั้งที่ PA เรียก `BATCH_ALL` ให้แคช 60 วินาทีแบบเดียวกับ `kpi_master` (SCHEMA §3.5) ไม่อย่างนั้น PA จะช้าลงเพราะอ่านชีตเพิ่ม 2 ชีตทุกครั้ง
+- เว็บสาธารณะไม่เรียก endpoint ใดเลย `catalog`/`report`/`registry_population`/`sync_status` จึงไม่ต้องแคช · ยกเว้นรายชื่อ DC units (ชื่อตารางจาก `hdc_reports`) ซึ่ง `getSyncUnits` ต้องใช้ทุกครั้งที่ PA เรียก `BATCH_ALL` ให้แคช 60 วินาทีแบบเดียวกับ `kpi_master` (SCHEMA §3.5) ไม่อย่างนั้น PA จะช้าลงเพราะอ่านชีตเพิ่ม 2 ชีตทุกครั้ง
 
 ## 9. หน้าจอ
 
@@ -607,7 +616,10 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `src/components/dc/tables/*` (Track J) | ตัวเลือกหน้า (Client Component ที่โหลดหน้าตาม `source_table` ด้วย `next/dynamic`) และชั้นแสดงผลของแต่ละหน้า ซึ่งจัดวางชิ้นส่วนร่วมโดยไม่คำนวณเอง | เบราว์เซอร์ |
 | `src/lib/dc/population-report.ts` + `population-report.test.ts` (Track K) | ชั้นข้อมูลของรายงานประชากร: ฟังก์ชันเดียว `PopulationReportData` + `PopulationQuery` + `areas` → `PopulationReport` (SCHEMA §9, §11.5) ไม่ import `population.ts` เพราะชั้นนี้รันในเบราว์เซอร์ และ `population.ts` มีตัวอ่านไฟล์ของ `/sync` (CODING_STANDARDS §4, งบ JS) · ฟังก์ชันรวมยอดที่ใช้ร่วมกับหน้าแรก (§11.3 ของ SCHEMA) F67 แยกออกเป็น `src/lib/dc/population-totals.ts` ที่ทั้งสองฝั่งใช้ ไม่เขียนสูตรซ้ำ (ESLint ตรวจว่าสองไฟล์นี้ไม่ import `population.ts`) · ค่าคงที่ `POPULATION_REPORT` อยู่ที่นี่ และ `libraryMains` ของ `values.ts` ใช้รวมรายงานนี้เข้ากับแค็ตตาล็อก (§5.6) ไฟล์นี้จึงติดไปทุกหน้าที่ใช้ `values.ts` · CSV ของรายงาน (§9.4.1) อยู่ใน `population-csv.ts` (F68) บน `csvText` ของ `csv.ts` แยกจากไฟล์นี้ เพื่อไม่ให้หน้าอื่นโหลด · ไม่ import React ไม่แตะ DOM · เทสต์ด้วย fixture ที่ตัดจาก snapshot จริงใน `src/lib/dc/fixtures/` ค่าคาดหวังจาก SCHEMA §11.6 | เบราว์เซอร์ + เทสต์ |
 | `src/app/(dc)/reports/population/page.tsx` และ `src/components/dc/population/*` (Track K) | กรอบหน้าของรายงานประชากรตอน build (ชิ้นส่วนกรอบหน้าของ F66 ใน `src/components/dc/report/`) และชั้นแสดงผลที่โหลด `reports/population.json` แล้วจัดวางชิ้นส่วนร่วมกับพีระมิดของหน้าแรก ไม่คำนวณเอง (§9.4.1) | build + เบราว์เซอร์ |
-| `src/components/dc/RegistryPopulationUpload.tsx` (เฟส 2) | ส่วนอัปโหลดประชากรในหน้า `/sync` (§12.1) ตัวเดียวใน `src/components/dc/` ที่เรียก GAS ได้ เพราะไม่ได้อยู่ในหน้าของ `(dc)` | เบราว์เซอร์ |
+| `src/components/dc/RegistryPopulationUpload.tsx` (เฟส 2) | ส่วนอัปโหลดประชากรในหน้า `/sync` (§12.1) หนึ่งในสอง component ของ `src/components/dc/` ที่เรียก GAS ได้ เพราะไม่ได้อยู่ในหน้าของ `(dc)` | เบราว์เซอร์ |
+| `src/lib/dc/sync-status.ts` + `sync-status.test.ts` (Track M) | ชั้นข้อมูลของวันที่ข้อมูลบนหน้า `/sync` (§12.1): จาก `GasSyncStatus` (SCHEMA §9) ตาราง ปีที่เลือก และ `current_year` → ข้อความวันที่และระดับสี หรือสถานะไม่มีแถว · ฟังก์ชันล้วน ไม่ import React ไม่แตะ DOM ไม่ `fetch` (หน้าเรียก GET เอง) | เบราว์เซอร์ของ `/sync` + เทสต์ |
+| `src/lib/dc/catalog-refresh.ts` + `catalog-refresh.test.ts` (Track M) | ชั้นข้อมูลของการรีเฟรชแค็ตตาล็อก (§12.1): รับ `fetch`, URL ของ GAS และตัวรอเข้ามา ไล่หัวข้อ ดึงจาก MOPH ลองใหม่ POST `save_catalog` แล้วคืนผลรายหัวข้อกับผลสรุป · ไม่ import React ไม่แตะ DOM · เทสต์ด้วย `fetch` และตัวรอที่เป็น stub | เบราว์เซอร์ของ `/sync` + เทสต์ |
+| `src/components/dc/CatalogRefresh.tsx` (Track M) | ส่วน "แค็ตตาล็อก HDC" ในหน้า `/sync` (§12.1) ชั้นแสดงผลของ `catalog-refresh.ts` อีกตัวใน `src/components/dc/` ที่เรียก GAS ได้ และเรียก API แค็ตตาล็อกของ MOPH ด้วย | เบราว์เซอร์ |
 | `src/scripts/build-snapshot.mjs` | prebuild script (§6.2) ไม่ import จาก `src/lib` เพื่อให้รันด้วย node ตรง ๆ ได้ | build |
 
 ### 9.6 งบประมาณประสิทธิภาพ (วัดตอนตรวจรับ)
@@ -659,6 +671,13 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - หน้า login ด้วย PIN (`NEXT_PUBLIC_SYNC_PIN_CODE`) คงเดิม
 - เพิ่มตัวเลือกปีจาก `meta.years`: ค่าเริ่มต้นเป็น `current_year` และส่ง `year`, `total` ไปกับ `save_kpi_data`
 - รายการตารางมาจาก `meta.kpi_config` เหมือนเดิม ซึ่งตอนนี้รวมตาราง DC แล้ว
+- **วันที่ข้อมูลของปีที่เลือก (Track M):** วันที่ใต้ชื่อแต่ละตารางในรายการเป็นวันที่ข้อมูล (GLOSSARY) ของ (ตาราง, ปีที่เลือก) คือ `max_date_com` ของแถวนั้นใน `sync_status` จาก GET `?action=sync_status` (SCHEMA §3.10) ไม่ใช่ `synced_at` · เลิกใช้ `meta.lastUpdatedMap` ของ `BATCH_ALL` ทุกปี รวมถึงปีปัจจุบัน
+  - เรียก GET ตอน login และหลัง sync จบเท่านั้น เปลี่ยนปีแล้วเลือกค่าจากคำตอบเดิม ไม่เรียก GAS ซ้ำ
+  - สีตามอายุของวันที่ (เขียว ≤ 2 วัน, เหลือง ≤ 7 วัน, นอกนั้นส้ม) ใช้กับปีปัจจุบันเท่านั้น ปีย้อนหลังเป็นสีเทา
+  - (ตาราง, ปี) ที่ไม่มีแถวใน `sync_status` แสดงว่า "ไม่มีข้อมูลปีนี้ในชีต"
+  - ถ้า GET ล้ม เช่น GAS ที่ยังไม่ deploy action นี้ (ตอบ `Missing "sheet" parameter`) หรือได้ `Busy` วันที่ของทุกตารางแสดงว่า "โหลดวันที่ไม่ได้" มีบรรทัด warn ใน console log พร้อมเหตุผล และการ sync ยังทำงานตามปกติ
+  - หน้าแสดงแค่วันที่ข้อมูล ไม่แสดงจำนวนแถวหรือ `synced_at`
+  - `src/app/sync/page.tsx` แก้ได้แค่แหล่งของวันที่ (GET นี้แทน `meta.lastUpdatedMap`) และข้อความหรือสีตามข้อเหล่านี้ ไม่แก้ส่วน sync เดิม · การอ่านคำตอบ การเลือกแถว การจัดรูปวันที่ และระดับสีอยู่ใน `src/lib/dc/sync-status.ts` (§9.5) พร้อมเทสต์
 - ใช้กติกาการดึงใน §7.1 (รวม retry 429/5xx)
 - ถ้า GAS ตอบ `Stale data` แสดงเป็น warning ไม่นับเป็นตารางที่ล้ม หน้านี้ไม่ส่ง `force` การบันทึกทับใช้ `sync-moph-to-gas.js --force` (§12.2)
 - ถ้า MOPH ตอบ 0 แถว (HDC ยังไม่มีข้อมูลของตารางนั้นในปีที่เลือก) ไม่ส่งไป GAS แสดงเป็นบรรทัด info `ไม่มีข้อมูล <ตาราง> ปี <ปี> ใน HDC` และนับเป็น `No data` ไม่นับเป็นตารางที่ล้ม แบบเดียวกับ `sync-moph-to-gas.js`
@@ -670,6 +689,13 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
   - เมื่อยืนยัน POST `save_registry_population` (SCHEMA §3.8) ทีละคำขอ `population` ก่อน `village` และ `age` ของปีเดียวกัน ถ้า `population` ของปีใดไม่สำเร็จ ไม่ส่ง `village` และ `age` ของปีนั้น
   - ตอนจบ ถ้ามีไฟล์ใดสำเร็จ POST `rebuild` หนึ่งครั้ง แล้วแสดงผลรายไฟล์ (บันทึกแล้ว หรือปฏิเสธพร้อมเหตุผล) และผลของ `rebuild` แบบเดียวกับส่วน sync
   - ไม่มีเทสต์อัตโนมัติของ component นี้ เพราะ logic อยู่ใน `population.ts` ซึ่งมีเทสต์ (CODING_STANDARDS §5) ตรวจด้วยมือตอนตรวจรับด้วย `npm run dc:sync-local` ซึ่งเปิดหน้านี้ใน `next dev` คู่กับ GAS ใน harness จึงไม่แตะ GAS จริง
+- **ส่วนแค็ตตาล็อก HDC (Track M, ADR-0010):** ทางหลักของการรีเฟรชแค็ตตาล็อก (§5.3) เป็น component ของ Data Center `src/components/dc/CatalogRefresh.tsx` แสดงหลัง login วางใต้ console log และเหนือส่วนอัปโหลดประชากร · `src/app/sync/page.tsx` แก้ได้แค่ import และวาง component นี้
+  - หัวข้อส่วน "แค็ตตาล็อก HDC" พร้อมคำอธิบายว่ารีเฟรชเฉพาะหัวข้อใน `hdc_topics` และรายงานใหม่ปิดไว้เสมอ ต้องติ๊กเปิดในชีตแล้วสั่ง rebuild เอง (§5.2)
+  - ขั้นตอนของปุ่ม: อ่านหัวข้อจาก GET `?action=catalog` (ถ้าล้ม หยุดพร้อมข้อความของ GAS ไม่เรียก MOPH) แล้วไล่ตามลำดับแถวของ `hdc_topics` ดึงรายงานของแต่ละหัวข้อจาก `GET https://opendata.moph.go.th/opendata_api/reports/categorie/by-category-id/{cat_id}` (SCHEMA §5.2) ทีละคำขอ เว้นช่วง 1–2 วินาที ลองใหม่เมื่อได้ 429, 5xx หรือ network error แบบเดียวกับ snippet `tools/hdc-catalog-export.js` (รอ 5, 10 และ 20 วินาที) แล้ว POST `save_catalog` (SCHEMA §3.4) ของหัวข้อนั้นก่อนไปหัวข้อถัดไป
+  - หัวข้อที่ดึงไม่สำเร็จหลังลองใหม่ครบ คำตอบที่ไม่ใช่ JSON array หรือได้ array ว่าง ให้ข้ามพร้อมเหตุผล และไม่ส่ง `reports: []` · error จาก `save_catalog` นับเป็นล้ม แสดงข้อความของ GAS ต่อท้ายตามที่ได้รับ · ตอนจบสรุปจำนวนหัวข้อที่บันทึก ข้าม และล้ม
+  - ไม่ดึงหัวข้อที่ไม่อยู่ใน `hdc_topics` ไม่มีหน้ายืนยัน ไม่สั่ง rebuild และไม่ผูกกับปุ่ม sync เพราะ script lock ของ GAS เรียงคำขอให้อยู่แล้ว · ระหว่างรีเฟรชปิดเฉพาะปุ่มของตัวเอง
+  - ข้อความในส่วนนี้เป็นภาษาไทย ยกเว้นเหตุผลจาก GAS หรือเบราว์เซอร์ที่แสดงต่อท้ายตามที่ได้รับ (เหมือนส่วนอัปโหลดประชากร)
+  - logic อยู่ใน `src/lib/dc/catalog-refresh.ts` (§9.5) ซึ่งรับ `fetch` เข้ามาและเทสต์ด้วย stub · component ไม่มีเทสต์อัตโนมัติ ตรวจด้วยมือผ่าน `npm run dc:sync-local` ซึ่งเรียก API แค็ตตาล็อกของ MOPH จริงแบบ GET อ่านอย่างเดียว ส่วน `save_catalog` ลงที่ harness ในหน่วยความจำ
 
 ### 12.2 `src/scripts/sync-moph-to-gas.js`
 
@@ -678,6 +704,8 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ใช้กติกาการดึงใน §7.1 และ POST `rebuild` หนึ่งครั้งตอนจบ
 
 ### 12.3 แค็ตตาล็อก: snippet ในเบราว์เซอร์ + `src/scripts/hdc-catalog.js` (ใหม่)
+
+ตั้งแต่ Track M ทางหลักของการรีเฟรชแค็ตตาล็อกคือปุ่มในหน้า `/sync` (§5.3, §12.1) ส่วนนี้เป็นทางสำรอง และเป็นทางเดียวของ `find` ซึ่งต้องใช้ทุกหัวข้อตอนจะเพิ่มหัวข้อใหม่
 
 API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ให้ไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ (ผลทดสอบใน SCHEMA §5) และสคริปต์ของโปรเจกต์ห้ามปลอม header เป็นเบราว์เซอร์ (ADR-0010) การดึงจึงแบ่งเป็นสองขั้น
 
@@ -695,9 +723,9 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 ### 12.4 GAS
 
 - ไฟล์ใหม่ใต้ `src/scripts/`: `dc-storage.js` (`getYearWindow`, `sheetNameFor`, `getSyncUnits` ใหม่, บันทึกหลายปี, sync_status, กรองอำเภอ), `dc-catalog.js` (hdc_topics/hdc_reports, save_catalog, catalog), `dc-report.js` (report), `dc-rebuild.js` (rebuild), `dc-population.js` (เฟส 2: save_registry_population, registry_population) ฟังก์ชันทั้งหมดอยู่ใน global scope เดียวกับ `รหัส.js` ตามธรรมชาติของ Apps Script
-- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`) และ `SETTINGS_CACHE_KEY` → `settings_v3`, `CONFIG` เพิ่ม `DISTRICT = "5406"` และ `HISTORY_YEARS = 5`, `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่ (`doGet`: `catalog`, `report` และ `registry_population` ของเฟส 2 ซึ่งถือ script lock แบบเดียวกัน · `doPost`: `save_catalog`, `rebuild` และ `save_registry_population` ของเฟส 2), เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` อ่าน `settings`/`kpi_master` ก่อนถือ lock (SCHEMA §3) เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
+- `รหัส.js` แก้เฉพาะ: `SETTINGS_SCHEMA` (เพิ่ม `district_code`, `deploy_hook_url`) และ `SETTINGS_CACHE_KEY` → `settings_v3`, `CONFIG` เพิ่ม `DISTRICT = "5406"` และ `HISTORY_YEARS = 5`, `doGet`/`doPost` เพิ่มทางแยกไป action ใหม่ (`doGet`: `catalog`, `report`, `registry_population` ของเฟส 2 และ `sync_status` ของ Track M ซึ่งถือ script lock แบบเดียวกัน · `doPost`: `save_catalog`, `rebuild` และ `save_registry_population` ของเฟส 2), เปลี่ยนชื่อ `getSyncUnits` เดิมเป็น `getPaUnits` แล้วให้ `BATCH_ALL`/single-sheet mode เรียกชื่อใหม่ ส่วน `getSyncUnits` ใหม่ (PA ∪ DC) อยู่ใน `dc-storage.js`, `BATCH_ALL` เพิ่ม `meta.years`, `fetchMophForKpi` ส่ง `limit = 5000` และคืน `total` ด้วย, `syncAllData` อ่าน `settings`/`kpi_master` ก่อนถือ lock (SCHEMA §3) เรียกทางบันทึกใหม่และ rebuild ตอนจบ, `handleDiag` เพิ่ม setup ใหม่, `clearConfigCache` ล้างแคช DC units ด้วย, เมนู `onOpen` เพิ่ม "Rebuild Website"
 - `syncAllData` (trigger รายวัน): ดึง `current_year` ส่ง `limit = 5000` ทุกตาราง ปฏิเสธเมื่อได้แถวน้อยกว่า `total` คงช่วงเว้น 1.5–2.5 วินาทีของเดิม บันทึกผ่านทางเดียวกับ `save_kpi_data` (`year = current_year`, `force = true` เพราะข้อมูลจาก MOPH สดคือของจริง ADR-0005) และเรียก `requestRebuild` ตอนจบถ้ามีตารางใดสำเร็จ
-- script lock: handler เป็นผู้ถือเท่านั้น (`doPost` ครั้งเดียวก่อนแยก action, `doGet` สำหรับ `catalog`/`report`/`registry_population`, `syncAllData`, `rebuildWebsiteMenu`) ส่วน `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` เอง (SCHEMA §3)
+- script lock: handler เป็นผู้ถือเท่านั้น (`doPost` ครั้งเดียวก่อนแยก action, `doGet` สำหรับ `catalog`/`report`/`registry_population`/`sync_status`, `syncAllData`, `rebuildWebsiteMenu`) ส่วน `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` เอง (SCHEMA §3)
 - `?action=diag&pin=…&setup=datacenter`: สร้าง `hdc_topics`, `hdc_reports`, `sync_status` พร้อม header และเพิ่มคอลัมน์ `district_code`, `deploy_hook_url` ใน `settings` รันซ้ำได้โดยไม่เสียหาย
 - `?action=diag&pin=…&setup=dc_seed`: ตั้งค่าคอลัมน์ผู้ดูแลตาม SCHEMA §6 โดยจับคู่ `opendata_id` และตอบรายการที่ยังไม่มีแถวว่า "ไม่พบ"
 - ทดสอบ logic ของ GAS ก่อน deploy ด้วย harness ใน `src/scripts/test/` (โหลดไฟล์ GAS ใน `node:vm` พร้อม stub ของ `SpreadsheetApp` ฯลฯ) รันด้วย `npm test`
@@ -756,7 +784,7 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | `doPost` ไม่มีการยืนยันตัวตนฝั่ง server (PIN ของ `/sync` ตรวจฝั่ง client และ `DIAG_PIN` อยู่ใน repo สาธารณะ) | ใครมี URL ของ GAS ก็เขียนทับชีตข้อมูล หรือสั่ง rebuild ได้ | **ยอมรับ (D5)** เพราะ (1) เป็นสถานะเดิมของระบบอยู่แล้ว (2) ทุกตารางดึงจาก MOPH ใหม่ได้ทันที และ trigger รายวันเขียนปีปัจจุบันทับกลับเอง (3) ไม่มีข้อมูลส่วนบุคคลในชีต (4) rebuild จำกัด 5 ครั้ง/วัน · ถ้าพบการเขียนทับ ให้รัน `sync-moph-to-gas.js --backfill --force` |
 | URL ของ GAS Web App อยู่ใน bundle ของ `/pa` และ `/sync` | อ่านข้อมูลได้ทุกคน | ยอมรับ เพราะเป็นข้อมูลสาธารณะระดับหน่วยบริการอยู่แล้ว GET ไม่เปิดชีตภายใน (whitelist เดิม) · หน้า Data Center ไม่มี URL นี้ |
 | GAS ล่มหรือตอบช้าตอน build | build ล้ม | เว็บคงเวอร์ชันก่อนหน้า (§12.5) สั่ง rebuild ใหม่เมื่อ GAS กลับมา |
-| MOPH จำกัดความถี่และมี WAF | backfill ใช้เวลานาน และอาจโดน 429 · API แค็ตตาล็อกตอบ 403 ให้ไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ | เว้นช่วงตาม §7.1 และทำ backfill ทีละปีได้ · แค็ตตาล็อกดึงผ่าน snippet ในเบราว์เซอร์ (§12.3, ADR-0010) |
+| MOPH จำกัดความถี่และมี WAF | backfill ใช้เวลานาน และอาจโดน 429 · API แค็ตตาล็อกตอบ 403 ให้ไคลเอนต์ที่ไม่ใช่เบราว์เซอร์ | เว้นช่วงตาม §7.1 และทำ backfill ทีละปีได้ · แค็ตตาล็อกดึงจากเบราว์เซอร์ของผู้ดูแล: ปุ่มในหน้า `/sync` (§12.1) หรือ snippet (§12.3) (ADR-0010) |
 | `syncAllData` ใช้เวลานานขึ้น (18 ตาราง × `limit = 5000`, อ่านชีตปีปัจจุบันเพื่อย้ายปี, `sync_status`, `deleteRows`) | อาจชนเพดาน 6 นาทีต่อ execution ของ trigger ตารางท้าย ๆ ไม่ถูกบันทึกและไม่สั่ง rebuild | วัดเวลาจริงจาก `system_logs` ใน F12 ถ้าเกิน 4 นาที ค่อยแบ่งลูปเป็นสอง trigger |
 | นิยามรายงานของ HDC เปลี่ยนข้ามปี | แนวโน้ม 5 ปีอาจเทียบคนละนิยาม | แจ้งไว้ใน "เกี่ยวกับรายงานนี้" และเก็บ header แยกปีอยู่แล้ว |
 | แค็ตตาล็อกมีรายการซ้ำและรายการขยะ (เช่น "dasf") | ปนในรายงานสุขภาพ | กรองซ้ำ และใช้ opt-in |
@@ -780,7 +808,7 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | D6 | โดเมน | เฟส 1 ใช้ `<project>.pages.dev` ย้ายไปโดเมนเองได้ภายหลังโดยแก้ `<ORIGIN>` ใน stub ที่เดียว | [0002](docs/adr/0002-cloudflare-pages-hosting.md) |
 | D7 | เว็บสาธารณะอ่านข้อมูลจากไหน | ไฟล์ JSON ที่สร้างตอน build (§6) ไม่เรียก GAS สด เพราะประสิทธิภาพ ความทนทาน และข้อจำกัดการทำงานพร้อมกันของ GAS | [0006](docs/adr/0006-build-time-snapshot.md) |
 | D8 | โครงชีตหลายปี | ชีตปีปัจจุบันชื่อเดิม + ชีต `_y{YYYY}` ต่อปี (§7) เพื่อไม่แตะ PA/`BATCH_ALL` และให้ย้ายปีอัตโนมัติ | [0007](docs/adr/0007-per-year-sheets.md) |
-| D9 | การดึงแค็ตตาล็อก HDC | ผู้ดูแลรัน snippet ในเบราว์เซอร์ export เป็นไฟล์ แล้ว `hdc-catalog.js` อ่านไฟล์ (§12.3) ไม่ให้สคริปต์ปลอม header และไม่ใช้ GAS ดึง | [0010](docs/adr/0010-catalog-export-from-browser.md) |
+| D9 | การดึงแค็ตตาล็อก HDC | ผู้ดูแลรัน snippet ในเบราว์เซอร์ export เป็นไฟล์ แล้ว `hdc-catalog.js` อ่านไฟล์ (§12.3) ไม่ให้สคริปต์ปลอม header และไม่ใช้ GAS ดึง · ตั้งแต่ Track M ทางหลักคือปุ่มในหน้า `/sync` ซึ่งดึงจากเบราว์เซอร์ของผู้ดูแลเช่นกัน (§12.1, CORS ทดสอบผ่าน 15 พ.ย. 2569) snippet คงเป็นทางสำรอง | [0010](docs/adr/0010-catalog-export-from-browser.md) |
 | D10 | ประชากรบนหน้าแรก (เฟส 2) | ประชากรทะเบียนราษฎร ณ 31 ธ.ค. จากไฟล์ของ stat.bora ที่ผู้ดูแลอัปโหลดปีละครั้งในหน้า `/sync` ไม่ใช่ประชากรของ HDC (§2.3, ตัดสิน 6 พ.ย. 2569) | [0011](docs/adr/0011-registry-population-from-dopa-upload.md) |
 | D11 | แบบอ้างอิงของหน้าแรกและสีของ Data Center | V7.6 แทน R6 สำหรับหน้าแรก สีและกรอบหน้าเปลี่ยนทั้งเว็บแบบ expand–contract ข้อมูลจริงทั้งหมด ไม่ทำ drawer ตำบลที่รับผิดชอบ คงเมนู 3 ลิงก์ (§2.4, §9.1–9.2, ตัดสิน 10 พ.ย. 2569) · Footer เหลือชื่อเว็บกับหน่วยงาน ที่มาของข้อมูลย้ายไปหน้าแรก (§9.1, ตัดสินตอนทำ F30 10 พ.ย. 2569) | [0012](docs/adr/0012-v7-6-home-design-baseline.md) |
 | D12 | แบบอ้างอิงของ `/reports` | V1.4 แทน R6 สำหรับ `/reports` ส่วน `/reports/{id}` ยังตาม R6 · ชื่อหน้า "รายงานสุขภาพ" ทุกที่ · ไม่แบ่งหน้า `page`/`size` ออกจาก query · แถวมีแค่ชื่อกับลูกศร มีข้อความรองเมื่อ HDC ไม่แสดงแล้วหรือยังไม่มีข้อมูล · HTML มีรายการเต็มแล้วกรองหลังโหลด · คงเมนู 3 ลิงก์ ไม่มีป้ายภาษาอังกฤษ สีใช้ token ที่มีอยู่ · ลบ token ชื่อเก่าตอนออกแบบ `/reports/{id}` ใหม่ (§2.5, §9.3, ตัดสิน 11 พ.ย. 2569) | [0013](docs/adr/0013-v1-4-reports-design-baseline.md) |
