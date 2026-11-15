@@ -107,20 +107,23 @@ type LogType =
   | "fetch"
   | "upload";
 
-// The data date's tone (sync-status.ts) as the list colours it: the current
-// year's by age, a past year's gray (SPEC §12.1).
-const DATE_TONE_CLASS = {
-  fresh: "text-emerald-500 font-medium",
-  recent: "text-amber-500 font-medium",
-  old: "text-orange-500 font-medium",
-  past: "text-slate-400",
-};
-
 interface LogEntry {
   timestamp: string;
   message: string;
   type: LogType;
 }
+
+// The data date's tone (sync-status.ts) as the list colours it: the current
+// year's by age, a past year's gray (SPEC §12.1).
+const DATE_TONE_CLASS: Record<
+  NonNullable<ReturnType<typeof syncStatusDate>>["tone"],
+  string
+> = {
+  fresh: "text-emerald-500 font-medium",
+  recent: "text-amber-500 font-medium",
+  old: "text-orange-500 font-medium",
+  past: "text-slate-400",
+};
 
 export default function SyncPage() {
   const [pin, setPin] = useState("");

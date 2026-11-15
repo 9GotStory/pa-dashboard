@@ -3,7 +3,7 @@
 // reads with ?action=sync_status (SCHEMA §3.10) at login and after a sync.
 // Pure functions: the page does the fetch (CODING_STANDARDS §4).
 
-import { formatThaiDate } from "./format";
+import { dateComDate, formatThaiDate } from "./format";
 import type { GasError, GasSyncStatus } from "./types";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -32,9 +32,6 @@ export function syncStatusDate(
   if (!row) return null;
   const text = formatThaiDate(row.max_date_com);
   if (year !== currentYear) return { text, tone: "past" };
-  // date_com is YYYYMMDDHHmm (s_epi1 adds seconds), in the same local time as formatThaiDate reads it.
-  const part = (from: number, to: number) => Number(row.max_date_com.slice(from, to));
-  const date = new Date(part(0, 4), part(4, 6) - 1, part(6, 8), part(8, 10), part(10, 12));
-  const days = (now.getTime() - date.getTime()) / DAY_MS;
+  const days = (now.getTime() - dateComDate(row.max_date_com).getTime()) / DAY_MS;
   return { text, tone: days <= 2 ? "fresh" : days <= 7 ? "recent" : "old" };
 }
