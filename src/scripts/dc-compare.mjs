@@ -143,7 +143,8 @@ function die(message) {
 }
 
 // Serves an out/ the way the static host does: /reports/x is reports/x.html,
-// and a page it lacks is a 404.
+// and a page it lacks is a 404, with a body, as Chrome fails page.goto on an
+// empty one.
 function serve(dir) {
   const root = path.resolve(dir);
   const server = http.createServer((req, res) => {
@@ -152,7 +153,7 @@ function serve(dir) {
     const file = tries
       .map((p) => path.join(root, p))
       .find((f) => f.startsWith(root + path.sep) && fs.statSync(f, { throwIfNoEntry: false })?.isFile());
-    if (!file) return res.writeHead(404).end();
+    if (!file) return res.writeHead(404, { "content-type": TYPES[".txt"] }).end("not found");
     res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream" });
     fs.createReadStream(file).pipe(res);
   });
