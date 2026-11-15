@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { formatBuildTime, formatCount, formatPct, formatThaiDate } from "./format";
+import { dateComDate, formatBuildTime, formatCount, formatPct, formatThaiDate } from "./format";
 
 // FEATURES F15: the display helpers that must print what PA prints, checked
 // against PA's own output (CODING_STANDARDS §5).
@@ -15,6 +15,11 @@ test('date_com 202611030557 (12 digits) → "3 พฤศจิกายน 2569 
 
 test('date_com 20261102210446 (14 digits, s_epi1) → the seconds left out as PA does: "2 พฤศจิกายน 2569 เวลา 21:04 น."', () => {
   assert.equal(formatThaiDate("20261102210446"), "2 พฤศจิกายน 2569 เวลา 21:04 น.");
+});
+
+test("dateComDate: 12 and 14 digits → the same minute in the browser's local time, the seconds left out", () => {
+  assert.equal(dateComDate("202611030557").getTime(), new Date(2026, 10, 3, 5, 57).getTime());
+  assert.equal(dateComDate("20261102210446").getTime(), new Date(2026, 10, 2, 21, 4).getTime());
 });
 
 test('max_date_com "" (a block ปี without rows, SCHEMA §3.2) → "" without throwing', () => {

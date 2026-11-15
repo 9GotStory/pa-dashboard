@@ -26,17 +26,21 @@ export function formatCount(val: number): string {
   return counts.format(val);
 }
 
+/** date_com (YYYYMMDDHHmm; s_epi1 adds seconds) as a Date in the browser's local time, the seconds left out */
+export function dateComDate(dateCom: string): Date {
+  const part = (from: number, to: number) => Number(dateCom.slice(from, to));
+  return new Date(part(0, 4), part(4, 6) - 1, part(6, 8), part(8, 10), part(10, 12));
+}
+
 /**
- * date_com (YYYYMMDDHHmm; s_epi1 adds seconds) as PA shows it, e.g.
- * "3 พฤศจิกายน 2569 เวลา 05:57 น."; "" for "" (a block ปี without rows) or
- * any value that is not 12–14 digits, as PA leaves it blank
+ * date_com as PA shows it, e.g. "3 พฤศจิกายน 2569 เวลา 05:57 น."; "" for ""
+ * (a block ปี without rows) or any value that is not 12–14 digits, as PA
+ * leaves it blank
  */
 export function formatThaiDate(dateCom: string): string {
   if (!/^\d{12,14}$/.test(dateCom)) return "";
-  const part = (from: number, to: number) => Number(dateCom.slice(from, to));
-  const date = new Date(part(0, 4), part(4, 6) - 1, part(6, 8), part(8, 10), part(10, 12));
   return (
-    date.toLocaleDateString("th-TH", {
+    dateComDate(dateCom).toLocaleDateString("th-TH", {
       day: "numeric",
       month: "long",
       year: "numeric",

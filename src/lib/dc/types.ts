@@ -223,6 +223,17 @@ export interface GasError {
   message: string;
 }
 
+/** One sync_status row with all its columns (SCHEMA §2.4), as ?action=sync_status answers it · DcYearStatus is the part reports[].years uses */
+export interface SyncStatusRow extends DcYearStatus {
+  table: string;
+  sheet: string;
+}
+
+/** GAS's ?action=sync_status answer (SCHEMA §3.10, Track M): the rows of the years in the window, in sheet order · [] = no rows yet */
+export interface GasSyncStatus {
+  rows: SyncStatusRow[];
+}
+
 /** GAS's POST answers, as far as the /sync upload reads them (SCHEMA §3.7, §3.8) */
 export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
 
