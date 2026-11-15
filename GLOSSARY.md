@@ -31,7 +31,7 @@
 | **รายงานที่ใช้งาน** (active report) | รายงานที่ `enabled = TRUE`, หัวข้ออยู่ใน `hdc_topics` และ key ผ่านรูปแบบ (SCHEMA §2.3) | "enabled report" |
 | **รายงานที่รอวิเคราะห์** | รายงานที่ใช้งาน แต่ตารางต้นทางยังไม่ผ่าน **การวิเคราะห์ตาราง** จึงยังไม่แสดงบนเว็บ | "รายงานที่ยังไม่รองรับ" |
 | **opt-in** | หลักการเลือกเฉพาะหัวข้อและรายงานที่ต้องการ รายงานใหม่ปิดเสมอ | "hidden", "blacklist" |
-| **รีเฟรชแค็ตตาล็อก** | `hdc-catalog.js refresh --from <ไฟล์ export แค็ตตาล็อก>` → `save_catalog` อัปเดตเฉพาะคอลัมน์จาก API | "sync catalog" |
+| **รีเฟรชแค็ตตาล็อก** | ดึงรายงานของหัวข้อใน `hdc_topics` จาก API แค็ตตาล็อก → `save_catalog` อัปเดตเฉพาะคอลัมน์จาก API · ทางหลักคือปุ่มบนหน้า `/sync` ทางสำรองคือ `hdc-catalog.js refresh --from <ไฟล์ export แค็ตตาล็อก>` | "sync catalog" |
 | **ไฟล์ export แค็ตตาล็อก** (catalog export) | ไฟล์ JSON ที่ผู้ดูแลได้จาก snippet ใน DevTools ของเบราว์เซอร์ เก็บ response ของ API แค็ตตาล็อกทุกหัวข้อ เป็นอินพุตเดียวของ `hdc-catalog.js` เพราะ API นี้ไม่รับสคริปต์ | "catalog dump", "catalog cache" |
 | **`removed`** | สถานะรายงานที่หายจาก API แต่ยังเก็บแถวไว้ | "deleted" |
 
@@ -66,7 +66,7 @@
 | **rebuild** | การสั่ง Cloudflare build ใหม่ผ่าน Deploy Hook ด้วย POST `rebuild` ของ GAS (5 ครั้ง/วัน) | "redeploy", "trigger build" |
 | **Deploy Hook** | URL ของ Cloudflare Pages ที่เก็บใน `settings.deploy_hook_url` | |
 | **ล้มดัง ๆ** (fail loudly) | prebuild exit 1 เมื่อข้อมูลไม่ครบ ไม่ publish ข้อมูลบางส่วน | |
-| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`/`registry_population`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
+| **script lock** | `LockService.getScriptLock()` ของ GAS ถือโดย handler ครั้งเดียวต่อคำขอ (`doPost`, `doGet` ของ `catalog`/`report`/`registry_population`/`sync_status`, `syncAllData`, เมนู rebuild) ฟังก์ชันภายในไม่ถือซ้อน กันการอ่านระหว่าง clear → write | "mutex" |
 
 ## ขั้นตอนทำงาน
 
@@ -96,7 +96,7 @@
 | **เปรียบเทียบตาม** (by) | `area` (รายตำบล) หรือ `hosp` (รายหน่วยบริการ) | |
 | **ยืนยันแล้ว** / **อนุมาน** | ความหมายของคอลัมน์ที่มีที่มาจาก HDC (comment ของคอลัมน์ใน `report_schema` หรือหัวตารางบนหน้ารายงานของ HDC) เทียบกับความหมายที่ได้จากการอ่านตัวเลข คอลัมน์ที่อนุมานไม่แสดงเป็นอัตราและไม่ตีความทางคลินิก | "สันนิษฐาน" |
 | **ด้าน** | หัวข้อคัดกรองหนึ่งในเก้าของการคัดกรองผู้สูงอายุ 9 ด้าน เช่น ด้านการมองเห็น ผลของแต่ละด้านเป็นจำนวนรายการ ไม่ใช่จำนวนผู้มีความเสี่ยง | "หมวด" (ชนกับหมวดของแค็ตตาล็อก) |
-| **วันที่ข้อมูล** | `date_com` สูงสุดของ block ที่แสดง | "last updated" (คำของ PA) |
+| **วันที่ข้อมูล** | `date_com` สูงสุดของ block ที่แสดง หรือบนหน้า `/sync` ของ (ตาราง, ปี) ตาม `sync_status` บอกว่า HDC ประมวลผลข้อมูลชุดนั้นเมื่อไร ไม่ใช่เวลาที่ sync (`synced_at`) | "last updated", "วันที่อัปเดตล่าสุด" (คำของ PA) |
 
 ## ประชากร
 
