@@ -16,6 +16,8 @@ import {
   TriangleAlert,
 } from "lucide-react";
 import RegistryPopulationUpload from "@/components/dc/RegistryPopulationUpload";
+import { readSyncStatus, syncStatusDate } from "@/lib/dc/sync-status";
+import type { GasError, GasSyncStatus } from "@/lib/dc/types";
 
 // --- CONFIGURATION ---
 // Only static, non-configurable values live here. Year, province, and the
@@ -44,8 +46,6 @@ interface BatchMeta {
   // The Data Center year window, oldest first (SCHEMA §3.5).
   years?: unknown;
   province_code?: unknown;
-  // GAS emits these as numbers (YYYYMMDDHHmm timestamps), not strings.
-  lastUpdatedMap?: Record<string, number>;
   kpi_config?: KpiConfigRaw[];
 }
 
@@ -107,6 +107,15 @@ type LogType =
   | "fetch"
   | "upload";
 
+// The data date's tone (sync-status.ts) as the list colours it: the current
+// year's by age, a past year's gray (SPEC §12.1).
+const DATE_TONE_CLASS = {
+  fresh: "text-emerald-500 font-medium",
+  recent: "text-amber-500 font-medium",
+  old: "text-orange-500 font-medium",
+  past: "text-slate-400",
+};
+
 interface LogEntry {
   timestamp: string;
   message: string;
@@ -129,9 +138,10 @@ export default function SyncPage() {
   // null until the user picks one: sync settings.current_year (SPEC §12.1).
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
   const [selectedKPIs, setSelectedKPIs] = useState<string[]>([]);
-  const [lastUpdatedMap, setLastUpdatedMap] = useState<Record<string, number>>(
-    {},
-  );
+  // sync_status of every (table, year) for the data dates (SPEC §12.1).
+  const [syncStatus, setSyncStatus] = useState<
+    GasSyncStatus | "loading" | "failed"
+  >("loading");
   const [metaError, setMetaError] = useState<string | null>(null);
 
   // Guards first-time default selection so a subsequent Clear by the user
@@ -238,9 +248,6 @@ export default function SyncPage() {
         });
       }
 
-      if (meta.lastUpdatedMap) {
-        setLastUpdatedMap(meta.lastUpdatedMap);
-      }
       addLog("Metadata loaded successfully.", "success");
     } catch (e) {
       console.error(e);
@@ -249,6 +256,24 @@ export default function SyncPage() {
       setMetaError(msg);
     } finally {
       setIsFetchingMeta(false);
+    }
+  }, [addLog]);
+
+  // The data dates (SPEC §12.1, SCHEMA §3.10): read at login and after a sync
+  // only, so picking a year asks GAS nothing. A failure (Busy, or a GAS
+  // without this action) leaves the sync as it is.
+  const fetchSyncStatus = useCallback(async () => {
+    setSyncStatus("loading");
+    try {
+      const gasUrl = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL;
+      if (!gasUrl) throw new Error("NEXT_PUBLIC_GAS_SCRIPT_URL is not set");
+      const res = await fetch(`${gasUrl}?action=sync_status`);
+      if (!res.ok) throw new Error(`sync_status HTTP ${res.status}`);
+      const answer: GasSyncStatus | GasError = await res.json();
+      setSyncStatus(readSyncStatus(answer));
+    } catch (e) {
+      addLog(`โหลดวันที่ข้อมูลไม่ได้: ${errorMessage(e)}`, "warn");
+      setSyncStatus("failed");
     }
   }, [addLog]);
 
@@ -269,6 +294,7 @@ export default function SyncPage() {
       // Loaded by the login itself, not by an effect on isAuthenticated
       // (react-hooks/set-state-in-effect).
       fetchMetadata();
+      fetchSyncStatus();
     } else {
       toast.error("Incorrect PIN");
       setPin("");
@@ -547,8 +573,9 @@ export default function SyncPage() {
     }
 
     setIsSyncing(false);
-    // Refresh metadata to show new dates
+    // Refresh metadata, and the data dates
     fetchMetadata();
+    fetchSyncStatus();
   };
 
   const getIconForLog = (type: LogType) => {
@@ -716,52 +743,20 @@ export default function SyncPage() {
             ) : (
               kpiList.map((kpi) => {
               const isSelected = selectedKPIs.includes(kpi.table);
-              const lastUpdated = lastUpdatedMap[kpi.table];
 
-              // Format Date if exists
-              let dateStrOut = "No data / Never synced";
+              // The data date of (table, year picked) (SPEC §12.1)
+              let dateStrOut = "โหลดวันที่ไม่ได้";
               let dateColor = "text-slate-400";
-              if (lastUpdated) {
-                try {
-                  let d = new Date(lastUpdated);
-
-                  // Handle MOPH format YYYYMMDDHHmm (e.g., "202602221224").
-                  // s_epi1 adds seconds (14 digits) — accept both, parse the
-                  // first 12.
-                  const dateStr = String(lastUpdated);
-                  if ((dateStr.length === 12 || dateStr.length === 14) && /^\d+$/.test(dateStr)) {
-                    const y = parseInt(dateStr.substring(0, 4));
-                    const m = parseInt(dateStr.substring(4, 6)) - 1;
-                    const day = parseInt(dateStr.substring(6, 8));
-                    const h = parseInt(dateStr.substring(8, 10));
-                    const min = parseInt(dateStr.substring(10, 12));
-                    d = new Date(y, m, day, h, min);
-                  }
-
-                  if (!isNaN(d.getTime())) {
-                    dateStrOut = d.toLocaleString("th-TH", {
-                      year: "numeric",
-                      month: "short",
-                      day: "numeric",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    });
-
-                    // Simple heuristic: if date is within last 2 days, green, else orange
-                    const now = new Date();
-                    const diffDays =
-                      (now.getTime() - d.getTime()) / (1000 * 3600 * 24);
-                    if (diffDays <= 2)
-                      dateColor = "text-emerald-500 font-medium";
-                    else if (diffDays <= 7)
-                      dateColor = "text-amber-500 font-medium";
-                    else dateColor = "text-orange-500 font-medium";
-                  } else {
-                    dateStrOut = String(lastUpdated);
-                  }
-                } catch {
-                  dateStrOut = String(lastUpdated);
-                }
+              if (typeof syncStatus === "object" && settings) {
+                const date = syncStatusDate(
+                  syncStatus,
+                  kpi.table,
+                  selectedYear ?? settings.current_year,
+                  settings.current_year,
+                  new Date(),
+                );
+                dateStrOut = date ? date.text : "ไม่มีข้อมูลปีนี้ในชีต";
+                if (date) dateColor = DATE_TONE_CLASS[date.tone];
               }
 
               return (
@@ -798,7 +793,9 @@ export default function SyncPage() {
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <CalendarClock className={`w-3.5 h-3.5 ${dateColor}`} />
                       <span className={`text-[11px] ${dateColor}`}>
-                        {isFetchingMeta ? "Loading..." : dateStrOut}
+                        {isFetchingMeta || syncStatus === "loading"
+                          ? "Loading..."
+                          : dateStrOut}
                       </span>
                     </div>
                   </div>

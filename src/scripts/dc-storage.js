@@ -398,6 +398,35 @@ function dcReadSyncStatus() {
     });
 }
 
+/**
+ * ?action=sync_status (SCHEMA §3.10): the sync_status rows inside the window,
+ * in sheet order, with all six columns, for the data date of the year picked
+ * on /sync (SPEC §12.1). { rows: [] } before the sheet exists. No cache.
+ *
+ * The caller must hold the script lock (doGet): this function never calls
+ * LockService (SCHEMA §3). settings is the one the caller read before taking
+ * the lock.
+ */
+function dcGetSyncStatus(settings) {
+  const window = getYearWindow(settings);
+  return {
+    rows: dcReadSyncStatus()
+      .filter(function (row) {
+        return window.indexOf(row.b_year) > -1;
+      })
+      .map(function (row) {
+        return {
+          table: row.table,
+          b_year: row.b_year,
+          sheet: row.sheet,
+          row_count: row.row_count,
+          max_date_com: row.max_date_com,
+          synced_at: row.synced_at.toISOString(),
+        };
+      }),
+  };
+}
+
 /** The sync_status row of (table, year), or null. */
 function dcFindSyncStatus(statusRows, table, year) {
   for (let i = 0; i < statusRows.length; i++) {

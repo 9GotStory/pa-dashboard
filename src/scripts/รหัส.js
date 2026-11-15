@@ -930,12 +930,18 @@ function doGet(e) {
     return handleDiag(e);
   }
 
-  // Data Center catalog, report and registry_population (SCHEMA §3.1, §3.2,
-  // §3.9), for the prebuild script, hdc-catalog.js and the /sync upload. Read
-  // under the script lock, so a build never reads a sheet that saveTableYear
-  // or save_registry_population is clearing and rewriting.
+  // Data Center catalog, report, registry_population and sync_status (SCHEMA
+  // §3.1, §3.2, §3.9, §3.10), for the prebuild script, hdc-catalog.js, the
+  // /sync upload and /sync's data dates. Read under the script lock, so a
+  // build never reads a sheet that saveTableYear or save_registry_population
+  // is clearing and rewriting.
   const action = e.parameter.action;
-  if (action === "catalog" || action === "report" || action === "registry_population") {
+  if (
+    action === "catalog" ||
+    action === "report" ||
+    action === "registry_population" ||
+    action === "sync_status"
+  ) {
     // readSettings takes and releases the lock itself on a cache miss: read
     // it before taking the lock (SCHEMA §3, same as doPost).
     const settings = readSettings();
@@ -951,7 +957,8 @@ function doGet(e) {
     try {
       return createJsonOutput(action === "catalog" ? dcGetCatalog(settings)
         : action === "report" ? dcGetReport(e.parameter.id, settings)
-          : dcGetRegistryPopulation());
+          : action === "registry_population" ? dcGetRegistryPopulation()
+            : dcGetSyncStatus(settings));
     } catch (err) {
       // Every error is a JSON answer (SCHEMA §3), not the Apps Script error page.
       Logger.log("doGet " + action + " failed: " + err);

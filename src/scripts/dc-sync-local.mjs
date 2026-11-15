@@ -21,7 +21,17 @@ if (!fs.existsSync(path.resolve("public/data/catalog.json"))) {
   process.exit(1);
 }
 
-const { url } = await startGas(null, loadGas({ sheets: PA_SHEETS }), ({ action, kind, yymm }) => {
+// s_kpi_anc12 has a data date in 2569 (the current year) and in 2568, so
+// picking a year on /sync changes its date, and any other year shows that
+// sync_status has no row of it (SPEC §12.1).
+const SYNC_STATUS = [
+  ["table", "b_year", "sheet", "row_count", "max_date_com", "synced_at"],
+  ["s_kpi_anc12", "2569", "s_kpi_anc12", 3, "202610290915", new Date("2026-10-29T03:00:00Z")],
+  ["s_kpi_anc12", "2568", "s_kpi_anc12_y2568", 3, "202509301200", new Date("2025-10-01T03:00:00Z")],
+];
+
+const sheets = { ...PA_SHEETS, sync_status: SYNC_STATUS };
+const { url } = await startGas(null, loadGas({ sheets }), ({ action, kind, yymm }) => {
   console.log(`dc-sync-local: POST ${[action, kind, yymm].filter(Boolean).join(" ")}`);
 });
 console.log(
