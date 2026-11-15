@@ -14,6 +14,7 @@ import type {
   Month,
   Period,
   ReportQuery,
+  ReportSort,
   Totals,
   TrendPoint,
   UnitTotals,
@@ -347,6 +348,22 @@ export function countsBy(
     name,
     count: sum(block, cols, rows).result,
   }));
+}
+
+/**
+ * The units of a เปรียบเทียบ section in the order picked (SPEC §9.4 "การเรียง"):
+ * by code as they come, or by value (the ร้อยละ or the count the section
+ * shows), the largest first, null ("—") last and ties by code, the rule of
+ * sortUnits of รายงานประชากร. The total row is not a unit: it stays last.
+ */
+export function sortedUnits<U extends { key: string }>(
+  units: U[],
+  sort: ReportSort,
+  value: (unit: U) => number | null,
+): U[] {
+  const rank = (u: U) => (value(u) === null ? 1 : 0);
+  if (sort === "code") return units;
+  return units.toSorted((a, b) => rank(a) - rank(b) || (value(b) ?? 0) - (value(a) ?? 0) || a.key.localeCompare(b.key));
 }
 
 /**

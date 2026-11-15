@@ -1,9 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import { reportCsv } from "@/lib/dc/csv";
 import { formatCount } from "@/lib/dc/format";
 import { cavityValues } from "@/lib/dc/tables/cavity";
-import type { Cell, DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { Cell, DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
+import { sortedUnits } from "@/lib/dc/values";
+import Comparison from "../report/Comparison";
 import { areaLabel, goalText, passText, pctText } from "../report/labels";
 import { UnitPanel } from "../report/panels";
 import ReportActions from "../report/ReportActions";
@@ -42,7 +45,10 @@ export default function CavityPage({ id, names }: { id: string; names: Names; ye
 
 function Cavity({ data, names }: { data: DcReportData; names: Names }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
+  // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
   const { block, goal, passed, funnel, units } = cavityValues(data, query, names);
+  const shown = units && sortedUnits(units, sort, (u) => u.totals.pct);
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
   const csv =
     block && funnel && units
@@ -73,14 +79,16 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
         <ReportStatus>
           ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
         </ReportStatus>
-      ) : !funnel || !units ? (
+      ) : !funnel || !shown ? (
         <ReportStatus>ไม่มีข้อมูลในปีงบประมาณ {query.year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</ReportStatus>
       ) : (
         <div className="px-4 pb-6 sm:px-6">
           <FunnelSummary funnel={funnel} goal={goal} passed={passed} />
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
-            <UnitPanel unitLabel={unitLabel} units={units} goal={goal} pctLabel="ร้อยละฟันดีไม่มีผุ" />
-            <CavityTable unitLabel={unitLabel} units={units} funnel={funnel} totalLabel={totalLabel} />
+          <div className="mt-4">
+            <Comparison unitLabel={unitLabel} valueLabel="ร้อยละฟันดีไม่มีผุ" sort={sort} onSort={setSort}>
+              <UnitPanel unitLabel={unitLabel} units={shown} goal={goal} pctLabel="ร้อยละฟันดีไม่มีผุ" />
+              <CavityTable unitLabel={unitLabel} units={shown} funnel={funnel} totalLabel={totalLabel} />
+            </Comparison>
           </div>
         </div>
       )}

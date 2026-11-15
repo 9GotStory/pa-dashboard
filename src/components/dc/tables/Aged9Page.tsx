@@ -1,9 +1,11 @@
 "use client";
 
 import { ChevronRight } from "lucide-react";
-import type { RefObject } from "react";
+import { useState, type RefObject } from "react";
 import { aged9Values } from "@/lib/dc/tables/aged9";
-import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
+import { sortedUnits } from "@/lib/dc/values";
+import Comparison from "../report/Comparison";
 import CountTable from "../report/CountTable";
 import Detail, { useDetail } from "../report/Detail";
 import { areaLabel, countText, describe } from "../report/labels";
@@ -45,6 +47,10 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
     query.domain === null ? null : String(query.domain),
     (domain) => push({ ...query, domain: domain === null ? null : Number(domain) }),
   );
+  // The order of each เปรียบเทียบ section, ความครอบคลุม and the ด้าน open,
+  // kept here so it stays through แสดงผล and another ด้าน (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
+  const [domainSort, setDomainSort] = useState<ReportSort>("code");
   const { summary, unitLabel, totalLabel } = resultsText(data.report, query, names, null, { fields: FIELDS });
   // What is shown: the ด้าน open, or ความครอบคลุม then the 9 ด้าน (SPEC §9.4 CSV); nothing without a unit
   const csv =
@@ -83,7 +89,12 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
         </ReportStatus>
       ) : (
         <>
-          <QuarterFigures {...{ total, goal, units, trend, unitLabel, totalLabel }} steps={[]} year={query.year} />
+          <QuarterFigures
+            {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+            onSort={setSort}
+            steps={[]}
+            year={query.year}
+          />
           <div className="px-4 pb-6 sm:px-6">
             <Domains domains={domains} open={query.domain} headingRef={overviewHeading} buttonProps={buttonProps} />
             <Detail
@@ -94,7 +105,12 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
               context={describe({ ...query, domain: null }, names, ["year", "area"])}
             >
               {detail && (
-                <DomainFigures detail={detail} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />
+                <DomainFigures
+                  {...{ detail, unitLabel, totalLabel }}
+                  year={query.year}
+                  sort={domainSort}
+                  onSort={setDomainSort}
+                />
               )}
             </Detail>
           </div>
@@ -156,25 +172,28 @@ function Domains(props: {
 
 /**
  * The รายละเอียด of a ด้าน (SPEC §9.4): the warning that it is จำนวนรายการ,
- * and the count of each ตำบล or หน่วยบริการ beside its table; a note when the
- * district has no ผลงาน of it that year
+ * and the count of each ตำบล or หน่วยบริการ beside its table in the order of
+ * sort; a note when the district has no ผลงาน of it that year
  */
 function DomainFigures(props: {
   detail: NonNullable<Values["detail"]>;
   year: string;
   unitLabel: string;
   totalLabel: string;
+  sort: ReportSort;
+  onSort: (sort: ReportSort) => void;
 }) {
-  const { detail, year, unitLabel, totalLabel } = props;
+  const { detail, year, unitLabel, totalLabel, sort, onSort } = props;
+  const shown = detail.units && sortedUnits(detail.units, sort, (u) => u.count);
   return (
     <>
       {/* What a ด้าน counts (SPEC §9.4, GLOSSARY "ด้าน") */}
       <p className="mb-4 text-xs font-semibold text-dc-brand-deep">จำนวนรายการตามข้อมูลต้นทาง ไม่ใช่จำนวนผู้มีความเสี่ยง</p>
-      {detail.count !== null && detail.units ? (
-        <div className="grid gap-4 lg:grid-cols-2">
-          <CountPanel unitLabel={unitLabel} units={detail.units} />
-          <CountTable unitLabel={unitLabel} units={detail.units} total={detail.count} totalLabel={totalLabel} />
-        </div>
+      {detail.count !== null && shown ? (
+        <Comparison unitLabel={unitLabel} valueLabel="จำนวน" sort={sort} onSort={onSort}>
+          <CountPanel unitLabel={unitLabel} units={shown} />
+          <CountTable unitLabel={unitLabel} units={shown} total={detail.count} totalLabel={totalLabel} />
+        </Comparison>
       ) : (
         <p className="text-sm text-dc-text-secondary">
           ไม่มีข้อมูลด้าน{detail.label} ในปีงบประมาณ {year}: ผลงานรวมทั้งอำเภอว่างทั้งปี

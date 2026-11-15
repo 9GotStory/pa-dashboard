@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { completeValues } from "@/lib/dc/tables/complete";
-import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { areaLabel } from "../report/labels";
 import QuarterFigures from "../report/QuarterFigures";
 import ReportActions from "../report/ReportActions";
@@ -33,6 +34,8 @@ export default function CompletePage({ id, names, years }: { id: string; names: 
 
 function Complete({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, heading } = useReportQuery(data, names);
+  // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
   const { block, total, goal, units, trend, months } = completeValues(data, query, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
@@ -56,7 +59,8 @@ function Complete({ data, names, years }: { data: DcReportData; names: Names; ye
         </ReportStatus>
       ) : (
         <QuarterFigures
-          {...{ total, goal, units, trend, unitLabel, totalLabel }}
+          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          onSort={setSort}
           steps={months}
           stepName="เดือน"
           year={query.year}

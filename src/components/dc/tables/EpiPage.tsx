@@ -3,7 +3,9 @@
 import { ChevronRight, Search } from "lucide-react";
 import { useState, type RefObject } from "react";
 import { epiValues, findMeasures } from "@/lib/dc/tables/epi";
-import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
+import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
+import { sortedUnits } from "@/lib/dc/values";
+import Comparison from "../report/Comparison";
 import Detail, { useDetail } from "../report/Detail";
 import { PERIOD_LABELS, countText, describe, goalText, passText, pctText } from "../report/labels";
 import { PeriodPanel, TrendPanel, UnitPanel } from "../report/panels";
@@ -52,6 +54,8 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
   const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.measure, (measure) =>
     push({ ...query, measure }),
   );
+  // The order of the รายละเอียด's units, kept here so it stays through แสดงผล and another รายการ (SPEC §9.4)
+  const [sort, setSort] = useState<ReportSort>("code");
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
@@ -89,7 +93,7 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
             context={describe({ ...query, measure: null }, names, FIELDS)}
           >
             {detail && (
-              <MeasureFigures detail={detail} year={query.year} unitLabel={unitLabel} totalLabel={totalLabel} />
+              <MeasureFigures {...{ detail, unitLabel, totalLabel, sort }} year={query.year} onSort={setSort} />
             )}
           </Detail>
         </div>
@@ -321,26 +325,30 @@ function Verdict({ passed }: { passed: boolean | null }) {
 
 /**
  * The รายละเอียด of a รายการ (SPEC §9.4): ตัวเลขสรุป, ร้อยละรายตำบลหรือราย
- * หน่วยบริการ beside its table, แนวโน้ม and เป้าหมาย/ผลงาน by เดือน or by
- * ไตรมาส; "—" and the trend alone when the district has no ผลงาน of it that year
+ * หน่วยบริการ beside its table in the order of sort, แนวโน้ม and เป้าหมาย/
+ * ผลงาน by เดือน or by ไตรมาส; "—" and the trend alone when the district has
+ * no ผลงาน of it that year
  */
 function MeasureFigures(props: {
   detail: NonNullable<Values["detail"]>;
   year: string;
   unitLabel: string;
   totalLabel: string;
+  sort: ReportSort;
+  onSort: (sort: ReportSort) => void;
 }) {
-  const { detail, year, unitLabel, totalLabel } = props;
+  const { detail, year, unitLabel, totalLabel, sort, onSort } = props;
   const { label, total, goal, units, trend, byQuarter, steps } = detail;
+  const shown = units && sortedUnits(units, sort, (u) => u.totals.pct);
   return (
     <>
       <SummaryTiles total={total} goal={goal} />
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        {total && units ? (
-          <>
-            <UnitPanel unitLabel={unitLabel} units={units} goal={goal} />
-            <UnitTable unitLabel={unitLabel} units={units} total={total} totalLabel={totalLabel} />
-          </>
+        {total && shown ? (
+          <Comparison unitLabel={unitLabel} valueLabel="ร้อยละ" sort={sort} onSort={onSort}>
+            <UnitPanel unitLabel={unitLabel} units={shown} goal={goal} />
+            <UnitTable unitLabel={unitLabel} units={shown} total={total} totalLabel={totalLabel} />
+          </Comparison>
         ) : (
           <p className="text-sm text-dc-text-secondary lg:col-span-2">
             ไม่มีข้อมูลรายการ {label} ในปีงบประมาณ {year}: ผลงานรวมทั้งอำเภอว่างทั้งปี
