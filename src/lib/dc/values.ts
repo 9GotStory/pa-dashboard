@@ -1,4 +1,5 @@
-import { POPULATION_REPORT, changeOf } from "./population-report";
+import { changeOf } from "./change";
+import { POPULATION_REPORT } from "./population-report";
 import type {
   Cell,
   DcCatalog,
