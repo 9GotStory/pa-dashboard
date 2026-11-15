@@ -75,13 +75,13 @@ export function buildMain({ name, key, mainSha, start }) {
   // node_modules symlinked does not build, as Turbopack refuses files
   // outside the worktree's root.
   console.log(`${name}: building main (${mainSha})`);
-  const back = () => {
+  const checkOutStart = () => {
     if (spawnSync("git", ["checkout", "--quiet", start], { stdio: "inherit" }).status !== 0) {
       console.error(`${name}: could not check out ${start} again: run git checkout ${start}`);
     }
   };
   git("checkout", "--quiet", "main");
-  process.on("exit", back);
+  process.on("exit", checkOutStart);
   run("npx", ["next", "build"], { stdio: "inherit" });
   fs.cpSync("out", path.join(MAIN_BUILD, "out"), { recursive: true });
   fs.cpSync(LOADABLE_MANIFEST, path.join(MAIN_BUILD, LOADABLE_MANIFEST));
@@ -90,5 +90,5 @@ export function buildMain({ name, key, mainSha, start }) {
   // When the branch's build fails, no out/ of main is left for dc:check.
   fs.rmSync("out", { recursive: true });
   git("checkout", "--quiet", start);
-  process.off("exit", back);
+  process.off("exit", checkOutStart);
 }

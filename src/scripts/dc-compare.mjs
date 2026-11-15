@@ -91,10 +91,10 @@ function diffLines(name, main, branch) {
   let end = 0;
   while (end < main.length - start && end < branch.length - start && main.at(-1 - end) === branch.at(-1 - end)) end++;
   const side = (sign, lines) => {
-    const differ = lines.slice(start, lines.length - end);
-    const more = differ.length - SHOWN_LINES;
+    const changed = lines.slice(start, lines.length - end);
+    const more = changed.length - SHOWN_LINES;
     return [
-      ...differ.slice(0, SHOWN_LINES).map((line) => `  ${sign} ${line}`),
+      ...changed.slice(0, SHOWN_LINES).map((line) => `  ${sign} ${line}`),
       ...(more > 0 ? [`  ${sign} … ${more} more`] : []),
     ];
   };
@@ -222,7 +222,8 @@ if (import.meta.main) {
   } catch (error) {
     die(error.message);
   }
-  if (!fs.existsSync("out/reports")) die("out/ lacks /reports/: run npx next build first");
+  if (!fs.existsSync("out/reports") || !fs.existsSync("out/data"))
+    die("out/ lacks /reports/ or /data/: run npx next build first");
   if (snapshotHash("out/data") !== snapshotHash(path.join(MAIN_OUT, "data"))) {
     die(
       `out/data/ is not the snapshot of main's build in ${MAIN_OUT}/data/, so a difference could come from the data, not the code: run npx next build again`,
@@ -234,20 +235,21 @@ if (import.meta.main) {
   const [branchOrigin, mainOrigin] = servers.map((server) => `http://127.0.0.1:${server.address().port}`);
   const results = [];
   let browser;
+  // The page being opened, which an error names
+  let opening = "";
   try {
     browser = await chromium.launch({ channel: "chrome" });
     for (const url of pages) {
-      const result = comparePage(
-        url,
-        await readPage(browser, branchOrigin + url),
-        await readPage(browser, mainOrigin + url),
-      );
+      opening = `${url} on the branch: `;
+      const branch = await readPage(browser, branchOrigin + url);
+      opening = `${url} on main: `;
+      const result = comparePage(url, branch, await readPage(browser, mainOrigin + url));
       console.log(result.lines.join("\n"));
       results.push(result);
     }
   } catch (error) {
     // Playwright messages end in a multi-line call log; the first line names the failure.
-    die(error.message.split("\n")[0]);
+    die(opening + error.message.split("\n")[0]);
   } finally {
     await browser?.close();
     servers.forEach((server) => server.close());
