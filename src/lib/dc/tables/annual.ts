@@ -1,5 +1,5 @@
 import type { DcCatalog, DcReportData, ReportQuery } from "../types";
-import { count } from "../values";
+import { count, countsBy, pctOf } from "../values";
 import { ancValues } from "./anc";
 
 // The data layer of the ตัวชี้วัดเดียวรายปี page (SPEC §9.4, ADR-0015) for
@@ -23,13 +23,23 @@ export function annualValues(
   years: string[],
 ) {
   const { block, total, change, goal, passed, units, trend } = ancValues(data, query, names, years);
+  // ร้อยละสอบถาม is of s_kpi_food alone: the dental tables have no total
+  const surveyed = block && total && block.headers.includes("total") ? block : null;
+  // total of each unit, keyed as totalsBy names them (both go by unitRows)
+  const childrenOf = new Map((surveyed && countsBy(surveyed, "total", query, names))?.map((u) => [u.key, u.count]));
   return {
     block,
     total,
     change,
     goal,
     passed,
-    units,
+    /** The ตำบล or หน่วยบริการ of query.by in the area, each with its ร้อยละสอบถาม (null as survey); null with total */
+    units:
+      units &&
+      units.map((u) => ({
+        ...u,
+        survey: surveyed && surveyOf(childrenOf.get(u.key) ?? 0, u.totals.target),
+      })),
     trend,
     /**
      * ตอบว่ากินนมแม่อย่างเดียว at each เดือนอายุ 1–6 in the area, as counts:
@@ -42,5 +52,19 @@ export function annualValues(
       block && total && block.headers.includes("r1")
         ? AGE_MONTHS.map((month) => ({ month, count: count(block, `r${month}`, query.area) ?? 0 }))
         : null,
+    /**
+     * ร้อยละสอบถาม (GLOSSARY) of s_kpi_food in the area. null for a table
+     * without total (the dental tables) and with total null, as ageMonths.
+     */
+    survey: surveyed && total && surveyOf(count(surveyed, "total", query.area) ?? 0, total.target),
   };
+}
+
+/**
+ * ร้อยละสอบถาม (GLOSSARY): เด็กอายุครบ 6 เดือน (total), those ถูกสอบถาม
+ * (target) and target ÷ total × 100, each summed before dividing; pct null
+ * with no children (SCHEMA §4.6.6)
+ */
+function surveyOf(children: number, asked: number) {
+  return { children, asked, pct: pctOf(asked, children) };
 }

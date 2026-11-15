@@ -178,20 +178,26 @@ export function CountPanel({ unitLabel, units }: { unitLabel: string; units: Uni
   );
 }
 
-/** Cards of counts in คน, not ร้อยละ, of a panel whose counts may add up to more than ผลงาน */
-function CountCards({ grid, cards }: { grid: string; cards: { label: string; count: number }[] }) {
+/** Cards of a panel's figures, each a value as shown with its unit, if any */
+function Cards({ grid, cards }: { grid: string; cards: { label: string; value: string; unit?: string }[] }) {
   return (
     <dl className={`grid gap-3 ${grid}`}>
       {cards.map((c) => (
         <div key={c.label} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
           <dt className="text-xs text-dc-text-secondary">{c.label}</dt>
           <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
-            {formatCount(c.count)} <span className="text-xs font-normal text-dc-text-secondary">คน</span>
+            {c.value}
+            {c.unit && <span className="text-xs font-normal text-dc-text-secondary"> {c.unit}</span>}
           </dd>
         </div>
       ))}
     </dl>
   );
+}
+
+/** Cards of counts in คน, not ร้อยละ, of a panel whose counts may add up to more than ผลงาน */
+function CountCards({ grid, cards }: { grid: string; cards: { label: string; count: number }[] }) {
+  return <Cards grid={grid} cards={cards.map((c) => ({ label: c.label, value: formatCount(c.count), unit: "คน" }))} />;
 }
 
 /**
@@ -231,6 +237,31 @@ export function AgeMonthsPanel(props: { year: string; result: number; ageMonths:
       />
       <p className="mt-3 text-[11px] text-dc-text-secondary">
         นับเด็กที่ตอบว่ากินนมแม่อย่างเดียวในแต่ละช่วงอายุ เด็กคนหนึ่งนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน ({formatCount(result)} คน) ได้
+      </p>
+    </Surface>
+  );
+}
+
+/**
+ * ร้อยละสอบถาม (GLOSSARY) of s_kpi_food in the area: เด็กอายุครบ 6 เดือน,
+ * those ถูกสอบถาม and ถูกสอบถาม ÷ เด็กอายุครบ 6 เดือน, "—" with no children.
+ * How far the asking reached, not the report's ร้อยละ: no เกณฑ์, no แนวโน้ม
+ * and no การเปลี่ยนแปลงจากปีก่อน (SPEC §9.4), which the note says
+ */
+export function SurveyPanel(props: { year: string; survey: { children: number; asked: number; pct: number | null } }) {
+  const { year, survey } = props;
+  return (
+    <Surface title={`ร้อยละสอบถาม ปีงบประมาณ ${year}`}>
+      <Cards
+        grid="sm:grid-cols-3"
+        cards={[
+          { label: "เด็กอายุครบ 6 เดือน", value: formatCount(survey.children), unit: "คน" },
+          { label: "ถูกสอบถาม", value: formatCount(survey.asked), unit: "คน" },
+          { label: "ร้อยละสอบถาม", value: pctText(survey.pct) },
+        ]}
+      />
+      <p className="mt-3 text-[11px] text-dc-text-secondary">
+        ร้อยละสอบถาม = ถูกสอบถาม ÷ เด็กอายุครบ 6 เดือน × 100 · บอกว่าสอบถามครอบคลุมแค่ไหน ไม่ใช่ร้อยละของรายงาน จึงไม่มีเกณฑ์
       </p>
     </Surface>
   );
