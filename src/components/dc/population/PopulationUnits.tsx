@@ -4,7 +4,7 @@ import { populationArea, populationUnitLabel } from "@/lib/dc/population-report"
 import { yearAsOf } from "@/lib/dc/population-totals";
 import type { PopulationReport, PopulationSort, PopulationUnit } from "@/lib/dc/types";
 import Segmented from "../Segmented";
-import { changeText } from "./labels";
+import { changeText } from "../report/changeText";
 
 /**
  * The เปรียบเทียบ section of รายงานประชากร (SPEC §9.4.1): the ตำบล of the

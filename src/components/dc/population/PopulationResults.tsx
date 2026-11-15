@@ -15,12 +15,12 @@ import type {
 } from "@/lib/dc/types";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
+import { changeText } from "../report/changeText";
 import ReportActions from "../report/ReportActions";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
 import { useUrlQuery } from "../report/useUrlQuery";
-import { changeText } from "./labels";
 
 type Areas = DcCatalog["areas"];
 
