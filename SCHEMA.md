@@ -18,7 +18,7 @@
 | ชีตข้อมูลปีย้อนหลัง `s_*_y{YYYY}` | ใหม่ | GAS | GAS (report) |
 | `hdc_topics` | ใหม่ | ผู้ดูแล + GAS | GAS |
 | `hdc_reports` | ใหม่ | GAS (คอลัมน์จาก API) + ผู้ดูแล | GAS |
-| `sync_status` | ใหม่ | GAS | GAS (รวม `sync_status` ของหน้า `/sync`, Track M), ผู้ดูแล |
+| `sync_status` | ใหม่ | GAS | GAS (`catalog`, `report`, `sync_status`), ผู้ดูแล |
 | `registry_population` | ใหม่ (เฟส 2) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
 | `registry_population_age` | ใหม่ (เฟส 2) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
 | `registry_population_village` | ใหม่ (Track I) | GAS (`save_registry_population` จากการอัปโหลดของผู้ดูแล) | GAS (`registry_population`), ผู้ดูแล |
@@ -190,7 +190,7 @@
 - ฟังก์ชันใหม่ `sanitizeHdcId(v)` = trim + `^[A-Za-z0-9_-]{8,64}$` ไม่แปลงตัวพิมพ์ ใช้กับ `cat_id` และ `opendata_id` · รหัสใช้ตัวพิมพ์ตามจริงทุกที่ (ชีต, `?action=report&id=`, URL `/reports/{id}`, ลิงก์ HDC/Open Data, ชื่อไฟล์ CSV) เพราะรหัสสั้นของ HDC มีตัวพิมพ์ใหญ่ และคอลัมน์ `id` ในข้อมูลดิบเก็บตามนั้น (§5.2) ส่วน `sanitizeGuid` เดิมของ PA ไม่แก้
 - ฟังก์ชันใหม่ `dcCleanName(v)` = ตัดแท็ก HTML → แทนช่องว่างทุกชนิดที่ติดกัน (รวม tab และขึ้นบรรทัด) ด้วยช่องว่างเดียว → trim ใช้กับ `report_name`, `category_name`, `main_report_name` ตอน `save_catalog` (§3.4) ไม่แปลง HTML entity เพราะไม่พบในแค็ตตาล็อก (§5.2)
 - ฟังก์ชันชื่อชีต `sheetNameFor(table, year, settings?)` (`settings` ไม่ส่ง = `readSettings()`) = `table` ถ้า `year = current_year` ไม่อย่างนั้น `table + "_y" + year` ใช้ทุกที่ ห้ามประกอบชื่อเอง
-- `catalog`, `report`, `registry_population` และ `sync_status` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` หรือ `save_registry_population` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง)
+- `catalog`, `report`, `registry_population` และ `sync_status` ถือ script lock (`tryLock(30000)` ถ้าไม่ได้ตอบ error `Busy`) ตลอดการอ่าน เพื่อไม่ให้ build อ่านชีตที่ `saveTableYear` หรือ `save_registry_population` กำลัง clear/เขียนอยู่ (prebuild script จะ retry เอง · หน้า `/sync` ไม่ retry `sync_status` และแสดง "โหลดวันที่ไม่ได้" ตาม SPEC §12.1)
 - ผู้ถือ script lock คือ handler เท่านั้น: `doPost` ถือครั้งเดียวก่อนแยก action, `doGet` ถือสำหรับ `catalog`/`report`/`registry_population`/`sync_status`, `syncAllData` และ `rebuildWebsiteMenu` ถือเอง · `saveTableYear`, ตัวบันทึกของ `save_catalog` และ `save_registry_population` และ `requestRebuild` ไม่เรียก `LockService` และระบุใน comment ว่า caller must hold the lock เพราะเอกสาร Apps Script บอกแค่ว่า `tryLock` ซ้ำ "has no effect if the lock has already been acquired" โดยไม่ระบุค่าที่คืน การถือซ้อนจึงไม่มีสัญญา (เทสต์: stub `LockService` นับว่าถูกถือครั้งเดียวต่อคำขอ) · ของเดิมใน `รหัส.js` (`readSettings`, `readKpiMasterConfig`) ยัง `tryLock` เองตอน cache miss แม้ถูกเรียกจาก handler ที่ถือ lock อยู่ ไม่แก้เพราะเป็นโค้ด PA ที่ใช้งานอยู่ handler จึงเรียกสองฟังก์ชันนี้ก่อนถือ lock (เติมแคช) และ `syncAllData` ซึ่งรันนานกว่าอายุแคช 60 วินาที อ่านครั้งเดียวก่อนถือ lock แล้วส่งค่าต่อให้ `saveTableYear` (`options.settings`, `options.kpiCfg`) และ `requestRebuild(reason, settings)` ฟังก์ชันภายในอ่านเองเฉพาะเมื่อไม่ได้รับค่า (#136)
 
 ### 3.1 `GET ?action=catalog`
@@ -1108,7 +1108,7 @@ export interface GasError {
   message: string;
 }
 
-/** หนึ่งแถวใน sync_status ครบทุกคอลัมน์ (§2.4) */
+/** หนึ่งแถวใน sync_status ครบทุกคอลัมน์ (§2.4) ที่ ?action=sync_status ตอบ · DcYearStatus คือส่วนของแถวที่ reports[].years ใช้ */
 export interface SyncStatusRow extends DcYearStatus {
   table: string;
   sheet: string;
