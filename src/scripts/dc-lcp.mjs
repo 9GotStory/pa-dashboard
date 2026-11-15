@@ -21,24 +21,21 @@
 // built_at changed, as a deploy landed mid-measurement.
 // Usage: npm run dc:lcp [-- [--live] <page> ...]   (default /)
 import { spawn, spawnSync } from "node:child_process";
-import crypto from "node:crypto";
 import fs from "node:fs";
 import net from "node:net";
 import os from "node:os";
 import path from "node:path";
+import { MAIN_BUILD, buildMain, git, hasMainBuild, mainBuildKey, run } from "./dc-main-build.mjs";
 
 const ROUNDS = 3;
-// In the repo and gitignored, so a reboot keeps them, unlike a temp dir:
-// main's build, and the Lighthouse JSON of the last run against the local
-// builds and of the last --live run, each emptied when its mode runs.
-const MAIN_BUILD = ".dc-lcp/main";
+// In the repo and gitignored, so a reboot keeps them, unlike a temp dir: the
+// Lighthouse JSON of the last run against the local builds and of the last
+// --live run, each emptied when its mode runs. main's build is in MAIN_BUILD
+// (dc-main-build.mjs).
 const LIGHTHOUSE_JSON = ".dc-lcp/local";
 const LIVE_JSON = ".dc-lcp/live";
 // Fixed: --live measures production only (#295).
 const LIVE_SITE = "https://songhealth-dc.pages.dev";
-// The one file of .next/ that dc-budget.mjs reads besides out/; the whole
-// .next/ is about 189 MB.
-const LOADABLE_MANIFEST = ".next/server/app/(dc)/reports/[id]/page/react-loadable-manifest.json";
 // SPEC §9.6's command. Blocking the map tiles changes nothing on a page
 // without the map.
 const LIGHTHOUSE = [
@@ -79,44 +76,6 @@ export function overLiveBudget(ms) {
 // The pages in round's order: as given in odd rounds, reversed in even ones.
 export function roundOrder(pages, round) {
   return round % 2 ? pages : pages.toReversed();
-}
-
-const sha256 = (data) => crypto.createHash("sha256").update(data).digest("hex");
-
-// The hash of a directory's files: each relative path, sorted, then the hash
-// of its content, so a renamed file or a moved boundary between two files
-// changes it too.
-export function snapshotHash(dir) {
-  const files = fs
-    .readdirSync(dir, { recursive: true })
-    .filter((file) => fs.statSync(path.join(dir, file)).isFile())
-    .map((file) => file.split(path.sep).join("/"))
-    .sort();
-  return sha256(files.map((file) => `${file}\0${sha256(fs.readFileSync(path.join(dir, file)))}\n`).join(""));
-}
-
-// Whether built-from.json names the build that key describes: main's SHA,
-// the snapshot's hash and the hash of node_modules/.package-lock.json. A
-// file cut short names none, so main is built again.
-export function sameBuild(file, key) {
-  if (!fs.existsSync(file)) return false;
-  let saved;
-  try {
-    saved = JSON.parse(fs.readFileSync(file, "utf8"));
-  } catch {
-    return false;
-  }
-  return saved.main === key.main && saved.snapshot === key.snapshot && saved.packages === key.packages;
-}
-
-function run(command, args, options) {
-  const { status, stdout } = spawnSync(command, args, { encoding: "utf8", ...options });
-  if (status !== 0) throw new Error(`${[command, ...args].join(" ")} failed`);
-  return stdout?.trim();
-}
-
-function git(...args) {
-  return run("git", args, { stdio: ["ignore", "pipe", "inherit"] });
 }
 
 function die(message) {
@@ -261,7 +220,6 @@ if (import.meta.main && process.argv[2] === "--live") {
   // A detached HEAD goes back to its commit.
   const start = branch === "HEAD" ? headSha : branch;
 
-  let onMain = false;
   process.on("exit", () => {
     for (const server of servers) {
       try {
@@ -270,43 +228,20 @@ if (import.meta.main && process.argv[2] === "--live") {
         // Its group has ended already.
       }
     }
-    if (onMain && spawnSync("git", ["checkout", "--quiet", start], { stdio: "inherit" }).status !== 0) {
-      console.error(`dc-lcp: could not check out ${start} again: run git checkout ${start}`);
-    }
   });
   // Ctrl-C reaches the build or Lighthouse running too. A signal sent to this
   // process alone is handled once that child has finished.
   for (const signal of ["SIGINT", "SIGTERM"])
     process.on(signal, () => process.exit(128 + os.constants.signals[signal]));
 
-  const key = {
-    main: git("rev-parse", "main"),
-    snapshot: snapshotHash("public/data"),
-    packages: sha256(fs.readFileSync("node_modules/.package-lock.json")),
-  };
-  const builtFrom = path.join(MAIN_BUILD, "built-from.json");
+  const key = mainBuildKey();
   fs.rmSync(LIGHTHOUSE_JSON, { recursive: true, force: true });
   fs.mkdirSync(LIGHTHOUSE_JSON, { recursive: true });
   try {
-    if (sameBuild(builtFrom, key)) {
+    if (hasMainBuild(key)) {
       console.log(`dc-lcp: reusing main's build of ${mainSha} in ${MAIN_BUILD}/`);
     } else {
-      fs.rmSync(MAIN_BUILD, { recursive: true, force: true });
-      // main is built in this working tree: a git worktree of main with
-      // node_modules symlinked does not build, as Turbopack refuses files
-      // outside the worktree's root.
-      console.log(`dc-lcp: building main (${mainSha})`);
-      git("checkout", "--quiet", "main");
-      onMain = true;
-      run("npx", ["next", "build"], { stdio: "inherit" });
-      fs.cpSync("out", path.join(MAIN_BUILD, "out"), { recursive: true });
-      fs.cpSync(LOADABLE_MANIFEST, path.join(MAIN_BUILD, LOADABLE_MANIFEST));
-      // Last, so a copy cut short is built again next time.
-      fs.writeFileSync(builtFrom, `${JSON.stringify(key, null, 2)}\n`);
-      // When the branch's build fails, no out/ of main is left for dc:check.
-      fs.rmSync("out", { recursive: true });
-      git("checkout", "--quiet", start);
-      onMain = false;
+      buildMain({ name: "dc-lcp", key, mainSha, start });
     }
     console.log(`dc-lcp: building ${start} (${headSha})`);
     run("npx", ["next", "build"], { stdio: "inherit" });
