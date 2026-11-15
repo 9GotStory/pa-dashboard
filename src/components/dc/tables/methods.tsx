@@ -373,12 +373,12 @@ function FollowLimits({ report }: { report: DcReport }) {
 
 /**
  * เป้าหมาย and ผลงาน of s_kpi_food, s_kpi_dental28 and s_kpi_dental33
- * (SCHEMA §4.6.6, §4.6.12), the เดือนอายุ of s_kpi_food and each table's own
- * ข้อจำกัด
+ * (SCHEMA §4.6.6, §4.6.12), the เดือนอายุ and ร้อยละสอบถาม of s_kpi_food and
+ * each table's own ข้อจำกัด
  */
 const ANNUAL_MEANINGS: Record<
   string,
-  { target: string; result: string; annualOnly?: string; ageMonths?: string; limits: string[] }
+  { target: string; result: string; annualOnly?: string; ageMonths?: string; asking?: string; limits: string[] }
 > = {
   s_kpi_food: {
     target: "เด็กอายุครบ 6 เดือนในปีงบประมาณที่แม่หรือผู้เลี้ยงดูถูกสอบถามเรื่องการกินนมแม่",
@@ -386,6 +386,8 @@ const ANNUAL_MEANINGS: Record<
     annualOnly: "คอลัมน์รายไตรมาส (target1–4 และ result1–4) ว่างทุกปี",
     ageMonths:
       "จำนวนที่ตอบว่ากินนมแม่อย่างเดียวที่อายุ 1–6 เดือน (คอลัมน์ r1–r6) ของพื้นที่ที่เลือก · เป็นจำนวนคน ไม่คิดเป็นร้อยละ · HDC เก็บประวัติตั้งแต่แรกเกิดถึง 6 เดือน เด็กคนหนึ่งจึงนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน",
+    asking:
+      "ร้อยละสอบถาม = ผลรวมถูกสอบถาม (คอลัมน์ target) ÷ ผลรวมเด็กอายุครบ 6 เดือนทั้งที่ถูกและไม่ถูกสอบถาม (คอลัมน์ total) × 100 ของพื้นที่ที่เลือก · บอกว่าสอบถามครอบคลุมแค่ไหน ไม่ใช่ร้อยละของรายงาน จึงไม่มีเกณฑ์ · เด็กอายุครบ 6 เดือนเป็น 0 แสดง “—”",
     limits: [],
   },
   s_kpi_dental28: {
@@ -420,6 +422,7 @@ function AnnualMethod({ report, districtCode }: MethodProps) {
         {report.goal !== null && ` · ผ่านเกณฑ์เมื่อร้อยละ ≥ ${report.goal}`}
       </li>
       {meaning?.ageMonths && <li>{meaning.ageMonths}</li>}
+      {meaning?.asking && <li>{meaning.asking}</li>}
     </ul>
   );
 }
