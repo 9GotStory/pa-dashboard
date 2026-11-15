@@ -234,6 +234,30 @@ export interface GasSyncStatus {
   rows: SyncStatusRow[];
 }
 
+/** The counts save_catalog answers for one topic (SCHEMA §3.4): reports added, updated and set removed, and rows skipped */
+export interface SaveCatalogCounts {
+  added: number;
+  updated: number;
+  removed: number;
+  skipped: number;
+}
+
+/** GAS's answer to POST save_catalog (SCHEMA §3.4) */
+export type GasSaveCatalogAnswer = ({ status: "success" } & SaveCatalogCounts) | GasError;
+
+/** One topic of hdc_topics in a รีเฟรชแค็ตตาล็อก from /sync (SPEC §12.1, Track M): saved, with save_catalog's counts (SCHEMA §3.4), skipped before save_catalog, or failed at save_catalog, with the reason · name = category_name, or cat_id while it is blank */
+export type CatalogTopicResult = { cat_id: string; name: string } & (
+  ({ outcome: "saved" } & SaveCatalogCounts) | { outcome: "skipped" | "failed"; reason: string }
+);
+
+/** The end of a รีเฟรชแค็ตตาล็อก from /sync: how many topics were saved, skipped and failed, and each topic's result in hdc_topics order */
+export interface CatalogRefreshSummary {
+  saved: number;
+  skipped: number;
+  failed: number;
+  topics: CatalogTopicResult[];
+}
+
 /** GAS's POST answers, as far as the /sync upload reads them (SCHEMA §3.7, §3.8) */
 export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
 

@@ -1119,6 +1119,31 @@ export interface GasSyncStatus {
   rows: SyncStatusRow[];
 }
 
+/** จำนวนที่ save_catalog ตอบของหัวข้อหนึ่ง (§3.4): รายงานที่เพิ่ม อัปเดต และตั้ง removed กับแถวที่ข้าม */
+export interface SaveCatalogCounts {
+  added: number;
+  updated: number;
+  removed: number;
+  skipped: number;
+}
+
+/** response ของ GAS ต่อ POST save_catalog (§3.4) */
+export type GasSaveCatalogAnswer = ({ status: "success" } & SaveCatalogCounts) | GasError;
+
+/** หัวข้อหนึ่งของ hdc_topics ในการรีเฟรชแค็ตตาล็อกจากหน้า /sync (SPEC §12.1, Track M): บันทึกแล้วพร้อมจำนวนจาก save_catalog (§3.4) · ข้ามก่อนส่ง save_catalog · หรือล้มที่ save_catalog พร้อมเหตุผล · name = category_name หรือ cat_id ถ้ายังว่าง */
+export type CatalogTopicResult = { cat_id: string; name: string } & (
+  | ({ outcome: "saved" } & SaveCatalogCounts)
+  | { outcome: "skipped" | "failed"; reason: string }
+);
+
+/** ผลตอนจบของการรีเฟรชแค็ตตาล็อกจากหน้า /sync: จำนวนหัวข้อที่บันทึก ข้าม และล้ม และผลรายหัวข้อตามลำดับของ hdc_topics */
+export interface CatalogRefreshSummary {
+  saved: number;
+  skipped: number;
+  failed: number;
+  topics: CatalogTopicResult[];
+}
+
 /** response ของ POST ของ GAS เฉพาะส่วนที่ส่วนอัปโหลดในหน้า /sync อ่าน (§3.7, §3.8) */
 export type GasUploadAnswer = { status: "success"; count?: number; remaining_today?: number } | GasError;
 
