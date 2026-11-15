@@ -947,7 +947,7 @@ test("by value, two units on the same ร้อยละ that come in out of cod
 
 // FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4) where no
 // fixture has the case: 2 blocks ปี of one row each, worked out by hand.
-const TWO_YEARS = (before: Record<string, Cell>[], picked: Record<string, Cell>[]): DcReportData => ({
+const twoYears = (before: Record<string, Cell>[], picked: Record<string, Cell>[]): DcReportData => ({
   report: DM_SCREEN,
   years: [
     block(["areacode", "target", "result"], before, "2568"),
@@ -957,7 +957,7 @@ const TWO_YEARS = (before: Record<string, Cell>[], picked: Record<string, Cell>[
 const DISTRICT_2569 = { year: "2569", area: "all", period: "year", measure: null } as const;
 
 test("ปี 2568 10/5 (50%) → ปี 2569 12/9 (75%): เป้าหมาย +2 (+20%), ผลงาน +4 (+80%), +25 จุดร้อยละ, จากปี 2568", () => {
-  const data = TWO_YEARS(
+  const data = twoYears(
     [{ areacode: "54060101", target: 10, result: 5 }],
     [{ areacode: "54060101", target: 12, result: 9 }],
   );
@@ -970,11 +970,11 @@ test("ปี 2568 10/5 (50%) → ปี 2569 12/9 (75%): เป้าหมา�
 });
 
 test("ปี 2569 with a เป้าหมาย but no ผลงาน in the whole district (ตัวเลขสรุป “—”), after a ปี 2568 with data → no การเปลี่ยนแปลงจากปีก่อน", () => {
-  const data = TWO_YEARS([{ areacode: "54060101", target: 10, result: 5 }], [{ areacode: "54060101", target: 12 }]);
+  const data = twoYears([{ areacode: "54060101", target: 10, result: 5 }], [{ areacode: "54060101", target: 12 }]);
   assert.equal(reportChange(data, DISTRICT_2569), null);
 });
 
 test("ปี 2568 a block ปี without rows (SCHEMA §3.2) → no การเปลี่ยนแปลงจากปีก่อน for 2569", () => {
-  const data = TWO_YEARS([], [{ areacode: "54060101", target: 12, result: 9 }]);
+  const data = twoYears([], [{ areacode: "54060101", target: 12, result: 9 }]);
   assert.equal(reportChange(data, DISTRICT_2569), null);
 });

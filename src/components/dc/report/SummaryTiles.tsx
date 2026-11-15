@@ -17,22 +17,20 @@ export default function SummaryTiles(props: {
 }) {
   const { total, change, goal } = props;
   const passed = passes(total?.pct ?? null, goal);
+  /** The line under a value: its change as text, then the year before; null for no line */
+  const lineOf = (text: (change: ReportChange) => string) => change && `${text(change)} จากปี ${change.year}`;
   const tiles: [string, string, string | null][] = [
-    ["เป้าหมาย", countText(total?.target ?? null), change && changeText(change.target)],
-    ["ผลงาน", countText(total?.result ?? null), change && changeText(change.result)],
-    ["ร้อยละ", pctText(total?.pct ?? null), change && pointsText(change.points)],
+    ["เป้าหมาย", countText(total?.target ?? null), lineOf((c) => changeText(c.target))],
+    ["ผลงาน", countText(total?.result ?? null), lineOf((c) => changeText(c.result))],
+    ["ร้อยละ", pctText(total?.pct ?? null), lineOf((c) => pointsText(c.points))],
   ];
   return (
     <dl className="grid grid-cols-2 gap-3 md:grid-cols-4">
-      {tiles.map(([label, value, changed]) => (
+      {tiles.map(([label, value, line]) => (
         <div key={label} className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">
           <dt className="text-xs text-dc-text-secondary">{label}</dt>
           <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">{value}</dd>
-          {change && (
-            <dd className="mt-1 text-xs text-dc-text-secondary tabular-nums">
-              {changed} จากปี {change.year}
-            </dd>
-          )}
+          {line && <dd className="mt-1 text-xs text-dc-text-secondary tabular-nums">{line}</dd>}
         </div>
       ))}
       <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-dc-canvas/40 px-4 py-3">

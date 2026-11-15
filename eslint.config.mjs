@@ -29,6 +29,16 @@ const csvModule = {
   message:
     "population-report.ts does not import csv.ts: values.ts loads it on every page (CODING_STANDARDS §4). The population CSV lives in population-csv.ts.",
 };
+// Of population-report.ts, values.ts takes POPULATION_REPORT alone: with a
+// function of it, /reports and every report page carry รายงานประชากร's data
+// layer, 1.8 KB more on /reports in F74 (SPEC §9.6). What both need is in a
+// module of its own, as changeOf in change.ts.
+const populationData = {
+  regex: "^(@/lib/dc|\\.)/population-report$",
+  allowImportNames: ["POPULATION_REPORT"],
+  message:
+    "values.ts takes POPULATION_REPORT alone from population-report.ts, or every page carries รายงานประชากร's data layer (CODING_STANDARDS §4): put what both need in a module of its own, as change.ts.",
+};
 
 const eslintConfig = defineConfig([
   ...nextVitals,
@@ -73,6 +83,10 @@ const eslintConfig = defineConfig([
   {
     files: ["src/lib/dc/population-report.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationReader, csvModule] }] },
+  },
+  {
+    files: ["src/lib/dc/values.ts"],
+    rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationData] }] },
   },
   {
     files: ["src/lib/dc/**"],
