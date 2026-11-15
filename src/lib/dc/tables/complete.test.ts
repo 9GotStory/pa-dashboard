@@ -157,3 +157,46 @@ test("?year=2560, a year without a block ปี → block null and nothing to sh
   const v = completeValues(AGE1, { ...DISTRICT_2569, year: "2560" }, NAMES, YEARS);
   assert.deepEqual([v.block, v.total, v.units, v.passed, v.months], [null, null, null, null, []]);
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4). The blocks ปี
+// 2565–2568 of the fixture are the same rows in the snapshot of 14 Nov 2569;
+// the expected values are SCHEMA §4.6.5's.
+
+test("อายุ 1 ปี ปี 2568 ทั้งอำเภอ (217/184) → จากปี 2567 (248/184): เป้าหมาย −31 (−12.50%), ผลงาน 0 (0.00%), ร้อยละ +10.60 จุดร้อยละ", () => {
+  const { change } = completeValues(AGE1, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
+  assert.deepEqual(
+    change && [
+      change.year,
+      change.target.count,
+      change.target.pct?.toFixed(2),
+      change.result.count,
+      change.result.pct?.toFixed(2),
+      change.points?.toFixed(2),
+    ],
+    ["2567", -31, "-12.50", 0, "0.00", "10.60"],
+  );
+});
+
+test("อายุ 1 ปี ตำบลสะเอียบ ต.ค. 2568 (5/4) → จากปี 2567 (2/0): เป้าหมาย +3 (+150.00%), ผลงาน +4 with no ร้อยละ from 0 (“—”), ร้อยละ +80.00 จุดร้อยละ", () => {
+  const query: ReportQuery = { ...DISTRICT_2569, year: "2568", area: "540606", period: "m10", by: "hosp" };
+  const { total, change } = completeValues(AGE1, query, NAMES, YEARS);
+  assert.equal(pair(total), "5/4");
+  assert.deepEqual(change, {
+    year: "2567",
+    target: { count: 3, pct: 150 },
+    result: { count: 4, pct: null },
+    points: 80,
+  });
+});
+
+test("อายุ 1 ปี ตำบลสะเอียบ พ.ย. 2566 (4/2) → จากปี 2565 (0/0): +4 and +2 with no ร้อยละ from 0, and no จุดร้อยละ as ปี 2565 has no ร้อยละ (“—”)", () => {
+  const query: ReportQuery = { ...DISTRICT_2569, year: "2566", area: "540606", period: "m11", by: "hosp" };
+  const { total, change } = completeValues(AGE1, query, NAMES, YEARS);
+  assert.equal(pair(total), "4/2");
+  assert.deepEqual(change, {
+    year: "2565",
+    target: { count: 4, pct: null },
+    result: { count: 2, pct: null },
+    points: null,
+  });
+});

@@ -198,3 +198,34 @@ test("an old link ?area=540601&by=area → ทั้งอำเภอ by หน
   assert.equal(pair(ncd.total), "203/195");
   assert.equal(ncd.units?.length, 16);
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4). The blocks ปี
+// 2565, 2566 and 2568 of s_ht_screen_follow are the same rows in the snapshot
+// of 14 Nov 2569, which has no block ปี 2567 either (#258).
+
+test("s_ht_screen_follow 2568 → no การเปลี่ยนแปลงจากปีก่อน: no block ปี 2567, and 2566 is not compared instead", () => {
+  const ht = followValues(HT, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
+  assert.equal(pair(ht.total), "1403/1228");
+  assert.equal(ht.change, null);
+});
+
+test("s_ht_screen_follow 2565, the first year of the snapshot → no การเปลี่ยนแปลงจากปีก่อน", () => {
+  const ht = followValues(HT, { ...DISTRICT_2569, year: "2565" }, NAMES, YEARS);
+  assert.equal(pair(ht.total), "1562/1401");
+  assert.equal(ht.change, null);
+});
+
+test("s_ht_screen_follow 2566 (1,299/1,179) → จากปี 2565 (1,562/1,401): เป้าหมาย −263 (−16.84%), ผลงาน −222 (−15.85%), ร้อยละ +1.07 จุดร้อยละ", () => {
+  const { change } = followValues(HT, { ...DISTRICT_2569, year: "2566" }, NAMES, YEARS);
+  assert.deepEqual(
+    change && [
+      change.year,
+      change.target.count,
+      change.target.pct?.toFixed(2),
+      change.result.count,
+      change.result.pct?.toFixed(2),
+      change.points?.toFixed(2),
+    ],
+    ["2565", -263, "-16.84", -222, "-15.85", "1.07"],
+  );
+});

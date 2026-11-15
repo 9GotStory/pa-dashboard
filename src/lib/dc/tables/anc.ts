@@ -1,5 +1,5 @@
 import type { DcCatalog, DcReportData, ReportQuery } from "../types";
-import { goalFor, passes, periods, totals, totalsBy, trend, yearBlock } from "../values";
+import { goalFor, passes, periods, reportChange, totals, totalsBy, trend, yearBlock } from "../values";
 
 // The data layer of the ANC page (SPEC §9.4, ADR-0015) for s_kpi_anc12 and
 // s_anc5: one row per หมู่บ้าน, ทั้งปี + Q_A (SCHEMA §4.6.2). Worked out with
@@ -28,6 +28,8 @@ export function ancValues(
     block,
     /** ตัวเลขสรุป of the area and ช่วงเวลา; null when the whole district has no ผลงาน that year ("—") */
     total,
+    /** การเปลี่ยนแปลงจากปีก่อน of total; null without a total in either year: no line */
+    change: reportChange(data, query),
     goal,
     /** ร้อยละ ≥ เกณฑ์; null without a ร้อยละ or a เกณฑ์ */
     passed: passes(total?.pct ?? null, goal),

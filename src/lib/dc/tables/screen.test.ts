@@ -144,3 +144,21 @@ test("?period=q2 → ทั้งปี: ตารางไม่มีกลุ
   assert.equal(reportQuery(DM, new URLSearchParams("year=2569&period=q2"), NAMES).period, "year");
   assert.equal(reportQuery(HT, new URLSearchParams("year=2569&period=m10"), NAMES).period, "year");
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4). The expected
+// values are the sums of the fixture's rows, added up apart from this code.
+
+test("s_dm_screen 2568 ทั้งอำเภอ (20,503/16,689) → จากปี 2567 (20,575/16,677): เป้าหมาย −72 (−0.35%), ผลงาน +12 (+0.07%), ร้อยละ +0.34 จุดร้อยละ", () => {
+  const { change } = screenValues(DM, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
+  assert.deepEqual(
+    change && [
+      change.year,
+      change.target.count,
+      change.target.pct?.toFixed(2),
+      change.result.count,
+      change.result.pct?.toFixed(2),
+      change.points?.toFixed(2),
+    ],
+    ["2567", -72, "-0.35", 12, "0.07", "0.34"],
+  );
+});

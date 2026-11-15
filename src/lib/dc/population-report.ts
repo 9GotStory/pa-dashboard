@@ -36,7 +36,7 @@ const DISTRICT = "อำเภอสอง";
 const VALUES: (keyof PopulationTotals)[] = ["male", "female", "total", "house"];
 
 /** From old to new (SCHEMA §11.5): no ร้อยละ when old is 0 */
-function changeOf(oldValue: number, newValue: number): PopulationChange {
+export function changeOf(oldValue: number, newValue: number): PopulationChange {
   const count = newValue - oldValue;
   return { count, pct: oldValue === 0 ? null : (count / oldValue) * 100 };
 }

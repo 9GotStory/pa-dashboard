@@ -1,5 +1,16 @@
 import type { DcCatalog, DcReportData, DcYearBlock, ReportQuery } from "../types";
-import { DOMAIN_LABELS, count, countsBy, goalFor, passes, totals, totalsBy, trend, yearBlock } from "../values";
+import {
+  DOMAIN_LABELS,
+  count,
+  countsBy,
+  goalFor,
+  passes,
+  reportChange,
+  totals,
+  totalsBy,
+  trend,
+  yearBlock,
+} from "../values";
 
 // The data layer of the AGED9 page (SPEC §9.4, ADR-0015) for s_aged9: one row
 // per หมู่บ้าน, ทั้งปี only, with the 9 ด้าน result1–9 (SCHEMA §4.6.7).
@@ -28,6 +39,8 @@ export function aged9Values(
     block,
     /** ความครอบคลุม of the area; null when the whole district has no ผลงาน that year ("—", ปี 2565) */
     total,
+    /** การเปลี่ยนแปลงจากปีก่อน of total; null without a total in either year (ปี 2566, after the empty 2565): no line */
+    change: reportChange(data, query),
     goal,
     /** ร้อยละ ≥ เกณฑ์; null without a ร้อยละ or a เกณฑ์ */
     passed: passes(total?.pct ?? null, goal),

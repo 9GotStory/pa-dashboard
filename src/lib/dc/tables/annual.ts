@@ -22,10 +22,11 @@ export function annualValues(
   names: Pick<DcCatalog, "areas" | "hospitals">,
   years: string[],
 ) {
-  const { block, total, goal, passed, units, trend } = ancValues(data, query, names, years);
+  const { block, total, change, goal, passed, units, trend } = ancValues(data, query, names, years);
   return {
     block,
     total,
+    change,
     goal,
     passed,
     units,

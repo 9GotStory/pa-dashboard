@@ -35,7 +35,7 @@ function Childdev({ data, names, years }: { data: DcReportData; names: Names; ye
   const { query: asked, search, apply, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
-  const { query, block, total, goal, units, trend, quarters } = childdevValues(data, asked, names, years);
+  const { query, block, total, change, goal, units, trend, quarters } = childdevValues(data, asked, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
@@ -52,7 +52,7 @@ function Childdev({ data, names, years }: { data: DcReportData; names: Names; ye
       </ResultsHeader>
       {block ? (
         <QuarterFigures
-          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
           onSort={setSort}
           steps={quarters}
           year={query.year}
