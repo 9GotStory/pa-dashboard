@@ -44,7 +44,8 @@ const sheets = { ...PA_SHEETS, sync_status: SYNC_STATUS, hdc_topics: HDC_TOPICS 
 const gas = loadGas({ sheets });
 const { url } = await startGas(null, gas, ({ action, kind, yymm, cat_id }) => {
   console.log(`dc-sync-local: POST ${[action, kind, yymm, cat_id].filter(Boolean).join(" ")}`);
-  // doPost runs right after this, in the same tick: the rows it left.
+  // startGas calls this before doPost, which runs synchronously right
+  // after it: setImmediate counts hdc_reports once save_catalog has written.
   if (action === "save_catalog") {
     setImmediate(() => {
       const [header, ...rows] = gas.sheet("hdc_reports") ?? [[]];

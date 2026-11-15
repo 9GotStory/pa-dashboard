@@ -14,6 +14,8 @@ const MOPH = "https://opendata.moph.go.th/opendata_api/reports/categorie/by-cate
 const EPI = "4df360514655f79f13901ef1181ca1c7";
 const SURVEILLANCE = "bebf866fceaef84c4078965eaf619565";
 const SCREENING = "6966b0664b89805a484d7ac96c6edc48";
+// A topic some tests add after the three: NCD of Service Plan (SCHEMA §6).
+const FOURTH = "b2b59e64c4e6c92d4b1ec16a599d882b";
 const TOPICS = [
   { cat_id: EPI, order: 20, category_name: "การสร้างเสริมภูมิคุ้มกันโรค" },
   { cat_id: SURVEILLANCE, order: 30, category_name: "การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม" },
@@ -131,7 +133,6 @@ test("a pause of 1–2 s before every request to MOPH", async () => {
 });
 
 test("skipped with the reason and no save_catalog: 5xx on every try, 403, not a JSON array, an empty array", async () => {
-  const FOURTH = "b2b59e64c4e6c92d4b1ec16a599d882b";
   const FIFTH = "db30e434e30565c12fbac44958e338d5";
   const { deps, requests } = stub({
     catalog: [
@@ -212,7 +213,6 @@ test("save_catalog errors: failed with GAS's message as received (Busy is not tr
 });
 
 test("the summary counts topics saved, skipped and failed, and each topic's result reaches onTopic as it ends", async () => {
-  const FOURTH = "b2b59e64c4e6c92d4b1ec16a599d882b";
   const { deps } = stub({
     catalog: [{ status: 200, body: { topics: [...TOPICS, { cat_id: FOURTH, order: 50, category_name: "NCD" }] } }],
     moph: { [SURVEILLANCE]: [{ status: 200, body: [] }] },

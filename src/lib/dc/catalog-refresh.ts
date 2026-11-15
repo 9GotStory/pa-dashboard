@@ -4,7 +4,14 @@
 // save_catalog (SCHEMA §3.4) before the next topic. fetch and the wait come
 // in from the caller, so tests pass stubs (CODING_STANDARDS §5).
 
-import type { CatalogRefreshSummary, CatalogTopicResult, DcTopic, GasCatalog, GasError } from "./types";
+import type {
+  CatalogRefreshSummary,
+  CatalogTopicResult,
+  DcTopic,
+  GasCatalog,
+  GasError,
+  GasSaveCatalogAnswer,
+} from "./types";
 
 const BY_CATEGORY = "https://opendata.moph.go.th/opendata_api/reports/categorie/by-category-id/";
 
@@ -63,21 +70,18 @@ async function gasJson<T>(fetch: Deps["fetch"], url: string, init?: RequestInit)
   return res.json() as Promise<T>;
 }
 
-type SaveCatalogAnswer =
-  { status: "success"; added: number; updated: number; removed: number; skipped: number } | GasError;
-
 /** One topic: its reports from MOPH, then its save_catalog (SCHEMA §3.4) */
 async function refreshTopic(deps: Deps, topic: DcTopic): Promise<CatalogTopicResult> {
   const about = { cat_id: topic.cat_id, name: topic.category_name || topic.cat_id };
-  const got = await topicReports(deps, topic.cat_id);
-  if (!("reports" in got)) return { ...about, outcome: "skipped", reason: got.reason };
-  let answer: SaveCatalogAnswer;
+  const fetched = await topicReports(deps, topic.cat_id);
+  if (!("reports" in fetched)) return { ...about, outcome: "skipped", reason: fetched.reason };
+  let answer: GasSaveCatalogAnswer;
   try {
-    answer = await gasJson<SaveCatalogAnswer>(deps.fetch, deps.gasUrl, {
+    answer = await gasJson<GasSaveCatalogAnswer>(deps.fetch, deps.gasUrl, {
       method: "POST",
       // text/plain keeps it a simple request: a GAS web app answers no CORS preflight.
       headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ action: "save_catalog", cat_id: topic.cat_id, reports: got.reports }),
+      body: JSON.stringify({ action: "save_catalog", cat_id: topic.cat_id, reports: fetched.reports }),
     });
   } catch (err) {
     return { ...about, outcome: "failed", reason: `ส่งไป GAS ไม่สำเร็จ: ${errorText(err)}` };
@@ -95,7 +99,7 @@ async function refreshTopic(deps: Deps, topic: DcTopic): Promise<CatalogTopicRes
 export async function refreshCatalog(
   deps: Deps & { onTopic?: (result: CatalogTopicResult) => void },
 ): Promise<CatalogRefreshSummary> {
-  let read: DcTopic[];
+  let listed: DcTopic[];
   try {
     const answer = await gasJson<Partial<Pick<GasCatalog, "topics">> | GasError>(
       deps.fetch,
@@ -103,13 +107,13 @@ export async function refreshCatalog(
     );
     if ("status" in answer) throw new Error(answer.message);
     if (!Array.isArray(answer.topics)) throw new Error("คำตอบของ GAS ไม่มี topics");
-    read = answer.topics;
+    listed = answer.topics;
   } catch (err) {
     throw new Error(`อ่านหัวข้อจาก hdc_topics ไม่ได้: ${errorText(err)}`);
   }
-  if (read.length === 0) throw new Error("hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน");
+  if (listed.length === 0) throw new Error("hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน");
   const topics: CatalogTopicResult[] = [];
-  for (const topic of read) {
+  for (const topic of listed) {
     const result = await refreshTopic(deps, topic);
     topics.push(result);
     deps.onTopic?.(result);

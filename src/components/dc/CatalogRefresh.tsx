@@ -76,8 +76,8 @@ export default function CatalogRefresh() {
 
       {topics.length > 0 && (
         <ul aria-live="polite" className="mt-4 space-y-2">
-          {topics.map((t) => (
-            <li key={t.cat_id} className="rounded-lg border border-dc-border-subtle px-3 py-2">
+          {topics.map((t, i) => (
+            <li key={i} className="rounded-lg border border-dc-border-subtle px-3 py-2">
               <span
                 className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${t.outcome === "saved" ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
               >
