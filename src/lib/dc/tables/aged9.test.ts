@@ -184,3 +184,27 @@ test("ภาพรวม (domain null) → no รายละเอียด · 
   assert.equal(detail?.count, null);
   assert.equal(detail?.units, null);
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4). The blocks ปี
+// 2565–2568 of the fixture are the same rows in the snapshot of 14 Nov 2569.
+
+test("s_aged9 2566 → no การเปลี่ยนแปลงจากปีก่อน: ปี 2565 has a เป้าหมาย but its ผลงาน is empty in the whole district (SCHEMA §4.6.7)", () => {
+  const aged = aged9Values(AGED9, { ...DISTRICT_2569, year: "2566" }, NAMES, YEARS);
+  assert.equal(pair(aged.total), "11163/10411");
+  assert.equal(aged.change, null);
+});
+
+test("s_aged9 2567 ทั้งอำเภอ (11,416/11,001) → จากปี 2566 (11,163/10,411): เป้าหมาย +253 (+2.27%), ผลงาน +590 (+5.67%), ร้อยละ +3.10 จุดร้อยละ", () => {
+  const { change } = aged9Values(AGED9, { ...DISTRICT_2569, year: "2567" }, NAMES, YEARS);
+  assert.deepEqual(
+    change && [
+      change.year,
+      change.target.count,
+      change.target.pct?.toFixed(2),
+      change.result.count,
+      change.result.pct?.toFixed(2),
+      change.points?.toFixed(2),
+    ],
+    ["2566", 253, "2.27", 590, "5.67", "3.10"],
+  );
+});

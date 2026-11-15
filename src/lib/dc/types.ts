@@ -157,6 +157,14 @@ export interface TrendPoint {
 /** How a เปรียบเทียบ section of a report page orders its units (SPEC §9.4, Track L), not in the URL: by code (the default, the order they come in) or by the section's value, the largest first, null last, ties by code · the total row is not ordered */
 export type ReportSort = "code" | "value";
 
+/** การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4, Track L): a page's data layer gives it beside the Totals of ตัวเลขสรุป, null for no line */
+export interface ReportChange {
+  year: string; // the year before = the year picked − 1, for "จากปี …"
+  target: PopulationChange; // the count and the ร้อยละ of the old value, shaped and shown as a change of รายงานประชากร (SCHEMA §11.5)
+  result: PopulationChange;
+  points: number | null; // จุดร้อยละ = the ร้อยละ of the year picked − that of the year before, not rounded · null when either ร้อยละ is null (shown "—")
+}
+
 /* ---------- ประชากรทะเบียนราษฎร (phase 2, SCHEMA §2.6–2.8, §3.8–3.9, §11) ---------- */
 
 /** A registry_population row without uploaded_at: the rows of the POST, the GET and population.json */

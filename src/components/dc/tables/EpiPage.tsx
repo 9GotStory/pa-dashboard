@@ -338,11 +338,11 @@ function MeasureFigures(props: {
   onSort: (sort: ReportSort) => void;
 }) {
   const { detail, year, unitLabel, totalLabel, sort, onSort } = props;
-  const { label, total, goal, units, trend, byQuarter, steps } = detail;
+  const { label, total, change, goal, units, trend, byQuarter, steps } = detail;
   const shown = units && sortedUnits(units, sort, (u) => u.totals.pct);
   return (
     <>
-      <SummaryTiles total={total} goal={goal} />
+      <SummaryTiles total={total} change={change} goal={goal} />
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {total && shown ? (
           <Comparison unitLabel={unitLabel} valueLabel="ร้อยละ" sort={sort} onSort={onSort}>

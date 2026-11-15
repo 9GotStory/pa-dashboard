@@ -1,3 +1,4 @@
+import { changeOf } from "./change";
 import { POPULATION_REPORT } from "./population-report";
 import type {
   Cell,
@@ -13,6 +14,7 @@ import type {
   LibraryReport,
   Month,
   Period,
+  ReportChange,
   ReportQuery,
   ReportSort,
   Totals,
@@ -387,6 +389,30 @@ export function cumulative(block: DcYearBlock, columns: readonly string[], area:
 /** Totals of every block ปี with the same area, period and measure (SCHEMA §4.4), oldest year first */
 export function trend(data: DcReportData, query: Pick<ReportQuery, "area" | "period" | "measure">): TrendPoint[] {
   return data.years.map((block) => ({ b_year: block.b_year, totals: totals(block, data.report, query) }));
+}
+
+/**
+ * การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4): the totals of query.year
+ * against those of the ปีงบประมาณ before it alone, with the same area, period
+ * and measure. null when either year has no totals: no block ปี, or the whole
+ * district has no ผลงาน in the level that year.
+ */
+export function reportChange(
+  data: DcReportData,
+  query: Pick<ReportQuery, "year" | "area" | "period" | "measure">,
+): ReportChange | null {
+  const year = String(Number(query.year) - 1);
+  const [before, picked] = [year, query.year].map((y) => {
+    const block = yearBlock(data, y);
+    return block && totals(block, data.report, query);
+  });
+  if (!before || !picked) return null;
+  return {
+    year,
+    target: changeOf(before.target, picked.target),
+    result: changeOf(before.result, picked.result),
+    points: before.pct === null || picked.pct === null ? null : picked.pct - before.pct,
+  };
 }
 
 /**

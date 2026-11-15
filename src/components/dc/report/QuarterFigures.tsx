@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { Period, ReportSort, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
+import type { Period, ReportChange, ReportSort, Totals, TrendPoint, UnitTotals } from "@/lib/dc/types";
 import { sortedUnits } from "@/lib/dc/values";
 import Comparison from "./Comparison";
 import { PERIOD_LABELS } from "./labels";
@@ -8,7 +8,8 @@ import SummaryTiles from "./SummaryTiles";
 import UnitTable from "./UnitTable";
 
 /**
- * ตัวเลขสรุป, ร้อยละรายตำบลหรือรายหน่วยบริการ beside its table in the order
+ * ตัวเลขสรุป with its การเปลี่ยนแปลงจากปีก่อน (change, null for none),
+ * ร้อยละรายตำบลหรือรายหน่วยบริการ beside its table in the order
  * of sort (the page keeps it, SPEC §9.4 "การเรียง"), แนวโน้ม and
  * เป้าหมาย/ผลงาน รายไตรมาส (or รายเดือน, stepName) of a year with a block ปี,
  * as ANC V0.2 lays them out; "—" and the trend alone when the district has no
@@ -18,6 +19,7 @@ import UnitTable from "./UnitTable";
 export default function QuarterFigures(props: {
   year: string;
   total: Totals | null;
+  change: ReportChange | null;
   goal: number | null;
   units: UnitTotals[] | null;
   trend: TrendPoint[];
@@ -33,7 +35,7 @@ export default function QuarterFigures(props: {
   const shown = units && sortedUnits(units, props.sort, (u) => u.totals.pct);
   return (
     <div className="px-4 pb-6 sm:px-6">
-      <SummaryTiles total={total} goal={goal} />
+      <SummaryTiles total={total} change={props.change} goal={goal} />
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         {total && shown ? (

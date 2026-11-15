@@ -1,9 +1,9 @@
+import { changeOf } from "./change";
 import { ageProfile, BAND_LABELS, populationTotals, registryYear } from "./population-totals";
 import type {
   AgeProfile,
   DcCatalog,
   PopulationAgeReport,
-  PopulationChange,
   PopulationQuery,
   PopulationReport,
   PopulationReportData,
@@ -34,12 +34,6 @@ export const POPULATION_REPORT: PopulationReportEntry = {
 const DISTRICT = "อำเภอสอง";
 
 const VALUES: (keyof PopulationTotals)[] = ["male", "female", "total", "house"];
-
-/** From old to new (SCHEMA §11.5): no ร้อยละ when old is 0 */
-function changeOf(oldValue: number, newValue: number): PopulationChange {
-  const count = newValue - oldValue;
-  return { count, pct: oldValue === 0 ? null : (count / oldValue) * 100 };
-}
 
 /**
  * Every value of the รายงานประชากร page (SPEC §9.4.1) for a query: the area

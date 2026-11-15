@@ -175,3 +175,24 @@ test("?year=2560, a year without a block ปี → block null and nothing to sh
   const dev = childdevValues(CHILDDEV4, { ...DISTRICT_2569, year: "2560" }, NAMES, YEARS);
   assert.deepEqual([dev.block, dev.total, dev.units, dev.passed, dev.quarters], [null, null, null, null, []]);
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4). The expected
+// values are the sums of the fixture's rows, added up apart from this code.
+
+test("s_kpi_childdev4 ไตรมาส 2 ปี 2568 (314/253), also from an old link ?area=540601 → ทั้งอำเภอ จากไตรมาส 2 ปี 2567 (345/253): เป้าหมาย −31 (−8.99%), ผลงาน 0 (0.00%), ร้อยละ +7.24 จุดร้อยละ", () => {
+  for (const area of ["all", "540601"]) {
+    const query: ReportQuery = { ...DISTRICT_2569, year: "2568", period: "q2", area };
+    const { change } = childdevValues(CHILDDEV4, query, NAMES, YEARS);
+    assert.deepEqual(
+      change && [
+        change.year,
+        change.target.count,
+        change.target.pct?.toFixed(2),
+        change.result.count,
+        change.result.pct?.toFixed(2),
+        change.points?.toFixed(2),
+      ],
+      ["2567", -31, "-8.99", 0, "0.00", "7.24"],
+    );
+  }
+});

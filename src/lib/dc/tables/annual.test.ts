@@ -138,3 +138,21 @@ test("s_kpi_dental33 2566 is shown as the data has it: 11,167/1,645, 14.73%, ไ
     ],
   );
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of ตัวเลขสรุป (SPEC §9.4). The expected
+// values are the sums of the fixture's rows, added up apart from this code.
+
+test("s_kpi_food 2568 ทั้งอำเภอ (112/65) → จากปี 2567 (108/72): เป้าหมาย +4 (+3.70%), ผลงาน −7 (−9.72%), ร้อยละ −8.63 จุดร้อยละ", () => {
+  const { change } = annualValues(FOOD, { ...DISTRICT_2569, year: "2568" }, NAMES, YEARS);
+  assert.deepEqual(
+    change && [
+      change.year,
+      change.target.count,
+      change.target.pct?.toFixed(2),
+      change.result.count,
+      change.result.pct?.toFixed(2),
+      change.points?.toFixed(2),
+    ],
+    ["2567", 4, "3.70", -7, "-9.72", "-8.63"],
+  );
+});

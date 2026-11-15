@@ -36,7 +36,7 @@ function Complete({ data, names, years }: { data: DcReportData; names: Names; ye
   const { query, search, apply, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
-  const { block, total, goal, units, trend, months } = completeValues(data, query, names, years);
+  const { block, total, change, goal, units, trend, months } = completeValues(data, query, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
@@ -59,7 +59,7 @@ function Complete({ data, names, years }: { data: DcReportData; names: Names; ye
         </ReportStatus>
       ) : (
         <QuarterFigures
-          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
           onSort={setSort}
           steps={months}
           stepName="เดือน"

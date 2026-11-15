@@ -42,7 +42,7 @@ export default function Aged9Page({ id, names, years }: { id: string; names: Nam
 
 function Aged9({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
   const { query, search, apply, push, heading } = useReportQuery(data, names);
-  const { block, total, goal, units, trend, domains, detail } = aged9Values(data, query, names, years);
+  const { block, total, change, goal, units, trend, domains, detail } = aged9Values(data, query, names, years);
   const { overviewHeading, detailHeading, buttonProps, close } = useDetail(
     query.domain === null ? null : String(query.domain),
     (domain) => push({ ...query, domain: domain === null ? null : Number(domain) }),
@@ -90,7 +90,7 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
       ) : (
         <>
           <QuarterFigures
-            {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+            {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
             onSort={setSort}
             steps={[]}
             year={query.year}

@@ -28,10 +28,11 @@ export function screenValues(
   years: string[],
 ) {
   // Not the ANC page's quarters: result1–4 have no target1–4 (SCHEMA §4.2)
-  const { block, total, goal, passed, units, trend } = ancValues(data, query, names, years);
+  const { block, total, change, goal, passed, units, trend } = ancValues(data, query, names, years);
   return {
     block,
     total,
+    change,
     goal,
     passed,
     units,

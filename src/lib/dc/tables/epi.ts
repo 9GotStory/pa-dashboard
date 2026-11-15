@@ -1,5 +1,16 @@
 import type { DcCatalog, DcReportData, DcYearBlock, ReportQuery } from "../types";
-import { goalFor, measureLabel, passes, periods, shownMeasures, totals, totalsBy, trend, yearBlock } from "../values";
+import {
+  goalFor,
+  measureLabel,
+  passes,
+  periods,
+  reportChange,
+  shownMeasures,
+  totals,
+  totalsBy,
+  trend,
+  yearBlock,
+} from "../values";
 
 // The data layer of the EPI1 page (SPEC §9.4, ADR-0015) for s_epi1, s_epi2,
 // s_epi3 and s_epi5: one row per หมู่บ้าน, M_B with a {measure}_{MM} per
@@ -66,6 +77,8 @@ function measureDetail(
   const byQuarter = query.period.startsWith("q");
   return {
     ...measureRow(data, block, query),
+    /** การเปลี่ยนแปลงจากปีก่อน of total; null without a total of the รายการ in either year: no line */
+    change: reportChange(data, query),
     /** The ตำบล, or the หน่วยบริการ of a ตำบล; null with total */
     units: totalsBy(block, data.report, query, names),
     /** Each year of years with the area and ช่วงเวลา; a year without a block ปี or without data of the รายการ has totals null */

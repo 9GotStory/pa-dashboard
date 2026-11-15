@@ -36,7 +36,7 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
   const { query, search, apply, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
-  const { block, total, goal, units, trend, quarters } = ancValues(data, query, names, years);
+  const { block, total, change, goal, units, trend, quarters } = ancValues(data, query, names, years);
   const { summary, unitLabel, totalLabel, csv } = resultsText(
     data.report,
     query,
@@ -59,7 +59,7 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
         </ReportStatus>
       ) : (
         <QuarterFigures
-          {...{ total, goal, units, trend, unitLabel, totalLabel, sort }}
+          {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
           onSort={setSort}
           steps={quarters}
           year={query.year}

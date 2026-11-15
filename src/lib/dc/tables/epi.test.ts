@@ -343,3 +343,36 @@ test("s_epi3 ?measure=je3 → รายละเอียด JE3 straight away, 
   );
   assert.equal(values("measure=dtp5").detail, null);
 });
+
+// FEATURES F74: การเปลี่ยนแปลงจากปีก่อน of the ตัวเลขสรุป of a รายละเอียด (SPEC
+// §9.4), with the area, ช่วงเวลา and รายการ of the query. The expected values
+// are the sums of the fixture's rows, added up apart from this code.
+
+/** A change as its line shows it: the year before, เป้าหมาย and ผลงาน as count and ร้อยละ, and จุดร้อยละ */
+const changed = (change: NonNullable<ReturnType<typeof epiValues>["detail"]>["change"]) =>
+  change && [
+    change.year,
+    change.target.count,
+    change.target.pct?.toFixed(2),
+    change.result.count,
+    change.result.pct?.toFixed(2),
+    change.points?.toFixed(2),
+  ];
+
+test("รายละเอียด MMR 2569 ทั้งอำเภอ (181/174) → จากปี 2568 (217/202): เป้าหมาย −36 (−16.59%), ผลงาน −28 (−13.86%), ร้อยละ +3.05 จุดร้อยละ", () => {
+  const { detail } = epiValues(EPI1, { ...OVERVIEW_2569, measure: "mmr" }, NAMES, YEARS);
+  assert.deepEqual(changed(detail!.change), ["2568", -36, "-16.59", -28, "-13.86", "3.05"]);
+});
+
+test("รายละเอียด MMR 2569 ไตรมาส 2 (39/37) → จากไตรมาส 2 ปี 2568 (43/40): −4 (−9.30%), −3 (−7.50%), +1.85 · ตำบลบ้านหนุน ทั้งปี (24/24) → จาก 32/31: −8 (−25.00%), −7 (−22.58%), +3.13", () => {
+  const quarter = epiValues(EPI1, { ...OVERVIEW_2569, period: "q2", measure: "mmr" }, NAMES, YEARS);
+  assert.deepEqual(changed(quarter.detail!.change), ["2568", -4, "-9.30", -3, "-7.50", "1.85"]);
+  const tambon = epiValues(EPI1, { ...OVERVIEW_2569, area: "540601", measure: "mmr" }, NAMES, YEARS);
+  assert.deepEqual(changed(tambon.detail!.change), ["2568", -8, "-25.00", -7, "-22.58", "3.13"]);
+});
+
+test("รายละเอียด DTP2 2569 (181/179) → no การเปลี่ยนแปลงจากปีก่อน: ปี 2568 has a block ปี but no ผลงาน of DTP2 in the whole district", () => {
+  const { detail } = epiValues(EPI1, { ...OVERVIEW_2569, measure: "dtp2" }, NAMES, YEARS);
+  assert.equal(pair(detail!.total), "181/179");
+  assert.equal(detail!.change, null);
+});

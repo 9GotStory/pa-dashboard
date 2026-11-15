@@ -19,10 +19,11 @@ export function completeValues(
   years: string[],
 ) {
   // Not the ANC page's quarters: M_A has none (SCHEMA §4.1)
-  const { block, total, goal, passed, units, trend } = ancValues(data, query, names, years);
+  const { block, total, change, goal, passed, units, trend } = ancValues(data, query, names, years);
   return {
     block,
     total,
+    change,
     goal,
     passed,
     units,
