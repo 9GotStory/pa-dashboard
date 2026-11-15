@@ -15,6 +15,7 @@ import {
   CalendarClock,
   TriangleAlert,
 } from "lucide-react";
+import CatalogRefresh from "@/components/dc/CatalogRefresh";
 import RegistryPopulationUpload from "@/components/dc/RegistryPopulationUpload";
 import { readSyncStatus, syncStatusDate } from "@/lib/dc/sync-status";
 import type { GasError, GasSyncStatus } from "@/lib/dc/types";
@@ -869,6 +870,8 @@ export default function SyncPage() {
             <div ref={logsEndRef} />
           </div>
         </div>
+
+        <CatalogRefresh />
 
         <RegistryPopulationUpload />
 

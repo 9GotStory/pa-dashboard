@@ -30,9 +30,28 @@ const SYNC_STATUS = [
   ["s_kpi_anc12", "2568", "s_kpi_anc12_y2568", 3, "202509301200", new Date("2025-10-01T03:00:00Z")],
 ];
 
-const sheets = { ...PA_SHEETS, sync_status: SYNC_STATUS };
-const { url } = await startGas(null, loadGas({ sheets }), ({ action, kind, yymm }) => {
-  console.log(`dc-sync-local: POST ${[action, kind, yymm].filter(Boolean).join(" ")}`);
+// Three topics of SCHEMA §6, the smallest, for the รีเฟรชแค็ตตาล็อก button:
+// it reads their reports from the real catalog API of MOPH (a GET, read only)
+// and saves them here, into this harness's hdc_reports (SPEC §12.1).
+const HDC_TOPICS = [
+  ["cat_id", "order", "category_name"],
+  ["bebf866fceaef84c4078965eaf619565", 30, "การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม"],
+  ["6966b0664b89805a484d7ac96c6edc48", 40, "การคัดกรอง"],
+  ["4df360514655f79f13901ef1181ca1c7", 20, "การสร้างเสริมภูมิคุ้มกันโรค"],
+];
+
+const sheets = { ...PA_SHEETS, sync_status: SYNC_STATUS, hdc_topics: HDC_TOPICS };
+const gas = loadGas({ sheets });
+const { url } = await startGas(null, gas, ({ action, kind, yymm, cat_id }) => {
+  console.log(`dc-sync-local: POST ${[action, kind, yymm, cat_id].filter(Boolean).join(" ")}`);
+  // doPost runs right after this, in the same tick: the rows it left.
+  if (action === "save_catalog") {
+    setImmediate(() => {
+      const [header, ...rows] = gas.sheet("hdc_reports") ?? [[]];
+      const mine = rows.filter((row) => row[header.indexOf("cat_id")] === cat_id).length;
+      console.log(`dc-sync-local: hdc_reports has ${mine} rows of ${cat_id}, ${rows.length} in all`);
+    });
+  }
 });
 console.log(
   `dc-sync-local: open http://localhost:${port}/sync with PIN ${PIN}; GAS harness at ${url}; Ctrl-C or kill ${process.pid} stops both`,

@@ -18,9 +18,9 @@ import type {
 // ADR-0011, ADR-0014): stat_m files and age files from stat.bora are read and
 // checked here by population.ts, saved one file at a time with
 // save_registry_population, each year's stat_m (its ตำบล rows, then its
-// หมู่บ้าน rows) before its age file, then one rebuild. The only Data Center
-// component that calls GAS, since /sync is not a page of (dc)
-// (CODING_STANDARDS §4).
+// หมู่บ้าน rows) before its age file, then one rebuild. One of the two Data
+// Center components that call GAS, with CatalogRefresh, since /sync is not a
+// page of (dc) (CODING_STANDARDS §4).
 
 const GAS_URL = process.env.NEXT_PUBLIC_GAS_SCRIPT_URL ?? "";
 
