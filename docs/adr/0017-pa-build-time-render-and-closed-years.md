@@ -16,7 +16,7 @@ registry เป็นชีตเดียวไม่แยกปี เมื�
 - prebuild GET response ของ GAS ทั้งห้าแบบไม่แปลงเป็นไฟล์ snapshot ของ PA ดึงไม่ได้หรือโครงไม่ครบให้ build ล้ม (กติกาเดียวกับ ADR-0006)
 - การประมวลผลของ PA เป็นฟังก์ชันล้วนตัวเดียว ใช้ทั้งตอน build กับไฟล์ snapshot และในเบราว์เซอร์กับ response สด จึงไม่มีสูตรสองชุด
 - HTML ของ `/pa` มีตัวเลขของ build ล่าสุด (รวมแถวดิบที่ modal ใช้) แล้ว hook ดึง GAS สดในพื้นหลังและแทนที่เมื่อได้มา GAS ล้มก็แสดงข้อมูลของ build ต่อโดยไม่แสดง error · เลิกใช้ localStorage `PA_DASHBOARD_CACHE_V4` · `?cat=` อ่านหลัง hydrate
-- ไฟล์ PA ที่แก้ได้มีแค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` component ของ PA, `types.ts` และ `kpi-utils.ts` ยังห้ามแก้ · GAS ไม่แก้
+- ไฟล์ PA ที่แก้ได้มีแค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` component ของ PA, `types.ts` และ `kpi-utils.ts` ยังห้ามแก้ · GAS ไม่แก้ · เนื้อหาเดิมของ `page.tsx` ที่ย้ายไปไฟล์ใหม่ใน `src/app/pa/` นับเป็นส่วนของ `page.tsx` เพราะหน้าที่อ่านไฟล์ตอน build ต้องเป็น server component ที่ส่ง props ให้ส่วน client (เพิ่มตอน F80)
 - **PA ปีที่ปิดแล้ว:** ก่อนเปลี่ยน `current_year` (ตั้ง `current_quarter = 4` และ sync ปีเดิมครั้งสุดท้ายก่อน) เก็บ snapshot ของ PA ของปีนั้นเป็นไฟล์ถาวรใน repo นอก `public/data/` แล้ว build หน้า `/pa/{ปี}` จากไฟล์นี้ ไม่ดึง GAS สด · เริ่มที่ปี 2569
 
 ## ทางเลือกที่ไม่เลือก
