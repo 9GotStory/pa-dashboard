@@ -53,6 +53,18 @@
         ]
       }
     ],
+    "UserPromptExpansion": [
+      {
+        "matcher": "implement|wizard",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": ["${CLAUDE_PROJECT_DIR}/.claude/hooks/ticket-branch.mjs"]
+          }
+        ]
+      }
+    ],
     "Stop": [
       {
         "hooks": [

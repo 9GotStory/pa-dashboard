@@ -31,8 +31,9 @@ const SYNC_STATUS = [
 ];
 
 // Three topics of SCHEMA §6, the smallest, for the รีเฟรชแค็ตตาล็อก button:
-// it reads their reports from the real catalog API of MOPH (a GET, read only)
-// and saves them here, into this harness's hdc_reports (SPEC §12.1).
+// it saves their reports here, into this harness's hdc_reports (SPEC §12.1).
+// The catalog API of MOPH refuses CORS from localhost (SCHEMA §5), so a check
+// answers it from a fixture with page.route (docs/agents/page-checks.md).
 const HDC_TOPICS = [
   ["cat_id", "order", "category_name"],
   ["bebf866fceaef84c4078965eaf619565", 30, "การเฝ้าระวังด้านส่งเสริมสุขภาพและอนามัยสิ่งแวดล้อม"],
