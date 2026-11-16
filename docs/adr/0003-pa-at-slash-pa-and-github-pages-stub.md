@@ -1,6 +1,6 @@
 # ADR-0003: PA Dashboard ย้ายไป /pa และ GitHub Pages เป็นหน้า stub
 
-- สถานะ: ยอมรับ · 29 ต.ค. 2569 (D2, D3)
+- สถานะ: ยอมรับ · 29 ต.ค. 2569 (D2, D3) · ข้อ "ไม่แก้โค้ด PA" ฝั่งเว็บถูกแทนบางส่วนด้วย [ADR-0017](0017-pa-build-time-render-and-closed-years.md) (16 พ.ย. 2569): แก้ได้แค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ฝั่ง GAS และ `BATCH_ALL` ยังคงเดิม
 - เกี่ยวข้อง: SPEC §4, §11, §12.6
 
 ## บริบท

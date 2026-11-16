@@ -25,6 +25,20 @@ clasp is a devDependency pinned in package.json, so `npm ci` installs it and `np
 
 Roll back with `npx clasp redeploy <deploymentId> -V <previous version>` (`npx clasp deployments` lists them), then push the previous code: whether triggers run the deployed version or HEAD is not documented.
 
+## Changing `current_year`
+
+Changing `settings.current_year` moves PA and the Data Center to the new year at once (SPEC §7, row เปลี่ยนปีงบ). First confirm HDC has rows for the new year, or the prebuild fails. The PA registry (`kpi_master`, `kpi_epi`) is one sheet for every year, so freeze PA's closed year before the switch (ADR-0017): skip it and the old year's targets are gone for good. Run it through `/wizard`; the user makes every write to the sheet.
+
+1. The user sets `settings.current_quarter = 4`.
+2. The user syncs the old year one last time (`/sync`, or `run=sync` through `gas:diag`). The sync's rebuild puts it on the site.
+3. Open `/pa` on the live site: every quarterly KPI reads สะสม 12 เดือน (Q4), or its `target_months`.
+4. `npm run pa:snapshot -- freeze-{year}`: the picture of PA before the freeze, kept for the closed-year compare.
+5. Freeze, GET only: `npm run snapshot`, then copy `public/data/pa.json` to `data/pa-years/{year}.json` (SCHEMA §7) and open a PR into `main`. Merge it before step 6. Steps 3–5 write nothing to production and do not wait on the `/pa/{year}` page (F85).
+6. The user sets `current_year` to the new year and `current_quarter = 1`.
+7. The user syncs the new year at once: until then the current-year sheets still hold the old year's rows, and `BATCH_ALL` shows them as the new year.
+
+Once `/pa/{year}` is live, `npm run pa:snapshot -- closed-{year}` with `PA_URL` set to that page, then `npm run pa:compare -- freeze-{year} closed-{year}`. It exits 1 by design: `data` holds the new year's `BATCH_ALL`, and the year badge and year links shift the text lines. Read the cell lines instead: both tabs must show 0 cells that differ.
+
 ## Diag setups
 
 `setup=…` and `run=sync` write to production, so the ask rules in `.claude/settings.json` stop the agent's call at a prompt, as for the other production writes CLAUDE.md lists. The user runs them with the `!` prefix, which puts the output in the conversation:

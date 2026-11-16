@@ -97,7 +97,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 
 | ตัวแปร | ใช้ที่ |
 |---|---|
-| `NEXT_PUBLIC_GAS_SCRIPT_URL` | หน้า `/sync`, สคริปต์ node และ prebuild snapshot (บังคับต้องมี) ส่วน PA ใช้ URL ที่เขียนไว้ใน `src/lib/useKPIData.ts` ไม่ได้อ่านจากตัวแปรนี้ |
+| `NEXT_PUBLIC_GAS_SCRIPT_URL` | หน้า `/sync`, สคริปต์ node และ prebuild snapshot (บังคับต้องมี) ซึ่งตั้งแต่ F82 ดึง snapshot ของ PA ด้วย · PA ในเบราว์เซอร์ยังดึง GAS สดด้วย URL ที่เขียนไว้ใน `src/lib/useKPIData.ts` ไม่ได้อ่านจากตัวแปรนี้ ค่าทั้งสองจึงต้องเป็น deployment เดียวกัน |
 | `NEXT_PUBLIC_SYNC_PIN_CODE` | PIN ของหน้า `/sync` |
 
 ตัวแปรที่ขึ้นต้นด้วย `NEXT_PUBLIC_` ถูกฝังในไฟล์ JavaScript ที่ส่งให้เบราว์เซอร์ จึงไม่ใช่ความลับ ([ADR-0005](docs/adr/0005-no-server-side-auth-phase1.md))

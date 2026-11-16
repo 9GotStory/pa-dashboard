@@ -79,7 +79,7 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 ## Hard rules
 
 - PA Dashboard files are frozen: the canonical list is CODING_STANDARDS.md §1. `src/scripts/รหัส.js` changes only at the points listed in SPEC.md §12.4.
-- New code goes in `src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/` and `src/scripts/dc-*.js`. GAS files run in one global scope with no `require`/`import`; every node-only file under `src/scripts/` must be listed in `.claspignore`.
+- New code goes in `src/app/(dc)/`, `src/components/dc/`, `src/lib/dc/` and `src/scripts/dc-*.js`; Track N's PA code (ADR-0017) goes in `src/lib/pa/` and new files under `src/app/pa/`. GAS files run in one global scope with no `require`/`import`; every node-only file under `src/scripts/` must be listed in `.claspignore`.
 - Production is shared with PA. Unless the user asks in this session, never run `npm run gas:push`, `gas:deploy` or `gas:sync`, `npm run gas:diag` with `setup=` or `run=`, `src/scripts/sync-moph-to-gas.js`, `hdc-catalog.js refresh`, a `rebuild`, or any POST to the live GAS URL. When asked to deploy GAS, follow docs/agents/gas-deploy.md: deploy from `main` and redeploy the existing deployment (`npm run gas:sync`); never create a new deployment, because PA hardcodes the web app URL in `src/lib/useKPIData.ts`.
 - Git: one branch per ticket (`feat/F##-<slug>`) from `main`, PR into `main`, never push to `main`. Never commit `public/data/` or `.env*`.
 - Write to the user, and write PR bodies and issues, in Thai; code, comments and commit messages are English. Website UI text is Thai. The spreadsheet's admin menu and toasts are English, matching PA's existing ones (#137). Use the terms in GLOSSARY.md in code, tests, issues and commit messages.
