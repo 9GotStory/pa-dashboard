@@ -5,6 +5,7 @@ src/components/*
 !src/components/dc/
 src/lib/*
 !src/lib/dc/
+!src/lib/pa/
 src/app/pa/page.tsx
 src/app/pa/loading.tsx
 src/app/sync/page.tsx
@@ -15,6 +16,7 @@ src/scripts/verify-all.js
 
 # Fixtures cut from snapshots and real sheets
 src/lib/dc/fixtures/
+src/lib/pa/fixtures/
 src/scripts/test/fixtures/
 
 # Markdown and JSON, kept as written: Prettier would realign the Thai tables of SPEC
