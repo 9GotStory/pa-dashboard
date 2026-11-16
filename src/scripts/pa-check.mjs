@@ -100,36 +100,28 @@ const rowSet = (rows) =>
     )
     .sort();
 const sameRows = (x, y) => JSON.stringify(rowSet(x)) === JSON.stringify(rowSet(y));
+// A daily sync gives every row a newer date_com from MOPH, values or not.
+const withoutDateCom = (rows) => rows.map((row) => ({ ...row, date_com: undefined }));
 const maxDateCom = (rows) =>
   rows.reduce((max, row) => (String(row.date_com ?? "") > max ? String(row.date_com) : max), "");
 const indexes = (n) => Array.from({ length: n }, (_, i) => i);
+// PA's line with the newest date_com (src/app/pa/page.tsx).
+const DATE_LINE = /^อัปเดตล่าสุด/;
 
-function compare(a, b) {
-  const before = load(a);
-  const after = load(b);
+// The lines compare prints and the count of differences, from two snapshots
+// as load() reads them; 0 differences means PA shows the same.
+export function compareSnapshots(before, after) {
+  const lines = [];
   let changed = 0;
-
-  for (const tab of Object.keys(TABS)) {
-    const x = before.page[tab];
-    const y = after.page[tab];
-    const cellDiffs = indexes(Math.max(x.labels.length, y.labels.length)).filter((i) => x.labels[i] !== y.labels[i]);
-    const xs = x.text.split("\n");
-    const ys = y.text.split("\n");
-    const lineDiffs = indexes(Math.max(xs.length, ys.length)).filter((i) => xs[i] !== ys[i]);
-    console.log(
-      `page ${tab}: ${x.labels.length} → ${y.labels.length} cells, ${cellDiffs.length} differ; ${lineDiffs.length} text lines differ`,
-    );
-    cellDiffs.slice(0, 5).forEach((i) => console.log(`  cell ${x.labels[i]} → ${y.labels[i]}`));
-    lineDiffs.slice(0, 5).forEach((i) => console.log(`  line ${i + 1}: ${xs[i]} → ${ys[i]}`));
-    if (cellDiffs.length > 0 || lineDiffs.length > 0) changed++;
-  }
 
   // A BATCH_ALL key is also unchanged when "after" holds the "before" rows
   // narrowed the way saveTableYear stores them: to the district (the areacode
-  // prefixes left in "after") and the current year.
+  // prefixes left in "after") and the current year; and, across a daily sync,
+  // when only date_com moved.
   const year = String(after.batch.meta.current_year);
   const keys = [...new Set([...Object.keys(before.batch.data), ...Object.keys(after.batch.data)])];
   let identical = 0;
+  let dateComMoved = false;
   for (const key of keys) {
     const x = before.batch.data[key] || [];
     const y = after.batch.data[key] || [];
@@ -139,25 +131,53 @@ function compare(a, b) {
     }
     const districts = new Set(y.map((row) => String(row.areacode).slice(0, 4)));
     const narrowed = x.filter((row) => districts.has(String(row.areacode).slice(0, 4)) && String(row.b_year) === year);
+    const rows = `data ${key}: ${x.length} → ${y.length} rows`;
+    const narrowing = `narrowed to ${[...districts].join(",")} / ${year}`;
+    const dates = `date_com ${maxDateCom(x)} → ${maxDateCom(y)}`;
+    if (maxDateCom(x) !== maxDateCom(y)) dateComMoved = true;
     if (y.length > 0 && sameRows(narrowed, y)) {
-      console.log(
-        `data ${key}: ${x.length} → ${y.length} rows, the same rows narrowed to ${[...districts].join(",")} / ${year}`,
-      );
+      lines.push(`${rows}, the same rows ${narrowing}`);
+    } else if (y.length > 0 && sameRows(withoutDateCom(narrowed), withoutDateCom(y))) {
+      lines.push(`${rows}, the same rows ${narrowing} apart from max ${dates}`);
     } else {
       changed++;
-      console.log(
-        `data ${key}: ${x.length} → ${y.length} rows, CHANGED; max date_com ${maxDateCom(x)} → ${maxDateCom(y)}`,
-      );
+      lines.push(`${rows}, CHANGED; max ${dates}`);
     }
   }
-  console.log(`data: ${identical}/${keys.length} keys identical`);
+  lines.push(`data: ${identical}/${keys.length} keys identical`);
+
+  for (const tab of Object.keys(TABS)) {
+    const x = before.page[tab];
+    const y = after.page[tab];
+    const cellDiffs = indexes(Math.max(x.labels.length, y.labels.length)).filter((i) => x.labels[i] !== y.labels[i]);
+    const xs = x.text.split("\n");
+    const ys = y.text.split("\n");
+    const lineDiffs = indexes(Math.max(xs.length, ys.length)).filter((i) => xs[i] !== ys[i]);
+    // The อัปเดตล่าสุด line follows date_com, so it moves with a sync.
+    const judged = lineDiffs.filter((i) => !(dateComMoved && DATE_LINE.test(xs[i]) && DATE_LINE.test(ys[i])));
+    lines.push(
+      `page ${tab}: ${x.labels.length} → ${y.labels.length} cells, ${cellDiffs.length} differ; ${lineDiffs.length} text lines differ`,
+    );
+    cellDiffs.slice(0, 5).forEach((i) => lines.push(`  cell ${x.labels[i]} → ${y.labels[i]}`));
+    lineDiffs
+      .slice(0, 5)
+      .forEach((i) =>
+        lines.push(`  line ${i + 1}: ${xs[i]} → ${ys[i]}${judged.includes(i) ? "" : " (date_com moved, not judged)"}`),
+      );
+    if (cellDiffs.length > 0 || judged.length > 0) changed++;
+  }
+
   for (const key of new Set([...Object.keys(before.batch.meta), ...Object.keys(after.batch.meta)])) {
     const x = JSON.stringify(before.batch.meta[key]);
     const y = JSON.stringify(after.batch.meta[key]);
-    if (x !== y)
-      console.log(`meta ${key}: ${String(x).slice(0, 100)} → ${String(y).slice(0, 100)} (shown, not judged)`);
+    if (x !== y) lines.push(`meta ${key}: ${String(x).slice(0, 100)} → ${String(y).slice(0, 100)} (shown, not judged)`);
   }
+  return { lines, changed };
+}
 
+function compare(a, b) {
+  const { lines, changed } = compareSnapshots(load(a), load(b));
+  lines.forEach((line) => console.log(line));
   if (changed > 0) {
     fail(
       `${changed} difference(s). A newer max date_com means MOPH sent new data; the same date_com means the code changed what PA gets.`,
@@ -168,12 +188,14 @@ function compare(a, b) {
 
 const checkName = (name) =>
   /^[\w.-]+$/.test(name) ? name : fail(`snapshot name "${name}": letters, digits, . _ - only`);
-const [command, ...args] = process.argv.slice(2);
-try {
-  if (command === "snapshot" && args.length === 1) await snapshot(checkName(args[0]));
-  else if (command === "compare" && args.length === 2) compare(checkName(args[0]), checkName(args[1]));
-  else fail("usage: pa-check.mjs snapshot <name> | compare <before> <after>");
-} catch (err) {
-  // Playwright messages end in a multi-line call log; the first line names the failure.
-  fail(err.message.split("\n")[0]);
+if (import.meta.main) {
+  const [command, ...args] = process.argv.slice(2);
+  try {
+    if (command === "snapshot" && args.length === 1) await snapshot(checkName(args[0]));
+    else if (command === "compare" && args.length === 2) compare(checkName(args[0]), checkName(args[1]));
+    else fail("usage: pa-check.mjs snapshot <name> | compare <before> <after>");
+  } catch (err) {
+    // Playwright messages end in a multi-line call log; the first line names the failure.
+    fail(err.message.split("\n")[0]);
+  }
 }
