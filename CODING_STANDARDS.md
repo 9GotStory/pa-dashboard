@@ -5,9 +5,9 @@
 ## 1. ขอบเขตที่ห้ามแตะ
 
 - ไฟล์ PA เดิมห้ามแก้ (รายการนี้คือรายการทางการ ที่อื่นอ้างมาที่นี่): ทุกไฟล์ที่มีอยู่ก่อนใต้ `src/components/` และ `src/lib/` (ไฟล์ใหม่ใน `src/components/dc/`, `src/lib/dc/` และ `src/lib/pa/` ไม่นับ) และ `src/app/sync/page.tsx` นอกเหนือจากที่ SPEC §12.1 ระบุ · ย้ายไฟล์ตาม SPEC §4 ได้ แต่เนื้อหาต้องเหมือนเดิม
-- ข้อยกเว้นของ Track N (ADR-0017): แก้ได้แค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ตาม SPEC §4 ("PA ตั้งแต่ Track N") · เนื้อหาเดิมของ `page.tsx` ที่ย้ายไปไฟล์ใหม่ใน `src/app/pa/` นับเป็นส่วนของ `page.tsx` · component ของ PA, `types.ts`, `kpi-utils.ts`, `kpi-grouping.ts` และไฟล์ PA อื่นยังห้ามแก้ ถ้าจำเป็นต้องหยุดถามผู้ใช้ · ตัวเลขที่ `/pa` แสดงต้องเหมือน production (`pa:compare` ได้ "PA unchanged")
+- ข้อยกเว้นของ Track N (ADR-0017): แก้ได้แค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ตาม SPEC §4 ("PA ตั้งแต่ Track N") · เนื้อหาเดิมของ `page.tsx` ที่ย้ายไปไฟล์ใหม่ใน `src/app/pa/` นับเป็นส่วนของ `page.tsx` · component ของ PA, `types.ts`, `kpi-utils.ts`, `kpi-grouping.ts` และไฟล์ PA อื่นยังห้ามแก้ ถ้าจำเป็นต้องหยุดถามผู้ใช้ · ตัวเลขที่ `/pa` แสดงต้องเหมือน production (`pa:compare` ได้ "PA unchanged") · ไฟล์ใหม่ใน `src/lib/pa/` เป็น TypeScript strict ไม่ใช้ `any` · `process.ts` เป็นฟังก์ชันล้วน: ไม่ import React ไม่แตะ DOM/`window` ไม่ `fetch` ไม่อ่านไฟล์ (การอ่านไฟล์อยู่ใน `snapshot.ts` เท่านั้น, SPEC §4) · import ไฟล์ PA ได้แบบอ่านอย่างเดียว ส่วนโค้ดของ Data Center ไม่ import `src/lib/pa/` (กฎ ESLint ของ §4 ครอบไว้แล้ว)
 - ใน `src/scripts/รหัส.js` แก้ได้เฉพาะจุดที่ SPEC §12.4 ระบุ โค้ดใหม่ของ Data Center อยู่ใน `src/scripts/dc-*.js`
-- ไม่แก้ชีต `kpi_registry`, `kpi_master`, `kpi_epi` · คีย์ localStorage `PA_DASHBOARD_CACHE_V4` เลิกใช้ตั้งแต่ F83 (SPEC §11): ไม่อ่านไม่เขียน และไม่สร้างคีย์ใหม่แทน
+- ไม่แก้ชีต `kpi_registry`, `kpi_master`, `kpi_epi` · คีย์ localStorage `PA_DASHBOARD_CACHE_V4` เลิกใช้ตั้งแต่ F83 (SPEC §11): ไม่อ่านและไม่เขียน
 - branch `develop` ไม่แตะ (ADR-0001)
 
 ## 2. GAS (`src/scripts/*.js` ที่ถูก push)

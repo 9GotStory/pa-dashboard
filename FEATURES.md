@@ -1243,7 +1243,7 @@
 
 ### F80 เอกสาร Track N
 
-- **ทำ:** ใน branch `feat/F80-track-n-docs` นำ GLOSSARY ("PA ปีที่ปิดแล้ว") และ ADR-0017 ที่เขียนไว้ระหว่าง grill เข้า branch แล้วแก้: SPEC §2.2 (ลบแถว "ย้าย PA มาอ่าน snapshot"), §2.11 (ขอบเขต), §3, §4 (route `/pa/[year]`, ไฟล์ของฟังก์ชันประมวลผล, โครงหน้า, `?cat=`), §6.1–6.2 (snapshot ของ PA), §7 (ขั้นแช่แข็งปี), §8, §9.6 (งบ LCP ของ `/pa`), §11, D16 · SCHEMA §7 (`pa.json` และไฟล์ปีที่ปิดแล้ว) · CODING_STANDARDS §1 (ข้อยกเว้นสองไฟล์ และเลิกใช้ `PA_DASHBOARD_CACHE_V4`), §5 (seam ของฟังก์ชันประมวลผลและของ prebuild ส่วน PA) · หมายเหตุใน ADR-0003 และ ADR-0006 · README (แถว `NEXT_PUBLIC_GAS_SCRIPT_URL`) · `docs/agents/gas-deploy.md` ("Changing `current_year`") · ส่วนนี้ของ FEATURES และ "งานที่รอเฟส 2" · แล้ว PR เข้า `main` · งานเอกสารล้วน ไม่มีโค้ด · GLOSSARY ไม่แก้นิยาม "PA" และ "snapshot" เพราะยังเป็นจริงจนกว่าโค้ดจะเปลี่ยน (F83 แก้)
+- **ทำ:** ใน branch `feat/F80-track-n-docs` นำ GLOSSARY ("PA ปีที่ปิดแล้ว") และ ADR-0017 ที่เขียนไว้ระหว่าง grill เข้า branch แล้วแก้: SPEC §2.2 (ลบแถว "ย้าย PA มาอ่าน snapshot"), §2.11 (ขอบเขต), §3, §4 (route `/pa/[year]`, ไฟล์ของฟังก์ชันประมวลผล, โครงหน้า, `?cat=`), §6.1–6.2 (snapshot ของ PA), §7 (ขั้นแช่แข็งปี), §8, §9.6 (งบ LCP ของ `/pa`), §11, D16 · SCHEMA §7 (`pa.json` และไฟล์ปีที่ปิดแล้ว) · CODING_STANDARDS §1 (ข้อยกเว้นสองไฟล์ และเลิกใช้ `PA_DASHBOARD_CACHE_V4`), §5 (seam ของฟังก์ชันประมวลผลและของ prebuild ส่วน PA) · หมายเหตุใน ADR-0003 และ ADR-0006 · README (แถว `NEXT_PUBLIC_GAS_SCRIPT_URL`) · `docs/agents/gas-deploy.md` ("Changing `current_year`") · ส่วนนี้ของ FEATURES และ "งานที่รอเฟส 2" · แล้ว PR เข้า `main` · งานเอกสารล้วน ไม่มีโค้ด · GLOSSARY ไม่แก้นิยาม "PA" และ "snapshot" เพราะยังเป็นจริงจนกว่าโค้ดจะเปลี่ยน (F82 แก้ "snapshot" เมื่อมี `pa.json` F83 แก้ "PA")
 - **ตรวจรับ:**
   1. SPEC, SCHEMA, CODING_STANDARDS, ADR และ FEATURES ตรงกับข้อตัดสินใจของ grill 16 พ.ย. 2569 (body ของ #319) ทุกข้อ ไม่ขัดกับ GLOSSARY และ ADR-0017
   2. FEATURES มีดัชนี F80–F86 พร้อมเลข issue และเกณฑ์ตรวจรับของ F81–F86 · #326 อ้างขั้นแช่แข็งปีใน SPEC §7
@@ -1269,6 +1269,7 @@
   - GET `BATCH_ALL`, `hospitals`, `tambon_master` แล้ว `?sheet={แท็บ}` ของทุกแท็บใน `meta.registry` เก็บ response แบบไม่แปลง · retry `Busy` และ error อื่นด้วยกติกาเดียวกับ `catalog`/`report`
   - ตรวจโครงตาม SCHEMA §7 ก่อนเขียน: ไม่มี `meta.registry` ล้ม ไม่ใช้คู่เดิมแทน (SPEC §6.2) · ไม่ผ่านหรือเกินงบขนาด build ล้มพร้อมข้อความบอกวิธีแก้ และไม่เขียนไฟล์ใดครึ่งเดียว
   - หน้า `/pa` ยังไม่ใช้ไฟล์นี้ (F83) · ไม่แก้ GAS และไม่แก้ไฟล์ PA
+  - GLOSSARY: เพิ่ม `pa.json` ในนิยาม "snapshot"
 - **ขึ้นกับ:** F80
 - **ตรวจรับ:**
   1. เทสต์ของ prebuild กับ stub HTTP server (CODING_STANDARDS §5): สำเร็จ (ไฟล์มี response ทั้งห้าในรูปของ SCHEMA §7 และ `registry` ตาม `meta.registry`), `Busy` แล้วสำเร็จ, `Busy` ตลอด, error, `BATCH_ALL` ไม่มี `meta.registry`, แท็บ registry ไม่ใช่ array, ไฟล์เกินงบ · ทุกกรณีที่ล้มไม่มี `pa.json` ค้าง
@@ -1281,7 +1282,8 @@
   - **ตอน build:** `page.tsx` อ่าน `pa.json` ผ่าน `src/lib/pa/snapshot.ts` เรียกฟังก์ชันประมวลผล (F81) แล้วส่งผลรวมแถวดิบที่ modal ใช้เป็น props ให้ส่วน client ของหน้า (เนื้อหาเดิมของ `page.tsx` ในไฟล์ใหม่ใน `src/app/pa/`)
   - **hook:** เริ่มจากผลของ build แทนหน้า skeleton และ localStorage แล้วดึง GAS สดในพื้นหลังผ่านฟังก์ชันเดียวกันและแทนที่เงียบ ๆ · GAS ล้มแล้วแสดงข้อมูลของ build ต่อ ไม่แสดง error · เลิกอ่านและเขียน `PA_DASHBOARD_CACHE_V4`
   - **`?cat=`:** อ่านหลัง hydrate ไม่ใช้ `<Suspense>` + `useSearchParams`
-  - **เอกสาร:** GLOSSARY แก้นิยาม "PA" (ไม่ได้เรียก GAS สดตอนโหลดแรกแล้ว) และ "snapshot" (มี `pa.json`) · README แก้บรรทัด "ข้อมูลที่หน้าเว็บอ่าน" และแผนภาพที่บอกว่า PA เรียก GAS ทุกครั้งที่เปิดหน้า
+  - **Prettier:** ไฟล์ใหม่ใน `src/app/pa/` ที่รับเนื้อหาเดิมของ `page.tsx` ไม่อยู่ใน `.prettierignore` จึงถูกตรวจ format ด้วย (CODING_STANDARDS §5) diff ของการย้ายจึงมี format ที่เปลี่ยนปนอยู่ บอกไว้ใน PR
+  - **เอกสาร:** GLOSSARY แก้นิยาม "PA" (ไม่ได้เรียก GAS สดตอนโหลดแรกแล้ว และแก้ได้สองไฟล์ตาม ADR-0017) · README แก้บรรทัด "ข้อมูลที่หน้าเว็บอ่าน" และแผนภาพที่บอกว่า PA เรียก GAS ทุกครั้งที่เปิดหน้า
   - แก้ไฟล์ PA ได้เฉพาะ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ถ้าต้องแก้ component ของ PA ให้หยุดถาม
 - **ขึ้นกับ:** F81, F82
 - **ตรวจรับ:**

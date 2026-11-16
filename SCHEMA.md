@@ -833,7 +833,7 @@ Request (`Content-Type: application/json`):
 - เกณฑ์รายวัคซีนมาจาก `kpi_epi` ผ่าน `measure_goals` (ชีตจริงมี 30 แถว): `s_epi1.mmr` = 95, `s_epi2.mmr1` = 95, `s_epi2.mmr2` = 95 ที่เหลือ = 90 (รวม `s_epi3.mmr2` = 90) ส่วนรายการที่ไม่มีใน `kpi_epi` (`pcv1`–`pcv3` ของ `s_epi1`, `pcv4` ของ `s_epi2`) ไม่มีเกณฑ์ (§4.4)
 - รายงานอื่นในหัวข้อนี้ (work load, วัยเรียน, หญิงตั้งครรภ์, ผู้ใหญ่, 7 ปี ฯลฯ) ยังปิดไว้ เพราะยังไม่มีข้อมูลดิบ หรือเป็นชนิด `workload` ซึ่งรอเฟส 2
 
-## 7. ไฟล์ snapshot (`public/data/`)
+## 7. ไฟล์ snapshot (`public/data/`) และไฟล์ของ PA ปีที่ปิดแล้ว
 
 สร้างโดย `src/scripts/build-snapshot.mjs` จาก `?action=catalog`, `?action=report`, `?action=registry_population` (เฟส 2) และ `?sheet=` ของ PA (Track N) เท่านั้น ไม่มีการคำนวณค่าของรายงาน ยอดประชากร หรือตัวเลขของ PA ในขั้นนี้
 
