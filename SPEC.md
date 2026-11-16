@@ -1,6 +1,6 @@
 # SPEC — Song Health Data Center
 
-> สถานะ: ร่าง v1.0 · 15 พ.ย. 2569 · ขอบเขต: เฟส 1, เฟส 2 ส่วนประชากรทะเบียนราษฎร (§2.3), หน้าแรกตาม V7.6 (§2.4), หน้ารายงานสุขภาพตาม V1.4 (§2.5), ประชากรรายหมู่บ้าน (§2.6), หน้ารายงานตาม V0.4.2 (§2.7), รายงานประชากร (§2.8), มุมมองที่เพิ่มของหน้ารายงาน (§2.9) และงานดูแลระบบบนหน้า `/sync` (§2.10) · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
+> สถานะ: ร่าง v1.0 · 16 พ.ย. 2569 · ขอบเขต: เฟส 1, เฟส 2 ส่วนประชากรทะเบียนราษฎร (§2.3), หน้าแรกตาม V7.6 (§2.4), หน้ารายงานสุขภาพตาม V1.4 (§2.5), ประชากรรายหมู่บ้าน (§2.6), หน้ารายงานตาม V0.4.2 (§2.7), รายงานประชากร (§2.8), มุมมองที่เพิ่มของหน้ารายงาน (§2.9), งานดูแลระบบบนหน้า `/sync` (§2.10) และ PA render ตอน build กับ PA ปีที่ปิดแล้ว (§2.11) · ข้อตัดสินใจทั้งหมดอยู่ใน §15 และบันทึกเหตุผลใน `docs/adr/`
 > เอกสารคู่กัน: [SCHEMA.md](SCHEMA.md) (โครงชีต, สัญญา API, ไฟล์ snapshot, กติกาคำนวณ, seed), [FEATURES.md](FEATURES.md) (รายการงาน), [GLOSSARY.md](GLOSSARY.md) (คำศัพท์ที่ใช้ในเอกสารและโค้ด), [CODING_STANDARDS.md](CODING_STANDARDS.md) (มาตรฐานโค้ดที่ใช้ตรวจ PR)
 > ต้นแบบหน้าจอ: หน้าแรกและสีของทุกหน้าใช้ V7.6 (`docs/reference/v7-6/design.md` กับไฟล์ HTML, ADR-0012) · `/reports` ใช้ V1.4 (`docs/reference/reports-v1-4/` handoff กับไฟล์ HTML, ADR-0013) · `/reports/{id}` ใช้ V0.4.2 (`docs/reference/report-detail-v0-4-2/` notes ไฟล์ HTML และภาพ, ADR-0015) แทนโครงหน้าตาม R6 (`docs/reference/song-health-data-center-review-03-epi-real-response-r6.html`) ซึ่งหน้าที่ยังไม่ได้ทำใหม่ใช้อยู่ระหว่าง Track J · ทั้งหมดเป็นแบบหน้าตาและการใช้งานเท่านั้น ตัวเลขและข้อมูลในไฟล์เป็นข้อมูลจำลองหรือคัดลอกไว้ ไม่ใช้เป็นแหล่งข้อมูล (GLOSSARY)
 
@@ -34,7 +34,6 @@
 | รายงานชนิด `workload` (นับจำนวนครั้ง) | 18 ตารางในเฟส 1 เป็นชนิด `coverage` ทั้งหมด |
 | แสดงคอลัมน์ผลแยกย่อย เช่น 9 ด้านของ `s_aged9` | ความหมายได้จาก `report_schema` แล้ว (SCHEMA §4.5) แต่ยังไม่ได้ออกแบบการแสดงผล ทำในเฟส 2 |
 | เทียบกับอำเภออื่นหรือภาพรวมจังหวัด | เก็บเฉพาะ `5406` ตามที่ตกลง |
-| ย้าย PA มาอ่าน snapshot แบบเดียวกับ Data Center | ได้ประโยชน์เดียวกัน แต่ผิดกฎไม่แตะ PA ทำเป็นงานแยกภายหลัง |
 | ดึงข้อมูล MOPH ด้วย Cloudflare Pages Function แทนเบราว์เซอร์ | MOPH อาจบล็อก IP ของ datacenter (น่าจะเป็นเหตุเดียวกับที่ GAS ดึงเองไม่เสถียร) ต้องทดลองก่อน |
 
 **ตัดออกจาก R6 ถาวร:** ส่วนนำเข้า JSON ของรายงานวัคซีน EPI-01 ได้แก่ textarea, ปุ่มอัปโหลดไฟล์, `epiImport`, แผงจับคู่รหัสกลุ่มอายุ และแถบสถานะ coverage ของไฟล์ที่นำเข้า ทุกรายงานรับข้อมูลจาก snapshot เท่านั้น
@@ -110,6 +109,17 @@ spec issue [#172](https://github.com/9GotStory/pa-dashboard/issues/172) (6 พ.�
 - **`/sync`** (§12.1): วันที่ข้อมูลของ (ตาราง, ปีที่เลือก) จาก GET ใหม่ `?action=sync_status` (SCHEMA §3.10) แทนวันที่ของปีปัจจุบันเสมอ · ส่วน "แค็ตตาล็อก HDC" ที่รีเฟรชแค็ตตาล็อกจากเบราว์เซอร์ด้วยปุ่มเดียว เป็นทางหลักแทน snippet กับ `hdc-catalog.js refresh` ซึ่งคงเป็นทางสำรอง (§5.3, §12.3)
 - **ไม่ทำ:** จำนวนแถวและ `synced_at` บนหน้า · ดึงหัวข้อที่ไม่อยู่ใน `hdc_topics` และ `find` บนหน้าเว็บ · สั่ง rebuild หลังรีเฟรชแค็ตตาล็อก · หน้าของ `(dc)`, snapshot, `/pa` และชีตไม่เปลี่ยน · GAS เพิ่มแค่ GET นี้
 
+### 2.11 PA render ตอน build และ PA ปีที่ปิดแล้ว (Track N)
+
+ไม่มี spec issue: เหตุผลอยู่ใน ADR-0017 (grill 16 พ.ย. 2569) ซึ่งหยิบข้อ "ย้าย PA มาอ่าน snapshot" จาก "งานที่รอเฟส 2" และแทนบางข้อของ ADR-0003 กับ ADR-0006 · คำศัพท์ใน GLOSSARY ("PA ปีที่ปิดแล้ว") · ticket F80–F86 ใน FEATURES ส่วน Track N
+
+- **ที่มา:** วัดบนเว็บจริง 16 พ.ย. 2569 ด้วย Lighthouse 13.5.0 ตั้งค่าแบบ `dc:lcp --live` (จำลองมือถือ ค่ากลางของ 3 รอบ, §9.6) LCP ของ `/pa` 24.0 วินาที ของ `/` 2.8 วินาที ราว 16.4 วินาที (68%) ของ `/pa` เป็นการรอ GAS โดย `BATCH_ALL` ตัวเดียวราว 14 วินาที ที่เหลือเป็นโหลด JavaScript ราว 5.8 วินาที และ render ราว 1.8 วินาที
+- **snapshot ของ PA:** prebuild GET response ของ GAS ทั้งห้าที่ PA ใช้ (`BATCH_ALL`, `hospitals`, `tambon_master` และแท็บ registry ตาม `meta.registry`) แบบไม่แปลงเป็นไฟล์เดียว `public/data/pa.json` (§6, SCHEMA §7)
+- **`/pa`:** HTML มีตัวเลขของ build ล่าสุด รวมแถวดิบที่ modal ใช้ แล้ว hook ดึง GAS สดในพื้นหลังและแทนที่เงียบ ๆ · GAS ล้มแล้วแสดงข้อมูลของ build ต่อ ไม่แสดง error · การประมวลผลเป็นฟังก์ชันล้วนตัวเดียวที่ใช้ทั้งตอน build และในเบราว์เซอร์ (§4) · เลิกอ่านและเขียน localStorage `PA_DASHBOARD_CACHE_V4` · `?cat=` อ่านหลัง hydrate (§4)
+- **PA ปีที่ปิดแล้ว** (GLOSSARY): `/pa/{ปี}` build จากไฟล์ของปีนั้นที่เก็บถาวรใน repo (§4, SCHEMA §7) หน้าตาเหมือน `/pa` มีป้ายปีที่ปิดแล้วและวันที่ข้อมูล ไม่ดึง GAS · แถวลิงก์ปีงบประมาณที่หัวหน้า PA · ไฟล์ได้มาจากขั้นแช่แข็งปีตอนเปลี่ยนปีงบ (§7) เริ่มที่ปี 2569 · การเปลี่ยนปีปัจจุบันเป็น 2570 อยู่นอก Track (#326) เพราะรอข้อมูลปี 2570 บน HDC แต่ทำตามขั้นแช่แข็งปีของ §7 ไม่ว่าหน้า `/pa/{ปี}` จะเสร็จหรือยัง
+- **ไฟล์ PA ที่แก้ได้:** `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` เท่านั้น (CODING_STANDARDS §1) · component ของ PA, `types.ts`, `kpi-utils.ts` และไฟล์ PA อื่นยังห้ามแก้ ถ้าจำเป็นต้องหยุดถาม
+- **ไม่ทำ:** แก้ GAS และ `BATCH_ALL` · สร้างปี 2565–2568 ย้อนหลัง (ไม่มี registry ของปีเหล่านั้นแล้ว) · คำนวณปีที่ปิดแล้วใหม่จากชีต (ADR-0017 "ทางเลือกที่ไม่เลือก") · หน้าของ `(dc)` และ `/sync` ไม่เปลี่ยน
+
 ## 3. ภาพรวมระบบ
 
 ```
@@ -123,17 +133,18 @@ HDC Open Data (opendata.moph.go.th)
    ▼
 GAS Web App (src/scripts/*.js) ──► Google Sheets "PA-Data"
    │                      ▲
-   │ POST rebuild         │ GET ?sheet=BATCH_ALL ฯลฯ (PA เรียกสดเหมือนเดิม)
+   │ POST rebuild         │ GET ?sheet=BATCH_ALL ฯลฯ (PA ดึงสดในพื้นหลังหลังหน้าแสดงแล้ว, Track N)
    ▼                      │
 Cloudflare Deploy Hook ──► Cloudflare Pages build
-                             prebuild: build-snapshot.mjs → GET ?action=catalog / ?action=report / ?action=registry_population → public/data/*.json
+                             prebuild: build-snapshot.mjs → GET ?action=catalog / ?action=report / ?action=registry_population / ?sheet=BATCH_ALL ฯลฯ (Track N) → public/data/*.json
                              next build (static export) → CDN
    https://<project>.pages.dev
    /                     Data Center หน้าแรก       ← public/data/catalog.json, population.json
    /reports              รายงานสุขภาพ            ← public/data/catalog.json
    /reports/{id}         หน้ารายงาน              ← public/data/reports/{id}.json
    /reports/population   รายงานประชากร (Track K)  ← public/data/reports/population.json
-   /pa                   PA Dashboard (ย้ายมา)    ← GAS สด (เดิม)
+   /pa                   PA Dashboard (ย้ายมา)    ← public/data/pa.json ตอน build แล้ว GAS สด (Track N)
+   /pa/{ปี}              PA ปีที่ปิดแล้ว (Track N)  ← data/pa-years/{ปี}.json ตอน build
    /sync                 Sync (เดิม + เลือกปี)     ← GAS สด (เดิม)
 
 GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub ส่งต่อไปโดเมนใหม่
@@ -141,7 +152,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 
 หลักการ:
 
-- **เว็บสาธารณะไม่เรียก GAS** หน้า Data Center อ่านไฟล์ใน `public/data/` ที่สร้างตอน build ทำให้เปิดได้ทันที ไม่ล้มตาม GAS และ GAS รับโหลดเฉพาะตอน build (ราว 2 + จำนวนรายงาน คำขอต่อ build) PA และ `/sync` ยังเรียก GAS สดเหมือนเดิม
+- **เว็บสาธารณะไม่เรียก GAS** หน้า Data Center อ่านไฟล์ใน `public/data/` ที่สร้างตอน build ทำให้เปิดได้ทันที ไม่ล้มตาม GAS และ GAS รับโหลดเฉพาะตอน build (ราว 2 + จำนวนรายงาน คำขอต่อ build และตั้งแต่ Track N อีก 3 + จำนวนแท็บ registry ของ PA) · `/sync` ยังเรียก GAS สดเหมือนเดิม · ตั้งแต่ Track N (ADR-0017) PA ไม่รอ GAS ตอนโหลดแรก: HTML มีตัวเลขของ build แล้วดึง GAS สดในพื้นหลัง GAS จึงยังรับคำขอทุกครั้งที่เปิด `/pa` เหมือนเดิม ส่วน `/pa/{ปี}` ไม่เรียก GAS
 - ข้อมูลบนเว็บสดเท่ากับ build ล่าสุด GAS สั่ง rebuild เองหลัง sync เสร็จ (ผ่าน Deploy Hook) จึงตามรอบ sync รายวัน
 - ช่องทางหลักของการดึงข้อมูลยังเป็นฝั่ง client แล้วส่งเข้า GAS เหมือนเดิม เพราะ daily trigger ของ GAS ดึงจาก MOPH ได้ไม่เสถียร
 - GAS เป็นจุดเดียวที่ whitelist ตาราง กรองพื้นที่ จัดการชีตหลายปี และสั่ง rebuild
@@ -156,13 +167,20 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `/reports` | รายงานสุขภาพ | `src/app/(dc)/reports/page.tsx` | catalog.json ตอน build · query: `main`, `cat`, `q` กรองฝั่ง client (ค่าที่ยอมรับ: SCHEMA §9 `LibraryQuery`) · ลิงก์เก่าที่มี `page`, `size` ใช้ได้โดยไม่สนใจสองค่านี้ |
 | `/reports/[id]` | หน้ารายงาน | `src/app/(dc)/reports/[id]/page.tsx` | `generateStaticParams` จาก catalog.json · เบราว์เซอร์โหลด `/data/reports/{id}.json` · query ตัวกรองใน §9.4 (ค่าที่ยอมรับ: SCHEMA §9 `ReportQuery`) |
 | `/reports/population` | รายงานประชากร (Track K) | `src/app/(dc)/reports/population/page.tsx` | กรอบหน้าตอน build · เบราว์เซอร์โหลด `/data/reports/population.json` · query `year`, `area` (§9.4.1, ค่าที่ยอมรับ: SCHEMA §9 `PopulationQuery`) |
-| `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` |
+| `/pa` | PA Dashboard | `src/app/pa/page.tsx` | ย้ายจาก `src/app/page.tsx` โดยไม่แก้เนื้อหา, ย้าย `src/app/loading.tsx` ไปเป็น `src/app/pa/loading.tsx`, ตั้ง metadata ใน `src/app/pa/layout.tsx` · ตั้งแต่ F83 (Track N): `pa.json` ตอน build ผ่านฟังก์ชันประมวลผลของ PA แล้วเบราว์เซอร์ดึง GAS สดในพื้นหลัง · query `cat` อ่านหลัง hydrate |
+| `/pa/[year]` | PA ปีที่ปิดแล้ว (Track N, F85) | `src/app/pa/[year]/page.tsx` | `generateStaticParams` จากไฟล์ใน `data/pa-years/` (`{ปี}.json` หนึ่งไฟล์ต่อปี SCHEMA §7) · ตอน build อ่านไฟล์ของปีนั้นผ่านฟังก์ชันประมวลผลเดียวกับ `/pa` ไม่ดึง GAS · query `cat` เหมือน `/pa` |
 | `/sync` | Sync | `src/app/sync/page.tsx` | เพิ่มตัวเลือกปีและสั่ง rebuild · เฟส 2 เพิ่มส่วนอัปโหลดประชากร · Track M เพิ่มวันที่ข้อมูลของปีที่เลือกและส่วนแค็ตตาล็อก HDC (§12.1) |
 
 - `/reports/[id]` เป็น route จริงได้ เพราะรายการรายงานรู้ตอน build (catalog.json) ตั้ง `dynamicParams = false` ให้ id ที่ไม่มีเป็น 404 รายงานที่เปิดใหม่ในชีตจะปรากฏหลัง rebuild
 - `/reports/population` เป็น segment คงที่ของตัวเอง ไม่ใช่ id หนึ่งของ `[id]` (ตัดสินใน F65 จากเอกสารของ Next.js 16.4.3 ใน `node_modules/next/dist/docs/`): ทั้งสองแบบ build ได้ใน static export เพราะ `[id]` มี `generateStaticParams` กับ `dynamicParams = false` อยู่แล้ว ตามที่ `01-app/02-guides/static-exports.md` กำหนด จึงตัดสินด้วยสองข้อ: (1) `[id]` คงเป็น route ของรายงาน HDC ล้วน `generateStaticParams` ยังวนแค่ catalog.json และไม่ต้องแยกกรณีภายในหน้า (2) หน้าไม่โหลด `TablePicker` และ chunk ของหน้าตาราง HDC ส่วนรายงาน HDC ก็ไม่โหลดโค้ดของรายงานประชากร (§9.6) · เอกสารของ App Router ใน 16.4.3 ไม่ได้เขียนลำดับระหว่าง segment คงที่กับ dynamic segment ที่อยู่ระดับเดียวกัน (มีแต่ของ Pages Router: "Predefined API routes take precedence over dynamic API routes" ใน `02-pages/03-building-your-application/01-routing/07-api-routes.md`) แต่ไม่ต้องพึ่ง เพราะ `generateStaticParams` ของ `[id]` ไม่คืน `population` ใน `out/` จึงมี `reports/population.html` ไฟล์เดียว · id ของรายงาน HDC เป็น hex 32 หลัก (`opendata_id`) จึงไม่ชนกับ `population` (ADR-0016)
 - หน้าที่อ่าน query ด้วย `useSearchParams` ต้องห่อด้วย `<Suspense>` ตามข้อกำหนดของ static export
 - `/pa?cat=…` ใช้ได้เหมือนเดิม เพราะโค้ด PA อ่าน `window.location.pathname` อยู่แล้ว
+- **PA ตั้งแต่ Track N** (ADR-0017, §2.11):
+  - **ฟังก์ชันประมวลผล** (F81): ฟังก์ชันล้วนตัวเดียวใน `src/lib/pa/process.ts` รับ snapshot ของ PA (`pa.json` หรือไฟล์ปีที่ปิดแล้ว ซึ่งเป็นรูปเดียวกัน SCHEMA §7) หรือ response สดทั้งห้าที่ hook ประกอบเป็นรูปเดียวกัน แล้วคืนสิ่งที่ `useKPIData` คืนอยู่ตอนนี้ยกเว้น `isLoading` และ `error`: `KPISummary[]` ที่เรียงแล้ว, hospital map, tambon map และวันที่ข้อมูลที่จัดรูปแล้ว (บรรทัด "อัปเดตล่าสุด") · ย้ายจาก `useKPIData.ts` ทั้งชุดโดยผลไม่เปลี่ยน: registry (ไม่มี `meta.registry` ใช้คู่เดิม `kpi_master`, `kpi_epi`), hospital map, tambon map, `KPISummary[]` ที่กรอง `5406`, ช่วงเวลา (`target_months` หรือรายไตรมาสตาม `current_quarter`), การเรียง และวันที่ · ไม่ import React ไม่แตะ DOM/`window` ไม่ `fetch` ไม่อ่านไฟล์ · import `kpi-utils.ts`, `kpi-grouping.ts` และ `types.ts` ของ PA โดยไม่แก้ จึงอยู่ใน `src/lib/dc/` ไม่ได้ (CODING_STANDARDS §4) · แยกจาก `useKPIData.ts` เพราะไฟล์นั้นเป็น `'use client'` และ import hook ของ React ส่วนไฟล์ที่ไม่มี `'use client'` ใช้ได้ทั้งใน server component ตอน build และใน client component (`01-app/01-getting-started/05-server-and-client-components.md` ใน `node_modules/next/dist/docs/`)
+  - **อ่านไฟล์ตอน build:** `src/lib/pa/snapshot.ts` อ่าน `public/data/pa.json` และ `data/pa-years/*.json` ด้วย `fs` ให้ `src/app/pa/page.tsx` และ `src/app/pa/[year]/page.tsx` ซึ่งเป็น server component · ไฟล์ใน `src/lib/pa/` เป็นไฟล์ใหม่ของ Track N ไม่ใช่ไฟล์ PA ที่ห้ามแก้ (CODING_STANDARDS §1)
+  - **โครงหน้า** (F83): `page.tsx` อ่าน snapshot เรียกฟังก์ชันประมวลผล แล้วส่งผลเป็น props ให้ส่วน client ของหน้า ซึ่งคือเนื้อหาเดิมของ `page.tsx` ที่ย้ายไปไฟล์ใหม่ใน `src/app/pa/` ให้ `/pa/[year]` ใช้ร่วม (นับเป็นการแก้ `page.tsx` ตาม ADR-0017) · `useKPIData` เริ่มจากผลนี้แทนหน้า skeleton และ localStorage แล้วดึง GAS สดในพื้นหลังผ่านฟังก์ชันเดียวกัน ได้มาก็แทนที่ ล้มก็คงข้อมูลของ build ไว้โดยไม่ตั้ง `error` · `/pa/[year]` ไม่ดึง GAS
+  - **`?cat=`** (F83): อ่านจาก `window.location.search` ใน effect หลัง hydrate ไม่ใช่ตอนสร้าง state เพราะ render แรกในเบราว์เซอร์ต้องตรงกับ HTML ที่ build ไว้ (ซึ่งไม่รู้ query) ลิงก์ `?cat=` จึงเห็นแท็บ "ทั้งหมด" แวบหนึ่งก่อนสลับ · ไม่ใช้ `<Suspense>` + `useSearchParams` เพราะตอน prerender ส่วนที่อยู่ใต้ `<Suspense>` ที่ใกล้ที่สุดจะ render ในเบราว์เซอร์เท่านั้น (`01-app/03-api-reference/04-functions/use-search-params.md` หัวข้อ Prerendering) และแท็บกำหนดเนื้อหาทั้งหน้า HTML ของ `/pa` จึงจะไม่มีตัวเลข
+  - **ปีที่ปิดแล้ว** (F85): `/pa/[year]` ตั้ง `dynamicParams = false` ปีที่ไม่มีไฟล์เป็น 404 · หน้าตาเหมือน `/pa` เพิ่มป้ายบอกว่าเป็นผลงานปีงบประมาณนั้นที่ปิดแล้วพร้อมวันที่ข้อมูล · แถวลิงก์ปีงบประมาณที่หัวหน้า PA ทั้ง `/pa` และ `/pa/{ปี}`: ปีปัจจุบัน (`meta.current_year` ของ `pa.json`) ไป `/pa` ปีที่ปิดแล้วแต่ละปีไป `/pa/{ปี}` · แสดงเมื่อมีปีที่ปิดแล้วอย่างน้อยหนึ่งปีที่ไม่ใช่ปีปัจจุบัน (ระหว่างขั้น 5 กับ 6 ของการเปลี่ยนปีงบใน §7 ไฟล์ของปีปัจจุบันมีอยู่แล้ว หน้า `/pa/{ปี}` ของปีนั้น build แต่ไม่อยู่ในแถว) · `?cat=` ใช้ได้ทุกปี · ไม่มีไฟล์เลย `generateStaticParams` คืน array ว่าง เอกสารของ Next.js 16.4.3 ไม่ได้เขียนกรณีนี้กับ `output: 'export'` F85 จึงตรวจด้วยการ build จริง
 - ไม่มี `basePath` อีก: ลบ `basePath` และ `isProd` ออกจาก `next.config.ts` ส่วน `output: 'export'` และ `images.unoptimized` คงไว้
 - ลิงก์เก่าบน `github.io` จัดการที่หน้า stub (§12.6) ไม่มี redirect ในแอป · ตั้งแต่ตัด `basePath` (F13) จนถึงขึ้น stub (F22) `deploy.yml` ต้องไม่ build อัตโนมัติอีก (เหลือ `workflow_dispatch`) ไม่อย่างนั้นทุก push ไป `main` จะ deploy เว็บที่ไม่มี `basePath` ขึ้น `/pa-dashboard/` แล้วพัง ระหว่างนี้ GitHub Pages ค้างเวอร์ชันล่าสุดก่อน F13 ซึ่งยังใช้ได้
 - หน้า Data Center ทั้งสามอยู่ใน route group `src/app/(dc)/` ซึ่งมี `layout.tsx` ของตัวเอง (masthead + footer) ส่วน `/pa` และ `/sync` อยู่นอก group จึงไม่มี masthead และไม่ถูกแตะ metadata ของ root layout เปลี่ยนเป็นของ Data Center
@@ -245,17 +263,19 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `public/data/reports/{opendata_id}.json` | แถวดิบของอำเภอ แยกเป็น block ต่อปี (SCHEMA §7) | < 500 KB ต่อไฟล์ (ก่อน gzip) |
 | `public/data/population.json` (เฟส 2) | แถวประชากร (`registry_population`) ของทุกปี และแถวอายุ (`registry_population_age`) กับแถวหมู่บ้าน (`registry_population_village`, Track I) เฉพาะปีล่าสุดที่มีแถวประชากร ไฟล์จึงไม่โตตามจำนวนปีของแถวอายุและแถวหมู่บ้าน (SCHEMA §7) | < 100 KB |
 | `public/data/reports/population.json` (Track K) | แถวประชากร แถวอายุ และแถวหมู่บ้านของทุกปีที่มีแถวประชากร สำหรับรายงานประชากร (SCHEMA §7) · โตปีละราว 51 KB ปี 2564–2568 ราว 256 KB งบนี้จึงพอราว 9 ปี และ prebuild เริ่มเตือน (80%) ราวปีที่ 8 ถ้าใกล้ถึงงบต้องตัดสินเรื่องจำนวนปีหรือรูปของไฟล์ใหม่ (ADR-0016) | < 500 KB (ก่อน gzip) งบเดียวกับ `reports/{id}.json` |
+| `public/data/pa.json` (Track N) | snapshot ของ PA: response ของ `BATCH_ALL`, `hospitals`, `tambon_master` และแท็บ registry ตาม `meta.registry` แบบไม่แปลง (SCHEMA §7, ADR-0017) · ทั้งห้ารวมราว 365 KB ก่อนบีบอัด ราว 21 KB หลังบีบอัด (วัด 16 พ.ย. 2569) ราว 73% ของงบ ซึ่งยังไม่ถึงเกณฑ์เตือน 80% · ไฟล์ไม่โตตามจำนวนปีเพราะ `BATCH_ALL` มีแค่ปีปัจจุบัน โตตามจำนวนตัวชี้วัดใน registry ถ้าถึงเกณฑ์เตือนต้องตัดสินงบหรือรูปของไฟล์ใหม่ | < 500 KB (ก่อน gzip) งบเดียวกับ `reports/{id}.json` |
 
-- โฟลเดอร์ `public/data/` อยู่ใน `.gitignore` ไม่ commit ข้อมูลลง git
+- โฟลเดอร์ `public/data/` อยู่ใน `.gitignore` ไม่ commit ข้อมูลลง git · ยกเว้นไฟล์ของ PA ปีที่ปิดแล้ว `data/pa-years/{ปี}.json` (Track N) ซึ่งอยู่นอก `public/data/` และ commit เพราะเป็นสำเนาถาวรของ `pa.json` ณ วันแช่แข็งปี (§7) สร้างคืนจาก GAS ไม่ได้ (SCHEMA §7, ADR-0017) · ไม่อยู่ใน `public/` เบราว์เซอร์จึงโหลดไฟล์นี้ตรง ๆ ไม่ได้ หน้า `/pa/{ปี}` ได้ตัวเลขจาก HTML ที่ build แล้วเท่านั้น
 - โครงสร้างเต็ม: SCHEMA §7
 
 ### 6.2 prebuild script (`src/scripts/build-snapshot.mjs`)
 
 - รันอัตโนมัติผ่าน npm lifecycle `prebuild` ก่อน `next build` และสั่งเองได้ด้วย `npm run snapshot` (สำหรับ dev)
-- ขั้นตอน: GET `?action=catalog` → สำหรับรายงานที่ใช้งานทุกตัว GET `?action=report&id=` → GET `?action=registry_population` (เฟส 2) ครั้งเดียว ได้ทั้ง `population.json` และ `reports/population.json` (Track K) → เขียนไฟล์ → พิมพ์สรุป (จำนวนรายงาน, ขนาดไฟล์ใหญ่สุด, เวลา)
+- ขั้นตอน: GET `?action=catalog` → สำหรับรายงานที่ใช้งานทุกตัว GET `?action=report&id=` → GET `?action=registry_population` (เฟส 2) ครั้งเดียว ได้ทั้ง `population.json` และ `reports/population.json` (Track K) → GET `?sheet=BATCH_ALL`, `?sheet=hospitals`, `?sheet=tambon_master` แล้ว `?sheet={แท็บ}` ของทุกแท็บใน `meta.registry` ของ `BATCH_ALL` ได้ `pa.json` (Track N) → เขียนไฟล์ → พิมพ์สรุป (จำนวนรายงาน, ขนาดไฟล์ใหญ่สุด, เวลา)
+- **snapshot ของ PA (Track N, ADR-0017):** ใช้ URL และกติกา retry เดียวกับคำขออื่น (ข้อถัดไป) · `?sheet=` ไม่ถือ script lock (SCHEMA §3) และ GAS ไม่แก้ จึงไม่ได้ `Busy` จากคำขอเหล่านี้ และอ่านชีตปีปัจจุบันที่ sync กำลังเขียนได้ แบบเดียวกับ PA ที่เรียกสดอยู่แล้ว · rebuild ที่ sync สั่งตอนจบ (§6.3) build ใหม่หลังเขียนเสร็จ · ตรวจโครงที่ PA ใช้ก่อนเขียน: `BATCH_ALL.data` เป็น object, `BATCH_ALL.meta.registry` เป็น array ที่ไม่ว่าง และ response ของ `hospitals`, `tambon_master` กับทุกแท็บ registry เป็น array (SCHEMA §7) · prebuild ไม่ใช้คู่เดิม `kpi_master`, `kpi_epi` แทน `meta.registry` ที่หายไป เพราะ GAS ปัจจุบันส่ง `meta.registry` เสมอ (`readRegistry` ใช้คู่เดิมเองเมื่อไม่มีชีต `kpi_registry`) ไม่มีจึงแปลว่า GAS ผิดรุ่น คู่เดิมคงอยู่แค่ในฟังก์ชันประมวลผล (§4) ซึ่งรับ response สดด้วย
 - เรียก GAS ทีละคำขอ ไม่มี concurrency เพราะ GAS ถือ script lock ตอนอ่านอยู่แล้ว คำขอที่ยิงพร้อมกันแค่ต่อคิวรอ · retry สองแบบ: ได้ error `Busy` (lock ถูกถือ เช่น `syncAllData` กำลังรันซึ่งกินเวลา 1–3 นาที) ลองใหม่ทุก 20 วินาทีได้นานสุด 5 นาที · error อื่น (เครือข่าย, HTTP ไม่ใช่ 200, JSON ผิด หรือ GAS ตอบ error อื่นที่ไม่ใช่ `Busy` เพราะ `doGet` ส่ง exception ชั่วคราวกลับมาเป็น JSON ที่ HTTP 200) retry 3 ครั้ง รอ 2, 4, 8 วินาที
 - GAS ถือ script lock ระหว่างอ่านทั้ง `catalog` และ `report` (SCHEMA §3.1–3.2) จึงไม่อ่านชีตที่กำลังถูกเขียนครึ่ง ๆ กลาง ๆ และทุก block ปีมี `sheet_rows` (จำนวนแถวที่อ่านได้จากชีตก่อนกรอง `id`) กับ `expected_rows` (จาก `sync_status`) ให้ script เทียบ
-- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, ปีใดใน `report.years` ไม่มี block ใน `years` (ชีตหาย SCHEMA §3.2), รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, ไม่มีรายงานที่ใช้งานตัวใดมีแถวในปีปัจจุบันเลย (ยังไม่ได้ sync ปีปัจจุบัน หรือ `current_year` ผิด), `?action=registry_population` ดึงไม่ได้หลัง retry ตอบผิดรูป หรือแถวอายุหรือแถวหมู่บ้านของปีใดก็ได้ไม่ตรงกับแถวประชากร (SCHEMA §7, ตั้งแต่ Track K ตรวจทุกปี ก่อนนั้นเฉพาะปีที่แสดง), หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย) · ยังไม่มีข้อมูลประชากรไม่ล้ม: เขียน `population.json` และ `reports/population.json` ที่ไม่มีปี แล้วหน้าแรกแสดงแบบเฟส 1 และรายงานประชากรแสดงสถานะไม่มีข้อมูล (§9.4.1)
+- **ล้มดัง ๆ:** ถ้า catalog ดึงไม่ได้, รายงานใดดึงไม่ได้หลัง retry, มีรายงานที่ใช้งาน 0 ตัว, block ปีใดมี `sheet_rows ≠ expected_rows`, ปีใดใน `report.years` ไม่มี block ใน `years` (ชีตหาย SCHEMA §3.2), รายงานที่ใช้งานตัวใดมีปีปัจจุบันแต่ได้ 0 แถวหลังกรอง `id`, ไม่มีรายงานที่ใช้งานตัวใดมีแถวในปีปัจจุบันเลย (ยังไม่ได้ sync ปีปัจจุบัน หรือ `current_year` ผิด), `?action=registry_population` ดึงไม่ได้หลัง retry ตอบผิดรูป หรือแถวอายุหรือแถวหมู่บ้านของปีใดก็ได้ไม่ตรงกับแถวประชากร (SCHEMA §7, ตั้งแต่ Track K ตรวจทุกปี ก่อนนั้นเฉพาะปีที่แสดง), คำขอของ PA ตัวใดดึงไม่ได้หลัง retry หรือโครงไม่ผ่านการตรวจข้างบน (Track N: build ล้มทั้งเว็บ ไม่ใช่แค่ `/pa`), หรือไฟล์ใดเกินขนาดเป้าหมายใน §6.1 → exit 1 → build ล้ม → Cloudflare คง deployment ก่อนหน้าไว้ เว็บไม่เปลี่ยน (เตือนเมื่อไฟล์ถึง 80% ของเป้าหมาย) · ยังไม่มีข้อมูลประชากรไม่ล้ม: เขียน `population.json` และ `reports/population.json` ที่ไม่มีปี แล้วหน้าแรกแสดงแบบเฟส 1 และรายงานประชากรแสดงสถานะไม่มีข้อมูล (§9.4.1)
 - ไม่ใช้ข้อมูลเก่าหรือข้อมูลบางส่วนแทนที่ของจริงเด็ดขาด
 - อ่าน URL ของ GAS จาก env `NEXT_PUBLIC_GAS_SCRIPT_URL` เท่านั้น ถ้าไม่ตั้ง → exit 1 (ไม่มี URL สำรองในโค้ด เพื่อให้ build ที่ลืมตั้ง env ล้มชัด ๆ ไม่ใช่ไปดึงจาก deployment ผิดตัว)
 
@@ -281,7 +301,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | ปีนอก window | ไม่อ่านและไม่บันทึก ชีต `_y` เก่าไม่ถูกลบอัตโนมัติ ลบเองเมื่อต้องการ |
 | sync ประจำ | เฉพาะ `current_year` เหมือนปัจจุบัน |
 | ปีย้อนหลัง | ดึงครั้งเดียว (backfill) และสั่งดึงซ้ำเองเป็นรายปีเมื่อต้องการ |
-| เปลี่ยนปีงบ | แก้ `settings.current_year` แล้ว PA กับ Data Center ขยับพร้อมกัน · ก่อนเปลี่ยน ดึงปีเดิมซ้ำอีกรอบ เพราะ HDC อาจยังปรับข้อมูลปีที่แล้ว และ sync ประจำจะไม่ดึงปีนั้นอีก · **หลังเปลี่ยน สิ่งแรกที่ต้องทำคือ sync ปีใหม่** (หน้า `/sync` หรือรอ trigger รายวัน) เพราะจนกว่าจะถึงตอนนั้น ชีตปีปัจจุบันยังมีแถวปีเก่า และ `BATCH_ALL` ของ PA จะแสดงแถวเหล่านั้นในฐานะปีใหม่ |
+| เปลี่ยนปีงบ | แก้ `settings.current_year` แล้ว PA กับ Data Center ขยับพร้อมกัน · คนทำตามลำดับนี้ (ขั้นละเอียด: `docs/agents/gas-deploy.md` "Changing `current_year`"): (1) ตั้ง `settings.current_quarter = 4` (2) sync ปีเดิมครั้งสุดท้าย เพราะ HDC อาจยังปรับข้อมูลปีที่แล้ว และ sync ประจำจะไม่ดึงปีนั้นอีก (3) เปิด `/pa` หลัง rebuild ที่ sync สั่ง ดูป้ายของตัวชี้วัดรายไตรมาสว่าเป็นผลเต็มปี ("สะสม 12 เดือน (Q4)" หรือตาม `target_months`) (4) `pa:snapshot` ภาพก่อนแช่แข็ง (5) **แช่แข็งปี** (Track N, ADR-0017): GET snapshot ของ PA (`npm run snapshot`) แล้วคัดลอก `public/data/pa.json` เป็น `data/pa-years/{ปีเดิม}.json` (SCHEMA §7) แล้ว PR เข้า `main` (6) เปลี่ยน `current_year` เป็นปีใหม่และตั้ง `current_quarter = 1` (7) **sync ปีใหม่ทันที** (หน้า `/sync` หรือรอ trigger รายวัน) เพราะจนกว่าจะถึงตอนนั้น ชีตปีปัจจุบันยังมีแถวปีเก่า และ `BATCH_ALL` ของ PA จะแสดงแถวเหล่านั้นในฐานะปีใหม่ · ขั้น 3–5 ไม่เขียน production (GET อย่างเดียว) ทำได้แม้หน้า `/pa/{ปี}` (F85) ยังไม่เสร็จ · ข้ามขั้น 5 แล้ว registry (`kpi_master`, `kpi_epi`) ของปีเดิมจะหายเมื่อแก้ตัวชี้วัดหรือเป้าหมายของปีใหม่ และสร้างคืนไม่ได้ เพราะ registry เป็นชีตเดียวไม่แยกปี |
 
 ### 7.1 การดึงจาก `report_data`
 
@@ -306,8 +326,8 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | GET | `?action=report&id={opendata_id}` | prebuild script | ใหม่ |
 | GET | `?action=registry_population` | prebuild script, ส่วนอัปโหลดประชากรในหน้า `/sync` | ใหม่ (เฟส 2) |
 | GET | `?action=sync_status` | หน้า `/sync` (วันที่ข้อมูลของปีที่เลือก) | ใหม่ (Track M) |
-| GET | `?sheet=BATCH_ALL` | PA, `/sync`, node | แก้เล็กน้อย: เพิ่ม `meta.years` และรายการ DC ใน `meta.kpi_config` การคำนวณไม่แก้ |
-| GET | `?sheet=hospitals` ฯลฯ | PA | เดิม |
+| GET | `?sheet=BATCH_ALL` | PA, `/sync`, node, prebuild script (Track N) | แก้เล็กน้อย: เพิ่ม `meta.years` และรายการ DC ใน `meta.kpi_config` การคำนวณไม่แก้ |
+| GET | `?sheet=hospitals` ฯลฯ | PA, prebuild script (Track N) | เดิม |
 | GET | `?action=diag&pin=…` | ผู้ดูแล | เพิ่ม `setup=datacenter` และ `setup=dc_seed` |
 | POST | `save_kpi_data` | `/sync`, node, `syncAllData` | แก้: รับ `year`, `total`, `force` และบันทึกลงชีตตามปี |
 | POST | `save_catalog` | `hdc-catalog.js`, ส่วนแค็ตตาล็อก HDC ในหน้า `/sync` | ใหม่ |
@@ -633,6 +653,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 | `/reports/{id}` LCP บนมือถือ 4G (Lighthouse mobile) | < 2.5 วินาที (Track J) |
 | JavaScript ของ `/reports/population` (gzip, Track K) | < 150 KB ที่ HTML โหลด ไม่รวม chunk ของส่วนเปรียบเทียบหน่วยย่อยและส่วนโครงสร้างอายุที่ `next/dynamic` โหลดหลังได้ข้อมูล (ตั้งแต่ F70) · `npm run dc:budget` ตรวจ |
 | `/reports/population` LCP บนมือถือ 4G (Lighthouse mobile) | < 2.5 วินาที (Track K) |
+| `/pa` LCP บนมือถือ 4G (Lighthouse mobile) | < 2.5 วินาที (Track N) วัด 16 พ.ย. 2569 ก่อน Track N ได้ 24.0 วินาที (§2.11) |
 | `catalog.json` | < 100 KB |
 | `reports/{id}.json` และ `reports/population.json` | < 500 KB ก่อน gzip |
 | เวลาคำนวณหน้ารายงานหลังโหลด JSON (เปลี่ยนตัวกรอง) | < 100 ms บนมือถือระดับกลาง (คำนวณใน memo ไม่เรียกเครือข่ายซ้ำ) |
@@ -644,6 +665,7 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 - ticket ที่เปลี่ยนส่วนบนหรือ JavaScript ของ `/reports` วัดแบบเดียวกันกับ URL `/reports` (ในเครื่องและบนเว็บจริง) เกณฑ์เดียวกัน: บนเครื่องช้ากว่า `main` ไม่เกิน 10% และบนเว็บจริง < 2.5 วินาทีตอนตรวจรับ (F42) · Lighthouse ของ `/reports` ไม่ต้องบล็อก tile เพราะหน้านี้ไม่มีแผนที่
 - ticket ที่เปลี่ยน JavaScript ของ `/reports/{id}` (Track J) วัดแบบเดียวกันกับรายงานของตารางที่ใบนั้นทำหน้า และกับ `/reports/c88658f4d09acb8c76e6c06ffb58ebaf` (`s_epi1` ซึ่ง JSON ใหญ่ที่สุด ราว 300 KB) เมื่อใบนั้นเปลี่ยนชิ้นส่วนร่วมหรือตัวเลือกหน้า · เกณฑ์เดียวกัน: บนเครื่องช้ากว่า `main` ไม่เกิน 10% และบนเว็บจริง < 2.5 วินาทีตอนตรวจรับ (F64) · ไม่ต้องบล็อก tile · ก่อน Track J หน้ารายงานโหลด JavaScript 149.0 KB (gzip, `1b60d68b…` จาก `out/` ของ `main` 11 พ.ย. 2569) เพราะ `CoverageReport` อยู่ใน JavaScript ที่ HTML โหลด งบของ `/reports/{id}` จึงเริ่มตรวจตั้งแต่ F52 ที่ย้ายหน้าไป chunk ของ `next/dynamic`
 - ticket ของ Track K ที่เปลี่ยน JavaScript ของ `/reports/population` วัดแบบเดียวกันด้วย `npm run dc:lcp -- /reports/population` ไม่ต้องบล็อก tile · ticket ที่เปลี่ยนหน้าแรก (F67 ที่เพิ่มแถวหัวข้อ) วัด `/` ด้วย · ticket ที่เปลี่ยนกรอบหน้าร่วม (F66) วัด `/reports/c88658f4d09acb8c76e6c06ffb58ebaf` · เกณฑ์เดียวกัน: บนเครื่องช้ากว่า `main` ไม่เกิน 10% และบนเว็บจริง < 2.5 วินาทีตอนตรวจรับ (F71) · `/reports/population` ไม่มี `main` ให้เทียบจนกว่า F67 merge ใบนั้นจึงบันทึกค่ากลางของ branch เทียบกับ `/reports/c88658f4d09acb8c76e6c06ffb58ebaf` ของ `main` แทน
+- `/pa` (Track N): F83 วัดบนเครื่องด้วย `npm run dc:lcp -- /pa` ผ่านเมื่อค่ากลางของ branch น้อยกว่าของ `main` (ไม่ใช่เกณฑ์ 10% เพราะใบนั้นตั้งใจให้เร็วขึ้นมาก) · บนเว็บจริงวัดด้วย `npm run dc:lcp -- --live` ซึ่งตั้งแต่ F84 วัด `/` และ `/pa` เมื่อไม่ระบุหน้า ผ่านเมื่อค่ากลาง < 2.5 วินาที ตอนตรวจรับ (F86) · ไม่ต้องบล็อก tile · F83 ดู element และเวลาของ LCP ในผลของ Lighthouse ว่าไม่เลื่อนไปตอนที่ข้อมูลสดจาก GAS มาถึง (ราว 16 วินาทีบนเว็บจริง) · `dc:budget` และ `dc:check` ตรวจเฉพาะหน้าของ Data Center ไม่มีงบ JavaScript ของ `/pa`
 
 ## 10. การคำนวณค่า coverage
 
@@ -659,10 +681,11 @@ GitHub Pages (https://9gotstory.github.io/pa-dashboard/) → หน้า stub �
 ## 11. PA Dashboard: สิ่งที่ต้องคงเดิม
 
 - หน้าตา พฤติกรรม และตัวเลขที่ `/pa` เหมือน `/` ในปัจจุบัน ยกเว้นรูปตัวอักษรไทยของข้อความเนื้อหา ซึ่งเปลี่ยนตาม `<html lang="th">` (§9.1) เพราะข้อความเนื้อหาของ PA ใช้ฟอนต์ไทยของเครื่อง ไม่ใช่ Sarabun (`--font-sans` อ้าง `--font-sarabun` ที่ `:root` แต่ next/font ตั้งตัวแปรนี้ที่ `<div>` ห่อหน้าใน layout ของ `/pa` §4) · ตรวจ 4 พ.ย. 2569: build ของ F13 ที่เปลี่ยน `lang` ใน HTML กลับเป็น `en` ได้ภาพตรงกับ production ทุก pixel
+- สิ่งที่ Track N เปลี่ยนโดยตั้งใจ (ADR-0017, §2.11): ไม่มีหน้า skeleton ตอนโหลดแรก · ตัวเลขอาจเปลี่ยนหลังเปิดเมื่อข้อมูลสดต่างจาก build · GAS ล้มไม่มีข้อความ error ถ้ามีข้อมูลของ build · ลิงก์ `?cat=` เห็นแท็บ "ทั้งหมด" แวบหนึ่ง · แถวลิงก์ปีงบประมาณเมื่อมีปีที่ปิดแล้ว · ตัวเลขของ build เดียวกันต้องตรงกับ production (`pa:compare` ได้ "PA unchanged")
 - `BATCH_ALL` คงรูปแบบและการคำนวณเดิม เพิ่มแค่ `meta.years` และรายการ DC ใน `meta.kpi_config` (PA ไม่อ่านสองอย่างนี้)
 - ชีตปีปัจจุบันชื่อเดิม โครงเดิม ต่างแค่เหลือเฉพาะแถวของอำเภอ ซึ่ง PA กรองเองอยู่แล้ว
-- ไม่แก้ `kpi_registry`, `kpi_master`, `kpi_epi` และไม่เปลี่ยนคีย์ cache `PA_DASHBOARD_CACHE_V4`
-- ไม่แก้ไฟล์ PA เดิมใต้ `src/components/` และ `src/lib/` (ยกเว้นย้ายไฟล์ตาม §4) รายการทางการอยู่ใน CODING_STANDARDS §1
+- ไม่แก้ `kpi_registry`, `kpi_master`, `kpi_epi` · ตั้งแต่ F83 (ADR-0017) เลิกอ่านและเขียน localStorage คีย์ `PA_DASHBOARD_CACHE_V4` เพราะ HTML มีข้อมูลของ build แทน (ค่าที่ค้างในเบราว์เซอร์ของผู้ชมไม่มีใครอ่านอีก)
+- ไม่แก้ไฟล์ PA เดิมใต้ `src/components/` และ `src/lib/` (ยกเว้นย้ายไฟล์ตาม §4 และ `src/lib/useKPIData.ts` ตาม ADR-0017) รายการทางการอยู่ใน CODING_STANDARDS §1
 
 ## 12. งานดูแลระบบ
 
@@ -815,5 +838,6 @@ API แค็ตตาล็อก (`/opendata_api/reports/*`) ตอบ 403 ใ
 | D13 | ประชากรรายหมู่บ้าน | ไฟล์ `stat_m` ไฟล์เดียวแทน `stat_t` ให้ทั้งแถวตำบลและแถวหมู่บ้าน ผู้ดูแลยังอัปโหลดปีละ 2 ไฟล์ · แถวตำบลไปชีต `registry_population` เดิม แถวหมู่บ้านไปชีตใหม่ `registry_population_village` ซึ่ง GAS ตรวจว่ารวมแล้วเท่าแถวตำบล · หนึ่งหมู่บ้านคือหนึ่งรหัส 8 หลัก รวมข้ามสำนักทะเบียน เรียกคู่กับหมู่ที่ · "ไม่ระบุหมู่" เป็นแถวท้ายและไม่นับเป็นหมู่บ้าน · หน้าแรกแสดงหมู่บ้านของปีที่แสดงในแผงตำบล `population.json` จึงมีแถวหมู่บ้านปีเดียว · อัปโหลด 2564–2568 ใหม่ด้วย `stat_m` (§2.6, §9.2, ตัดสิน 11 พ.ย. 2569) | [0014](docs/adr/0014-village-population-from-stat-m.md) |
 | D14 | แบบอ้างอิงของ `/reports/{id}` และหน้ารายตาราง | V0.4.2 แทน R6 · แต่ละตารางต้นทางมีหน้าของตัวเอง (ชั้นข้อมูล + ชั้นแสดงผลบนชิ้นส่วนร่วม เลือกด้วย `next/dynamic`) ออกแบบจากการวิเคราะห์ตาราง · opt-in ไม่พอให้ขึ้นเว็บ รายงานที่รอวิเคราะห์ไม่แสดงและ build เตือน · ว่างทั้งปีแสดง "—" · เกณฑ์รายการจาก `measure_goals` อย่างเดียว · ตาราง 1 แถวต่อหน่วยบริการเปรียบเทียบตามหน่วยบริการ · ร้อยละของตารางติดตามยืนยันวินิจฉัยใช้ `target`/`result` · คงเมนู 3 ลิงก์ สีใช้ token ที่มีอยู่ ลบชื่อสี R6 ใน Track นี้ (§2.7, §9.4, ตัดสิน 12 พ.ย. 2569) | [0015](docs/adr/0015-v0-4-2-report-detail-per-source-table.md) |
 | D15 | รายงานประชากรหลายปี | รายงานเดียวที่ไม่ได้มาจาก HDC ที่ `/reports/population` (segment คงที่ §4) หมวด "ข้อมูลประชากร" หัวข้อ "ประชากรทะเบียนราษฎร" กำหนดตายตัวในโค้ดเป็นหมวดแรก (§5.6) ไม่อยู่ใน `hdc_reports` · หน้าแรกคงปีล่าสุด ได้แค่แถวหัวข้อ · ตัวกรองปีข้อมูล (ทุกปีที่อัปโหลด) และพื้นที่สามระดับ ทั้งอำเภอ → ตำบล → หมู่บ้าน · ส่วนของหน้า: ตัวเลขสรุปพร้อมการเปลี่ยนแปลงและสัดส่วนต่อพื้นที่ที่ใหญ่กว่า แนวโน้ม เปรียบเทียบหน่วยย่อย โครงสร้างอายุ ประชากรที่ไม่แยกอายุ · หมู่บ้านคือรหัส 8 หลัก ปีที่ไม่มีแถว "—" · snapshot ใหม่ `reports/population.json` แถวดิบทุกปี คำนวณฝั่ง client prebuild ตรวจทุกปี · ไม่แสดงคนต่อบ้าน ความหนาแน่น และแผนที่ (§2.8, §9.4.1, ตัดสิน 13 พ.ย. 2569) | [0016](docs/adr/0016-population-report-in-reports.md) |
+| D16 | PA อ่าน snapshot และ PA ปีที่ปิดแล้ว | prebuild เก็บ response ของ GAS ทั้งห้าที่ PA ใช้แบบไม่แปลงเป็น `pa.json` · ฟังก์ชันประมวลผลตัวเดียวใช้ทั้งตอน build และในเบราว์เซอร์ · HTML ของ `/pa` มีตัวเลขของ build แล้วดึง GAS สดในพื้นหลัง GAS ล้มแสดงข้อมูลของ build ต่อ · เลิกใช้ `PA_DASHBOARD_CACHE_V4` · `?cat=` อ่านหลัง hydrate · แก้ไฟล์ PA ได้แค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` · ก่อนเปลี่ยนปีงบแช่แข็ง `pa.json` ของปีเดิมไว้ใน repo แล้ว build `/pa/{ปี}` จากไฟล์นั้น เริ่มที่ 2569 (§2.11, §4, §7, ตัดสิน 16 พ.ย. 2569) | [0017](docs/adr/0017-pa-build-time-render-and-closed-years.md) |
 
 ข้อตัดสินใจที่ตกลงกันตั้งแต่ต้นและไม่มีเลข D: คง stack เดิม ไม่ใช้ branch `develop` ([0001](docs/adr/0001-keep-gas-sheets-static-stack.md)), แค็ตตาล็อกตาม HDC แบบ opt-in + กลุ่มกำหนดเอง ([0008](docs/adr/0008-hdc-catalog-opt-in.md)), คำนวณรายงานในเบราว์เซอร์จากข้อมูลดิบ ([0009](docs/adr/0009-client-side-coverage-calculation.md))

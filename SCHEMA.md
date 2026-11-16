@@ -835,7 +835,7 @@ Request (`Content-Type: application/json`):
 
 ## 7. ไฟล์ snapshot (`public/data/`)
 
-สร้างโดย `src/scripts/build-snapshot.mjs` จาก `?action=catalog`, `?action=report` และ `?action=registry_population` (เฟส 2) เท่านั้น ไม่มีการคำนวณค่าของรายงานหรือยอดประชากรในขั้นนี้
+สร้างโดย `src/scripts/build-snapshot.mjs` จาก `?action=catalog`, `?action=report`, `?action=registry_population` (เฟส 2) และ `?sheet=` ของ PA (Track N) เท่านั้น ไม่มีการคำนวณค่าของรายงาน ยอดประชากร หรือตัวเลขของ PA ในขั้นนี้
 
 | ไฟล์ | รูปแบบ (type ใน §9) |
 |---|---|
@@ -844,6 +844,7 @@ Request (`Content-Type: application/json`):
 | `reports/{opendata_id}.json` | `DcReportData` |
 | `population.json` (เฟส 2) | `PopulationSnapshot` |
 | `reports/population.json` (Track K) | `PopulationReportData` |
+| `pa.json` (Track N) | snapshot ของ PA ตามหัวข้อท้าย §7 · type อยู่ใน `src/lib/pa/` ไม่อยู่ใน §9 เพราะโค้ดของ Data Center ไม่ใช้ |
 
 สิ่งที่ prebuild script ทำเพิ่มจาก response ของ GAS:
 - เรียงหมวด/หัวข้อ/กลุ่ม/รายงานตาม SPEC §5.4 แล้วเก็บเป็นโครงซ้อน (`DcCatalog.mains[].topics[].groups[].reports[]`) เพื่อให้หน้าเว็บวนลูปได้เลย
@@ -866,6 +867,29 @@ Request (`Content-Type: application/json`):
 - ทุกปีผ่านการตรวจรูปแบบและการตรวจแถว `age`/`village` กับแถว `population` ข้างบน ไฟล์ทั้งสองเขียนพร้อมกันหรือไม่เขียนเลย
 - ไม่มีปีใดมีแถว `population` → เขียน `{ "years": [] }` ไม่ล้ม แล้วรายงานประชากรแสดงสถานะไม่มีข้อมูล (SPEC §9.4.1)
 - ขนาดต่อปีราว 51 KB: แถวประชากร 2.7 KB อายุ 20.7 KB หมู่บ้าน 27.9 KB (ไบต์ของ UTF-8 แบบไม่จัดย่อหน้า วัดจากปี 2568 ใน `population.json` ของ build 13 พ.ย. 2569) ปี 2564–2568 จึงราว 256 KB · เป้าหมาย < 500 KB (SPEC §6.1) เกิน = exit 1 ถึง 80% = เตือน งบจึงพอราว 9 ปี และเริ่มเตือนราวปีที่ 8
+
+`pa.json` (Track N, ADR-0017) จาก GET ของ PA (SPEC §6.2) คือ response ทั้งห้าที่ PA ใช้ คัดลอกโดยไม่แปลง key คือค่า `sheet` ที่ GET:
+
+```jsonc
+{
+  "BATCH_ALL": { "data": { "s_epi1": [ /* แถวดิบ */ ], "…": [] }, "meta": { "current_year": "2569", "current_quarter": 4, "kpi_config": [], "registry": [{ "sheet": "kpi_master", "category": "ตัวชี้วัดพื้นฐาน", "categoryOrder": 1 }, "…"], "…": "…" } },
+  "hospitals": [ /* แถวของชีต hospitals */ ],
+  "tambon_master": [ /* แถวของชีต tambon_master */ ],
+  "registry": { "kpi_master": [ /* แถวของแท็บ */ ], "kpi_epi": [] }
+}
+```
+
+- `BATCH_ALL`, `hospitals` และ `tambon_master` คือ JSON ที่ GAS ตอบ `?sheet=` นั้นทั้งก้อน (§3.5) · `registry` มีหนึ่ง key ต่อแท็บใน `BATCH_ALL.meta.registry` (ลำดับของหมวดมาจาก `meta.registry` ไม่ใช่ลำดับ key) ค่าคือ JSON ที่ GAS ตอบ `?sheet={แท็บ}` · ค่าในตัวอย่างเป็นรูปเท่านั้น
+- hook ของ PA ประกอบ response สดเป็นรูปเดียวกันก่อนส่งให้ฟังก์ชันประมวลผล (SPEC §4) ฟังก์ชันจึงรับทั้งไฟล์และของสด · response สดที่ไม่มี `meta.registry` (GAS รุ่นก่อน manifest) hook ดึงคู่เดิม `kpi_master`, `kpi_epi` แล้วใส่ใน `registry` ด้วย key นั้น
+- ตรวจก่อนเขียน (ไม่ผ่าน = exit 1 ไม่เขียนไฟล์ใด, SPEC §6.2): GAS ตอบ `{ "status": "error" }` ที่คำขอใด (retry ตามกติกาของ error อื่นก่อน), `BATCH_ALL.data` ไม่ใช่ object, `BATCH_ALL.meta.registry` ไม่ใช่ array หรือว่าง หรือ `hospitals`, `tambon_master` หรือแท็บ registry ใดไม่ใช่ array · ไม่ตรวจคอลัมน์ของแถว เพราะฟังก์ชันประมวลผลรับแถวแบบที่ PA รับอยู่แล้ว
+- ขนาดราว 365 KB (วัด 16 พ.ย. 2569) เป้าหมาย < 500 KB (SPEC §6.1) เกิน = exit 1 ถึง 80% = เตือน
+
+**ไฟล์ของ PA ปีที่ปิดแล้ว** (Track N, GLOSSARY "PA ปีที่ปิดแล้ว"): `data/pa-years/{ปี}.json` ที่ root ของ repo หนึ่งไฟล์ต่อปีงบประมาณ เป็นสำเนา `pa.json` ทั้งไฟล์ ณ ขั้นแช่แข็งปี (SPEC §7) ไม่แก้เนื้อหา
+
+- อยู่นอก `public/data/` และ commit (ไฟล์ข้อมูลไฟล์แรกที่ commit ได้ ADR-0017) เพราะ registry ของปีนั้นสร้างคืนจากชีตไม่ได้ · ราว 365 KB ต่อปี
+- `{ปี}` ตรง `^\d{4}$` และเท่ากับ `BATCH_ALL.meta.current_year` ในไฟล์ ไม่ตรง = build ล้มพร้อมชื่อไฟล์ (F85) กันการบันทึกผิดปี
+- ไฟล์ fixture ที่ใช้ตรวจหน้า `/pa/{ปี}` ก่อนมีปีจริง (F85) ไม่ commit ใน `data/pa-years/` เพราะทุกไฟล์ในนั้นขึ้นเว็บเป็นปีที่ปิดแล้ว
+- เริ่มที่ปี 2569 (#326) ไม่สร้าง 2565–2568 ย้อนหลัง (ADR-0017)
 
 ## 8. ขอบเขตตำบล (GeoJSON)
 

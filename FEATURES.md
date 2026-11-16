@@ -1,6 +1,6 @@
 # FEATURES — Song Health Data Center เฟส 1 และเฟส 2
 
-> สถานะ: ร่าง v1.0 · 15 พ.ย. 2569 · คู่กับ [SPEC.md](SPEC.md) v1.0 และ [SCHEMA.md](SCHEMA.md) v0.9 · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เฟส 1 คือ Track A–E (F01–F22) เฟส 2 คือ Track F (F23–F29) · หน้าแรกตาม V7.6 คือ Track G (F30–F37) · หน้ารายงานสุขภาพตาม V1.4 คือ Track H (F38–F42) · ประชากรรายหมู่บ้านคือ Track I (F43–F47) · หน้ารายงานตาม V0.4.2 คือ Track J (F48–F64) · รายงานประชากรคือ Track K (F65–F71) · มุมมองที่เพิ่มของหน้ารายงานคือ Track L (F72–F75) · งานดูแลระบบบนหน้า `/sync` คือ Track M (F76–F79)
+> สถานะ: ร่าง v1.0 · 16 พ.ย. 2569 · คู่กับ [SPEC.md](SPEC.md) v1.0 และ [SCHEMA.md](SCHEMA.md) v0.9 · คำศัพท์ตาม [GLOSSARY.md](GLOSSARY.md) · เฟส 1 คือ Track A–E (F01–F22) เฟส 2 คือ Track F (F23–F29) · หน้าแรกตาม V7.6 คือ Track G (F30–F37) · หน้ารายงานสุขภาพตาม V1.4 คือ Track H (F38–F42) · ประชากรรายหมู่บ้านคือ Track I (F43–F47) · หน้ารายงานตาม V0.4.2 คือ Track J (F48–F64) · รายงานประชากรคือ Track K (F65–F71) · มุมมองที่เพิ่มของหน้ารายงานคือ Track L (F72–F75) · งานดูแลระบบบนหน้า `/sync` คือ Track M (F76–F79) · PA render ตอน build และ PA ปีที่ปิดแล้วคือ Track N (F80–F86)
 > รายการงานเรียงตามลำดับที่ต้องทำ แต่ละข้อมีเกณฑ์ตรวจรับที่ทดสอบได้ งานจะถือว่าเสร็จเมื่อผ่านเกณฑ์ ไม่ใช่เมื่อเขียนโค้ดเสร็จ
 > ต้นแบบหน้าจอ: R6 อยู่ที่ `docs/reference/song-health-data-center-review-03-epi-real-response-r6.html` (`/reports/{id}` และ `/reports` ก่อน Track H) · V7.6 อยู่ที่ `docs/reference/v7-6/` (หน้าแรกและสีของทุกหน้า, ADR-0012) · V1.4 อยู่ที่ `docs/reference/reports-v1-4/` (`/reports`, ADR-0013) · V0.4.2 อยู่ที่ `docs/reference/report-detail-v0-4-2/` (`/reports/{id}` ตั้งแต่ Track J, ADR-0015)
 
@@ -1224,6 +1224,113 @@
   3. บนเว็บจริง กดรีเฟรชแค็ตตาล็อกแล้วได้ผลรายหัวข้อและผลสรุป ทุกหัวข้อใน `hdc_topics` ถูกบันทึกหรือข้ามพร้อมเหตุผล · `hdc_topics.last_refreshed_at` เป็นวันที่กด · คอลัมน์ที่ผู้ดูแลกรอกใน `hdc_reports` (SPEC §5.3) เหมือนก่อนกด
   4. บันทึกผลทั้งหมดใน issue นี้ ก่อนรัน `/retro` ของ Track M
 
+## Track N: PA render ตอน build และ PA ปีที่ปิดแล้ว
+
+- ไม่มี spec issue: ข้อตัดสินใจของ grill 16 พ.ย. 2569 อยู่ใน ADR-0017 และ body ของ F80 (#319) ซึ่งหยิบข้อ "ย้าย PA มาอ่าน snapshot" จาก "งานที่รอเฟส 2" · ขอบเขตใน SPEC §2.11 ไฟล์และโครงหน้าใน SPEC §4 ("PA ตั้งแต่ Track N") snapshot ของ PA ใน SPEC §6 และ SCHEMA §7 ขั้นแช่แข็งปีใน SPEC §7 และ `docs/agents/gas-deploy.md` ("Changing `current_year`") งบ LCP ใน SPEC §9.6 สิ่งที่เปลี่ยนโดยตั้งใจใน SPEC §11 · คำศัพท์ใน GLOSSARY ("PA ปีที่ปิดแล้ว") · ไม่มีต้นแบบหน้าจอ ป้ายและแถวลิงก์ปีใช้สไตล์ของ PA ที่มีอยู่ · ticket F80–F86 มี "ขึ้นกับ" เป็น blocking relationship ของ GitHub
+- ขั้นตอนทำงานและกติกาโค้ดเหมือนเฟส 1 (ส่วน "กติกา" ข้างบน) ยกเว้นข้อนี้: แก้ไฟล์ PA ได้แค่ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` (CODING_STANDARDS §1) ถ้าต้องแก้ component ของ PA หรือไฟล์ PA อื่นให้หยุดถาม · GAS ไม่แก้และไม่ deploy · ใบที่เปลี่ยน `/pa` ตรวจด้วย `pa:compare` ระหว่าง production กับ build ของ branch ด้วย snapshot วันเดียวกัน (`pa:snapshot` สองครั้ง ครั้งหนึ่ง `PA_URL` ชี้ไป build ในเครื่อง, `docs/agents/gas-deploy.md`) ผลที่คาดคือ "PA unchanged" · ใบโค้ด (F81–F85) ผ่านด่านเดิมทุกใบ: `npm run lint`, `npm test`, `npm run build`, `npm run dc:budget` และ `npm run dc:check` · ไม่แตะ `src/lib/dc/` และ `src/components/dc/` จึงไม่ต้อง `dc:compare`
+- ลำดับ: F80 ก่อน · F81 และ F82 ขึ้นกับ F80 อย่างเดียว ทำคู่ขนานได้เพราะคนละไฟล์ · F83 ขึ้นกับ F81 และ F82 · F84 ขึ้นกับ F80 อย่างเดียว · F85 ขึ้นกับ F83 · F86 ขึ้นกับ F83 และ F84 เป็นงานคน (`ready-for-human`) ทำผ่าน `/wizard` · `main` ขึ้นเว็บทุกครั้งที่ merge: F81 และ F82 ไม่เปลี่ยนหน้าเว็บ แต่ตั้งแต่ F82 build ล้มทั้งเว็บเมื่อดึง snapshot ของ PA ไม่ได้ (SPEC §6.2) · F83 เปลี่ยน `/pa` บนเว็บจริงทันทีที่ merge จึงเก็บภาพก่อนของ F86 ก่อน merge F83 · หลังปิด F85 และ F86 รัน `/retro` ของ Track N
+- นอก Track: เปลี่ยนปีปัจจุบันเป็น 2570 และแช่แข็ง PA ปีที่ปิดแล้ว 2569 ([#326](https://github.com/9GotStory/pa-dashboard/issues/326), `ready-for-human`, ขึ้นกับ F80) รอข้อมูลปี 2570 บน HDC (ตรวจ 16 พ.ย. 2569 ยังไม่มี) ทำตามขั้นเปลี่ยนปีงบใน SPEC §7 และ `docs/agents/gas-deploy.md` "Changing `current_year`" ไม่ว่า F85 จะเสร็จหรือยัง ถ้าข้ามขั้นแช่แข็ง registry ของปี 2569 จะหายและสร้างคืนไม่ได้
+
+| F | ชื่อ | ขึ้นกับ | issue |
+|---|---|---|---|
+| F80 | เอกสาร Track N: PA render ตอน build แล้วดึงสดต่อ และ PA ปีที่ปิดแล้ว ใน SPEC, SCHEMA, CODING_STANDARDS, ADR-0017 และ FEATURES | — | #319 |
+| F81 | แยกการประมวลผลของ PA เป็นฟังก์ชันล้วน (หน้าเว็บไม่เปลี่ยน) | F80 | #320 |
+| F82 | prebuild เขียน snapshot ของ PA | F80 | #321 |
+| F83 | `/pa` render ตอน build แล้วดึง GAS สดต่อ | F81, F82 | #322 |
+| F84 | `dc:lcp --live` วัด `/pa` ด้วย | F80 | #323 |
+| F85 | PA ปีที่ปิดแล้ว: หน้า `/pa/{ปี}` และลิงก์ปีงบประมาณ | F83 | #324 |
+| F86 | ตรวจรับ `/pa` บนเว็บจริง (คนทำ, `/wizard`) | F83, F84 | #325 |
+
+### F80 เอกสาร Track N
+
+- **ทำ:** ใน branch `feat/F80-track-n-docs` นำ GLOSSARY ("PA ปีที่ปิดแล้ว") และ ADR-0017 ที่เขียนไว้ระหว่าง grill เข้า branch แล้วแก้: SPEC §2.2 (ลบแถว "ย้าย PA มาอ่าน snapshot"), §2.11 (ขอบเขต), §3, §4 (route `/pa/[year]`, ไฟล์ของฟังก์ชันประมวลผล, โครงหน้า, `?cat=`), §6.1–6.2 (snapshot ของ PA), §7 (ขั้นแช่แข็งปี), §8, §9.6 (งบ LCP ของ `/pa`), §11, D16 · SCHEMA §7 (`pa.json` และไฟล์ปีที่ปิดแล้ว) · CODING_STANDARDS §1 (ข้อยกเว้นสองไฟล์ และเลิกใช้ `PA_DASHBOARD_CACHE_V4`), §5 (seam ของฟังก์ชันประมวลผลและของ prebuild ส่วน PA) · หมายเหตุใน ADR-0003 และ ADR-0006 · README (แถว `NEXT_PUBLIC_GAS_SCRIPT_URL`) · `docs/agents/gas-deploy.md` ("Changing `current_year`") · ส่วนนี้ของ FEATURES และ "งานที่รอเฟส 2" · แล้ว PR เข้า `main` · งานเอกสารล้วน ไม่มีโค้ด · GLOSSARY ไม่แก้นิยาม "PA" และ "snapshot" เพราะยังเป็นจริงจนกว่าโค้ดจะเปลี่ยน (F83 แก้)
+- **ตรวจรับ:**
+  1. SPEC, SCHEMA, CODING_STANDARDS, ADR และ FEATURES ตรงกับข้อตัดสินใจของ grill 16 พ.ย. 2569 (body ของ #319) ทุกข้อ ไม่ขัดกับ GLOSSARY และ ADR-0017
+  2. FEATURES มีดัชนี F80–F86 พร้อมเลข issue และเกณฑ์ตรวจรับของ F81–F86 · #326 อ้างขั้นแช่แข็งปีใน SPEC §7
+  3. `npm run lint` ผ่าน (ไม่มีวลีที่ GLOSSARY ให้เลี่ยงในบรรทัดที่เพิ่ม) และ PR merge แล้ว
+
+### F81 แยกการประมวลผลของ PA เป็นฟังก์ชันล้วน (หน้าเว็บไม่เปลี่ยน)
+
+- **ทำ:** prefactor ของ ADR-0017 พฤติกรรมของหน้า `/pa` ไม่เปลี่ยน:
+  - **ฟังก์ชัน:** `src/lib/pa/process.ts` ตาม SPEC §4 ("ฟังก์ชันประมวลผล") รับ snapshot ของ PA ในรูปของ SCHEMA §7 แล้วคืน `KPISummary[]` ที่เรียงแล้ว, hospital map, tambon map และวันที่ข้อมูลที่จัดรูปแล้ว · ย้ายโค้ดจาก `useKPIData.ts` โดยผลไม่เปลี่ยน รวมคู่เดิม `kpi_master`, `kpi_epi` เมื่อไม่มี `meta.registry`
+  - **hook:** ดึงเหมือนเดิม (`fetchWithRetry`, สองจังหวะ, abort) แล้วประกอบ response ทั้งห้าเป็นรูปของ SCHEMA §7 ส่งให้ฟังก์ชัน · localStorage `PA_DASHBOARD_CACHE_V4` ยังใช้จนถึง F83
+  - **เทสต์:** `src/lib/pa/process.test.ts` กับ fixture ที่ตัดจาก response จริงใน `src/lib/pa/fixtures/` (seam ใน CODING_STANDARDS §5) · เพิ่ม glob ของ `src/lib/pa/` ใน `npm test` และ `!src/lib/pa/` ใน `.prettierignore` ให้ Prettier ตรวจไฟล์ใหม่
+  - แก้ไฟล์ PA ได้เฉพาะ `src/lib/useKPIData.ts`
+- **ขึ้นกับ:** F80
+- **ตรวจรับ:**
+  1. `node:test` ของฟังก์ชันอยู่ใน `npm test` และผ่าน ครอบคลุม registry ที่มีและไม่มี `meta.registry`, `target_months`, ตัวชี้วัดรายไตรมาสตาม `current_quarter`, `date_com` 12 และ 14 หลัก และการเรียงตามหมวด · ค่าคาดหวังมาจากชีตหรือจากหน้า production ไม่คำนวณซ้ำด้วยสูตรเดียวกับโค้ด
+  2. `pa:compare` ระหว่าง production กับ build ของ branch ได้ "PA unchanged"
+  3. diff ของไฟล์ PA มีแค่ `src/lib/useKPIData.ts`
+  4. `npm run lint`, `npm test`, `npm run build`, `npm run dc:budget` และ `npm run dc:check` ผ่าน
+
+### F82 prebuild เขียน snapshot ของ PA
+
+- **ทำ:** `src/scripts/build-snapshot.mjs` เขียน `public/data/pa.json` (SPEC §6.1–6.2, SCHEMA §7):
+  - GET `BATCH_ALL`, `hospitals`, `tambon_master` แล้ว `?sheet={แท็บ}` ของทุกแท็บใน `meta.registry` เก็บ response แบบไม่แปลง · retry `Busy` และ error อื่นด้วยกติกาเดียวกับ `catalog`/`report`
+  - ตรวจโครงตาม SCHEMA §7 ก่อนเขียน: ไม่มี `meta.registry` ล้ม ไม่ใช้คู่เดิมแทน (SPEC §6.2) · ไม่ผ่านหรือเกินงบขนาด build ล้มพร้อมข้อความบอกวิธีแก้ และไม่เขียนไฟล์ใดครึ่งเดียว
+  - หน้า `/pa` ยังไม่ใช้ไฟล์นี้ (F83) · ไม่แก้ GAS และไม่แก้ไฟล์ PA
+- **ขึ้นกับ:** F80
+- **ตรวจรับ:**
+  1. เทสต์ของ prebuild กับ stub HTTP server (CODING_STANDARDS §5): สำเร็จ (ไฟล์มี response ทั้งห้าในรูปของ SCHEMA §7 และ `registry` ตาม `meta.registry`), `Busy` แล้วสำเร็จ, `Busy` ตลอด, error, `BATCH_ALL` ไม่มี `meta.registry`, แท็บ registry ไม่ใช่ array, ไฟล์เกินงบ · ทุกกรณีที่ล้มไม่มี `pa.json` ค้าง
+  2. `npm run snapshot` กับ GAS จริง (GET อย่างเดียว) ได้ `pa.json` ที่มี response ทั้งห้า ขนาดอยู่ในงบของ SPEC §6.1 บันทึกขนาดใน PR
+  3. `npm run lint`, `npm test`, `npm run build`, `npm run dc:budget` และ `npm run dc:check` ผ่าน
+
+### F83 `/pa` render ตอน build แล้วดึง GAS สดต่อ
+
+- **ทำ:** ผู้ชมเปิด `/pa` แล้วเห็นตัวเลขทันทีจาก HTML แบบเดียวกับหน้า Data Center แล้วตัวเลขอัปเดตเป็นข้อมูลสดเมื่อได้มา (SPEC §4 "PA ตั้งแต่ Track N", §11):
+  - **ตอน build:** `page.tsx` อ่าน `pa.json` ผ่าน `src/lib/pa/snapshot.ts` เรียกฟังก์ชันประมวลผล (F81) แล้วส่งผลรวมแถวดิบที่ modal ใช้เป็น props ให้ส่วน client ของหน้า (เนื้อหาเดิมของ `page.tsx` ในไฟล์ใหม่ใน `src/app/pa/`)
+  - **hook:** เริ่มจากผลของ build แทนหน้า skeleton และ localStorage แล้วดึง GAS สดในพื้นหลังผ่านฟังก์ชันเดียวกันและแทนที่เงียบ ๆ · GAS ล้มแล้วแสดงข้อมูลของ build ต่อ ไม่แสดง error · เลิกอ่านและเขียน `PA_DASHBOARD_CACHE_V4`
+  - **`?cat=`:** อ่านหลัง hydrate ไม่ใช้ `<Suspense>` + `useSearchParams`
+  - **เอกสาร:** GLOSSARY แก้นิยาม "PA" (ไม่ได้เรียก GAS สดตอนโหลดแรกแล้ว) และ "snapshot" (มี `pa.json`) · README แก้บรรทัด "ข้อมูลที่หน้าเว็บอ่าน" และแผนภาพที่บอกว่า PA เรียก GAS ทุกครั้งที่เปิดหน้า
+  - แก้ไฟล์ PA ได้เฉพาะ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ถ้าต้องแก้ component ของ PA ให้หยุดถาม
+- **ขึ้นกับ:** F81, F82
+- **ตรวจรับ:**
+  1. HTML ของ `/pa` ใน `out/` มีตัวเลขของตัวชี้วัดตั้งแต่ก่อนรัน JavaScript และไม่มี hydration error ใน console ทั้งที่มีและไม่มี `?cat=`
+  2. บล็อก `script.google.com` แล้วเปิด `/pa`: ตัวเลขของ build ยังแสดงอยู่ ไม่มีข้อความ error · ไม่บล็อก: มีคำขอไป GAS หลังหน้าแสดงแล้ว และตัวเลขเปลี่ยนเป็นข้อมูลสดได้ (ตรวจด้วย `pa.json` บนเครื่องที่แก้ตัวเลขหนึ่งช่องแล้ว `npx next build`)
+  3. ไม่มีการอ่านหรือเขียน localStorage คีย์ `PA_DASHBOARD_CACHE_V4`
+  4. `/pa?cat=สร้างเสริมภูมิคุ้มกันโรค` จบที่แท็บนั้น
+  5. `pa:compare` ระหว่าง production กับ build ของ branch ด้วย snapshot วันเดียวกันได้ "PA unchanged"
+  6. `npm run dc:lcp -- /pa`: ค่ากลางของ branch น้อยกว่าของ `main` (SPEC §9.6) และ element ของ LCP ไม่เลื่อนไปตอนข้อมูลสดมาถึง บันทึกตัวเลขใน PR
+  7. diff ของไฟล์ PA อยู่แค่สองไฟล์ที่ ADR-0017 อนุญาต (รวมไฟล์ใหม่ใน `src/app/pa/` ที่รับเนื้อหาเดิมของ `page.tsx`)
+  8. `npm run lint`, `npm test`, `npm run build`, `npm run dc:budget` และ `npm run dc:check` ผ่าน
+
+### F84 `dc:lcp --live` วัด `/pa` ด้วย
+
+- **ทำ:** `npm run dc:lcp -- --live` ที่ไม่ระบุหน้าวัด `/` และ `/pa` ด้วยงบ < 2.5 วินาทีเดียวกัน (SPEC §9.6) เพื่อให้ F86 ตรวจรับ `/pa` บนเว็บจริงได้ด้วยคำสั่งเดียว · เปลี่ยนเฉพาะโหมด `--live` โหมดเทียบ build กับ `main` คงเดิม · แก้ CODING_STANDARDS §5 แถว `dc-lcp.mjs` และ `docs/agents/page-checks.md` ให้ตรงกับที่ทำ
+- **ขึ้นกับ:** F80
+- **ตรวจรับ:**
+  1. เทสต์ของฟังก์ชันที่ export (`roundOrder`, `overLiveBudget`) ครอบคลุม `/pa` ในลำดับหน้าและงบ
+  2. รัน `npm run dc:lcp -- --live` แล้วได้ผลของ `/` และ `/pa` ในตาราง · ถ้า `/pa` ยังเกินงบเพราะ F83 ยังไม่ขึ้นเว็บ บันทึกตัวเลขใน PR เป็นค่าก่อนหน้า
+  3. `npm run lint` และ `npm test` ผ่าน
+
+### F85 PA ปีที่ปิดแล้ว: หน้า `/pa/{ปี}` และลิงก์ปีงบประมาณ
+
+- **ทำ:** ผู้ชมเปิดผลงาน PA ของปีที่ปิดแล้วได้ที่ `/pa/{ปี}` และสลับปีได้จากหัวหน้า PA (SPEC §4 "ปีที่ปิดแล้ว", SCHEMA §7, GLOSSARY "PA ปีที่ปิดแล้ว"):
+  - **route:** `src/app/pa/[year]/page.tsx` build หนึ่งหน้าต่อไฟล์ใน `data/pa-years/` ผ่านฟังก์ชันประมวลผลเดียวกับ `/pa` ไม่ดึง GAS · `dynamicParams = false` · ชื่อไฟล์ไม่ตรง `BATCH_ALL.meta.current_year` ในไฟล์ build ล้มพร้อมชื่อไฟล์
+  - **หน้า:** เหมือน `/pa` เพิ่มป้ายบอกว่าเป็นผลงานปีงบประมาณนั้นที่ปิดแล้ว พร้อมวันที่ข้อมูล · แถวลิงก์ปีงบประมาณที่หัวหน้า PA ทั้ง `/pa` และ `/pa/{ปี}` ตามกฎใน SPEC §4 · `?cat=` ใช้ได้ทุกปี
+  - **fixture:** ยังไม่มีไฟล์ของปีจริงจนกว่าจะแช่แข็งปี 2569 (#326) ใบนี้ตรวจด้วย `pa.json` ของวันที่ทำ ที่เปลี่ยน `BATCH_ALL.meta.current_year` เป็นปีก่อนปีปัจจุบันและตั้งชื่อไฟล์ตามนั้น (ปีที่ปิดแล้วที่เท่าปีปัจจุบันไม่อยู่ในแถวลิงก์ SPEC §4) วางใน `data/pa-years/` บนเครื่องเท่านั้น ไม่ commit (SCHEMA §7)
+  - แก้ไฟล์ PA ได้เฉพาะ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ถ้าต้องแก้ component ของ PA ให้หยุดถาม
+- **ขึ้นกับ:** F83
+- **ตรวจรับ:**
+  1. ไม่มีไฟล์ปีที่ปิดแล้ว: build ผ่าน (`generateStaticParams` คืน array ว่าง SPEC §4) ไม่มีแถวลิงก์ปี และ `pa:compare` ระหว่าง production กับ build ของ branch ได้ "PA unchanged"
+  2. มีไฟล์ fixture หนึ่งปี: `/pa/{ปี}` แสดงตัวเลขจาก HTML ไม่มีคำขอไป `script.google.com` มีป้ายปีที่ปิดแล้วพร้อมวันที่ข้อมูล และลิงก์ปีไปมาได้ทั้งสองทาง · `/pa/{ปี}?cat=สร้างเสริมภูมิคุ้มกันโรค` จบที่แท็บนั้น · ปีอื่นเป็น 404 · ไฟล์ที่ชื่อไม่ตรงปีในไฟล์ทำให้ build ล้มพร้อมชื่อไฟล์
+  3. `pa:compare` ระหว่าง `/pa` ของ build ที่มี fixture กับ `/pa/{ปี}`: ทุกช่องของตัวชี้วัดตรงกันทั้งสองแท็บ ข้อความที่ต่างมาจากป้ายเท่านั้น อธิบายใน PR (`pa:compare` exit 1 เพราะบรรทัดข้อความเลื่อน `docs/agents/gas-deploy.md` "Changing `current_year`")
+  4. diff ของไฟล์ PA อยู่แค่สองไฟล์ที่ ADR-0017 อนุญาต (รวมไฟล์ใหม่ใน `src/app/pa/` ของ F83)
+  5. `npm run lint`, `npm test`, `npm run build`, `npm run dc:budget` และ `npm run dc:check` ผ่าน
+
+### F86 ตรวจรับ `/pa` บนเว็บจริง (คนทำ, `/wizard`)
+
+- **ทำ:** ตรวจรับ `/pa` ที่ render ตอน build บนเว็บจริง หลัง F83 merge (merge แล้วขึ้นเว็บเอง) และ F84 merge · เป็นงานคนเพราะวัดและเทียบกับ production:
+  - ก่อน merge F83: `pa:snapshot` ของ production เก็บไว้เป็นภาพก่อน
+  - หลังเว็บ build เสร็จ (รอ check-run "Cloudflare Pages" ของ commit นั้น): `pa:snapshot` อีกครั้ง แล้ว `pa:compare` · ถ้ามี sync เกิดระหว่างสองภาพ `pa:compare` ไม่นับแถวที่ต่างแค่ `date_com` ที่ใหม่ขึ้น (`docs/agents/gas-deploy.md`)
+  - `npm run dc:lcp -- --live` ดูผลของ `/pa`
+  - เปิด `/pa` บนมือถือจริงหนึ่งครั้ง ดูว่าตัวเลขขึ้นทันทีและไม่มีหน้า skeleton
+- **ขึ้นกับ:** F83, F84
+- **ตรวจรับ:**
+  1. `pa:compare` exit 0 หรือทุกแถวที่ต่างอธิบายได้
+  2. LCP ของ `/pa` บนเว็บจริง < 2.5 วินาที (SPEC §9.6) ถ้าไม่ผ่าน บันทึกตัวเลขและสาเหตุแล้วเปิด issue ตาม
+  3. บันทึกผลทั้งหมดใน issue นี้ ก่อนรัน `/retro` ของ Track N (หลัง F85 ปิดด้วย)
+
 ---
 
 ## งานที่รอเฟส 2 (ไม่ทำตอนนี้)
@@ -1234,7 +1341,6 @@
 - ฟันดีไม่มีผุ (`s_dental_0_5_cavity_free`) เมื่อมีปีที่สอง: แนวโน้มและการเปลี่ยนแปลงจากปีก่อน (Track L ไม่ทำเพราะมีปีเดียว)
 - คอลัมน์ร้อยละสอบถามในตารางรายหน่วยบนหน้าของ `s_kpi_food` ทำพร้อมตารางหน่วยย่อย × ปีของหน้ารายงาน HDC ถ้าตัดสินใจทำ ซึ่งยังไม่มีในเอกสาร (Track L มีแค่แผงของพื้นที่ที่เลือกกับ CSV)
 - คอลัมน์ย่อย `_1`/`_2`/`_3` (ปกติ/เสี่ยง) ของ 9 ด้านของ `s_aged9` เมื่อคำถามค้างใน SCHEMA §4.6.7 มีคำตอบ (จำนวน 9 ด้านทำใน F57 · ผลงานรายไตรมาสของ `s_dm_screen`/`s_ht_screen` เป็นร้อยละสะสมใน F58)
-- ย้าย PA มาอ่าน snapshot
 - ทดลองดึง MOPH ด้วย Cloudflare Pages Function
 - การแบ่งหน้า `offset` ของ `report_data` เมื่อมีตารางเกิน 5,000 แถว
 - การยืนยันตัวตนฝั่ง server (D5) ถ้าความเสี่ยงเปลี่ยน เช่น เริ่มมีข้อมูลที่ไม่ใช่สาธารณะ
