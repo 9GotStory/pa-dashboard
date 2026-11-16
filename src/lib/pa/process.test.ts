@@ -151,6 +151,9 @@ test("a registry whose categoryOrder puts สร้างเสริมภู�
   );
 });
 
+// No page has shown a quarter other than Q4 (every .pa-check snapshot is Q4):
+// Q2's badge is written from PA's rule "สะสม N เดือน (Qn)", N = 3 × the quarter,
+// to tell a period that follows current_quarter from one stuck at 12 months.
 test("current_quarter 2 → the quarterly KPI shows สะสม 6 เดือน (Q2); target_months 9 and the annual KPIs stay", () => {
   const snapshot = fixture();
   snapshot.BATCH_ALL.meta!.current_quarter = 2;

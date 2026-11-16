@@ -2,9 +2,10 @@
 // (SCHEMA §7), taken with .pa-check/f81-prod (the same BATCH_ALL), whose page
 // gives the expected values of process.test.ts. Cut to 7 KPIs: 4 of kpi_master
 // (annual, quarterly with target_months 9, quarterly without, and the table
-// with the newest date_com) and 3 of kpi_epi (two subgroups, s_epi1__bcg with
-// its 14-digit date_com). Rows, hospitals and tambon_master are kept whole and
-// as GAS sent them; meta keeps the keys PA reads, kpi_config cut to the 7.
+// with the newest date_com, 202611160602) and 3 of kpi_epi (two subgroups,
+// s_epi1__bcg with its 14-digit date_com). Rows, hospitals and tambon_master
+// are kept whole and as GAS sent them; meta keeps the keys PA reads,
+// kpi_config cut to the 7.
 
 export const PA_20261116 = {
   BATCH_ALL: {

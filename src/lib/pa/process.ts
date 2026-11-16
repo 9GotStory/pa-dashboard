@@ -125,14 +125,6 @@ export function processPaSnapshot(snapshot: PaSnapshot): ProcessedPa {
   const hospitalsData = snapshot.hospitals;
   const tambonData = snapshot.tambon_master;
 
-  const registryData: Array<{ rows: Row[]; defCategory: string; defOrder: number }> = paRegistry(batchJson).map(
-    (entry) => ({
-      rows: snapshot.registry[entry.sheet],
-      defCategory: entry.category,
-      defOrder: entry.categoryOrder,
-    }),
-  );
-
   // Process KPI registries — one tab per category, defaults from the
   // manifest (registry). Explicit category columns (when present)
   // override, so a sheet can still host extra categories.
@@ -155,8 +147,8 @@ export function processPaSnapshot(snapshot: PaSnapshot): ProcessedPa {
       .filter((k: KPIMaster) => k.table_name)
       .sort((a: KPIMaster, b: KPIMaster) => a.order - b.order);
 
-  const configs: KPIMaster[] = registryData.flatMap((entry) =>
-    parseSheet(entry.rows, entry.defCategory, entry.defOrder),
+  const configs: KPIMaster[] = paRegistry(batchJson).flatMap((entry) =>
+    parseSheet(snapshot.registry[entry.sheet], entry.category, entry.categoryOrder),
   );
 
   // Process Hospital Map
