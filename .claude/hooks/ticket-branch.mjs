@@ -7,12 +7,18 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const { cwd } = JSON.parse(readFileSync(0, "utf8"));
-const branches = execFileSync("git", ["for-each-ref", "--format=%(refname:short)", "refs/heads/feat/"], {
-  cwd,
-  encoding: "utf8",
-})
-  .split("\n")
-  .filter(Boolean);
+let branches = [];
+try {
+  branches = execFileSync("git", ["for-each-ref", "--format=%(refname:short)", "refs/heads/feat/"], {
+    cwd,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  })
+    .split("\n")
+    .filter(Boolean);
+} catch {
+  // Not a git repo, or no git: nothing to say.
+}
 
 if (branches.length > 0) {
   console.log(

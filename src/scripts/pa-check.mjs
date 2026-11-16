@@ -117,7 +117,7 @@ export function compareSnapshots(before, after) {
   // A BATCH_ALL key is also unchanged when "after" holds the "before" rows
   // narrowed the way saveTableYear stores them: to the district (the areacode
   // prefixes left in "after") and the current year; and, across a daily sync,
-  // when only date_com moved.
+  // when only date_com moved, to a newer one.
   const year = String(after.batch.meta.current_year);
   const keys = [...new Set([...Object.keys(before.batch.data), ...Object.keys(after.batch.data)])];
   let identical = 0;
@@ -131,17 +131,21 @@ export function compareSnapshots(before, after) {
     }
     const districts = new Set(y.map((row) => String(row.areacode).slice(0, 4)));
     const narrowed = x.filter((row) => districts.has(String(row.areacode).slice(0, 4)) && String(row.b_year) === year);
-    const rows = `data ${key}: ${x.length} → ${y.length} rows`;
+    const label = `data ${key}: ${x.length} → ${y.length} rows`;
     const narrowing = `narrowed to ${[...districts].join(",")} / ${year}`;
-    const dates = `date_com ${maxDateCom(x)} → ${maxDateCom(y)}`;
-    if (maxDateCom(x) !== maxDateCom(y)) dateComMoved = true;
+    // Only a newer date_com is a sync's; an older or reformatted one is a change.
+    // date_com is YYYYMMDDHHmm, some tables add seconds: compare to the minute.
+    const synced = maxDateCom(y).slice(0, 12) > maxDateCom(narrowed).slice(0, 12);
+    if (synced) dateComMoved = true;
     if (y.length > 0 && sameRows(narrowed, y)) {
-      lines.push(`${rows}, the same rows ${narrowing}`);
-    } else if (y.length > 0 && sameRows(withoutDateCom(narrowed), withoutDateCom(y))) {
-      lines.push(`${rows}, the same rows ${narrowing} apart from max ${dates}`);
+      lines.push(`${label}, the same rows ${narrowing}`);
+    } else if (y.length > 0 && synced && sameRows(withoutDateCom(narrowed), withoutDateCom(y))) {
+      lines.push(
+        `${label}, the same rows ${narrowing} apart from a newer max date_com ${maxDateCom(narrowed)} → ${maxDateCom(y)}`,
+      );
     } else {
       changed++;
-      lines.push(`${rows}, CHANGED; max ${dates}`);
+      lines.push(`${label}, CHANGED; max date_com ${maxDateCom(x)} → ${maxDateCom(y)}`);
     }
   }
   lines.push(`data: ${identical}/${keys.length} keys identical`);

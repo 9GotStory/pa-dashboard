@@ -6,10 +6,7 @@ import path from "node:path";
 import test, { after } from "node:test";
 
 // The UserPromptExpansion hook .claude/hooks/ticket-branch.mjs run as Claude
-// Code runs it: the hook input on stdin, in a temp git repo. A ticket branch
-// is deleted after its squash merge (CODING_STANDARDS §6), so a feat/ branch
-// still there is a ticket not merged yet: on 15 Nov 2569 F77 branched off F76's
-// unpushed branch and needed a rebase after F76's merge.
+// Code runs it: the hook input on stdin, in a temp git repo.
 
 const HOOK = path.resolve(import.meta.dirname, "../../../.claude/hooks/ticket-branch.mjs");
 const dirs = [];
@@ -53,4 +50,10 @@ test("/wizard with a feat/ branch left: the same", () => {
 
 test("no feat/ branch: nothing added", () => {
   assert.equal(run(repo([]), "implement"), null);
+});
+
+test("not a git repo: nothing added, no error", () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "ticket-branch-"));
+  dirs.push(dir);
+  assert.equal(run(dir, "implement"), null);
 });
