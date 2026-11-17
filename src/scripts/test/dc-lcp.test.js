@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import test from "node:test";
-import { medianRun, overLiveBudget, readLcp, roundOrder, tooSlow } from "../dc-lcp.mjs";
+import { LIVE_PAGES, medianRun, overLiveBudget, readLcp, roundOrder, tooSlow } from "../dc-lcp.mjs";
 
 // dc-lcp.mjs (#277): the pure parts that read Lighthouse's JSON and judge
 // the SPEC §9.6 rule; those that decide on reusing main's build (#294) are
@@ -55,4 +55,13 @@ test("roundOrder swaps the order of the pages each round", () => {
   assert.deepEqual(roundOrder(pages, 1), ["/", "/reports/population"]);
   assert.deepEqual(roundOrder(pages, 2), ["/reports/population", "/"]);
   assert.deepEqual(roundOrder(pages, 3), ["/", "/reports/population"]);
+});
+
+// F84, SPEC §9.6: --live with no page measures / and /pa, swapped round by
+// round, under the same 2.5 s budget; /pa's 24.0 s before F83 (SPEC §4) fails.
+test("--live by default measures / and /pa each round under the same budget", () => {
+  assert.deepEqual(roundOrder(LIVE_PAGES, 1), ["/", "/pa"]);
+  assert.deepEqual(roundOrder(LIVE_PAGES, 2), ["/pa", "/"]);
+  assert.deepEqual(roundOrder(LIVE_PAGES, 3), ["/", "/pa"]);
+  assert.equal(overLiveBudget(24000), true);
 });
