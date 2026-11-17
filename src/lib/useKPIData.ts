@@ -34,11 +34,13 @@ async function fetchWithRetry(
 // Starts from the build's processed snapshot of PA, which the page's HTML
 // already shows, then fetches GAS in the background and swaps the live
 // result in. If GAS fails the build's numbers stay, with no error shown
-// (SPEC §4, ADR-0017).
-export function useKPIData(initial: ProcessedPa): ProcessedPa {
+// (SPEC §4, ADR-0017). A closed year's page passes live = false: its numbers
+// are the frozen file's and GAS is not fetched.
+export function useKPIData(initial: ProcessedPa, live = true): ProcessedPa {
   const [pa, setPa] = useState(initial);
 
   useEffect(() => {
+    if (!live) return;
     const controller = new AbortController();
     const { signal } = controller;
 
@@ -96,7 +98,7 @@ export function useKPIData(initial: ProcessedPa): ProcessedPa {
     return () => {
       controller.abort();
     };
-  }, []);
+  }, [live]);
 
   return pa;
 }

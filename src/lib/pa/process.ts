@@ -29,6 +29,7 @@ export interface PaRegistryEntry {
 }
 
 type BatchMeta = {
+  current_year?: string;
   current_quarter?: number;
   kpi_config?: Array<{
     table: string;

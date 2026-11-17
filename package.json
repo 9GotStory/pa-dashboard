@@ -6,6 +6,7 @@
     "dev": "next dev",
     "prebuild": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
     "build": "next build",
+    "postbuild": "node src/scripts/pa-years-postbuild.mjs",
     "snapshot": "node --env-file-if-exists=.env.local src/scripts/build-snapshot.mjs",
     "start": "npx serve@latest out",
     "lint": "eslint && prettier --check . && node src/scripts/check-glossary.mjs",

@@ -1314,7 +1314,7 @@
   - แก้ไฟล์ PA ได้เฉพาะ `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` ถ้าต้องแก้ component ของ PA ให้หยุดถาม
 - **ขึ้นกับ:** F83
 - **ตรวจรับ:**
-  1. ไม่มีไฟล์ปีที่ปิดแล้ว: build ผ่าน (`generateStaticParams` คืน array ว่าง SPEC §4) ไม่มีแถวลิงก์ปี และ `pa:compare` ระหว่าง production กับ build ของ branch ได้ "PA unchanged"
+  1. ไม่มีไฟล์ปีที่ปิดแล้ว: build ผ่าน (`out/` ไม่มี `/pa/_` SPEC §4) ไม่มีแถวลิงก์ปี และ `pa:compare` ระหว่าง production กับ build ของ branch ได้ "PA unchanged"
   2. มีไฟล์ fixture หนึ่งปี: `/pa/{ปี}` แสดงตัวเลขจาก HTML ไม่มีคำขอไป `script.google.com` มีป้ายปีที่ปิดแล้วพร้อมวันที่ข้อมูล และลิงก์ปีไปมาได้ทั้งสองทาง · `/pa/{ปี}?cat=สร้างเสริมภูมิคุ้มกันโรค` จบที่แท็บนั้น · ปีอื่นเป็น 404 · ไฟล์ที่ชื่อไม่ตรงปีในไฟล์ทำให้ build ล้มพร้อมชื่อไฟล์
   3. `pa:compare` ระหว่าง `/pa` ของ build ที่มี fixture กับ `/pa/{ปี}`: ทุกช่องของตัวชี้วัดตรงกันทั้งสองแท็บ ข้อความที่ต่างมาจากป้ายเท่านั้น อธิบายใน PR (`pa:compare` exit 1 เพราะบรรทัดข้อความเลื่อน `docs/agents/gas-deploy.md` "Changing `current_year`")
   4. diff ของไฟล์ PA อยู่แค่สองไฟล์ที่ ADR-0017 อนุญาต (รวมไฟล์ใหม่ใน `src/app/pa/` ของ F83)
