@@ -18,8 +18,9 @@
 // order swapped round by round, and prints each page's runs, median and LCP
 // elements, with built_at of the live meta.json before and after. The JSON is
 // in .dc-lcp/live/. Exits 1 when a median is not under 2.5 s, or when
-// built_at changed, as a deploy landed mid-measurement.
-// Usage: npm run dc:lcp [-- [--live] <page> ...]   (default /)
+// built_at changed, as a deploy landed mid-measurement. Without a page it
+// measures / and /pa (F84).
+// Usage: npm run dc:lcp [-- [--live] <page> ...]   (default /, --live / /pa)
 import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import net from "node:net";
@@ -72,6 +73,9 @@ const LIVE_BUDGET_MS = 2500;
 export function overLiveBudget(ms) {
   return ms >= LIVE_BUDGET_MS;
 }
+
+// --live's pages when none is given: the Data Center's home and PA (F84).
+export const LIVE_PAGES = ["/", "/pa"];
 
 // The pages in round's order: as given in odd rounds, reversed in even ones.
 export function roundOrder(pages, round) {
@@ -134,8 +138,8 @@ function lighthouse(url, file) {
 const jsonFile = (dir, page, ...parts) => path.join(dir, `${[page.replace(/[^\w-]+/g, "_"), ...parts].join("-")}.json`);
 const loadAverage = (values) => values.map((value) => value.toFixed(2)).join(" ");
 
-function pagesFrom(args) {
-  const pages = args.length ? args : ["/"];
+function pagesFrom(args, defaults) {
+  const pages = args.length ? args : defaults;
   const bad = pages.find((page) => !page.startsWith("/"));
   if (bad) die(`${bad}: a page is a path from the site's root, such as / or /reports`);
   return pages;
@@ -201,9 +205,9 @@ async function measureLive(pages) {
 }
 
 if (import.meta.main && process.argv[2] === "--live") {
-  await measureLive(pagesFrom(process.argv.slice(3)));
+  await measureLive(pagesFrom(process.argv.slice(3), LIVE_PAGES));
 } else if (import.meta.main) {
-  const pages = pagesFrom(process.argv.slice(2));
+  const pages = pagesFrom(process.argv.slice(2), ["/"]);
 
   if (git("status", "--porcelain")) die("the working tree is not clean: commit or stash first, as main is built in it");
   const headSha = git("rev-parse", "--short", "HEAD");
