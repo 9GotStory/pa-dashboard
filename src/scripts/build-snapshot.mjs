@@ -1,6 +1,6 @@
-// prebuild (SPEC §6.2): the snapshot the Data Center pages read (SCHEMA §7),
-// from GAS ?action=catalog, ?action=report and ?action=registry_population,
-// one request at a time. When anything is missing it fails loudly (exit 1)
+// prebuild (SPEC §6.2): the snapshot the Data Center pages and PA read
+// (SCHEMA §7), from GAS ?action=catalog, ?action=report,
+// ?action=registry_population and PA's ?sheet=, one request at a time. When anything is missing it fails loudly (exit 1)
 // and writes nothing, so the build stops and the site keeps its last
 // deployment (ADR-0006).
 //
@@ -445,6 +445,48 @@ if (registryProblems.length > 0) {
   fail(`${registryProblems.join("\n")}\nSo nothing is written (SCHEMA §7).`);
 }
 
+// GAS's answer to PA's ?sheet={name} (SPEC §6.2). Every sheet but BATCH_ALL
+// answers a list of rows (SCHEMA §7).
+async function paSheet(name) {
+  let answer;
+  try {
+    answer = await callGasWithRetry(`sheet=${encodeURIComponent(name)}`);
+  } catch (err) {
+    fail(`cannot get PA's ${name} (?sheet=${name}): ${err.message}`);
+  }
+  if (name !== "BATCH_ALL" && !Array.isArray(answer)) {
+    fail(`?sheet=${name} answered something other than a list of rows; ${CHECK_URL}`);
+  }
+  return answer;
+}
+
+// pa.json (SCHEMA §7, ADR-0017): the five responses PA reads, as GAS sent
+// them, keyed by the sheet GET; registry has one key per tab of meta.registry.
+const batchAll = await paSheet("BATCH_ALL");
+if (typeof batchAll.data !== "object" || batchAll.data === null || Array.isArray(batchAll.data)) {
+  fail(`?sheet=BATCH_ALL answered without an object of data; ${CHECK_URL}`);
+}
+// No kpi_master, kpi_epi in its place: GAS sends meta.registry from the
+// manifest or that pair, so without it GAS is the wrong version (SPEC §6.2).
+const tabs = batchAll.meta?.registry;
+if (!Array.isArray(tabs) || tabs.length === 0) {
+  fail(
+    "?sheet=BATCH_ALL answered without the KPI registry tabs in meta.registry, so this GAS is older than the " +
+      `manifest (kpi_registry); deploy GAS from main (docs/agents/gas-deploy.md), or ${CHECK_URL}`,
+  );
+}
+const pa = {
+  BATCH_ALL: batchAll,
+  hospitals: await paSheet("hospitals"),
+  tambon_master: await paSheet("tambon_master"),
+  registry: {},
+};
+for (const { sheet } of tabs) pa.registry[sheet] = await paSheet(sheet);
+console.log(
+  `build-snapshot: ?sheet=BATCH_ALL has ${Object.keys(batchAll.data).length} tables and ` +
+    `${tabs.length} registry tabs (${tabs.map((tab) => tab.sheet).join(", ")})`,
+);
+
 // SnapshotMeta (SCHEMA §9). Every date_com starts YYYYMMDDHHmm, so the
 // largest string is the latest, with or without seconds.
 const meta = {
@@ -470,6 +512,7 @@ const files = [
   ...[...answers].map(([id, data]) => [`reports/${id}.json`, data, 500 * KB]),
   ["population.json", population, 100 * KB],
   ["reports/population.json", populationReport, 500 * KB],
+  ["pa.json", pa, 500 * KB],
 ].map(([file, content, maxBytes]) => {
   const json = JSON.stringify(content);
   return { file, json, bytes: Buffer.byteLength(json), maxBytes };

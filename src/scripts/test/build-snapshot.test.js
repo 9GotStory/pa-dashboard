@@ -5,14 +5,15 @@ import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
+import { PA_20261116 } from "../../lib/pa/fixtures/pa-20261116.ts";
 import { HOSPITALS, TAMBON_MASTER } from "./fixtures/master-sheets-20261030.js";
 import { AGE_ROWS_6812, ROWS_6712, ROWS_6812 } from "./fixtures/registry-population-20261106.js";
 import { VILLAGE_ROWS_6712, VILLAGE_ROWS_6812 } from "./fixtures/registry-population-village-20261111.js";
 
-// FEATURES F14, F26 and F46: build-snapshot.mjs run as a child process, the way npm
-// runs prebuild, against a local stub of the GAS web app that answers
-// ?action=catalog, ?action=report and ?action=registry_population
-// (CODING_STANDARDS §5).
+// FEATURES F14, F26, F46 and F82: build-snapshot.mjs run as a child process,
+// the way npm runs prebuild, against a local stub of the GAS web app that
+// answers ?action=catalog, ?action=report, ?action=registry_population and
+// PA's ?sheet= (CODING_STANDARDS §5).
 
 const SCRIPT = path.resolve(import.meta.dirname, "../build-snapshot.mjs");
 
@@ -160,11 +161,26 @@ function reportAnswer(report) {
   };
 }
 
+// GAS's answer to PA's ?sheet={name} (SCHEMA §7): the response of that name
+// in pa, by default the five responses PA read on 16 Nov 2569, and GAS's error
+// for a sheet it does not serve.
+function paSheet(name, pa = PA_20261116) {
+  const body = name === "registry" ? undefined : (pa[name] ?? pa.registry[name]);
+  return body === undefined ? { body: { status: "error", message: `Unknown or forbidden sheet: ${name}` } } : { body };
+}
+
 // GAS answering ?action=catalog with catalog, ?action=report with
-// answer(report) for each report of it, and each ?action=registry_population
-// with registry(), by default the answer before any upload (SCHEMA §3.9).
-function gasOf(catalog, answer = (r) => ({ body: reportAnswer(r) }), registry = () => ({ body: { years: [] } })) {
+// answer(report) for each report of it, each ?action=registry_population
+// with registry(), by default the answer before any upload (SCHEMA §3.9), and
+// each ?sheet= of PA with sheet(name).
+function gasOf(
+  catalog,
+  answer = (r) => ({ body: reportAnswer(r) }),
+  registry = () => ({ body: { years: [] } }),
+  sheet = paSheet,
+) {
   return (params) => {
+    if (params.sheet !== undefined) return sheet(params.sheet);
     if (params.action === "catalog") return { body: catalog };
     if (params.action === "registry_population") return registry();
     const r = catalog.reports.find((x) => x.opendata_id === params.id);
@@ -227,7 +243,7 @@ function snapshot(cwd) {
   return { files, read: (file) => JSON.parse(fs.readFileSync(path.join(dir, file), "utf8")) };
 }
 
-test("catalog and every report answered → meta.json, catalog.json, population.json, reports/population.json and one reports/{id}.json per active report; the vaccine topic runs กลุ่มอายุ 1 → 2 → 3 → 5 ปี with s_epi1 before fully immunized", async (t) => {
+test("catalog and every report answered → meta.json, catalog.json, pa.json, population.json, reports/population.json and one reports/{id}.json per active report; the vaccine topic runs กลุ่มอายุ 1 → 2 → 3 → 5 ปี with s_epi1 before fully immunized", async (t) => {
   const gas = await startStub(t, gasOf(seedCatalog()));
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
@@ -237,6 +253,7 @@ test("catalog and every report answered → meta.json, catalog.json, population.
   assert.deepEqual(snap.files, [
     "catalog.json",
     "meta.json",
+    "pa.json",
     "population.json",
     ...[...SEED_IDS.map((id) => `reports/${id}.json`), "reports/population.json"].sort(),
   ]);
@@ -734,6 +751,7 @@ test("an earlier snapshot with the file of a report no longer active → replace
   assert.deepEqual(snapshot(cwd).files, [
     "catalog.json",
     "meta.json",
+    "pa.json",
     "population.json",
     ...[...SEED_IDS.map((id) => `reports/${id}.json`), "reports/population.json"].sort(),
   ]);
@@ -1282,5 +1300,162 @@ test("a reports/population.json over its 500 KB limit (SPEC §6.1) → exit 1 na
   assert.equal(res.code, 1);
   assert.match(res.stderr, /\n {2}reports\/population\.json is 7\d\d\.\d KB, over its 500 KB limit/);
   assert.doesNotMatch(res.stderr, /\n {2}population\.json is/);
+  assertOldSnapshot(res.cwd);
+});
+
+// GAS answering the seed, and each ?sheet= of PA with sheet(name).
+const seedGasWithPa = (sheet) => gasOf(seedCatalog(), undefined, undefined, sheet);
+
+test("PA's five responses answered → pa.json has them as GAS sent them, keyed by the sheet GET, registry with one key per tab of meta.registry (SCHEMA §7)", async (t) => {
+  const gas = await startStub(t, gasOf(seedCatalog()));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.deepEqual(snapshot(res.cwd).read("pa.json"), PA_20261116);
+  assert.deepEqual(
+    gas.requests.filter((q) => q.sheet !== undefined).map((q) => q.sheet),
+    ["BATCH_ALL", "hospitals", "tambon_master", "kpi_master", "kpi_epi"],
+  );
+});
+
+test("GAS answers Busy twice to ?sheet=BATCH_ALL, then BATCH_ALL → asked again after each Busy and pa.json written, exit 0", async (t) => {
+  let busyLeft = 2;
+  const gas = await startStub(
+    t,
+    seedGasWithPa((name) => (name === "BATCH_ALL" && busyLeft-- > 0 ? BUSY : paSheet(name))),
+  );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
+
+  assert.equal(res.code, 0, res.stderr);
+  assert.equal(gas.requests.filter((q) => q.sheet === "BATCH_ALL").length, 3);
+  assert.deepEqual(snapshot(res.cwd).read("pa.json"), PA_20261116);
+});
+
+test("GAS answers Busy to every ?sheet= of PA → asked again for 1.5 s (5 min scaled), then exit 1 naming BATCH_ALL; an earlier snapshot is left as it was, no pa.json", async (t) => {
+  const gas = await startStub(
+    t,
+    seedGasWithPa(() => BUSY),
+  );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(
+    res.stderr,
+    /^build-snapshot: cannot get PA's BATCH_ALL \(\?sheet=BATCH_ALL\): GAS still answers Busy after 1\.5 s: another run holds the script lock/,
+  );
+  assertOldSnapshot(res.cwd);
+});
+
+test("a registry tab answered with an error every time → asked 4 times (3 retries), then exit 1 naming the tab; an earlier snapshot is left as it was, no pa.json", async (t) => {
+  const gas = await startStub(
+    t,
+    seedGasWithPa((name) =>
+      name === "kpi_epi"
+        ? { body: { status: "error", message: "Exception: Service Spreadsheets timed out" } }
+        : paSheet(name),
+    ),
+  );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(
+    res.stderr,
+    /^build-snapshot: cannot get PA's kpi_epi \(\?sheet=kpi_epi\): GAS answered: Exception: Service Spreadsheets timed out \(after 3 retries\)/,
+  );
+  assert.equal(gas.requests.filter((q) => q.sheet === "kpi_epi").length, 4);
+  assertOldSnapshot(res.cwd);
+});
+
+test("a PA response of the wrong shape (SCHEMA §7) → exit 1 naming the sheet and what is wrong; an earlier snapshot is left as it was, no pa.json", async (t) => {
+  // undefined: JSON leaves the key out.
+  const metaWithoutRegistry = { ...PA_20261116.BATCH_ALL.meta, registry: undefined };
+  const withBatch = (batch) => ({ ...PA_20261116, BATCH_ALL: batch });
+  const cases = [
+    [
+      "BATCH_ALL without meta.registry, as GAS answered before the KPI registry manifest",
+      withBatch({ ...PA_20261116.BATCH_ALL, meta: metaWithoutRegistry }),
+      /^build-snapshot: \?sheet=BATCH_ALL answered without the KPI registry tabs in meta\.registry, so this GAS is older than the manifest \(kpi_registry\); deploy GAS from main \(docs\/agents\/gas-deploy\.md\)/,
+    ],
+    [
+      "BATCH_ALL with meta.registry []",
+      withBatch({ ...PA_20261116.BATCH_ALL, meta: { ...metaWithoutRegistry, registry: [] } }),
+      /^build-snapshot: \?sheet=BATCH_ALL answered without the KPI registry tabs in meta\.registry/,
+    ],
+    [
+      "BATCH_ALL without data (another web app)",
+      withBatch({ meta: PA_20261116.BATCH_ALL.meta }),
+      /^build-snapshot: \?sheet=BATCH_ALL answered without an object of data; check that NEXT_PUBLIC_GAS_SCRIPT_URL/,
+    ],
+    [
+      "BATCH_ALL with data a list",
+      withBatch({ ...PA_20261116.BATCH_ALL, data: [] }),
+      /^build-snapshot: \?sheet=BATCH_ALL answered without an object of data/,
+    ],
+    [
+      "hospitals not a list of rows",
+      { ...PA_20261116, hospitals: { status: "success" } },
+      /^build-snapshot: \?sheet=hospitals answered something other than a list of rows; check that NEXT_PUBLIC_GAS_SCRIPT_URL/,
+    ],
+    [
+      "tambon_master not a list of rows",
+      { ...PA_20261116, tambon_master: {} },
+      /^build-snapshot: \?sheet=tambon_master answered something other than a list of rows/,
+    ],
+    [
+      "the registry tab kpi_epi not a list of rows",
+      { ...PA_20261116, registry: { ...PA_20261116.registry, kpi_epi: { kpi: [] } } },
+      /^build-snapshot: \?sheet=kpi_epi answered something other than a list of rows/,
+    ],
+  ];
+  for (const [name, pa, message] of cases) {
+    await t.test(name, async (t) => {
+      const gas = await startStub(
+        t,
+        seedGasWithPa((sheet) => paSheet(sheet, pa)),
+      );
+
+      const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+      assert.equal(res.code, 1);
+      assert.match(res.stderr, message);
+      assertOldSnapshot(res.cwd);
+    });
+  }
+});
+
+test("BATCH_ALL without meta.registry → kpi_master and kpi_epi are not asked for in its place (SPEC §6.2)", async (t) => {
+  const meta = { ...PA_20261116.BATCH_ALL.meta, registry: undefined };
+  const pa = { ...PA_20261116, BATCH_ALL: { ...PA_20261116.BATCH_ALL, meta } };
+  const gas = await startStub(
+    t,
+    seedGasWithPa((sheet) => paSheet(sheet, pa)),
+  );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 1);
+  assert.deepEqual(
+    gas.requests.filter((q) => q.sheet === "kpi_master" || q.sheet === "kpi_epi"),
+    [],
+  );
+});
+
+test("a pa.json over its 500 KB limit (SPEC §6.1) → exit 1 naming it and its size; an earlier snapshot is left as it was, no pa.json", async (t) => {
+  // One cell of 520 KB: responses are copied as GAS sends them.
+  const [first, ...rest] = PA_20261116.hospitals;
+  const pa = { ...PA_20261116, hospitals: [{ ...first, hospname: "x".repeat(520 * 1024) }, ...rest] };
+  const gas = await startStub(
+    t,
+    seedGasWithPa((sheet) => paSheet(sheet, pa)),
+  );
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
+
+  assert.equal(res.code, 1);
+  assert.match(res.stderr, /\n {2}pa\.json is 56\d\.\d KB, over its 500 KB limit/);
   assertOldSnapshot(res.cwd);
 });
