@@ -112,7 +112,8 @@ export default function PaDashboard({
   return (
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
-        <DataStatusNotifier recordCount={data.length} />
+        {/* A closed year loads nothing new, so no "อัปเดตข้อมูลเรียบร้อย" toast */}
+        {!closedYear && <DataStatusNotifier recordCount={data.length} />}
 
         {/* 1. HEADER & LAST-UPDATED META */}
         <div className="mt-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3 text-center md:text-left">
