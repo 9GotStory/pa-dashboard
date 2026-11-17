@@ -33,9 +33,9 @@ flowchart LR
   MOPH --> PAGE & NODE
   PAGE & NODE -->|"POST save_kpi_data"| GAS
   GAS <--> SHEETS
-  PA -->|"GET BATCH_ALL ในพื้นหลัง"| GAS
+  PA -->|"GET ?sheet= ของ PA ในพื้นหลัง"| GAS
   GAS -->|"Deploy Hook หลัง sync"| BUILD
-  BUILD -->|"GET catalog, report, registry_population, BATCH_ALL"| GAS
+  BUILD -->|"GET catalog, report, registry_population, ?sheet= ของ PA"| GAS
   BUILD --> DC & PA
 ```
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useSyncExternalStore } from "react";
+import { useState, useMemo, useEffect, useSyncExternalStore } from "react";
 import { CalendarClock, LayoutGrid } from "lucide-react";
 import KPITable from "@/components/KPITable";
 import KPICardList from "@/components/KPICardList";
@@ -32,7 +32,8 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
   // Active category tab: "" = ทั้งหมด, otherwise a category name. Derived
   // from the data (kpi_registry manifest), so future categories appear as
   // tabs automatically. Synced to ?cat= for shareable deep links: the URL's
-  // tab until the viewer picks one.
+  // tab until the viewer picks one. getSnapshot runs on every render, so
+  // urlCategory follows what the effect below writes.
   const urlCategory = useSyncExternalStore(noSubscribe, categoryFromUrl, noCategory);
   const [pickedCategory, setPickedCategory] = useState<string | null>(null);
   const activeCategory = pickedCategory ?? urlCategory;
@@ -55,16 +56,17 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
   const currentCategory =
     activeCategory && categories.length > 0 && !categories.includes(activeCategory) ? "" : activeCategory;
 
-  // Persist the picked tab to the URL. Done on the click, not by an effect on
-  // the tab: an effect at hydration would drop ?cat= before it is read.
-  const pickCategory = (cat: string) => {
-    setPickedCategory(cat);
+  // Persist tab to URL (external system sync — no setState here). Only when
+  // the URL differs: at hydration both are "", so ?cat= is not dropped
+  // before it is read.
+  useEffect(() => {
+    if (currentCategory === urlCategory) return;
     const params = new URLSearchParams(window.location.search);
-    if (cat) params.set("cat", cat);
+    if (currentCategory) params.set("cat", currentCategory);
     else params.delete("cat");
     const qs = params.toString();
     window.history.replaceState(null, "", qs ? `${window.location.pathname}?${qs}` : window.location.pathname);
-  };
+  }, [currentCategory, urlCategory]);
 
   // Filter Data based on Selected KPIs
   const filteredData = useMemo(() => {
@@ -82,7 +84,6 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
   // used to expose kpiMasterList but the state was never populated (always []),
   // so this derivation has always been the effective path. Grouping fields
   // ride along so the filter can render category/subgroup sections.
-  // NOTE: must run before any early return — React Hooks order rule.
   const dynamicKPIList: KPIMaster[] = useMemo(
     () =>
       data.map((d) => ({
@@ -130,7 +131,7 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
         {categories.length > 1 && (
           <div className="mb-6 flex items-center gap-1.5 overflow-x-auto pb-1 custom-scrollbar">
             <button
-              onClick={() => pickCategory("")}
+              onClick={() => setPickedCategory("")}
               className={cn(
                 "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all shadow-sm border font-prompt",
                 currentCategory === ""
@@ -146,7 +147,7 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
               return (
                 <button
                   key={cat}
-                  onClick={() => pickCategory(cat)}
+                  onClick={() => setPickedCategory(cat)}
                   className={cn(
                     "px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all shadow-sm border font-prompt",
                     currentCategory === cat
