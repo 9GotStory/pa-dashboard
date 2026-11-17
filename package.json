@@ -11,7 +11,7 @@
     "lint": "eslint && prettier --check . && node src/scripts/check-glossary.mjs",
     "format": "prettier --write .",
     "typecheck": "next typegen && tsc --noEmit",
-    "test": "node --test \"src/scripts/test/**/*.test.js\" && tsx --test src/lib/dc/*.test.ts src/lib/dc/tables/*.test.ts",
+    "test": "node --test \"src/scripts/test/**/*.test.js\" && tsx --test src/lib/dc/*.test.ts src/lib/dc/tables/*.test.ts src/lib/pa/*.test.ts",
     "gas:push": "clasp push -f",
     "gas:deploy": "clasp deploy -i AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H",
     "gas:sync": "npm run gas:push && npm run gas:deploy",
