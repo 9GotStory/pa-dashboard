@@ -51,4 +51,6 @@ surface, PA included.
 a later ticket, or CI.
 
 Closes #n
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
