@@ -34,7 +34,7 @@ export default function PaDashboard({
   closedYear?: string;
 }) {
   const { data, hospitalMap, tambonMap, lastUpdated } = useKPIData(initial, !closedYear);
-  const here = closedYear ? `/pa/${closedYear}` : "/pa";
+  const pagePath = closedYear ? `/pa/${closedYear}` : "/pa";
 
   // Multi-Checkbox Filter States
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
@@ -137,10 +137,10 @@ export default function PaDashboard({
               <a
                 key={year}
                 href={href}
-                aria-current={href === here ? "page" : undefined}
+                aria-current={href === pagePath ? "page" : undefined}
                 className={cn(
                   "px-3 py-1 rounded-full text-[13px] font-semibold border transition-colors",
-                  href === here
+                  href === pagePath
                     ? "bg-brand-600 border-brand-600 text-white"
                     : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
                 )}

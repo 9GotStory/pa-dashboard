@@ -1,8 +1,7 @@
 import { notFound } from "next/navigation";
 import PaDashboard from "../PaDashboard";
 import { processPaSnapshot } from "@/lib/pa/process";
-import { readClosedPaYears, readPaSnapshot } from "@/lib/pa/snapshot";
-import { paYearLinks } from "@/lib/pa/years";
+import { readClosedPaYears, readPaYearLinks } from "@/lib/pa/snapshot";
 
 // PA ปีที่ปิดแล้ว (SPEC §4, ADR-0017): one page per file of data/pa-years/,
 // processed as /pa is, with no fetch to GAS. A year with no file is 404.
@@ -21,12 +20,7 @@ export function generateStaticParams() {
 
 export default async function Page({ params }: { params: Promise<{ year: string }> }) {
   const { year } = await params;
-  const closed = readClosedPaYears();
-  const snapshot = closed.find((c) => c.year === year)?.snapshot;
+  const snapshot = readClosedPaYears().find((c) => c.year === year)?.snapshot;
   if (!snapshot) notFound();
-  const years = paYearLinks(
-    readPaSnapshot().BATCH_ALL.meta?.current_year ?? "",
-    closed.map((c) => c.year),
-  );
-  return <PaDashboard initial={processPaSnapshot(snapshot)} years={years} closedYear={year} />;
+  return <PaDashboard initial={processPaSnapshot(snapshot)} years={readPaYearLinks()} closedYear={year} />;
 }

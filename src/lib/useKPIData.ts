@@ -36,7 +36,7 @@ async function fetchWithRetry(
 // result in. If GAS fails the build's numbers stay, with no error shown
 // (SPEC §4, ADR-0017). A closed year's page passes live = false: its numbers
 // are the frozen file's and GAS is not fetched.
-export function useKPIData(initial: ProcessedPa, live = true): ProcessedPa {
+export function useKPIData(initial: ProcessedPa, live: boolean): ProcessedPa {
   const [pa, setPa] = useState(initial);
 
   useEffect(() => {

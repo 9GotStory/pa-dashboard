@@ -15,6 +15,10 @@ test("a closed-year file named after another year fails with the file name", () 
   assert.throws(() => closedYearOf("2567.json", batch("2568")), /2567\.json/);
 });
 
+test("a file in data/pa-years/ not named {ปี}.json fails with its name", () => {
+  assert.throws(() => closedYearOf("2568.json.bak", batch("2568")), /2568\.json\.bak/);
+});
+
 test("the year row links the current year to /pa and each closed year to /pa/{ปี}, newest first", () => {
   assert.deepEqual(paYearLinks("2571", ["2569", "2570"]), [
     { year: "2571", href: "/pa" },
