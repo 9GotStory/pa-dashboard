@@ -1,19 +1,9 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import type { KPISummary } from './types';
-import { paRegistry, processPaSnapshot, type HospitalDetail, type PaSnapshot } from './pa/process';
+import { paRegistry, processPaSnapshot, type PaSnapshot, type ProcessedPa } from './pa/process';
 
 const API_URL = 'https://script.google.com/macros/s/AKfycbwLnUji6n_z0KANgGMqZchGaqk38CCm7d8nDUggLDHEbsuoXe1e1uPt42ivkEKR0B5H/exec';
-
-export interface UseKPIDataResult {
-  data: KPISummary[];
-  hospitalMap: Record<string, HospitalDetail>;
-  tambonMap: Record<string, string>;
-  isLoading: boolean;
-  error: string | null;
-  lastUpdated: string;
-}
 
 function isAbortError(err: unknown): boolean {
   return err instanceof DOMException && err.name === 'AbortError';
@@ -41,63 +31,18 @@ async function fetchWithRetry(
   throw new Error('Retries failed');
 }
 
-// Bumped V3 → V4: registry tabs now come from meta.kpi_registry (manifest
-// driven) instead of a hardcoded pair.
-const CACHE_KEY = 'PA_DASHBOARD_CACHE_V4';
-
-export function useKPIData(): UseKPIDataResult {
-  const [data, setData] = useState<KPISummary[]>([]);
-  const [hospitalMap, setHospitalMap] = useState<Record<string, HospitalDetail>>({});
-  const [tambonMap, setTambonMap] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [lastUpdated, setLastUpdated] = useState('');
+// Starts from the build's processed snapshot of PA, which the page's HTML
+// already shows, then fetches GAS in the background and swaps the live
+// result in. If GAS fails the build's numbers stay, with no error shown
+// (SPEC §4, ADR-0017).
+export function useKPIData(initial: ProcessedPa): ProcessedPa {
+  const [pa, setPa] = useState(initial);
 
   useEffect(() => {
     const controller = new AbortController();
     const { signal } = controller;
-    // Track cache hits locally so the catch block knows whether the user is
-    // already seeing cached data. Reading React state inside the async catch
-    // would always see the initial empty array (closure captures mount-time
-    // value), causing setError to fire even when cache is on screen.
-    let hadCachedData = false;
 
-    // 1. Try to load from LocalStorage (Instant Load)
-    const loadFromCache = () => {
-      try {
-        const cached = localStorage.getItem(CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached) as {
-            data?: KPISummary[];
-            hospitalMap?: Record<string, HospitalDetail>;
-            tambonMap?: Record<string, string>;
-            lastUpdated?: string;
-          };
-          // Valid cache check (optional: check timestamp expiry)
-          if (parsed.data && Array.isArray(parsed.data)) {
-            console.log('Using cached data');
-            hadCachedData = true;
-            setData(parsed.data);
-            setHospitalMap(parsed.hospitalMap || {});
-            setTambonMap(parsed.tambonMap || {});
-            setLastUpdated(parsed.lastUpdated || '');
-            setIsLoading(false); // Show immediately
-          }
-        }
-      } catch (e) {
-        console.warn('Failed to load cache', e);
-      }
-    };
-
-    loadFromCache();
-
-    // 2. Fetch fresh data (Stale-While-Revalidate)
     async function fetchAllData() {
-      // If we didn't have cache, show loading. If we did, keep showing cache while fetching.
-      // We don't set isLoading(true) here if we already have data, to prevent flash.
-
-      setError(null);
-
       try {
         // Parallel fetch all data. Each fetch honors the AbortController so
         // unmounting the component cancels in-flight requests immediately
@@ -125,12 +70,7 @@ export function useKPIData(): UseKPIDataResult {
 
         // The live responses in the shape of the snapshot of PA (SCHEMA §7),
         // processed by the same function as the build.
-        const {
-          data: orderedReports,
-          hospitalMap: hMap,
-          tambonMap: tMap,
-          lastUpdated: formattedLastUpdated,
-        } = processPaSnapshot({
+        const live = processPaSnapshot({
           BATCH_ALL: batchJson,
           hospitals: hospitalsData,
           tambon_master: tambonData,
@@ -142,36 +82,12 @@ export function useKPIData(): UseKPIDataResult {
         // short-circuit earlier via the catch block below.
         if (signal.aborted) return;
 
-        setData(orderedReports);
-        setHospitalMap(hMap);
-        setTambonMap(tMap);
-        setLastUpdated(formattedLastUpdated);
-
-        // Cache the fresh data. Isolated try-catch so a quota error never
-        // surfaces as a "fetch failed" message — the UI already has the data.
-        try {
-          localStorage.setItem(CACHE_KEY, JSON.stringify({
-            data: orderedReports,
-            hospitalMap: hMap,
-            tambonMap: tMap,
-            lastUpdated: formattedLastUpdated,
-            timestamp: Date.now(),
-          }));
-        } catch (e) {
-          console.warn('Failed to save cache', e);
-        }
-
+        setPa(live);
       } catch (err) {
-        // Expected when the component unmounts mid-fetch — no error UI.
+        // Expected when the component unmounts mid-fetch.
         if (isAbortError(err)) return;
+        // The build's numbers stay on screen: no error UI.
         console.error('Error fetching KPI data:', err);
-        // Only surface the error to UI if the user has nothing to look at.
-        // If cache was loaded synchronously above, keep showing it (SWR-style).
-        if (!hadCachedData) {
-           setError('ไม่สามารถโหลดข้อมูลได้ กรุณาลองใหม่อีกครั้ง');
-        }
-      } finally {
-        if (!signal.aborted) setIsLoading(false);
       }
     }
 
@@ -182,12 +98,5 @@ export function useKPIData(): UseKPIDataResult {
     };
   }, []);
 
-  return {
-    data,
-    hospitalMap,
-    tambonMap,
-    isLoading,
-    error,
-    lastUpdated,
-  };
+  return pa;
 }

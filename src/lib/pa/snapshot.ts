@@ -1,0 +1,15 @@
+// A build error if a client component imports this file, as
+// src/lib/dc/snapshot.ts; Next.js handles server-only itself, no package needed.
+import "server-only";
+import fs from "node:fs";
+import path from "node:path";
+import type { PaSnapshot } from "./process";
+
+// The snapshot of PA that build-snapshot.mjs writes before next build
+// (SCHEMA §7), for /pa to read at build time (SPEC §4).
+const PA_JSON = path.join(process.cwd(), "public", "data", "pa.json");
+
+export function readPaSnapshot(): PaSnapshot {
+  if (!fs.existsSync(PA_JSON)) throw new Error(`${PA_JSON} is missing: run npm run snapshot first (SPEC §6.2)`);
+  return JSON.parse(fs.readFileSync(PA_JSON, "utf8")) as PaSnapshot;
+}
