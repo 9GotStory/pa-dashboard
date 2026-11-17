@@ -1,8 +1,8 @@
 // prebuild (SPEC §6.2): the snapshot the Data Center pages and PA read
 // (SCHEMA §7), from GAS ?action=catalog, ?action=report,
-// ?action=registry_population and PA's ?sheet=, one request at a time. When anything is missing it fails loudly (exit 1)
-// and writes nothing, so the build stops and the site keeps its last
-// deployment (ADR-0006).
+// ?action=registry_population and PA's ?sheet=, one request at a time. When
+// anything is missing it fails loudly (exit 1) and writes nothing, so the
+// build stops and the site keeps its last deployment (ADR-0006).
 //
 //   npm run snapshot   (npm run build runs it first, as prebuild)
 // Env: NEXT_PUBLIC_GAS_SCRIPT_URL, with no fallback.

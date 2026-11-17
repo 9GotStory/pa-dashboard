@@ -164,7 +164,7 @@ function reportAnswer(report) {
 // GAS's answer to PA's ?sheet={name} (SCHEMA §7): the response of that name
 // in pa, by default the five responses PA read on 16 Nov 2569, and GAS's error
 // for a sheet it does not serve.
-function paSheet(name, pa = PA_20261116) {
+function paSheetAnswer(name, pa = PA_20261116) {
   const body = name === "registry" ? undefined : (pa[name] ?? pa.registry[name]);
   return body === undefined ? { body: { status: "error", message: `Unknown or forbidden sheet: ${name}` } } : { body };
 }
@@ -177,7 +177,7 @@ function gasOf(
   catalog,
   answer = (r) => ({ body: reportAnswer(r) }),
   registry = () => ({ body: { years: [] } }),
-  sheet = paSheet,
+  sheet = paSheetAnswer,
 ) {
   return (params) => {
     if (params.sheet !== undefined) return sheet(params.sheet);
@@ -1306,6 +1306,13 @@ test("a reports/population.json over its 500 KB limit (SPEC §6.1) → exit 1 na
 // GAS answering the seed, and each ?sheet= of PA with sheet(name).
 const seedGasWithPa = (sheet) => gasOf(seedCatalog(), undefined, undefined, sheet);
 
+// PA's BATCH_ALL of 16 Nov 2569 without meta.registry, as GAS answered before
+// the KPI registry manifest (undefined: JSON leaves the key out).
+const BATCH_ALL_WITHOUT_REGISTRY = {
+  ...PA_20261116.BATCH_ALL,
+  meta: { ...PA_20261116.BATCH_ALL.meta, registry: undefined },
+};
+
 test("PA's five responses answered → pa.json has them as GAS sent them, keyed by the sheet GET, registry with one key per tab of meta.registry (SCHEMA §7)", async (t) => {
   const gas = await startStub(t, gasOf(seedCatalog()));
 
@@ -1323,7 +1330,7 @@ test("GAS answers Busy twice to ?sheet=BATCH_ALL, then BATCH_ALL → asked again
   let busyLeft = 2;
   const gas = await startStub(
     t,
-    seedGasWithPa((name) => (name === "BATCH_ALL" && busyLeft-- > 0 ? BUSY : paSheet(name))),
+    seedGasWithPa((name) => (name === "BATCH_ALL" && busyLeft-- > 0 ? BUSY : paSheetAnswer(name))),
   );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url, ...SCALED });
@@ -1355,7 +1362,7 @@ test("a registry tab answered with an error every time → asked 4 times (3 retr
     seedGasWithPa((name) =>
       name === "kpi_epi"
         ? { body: { status: "error", message: "Exception: Service Spreadsheets timed out" } }
-        : paSheet(name),
+        : paSheetAnswer(name),
     ),
   );
 
@@ -1371,18 +1378,16 @@ test("a registry tab answered with an error every time → asked 4 times (3 retr
 });
 
 test("a PA response of the wrong shape (SCHEMA §7) → exit 1 naming the sheet and what is wrong; an earlier snapshot is left as it was, no pa.json", async (t) => {
-  // undefined: JSON leaves the key out.
-  const metaWithoutRegistry = { ...PA_20261116.BATCH_ALL.meta, registry: undefined };
   const withBatch = (batch) => ({ ...PA_20261116, BATCH_ALL: batch });
   const cases = [
     [
       "BATCH_ALL without meta.registry, as GAS answered before the KPI registry manifest",
-      withBatch({ ...PA_20261116.BATCH_ALL, meta: metaWithoutRegistry }),
+      withBatch(BATCH_ALL_WITHOUT_REGISTRY),
       /^build-snapshot: \?sheet=BATCH_ALL answered without the KPI registry tabs in meta\.registry, so this GAS is older than the manifest \(kpi_registry\); deploy GAS from main \(docs\/agents\/gas-deploy\.md\)/,
     ],
     [
       "BATCH_ALL with meta.registry []",
-      withBatch({ ...PA_20261116.BATCH_ALL, meta: { ...metaWithoutRegistry, registry: [] } }),
+      withBatch({ ...PA_20261116.BATCH_ALL, meta: { ...PA_20261116.BATCH_ALL.meta, registry: [] } }),
       /^build-snapshot: \?sheet=BATCH_ALL answered without the KPI registry tabs in meta\.registry/,
     ],
     [
@@ -1415,7 +1420,7 @@ test("a PA response of the wrong shape (SCHEMA §7) → exit 1 naming the sheet 
     await t.test(name, async (t) => {
       const gas = await startStub(
         t,
-        seedGasWithPa((sheet) => paSheet(sheet, pa)),
+        seedGasWithPa((sheet) => paSheetAnswer(sheet, pa)),
       );
 
       const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
@@ -1428,11 +1433,10 @@ test("a PA response of the wrong shape (SCHEMA §7) → exit 1 naming the sheet 
 });
 
 test("BATCH_ALL without meta.registry → kpi_master and kpi_epi are not asked for in its place (SPEC §6.2)", async (t) => {
-  const meta = { ...PA_20261116.BATCH_ALL.meta, registry: undefined };
-  const pa = { ...PA_20261116, BATCH_ALL: { ...PA_20261116.BATCH_ALL, meta } };
+  const pa = { ...PA_20261116, BATCH_ALL: BATCH_ALL_WITHOUT_REGISTRY };
   const gas = await startStub(
     t,
-    seedGasWithPa((sheet) => paSheet(sheet, pa)),
+    seedGasWithPa((sheet) => paSheetAnswer(sheet, pa)),
   );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
@@ -1450,7 +1454,7 @@ test("a pa.json over its 500 KB limit (SPEC §6.1) → exit 1 naming it and its 
   const pa = { ...PA_20261116, hospitals: [{ ...first, hospname: "x".repeat(520 * 1024) }, ...rest] };
   const gas = await startStub(
     t,
-    seedGasWithPa((sheet) => paSheet(sheet, pa)),
+    seedGasWithPa((sheet) => paSheetAnswer(sheet, pa)),
   );
 
   const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url }, withOldSnapshot());
