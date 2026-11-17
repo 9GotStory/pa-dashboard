@@ -115,7 +115,7 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm run format` | จัด format ตาม Prettier ทุกไฟล์ที่ไม่อยู่ใน `.prettierignore` |
 | `npm test` | เทสต์ GAS และเทสต์ของ Data Center |
 | `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 และเปิดหน้าแรกที่จอกว้างเพื่อเทียบตัวเลขประชากรบนหน้ากันเอง (§5) (CI รันทุก PR) |
-| `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center (CI รันทุก PR) |
+| `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center, `/pa` และ `/pa/{ปี}` (CI รันทุก PR) |
 | `npm run dc:compare [-- <url> ...]` | หลัง `npx next build` เปิดทุกหน้ารายงานของ `out/` กับ build ของ `main` (เก็บใน `.dc-lcp/main/`) แล้วบอกว่าหน้าไหนต่างที่ข้อความ HTML หรือ CSV · ใช้บนเครื่อง ไม่อยู่ใน CI ([docs/agents/page-checks.md](docs/agents/page-checks.md)) |
 | `npm run dc:sync-local [-- <port>]` | เปิด `/sync` ใน `next dev` (พอร์ต 3217) คู่กับ GAS ใน harness ซึ่งเก็บข้อมูลในหน่วยความจำ ลองอัปโหลดได้โดยไม่แตะ GAS จริง พิมพ์ URL, PIN และทุก POST · Ctrl-C ปิดทั้งคู่ |
 | `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build |
