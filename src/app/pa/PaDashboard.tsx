@@ -10,6 +10,7 @@ import DashboardFilter from "@/components/DashboardFilter";
 import DataStatusNotifier from "@/components/DataStatusNotifier";
 import { useKPIData } from "@/lib/useKPIData";
 import type { ProcessedPa } from "@/lib/pa/process";
+import type { PaYearLink } from "@/lib/pa/years";
 import type { KPIMaster } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -20,10 +21,20 @@ const noSubscribe = () => () => {};
 const categoryFromUrl = () => new URLSearchParams(window.location.search).get("cat") ?? "";
 const noCategory = () => "";
 
-// The client part of /pa: page.tsx's content until F83, taking the build's
-// processed snapshot of PA as props (SPEC §4, ADR-0017).
-export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
-  const { data, hospitalMap, tambonMap, lastUpdated } = useKPIData(initial);
+// The client part of /pa and /pa/{ปี}: page.tsx's content until F83, taking
+// the build's processed snapshot of PA as props (SPEC §4, ADR-0017). A closed
+// year (closedYear) shows its badge and does not fetch GAS.
+export default function PaDashboard({
+  initial,
+  years,
+  closedYear,
+}: {
+  initial: ProcessedPa;
+  years: PaYearLink[];
+  closedYear?: string;
+}) {
+  const { data, hospitalMap, tambonMap, lastUpdated } = useKPIData(initial, !closedYear);
+  const pagePath = closedYear ? `/pa/${closedYear}` : "/pa";
 
   // Multi-Checkbox Filter States
   const [selectedFacilities, setSelectedFacilities] = useState<string[]>([]);
@@ -101,7 +112,8 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
   return (
     <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
-        <DataStatusNotifier recordCount={data.length} />
+        {/* A closed year loads nothing new, so no "อัปเดตข้อมูลเรียบร้อย" toast */}
+        {!closedYear && <DataStatusNotifier recordCount={data.length} />}
 
         {/* 1. HEADER & LAST-UPDATED META */}
         <div className="mt-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3 text-center md:text-left">
@@ -116,6 +128,35 @@ export default function PaDashboard({ initial }: { initial: ProcessedPa }) {
             </div>
           </div>
         </div>
+
+        {/* ปีงบประมาณ — shown once a closed year exists (SPEC §4) */}
+        {years.length > 0 && (
+          <nav aria-label="ปีงบประมาณ" className="mb-4 flex flex-wrap items-center gap-1.5 font-prompt">
+            <span className="text-xs font-medium text-slate-500 mr-1">ปีงบประมาณ</span>
+            {/* <a>, not <Link>: Link would prefetch every other year's page payload */}
+            {years.map(({ year, href }) => (
+              <a
+                key={year}
+                href={href}
+                aria-current={href === pagePath ? "page" : undefined}
+                className={cn(
+                  "px-3 py-1 rounded-full text-[13px] font-semibold border transition-colors",
+                  href === pagePath
+                    ? "bg-brand-600 border-brand-600 text-white"
+                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+                )}
+              >
+                {year}
+              </a>
+            ))}
+          </nav>
+        )}
+
+        {closedYear && (
+          <p className="mb-6 rounded-xl border border-warning-200 bg-warning-50 px-4 py-2.5 text-sm font-medium text-warning-700 font-prompt">
+            ผลงานปีงบประมาณ {closedYear} ที่ปิดแล้ว · ข้อมูล ณ {lastUpdated || "N/A"}
+          </p>
+        )}
 
         {/* MULTI-CHECKBOX FILTER */}
         <DashboardFilter
