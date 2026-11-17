@@ -12,7 +12,7 @@
 เฟส 1 (ticket F01–F22 ใน [FEATURES.md](FEATURES.md)) ขึ้นใช้งานแล้ว
 
 - เว็บ: <https://songhealth-dc.pages.dev> บน Cloudflare Pages มี Data Center ที่ `/` และ PA Dashboard ที่ `/pa`
-- ข้อมูลที่หน้าเว็บอ่าน: Data Center อ่านไฟล์ JSON ที่สร้างตอน build ส่วน PA เรียก GAS ทุกครั้งที่เปิดหน้า
+- ข้อมูลที่หน้าเว็บอ่าน: Data Center อ่านไฟล์ JSON ที่สร้างตอน build ส่วน PA แสดงตัวเลขจาก `pa.json` ที่สร้างตอน build แล้วดึง GAS สดในพื้นหลัง
 - ลิงก์ GitHub Pages เดิม: <https://9gotstory.github.io/pa-dashboard/> เป็นหน้า stub ที่ส่งต่อไปเว็บใหม่ ลิงก์ที่มี `?cat=` และ `/sync` ไปถึงหน้าเดิม
 - branch `develop` (Backend v2: Fastify + PostgreSQL) ไม่ใช้แล้ว ดู [ADR-0001](docs/adr/0001-keep-gas-sheets-static-stack.md)
 
@@ -33,10 +33,10 @@ flowchart LR
   MOPH --> PAGE & NODE
   PAGE & NODE -->|"POST save_kpi_data"| GAS
   GAS <--> SHEETS
-  PA -->|"GET BATCH_ALL"| GAS
+  PA -->|"GET ?sheet= ของ PA ในพื้นหลัง"| GAS
   GAS -->|"Deploy Hook หลัง sync"| BUILD
-  BUILD -->|"GET catalog, report, registry_population"| GAS
-  BUILD --> DC
+  BUILD -->|"GET catalog, report, registry_population, ?sheet= ของ PA"| GAS
+  BUILD --> DC & PA
 ```
 
 ## หน้าเว็บ
