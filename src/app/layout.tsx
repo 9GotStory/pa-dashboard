@@ -7,8 +7,9 @@ export const metadata: Metadata = {
 };
 
 // PA's <Toaster> is in the /pa and /sync layouts, not here, so the Data Center
-// pages do not load sonner (SPEC §9.6). So are PA's fonts, which preload 20
-// files; the (dc) layout sets the Data Center's own, which preload none.
+// pages do not load sonner (SPEC §9.6). PA's fonts, which preload 20 files, are
+// in the /sync layout; the (dc) and /pa layouts set the Data Center's, which
+// preload none.
 export default function RootLayout({
   children,
 }: Readonly<{

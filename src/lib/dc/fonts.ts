@@ -4,6 +4,7 @@ import { Prompt, Sarabun } from "next/font/google";
 // not preloaded. Preloading its 20 files held back the text that is each Data
 // Center page's LCP (SPEC §9.6); without a preload the browser fetches only the
 // faces the page draws. subsets only picks the files to preload, so it is left out.
+// /pa's layout uses these too (#332), so a change here changes /pa.
 export const prompt = Prompt({
   weight: ["300", "400", "500", "600", "700"],
   variable: "--font-prompt",

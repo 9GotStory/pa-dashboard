@@ -1,8 +1,8 @@
 // Data Center budget check (SPEC §9.6, CODING_STANDARDS §5). CI runs it after
 // npm run build. It exits 1, naming the page, when the JavaScript that the
 // home page, the report library, รายงานประชากร or a report page loads is over budget, or
-// when a Data Center page preloads font files, which held back each page's
-// LCP (SPEC §4).
+// when a Data Center page, /pa or a /pa/{year} preloads font files, which held
+// back each page's LCP (SPEC §4).
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -53,6 +53,19 @@ function dcPages() {
     fail("out/ lacks /, /reports or any /reports/{id} page: run npm run build first");
   }
   return ["/", "/reports", ...ids.map((f) => `/reports/${f.replace(/\.html$/, "")}`)];
+}
+
+// /pa and every /pa/{year} in out/ (SPEC §4). /sync keeps PA's fonts, so it is not here.
+function paPages() {
+  if (!fs.existsSync(path.join(OUT, "pa.html"))) fail("out/ lacks /pa: run npm run build first");
+  const years = path.join(OUT, "pa");
+  const closed = fs.existsSync(years)
+    ? fs
+        .readdirSync(years)
+        .filter((f) => f.endsWith(".html"))
+        .sort()
+    : [];
+  return ["/pa", ...closed.map((f) => `/pa/${f.replace(/\.html$/, "")}`)];
 }
 
 // The <script src> files of the page's HTML, without the noModule polyfill, which modern browsers skip
@@ -121,14 +134,15 @@ console.log(
 );
 for (const { page, files } of reports) problems.push(...overBudget(page, files, REPORT_BUDGET));
 
-const preloading = pages.filter((page) =>
+const fontPages = [...pages, ...paPages()];
+const preloading = fontPages.filter((page) =>
   /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="font")[^>]*>/.test(htmlOf(page)),
 );
-console.log(`dc-budget: ${preloading.length} of ${pages.length} Data Center pages preload font files`);
+console.log(`dc-budget: ${preloading.length} of ${fontPages.length} Data Center and /pa pages preload font files`);
 if (preloading.length > 0) {
   problems.push(
     `${preloading.slice(0, 3).join(", ")}${preloading.length > 3 ? " and more" : ""} preload font files: ` +
-      "the (dc) layout sets src/lib/dc/fonts.ts, which preloads none, and PA's fonts belong in the /pa and /sync layouts (SPEC §4)",
+      "the (dc) and /pa layouts set src/lib/dc/fonts.ts, which preloads none, and PA's fonts belong in the /sync layout only (SPEC §4)",
   );
 }
 
