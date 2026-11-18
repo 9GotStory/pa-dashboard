@@ -35,7 +35,7 @@ Changing `settings.current_year` moves PA and the Data Center to the new year at
 4. `npm run pa:snapshot -- freeze-{year}`: the picture of PA before the freeze, kept for the closed-year compare.
 5. Freeze, GET only: `npm run snapshot`, then copy `public/data/pa.json` to `data/pa-years/{year}.json` (SCHEMA §7) and open a PR into `main`. Merge it before step 6. Steps 3–5 write nothing to production and do not wait on the `/pa/{year}` page (F85).
 6. The user sets `current_year` to the new year and `current_quarter = 1`.
-7. The user syncs the new year at once from `/sync`, not with `run=sync` and not by waiting for the daily trigger: in the switch to 2570 `run=sync` answered 500 twice after the archive created new `_y` sheets (#326), and #342 looks for the cause. Until the sync, the current-year sheets still hold the old year's rows, and `BATCH_ALL` shows them as the new year.
+7. The user syncs the new year at once from `/sync`, not with `run=sync` and not by waiting for the daily trigger: in the switch to 2570 `run=sync` answered 500 twice after the archive created new `_y` sheets (#326). A repro on copies of PA-Data found no cause (#342), while `/sync`, one table per POST, did every table, so this rule stays. Until the sync, the current-year sheets still hold the old year's rows, and `BATCH_ALL` shows them as the new year.
 
 Once `/pa/{year}` is live, `npm run pa:snapshot -- closed-{year}` with `PA_URL` set to that page, then `npm run pa:compare -- freeze-{year} closed-{year}`. It exits 1 by design: `data` holds the new year's `BATCH_ALL`, and the year badge and year links shift the text lines. Read the cell lines instead: both tabs must show 0 cells that differ.
 
