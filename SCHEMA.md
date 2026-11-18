@@ -249,6 +249,8 @@
 10. upsert `sync_status` (`tableName`, `year`, `sheet`, `row_count`, `max_date_com`, `synced_at`) และลบแถวของตารางนี้ที่อยู่นอก window · ถ้าชีต `sync_status` ยังไม่มี สร้างพร้อม header ตรงนี้เลย (ไม่รอ `setup=datacenter` เพราะ trigger รายวันอาจรันก่อน)
 11. บันทึก SUCCESS `Synced {table} {year}` พร้อมจำนวนแถว
 
+ถ้าขั้น 8–10 throw (เช่น Sheets ตอบ timeout ตอนสร้างชีต `_y` ใหม่ระหว่างการย้ายปี) บันทึก ERROR `Save failed {table} {year}` พร้อมข้อความของ exception ใน `system_logs` แล้วตอบ `{ status: "error", message }` โดย `message` คือ `String(e)` ของ exception (มีชนิดของ error นำหน้า เช่น `Error: …` เหมือน `doPost Critical`) · `syncAllData` จึงทำตารางถัดไปต่อแทนที่จะหยุดทั้งรอบ และหน้า `/sync` เห็นตารางนั้นเป็น Failed (#341) · ชีตที่ถูก clear ไปแล้วก่อน exception คงสภาพนั้นไว้จนถึงการบันทึกครั้งถัดไป · ถ้า runtime ตัด execution ทิ้งจนไม่มี `catch` ได้ทำงาน กติกานี้ไม่ช่วย
+
 Response: `{ status: "success"; year: string; sheet: string; received: number; count: number; archived: string[] }`
 
 - `received` = จำนวนแถวที่ส่งมา · `count` = จำนวนแถวที่บันทึกหลังกรองอำเภอ (ความหมายเปลี่ยนจากเดิม ซึ่ง `count` เคยเป็นจำนวนแถวที่ส่งมา) · `archived` = ปีที่ถูกย้ายไปชีต `_y` ในครั้งนี้ (ปกติว่าง)

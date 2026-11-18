@@ -205,11 +205,20 @@ function saveTableYear(tableName, year, rows, options) {
     return dcRejectSave("ERROR", tableName, y, "Invalid value");
   }
 
-  const archived = y === settings.current_year ? dcArchiveOldYears(tableName, y, settings) : [];
-
-  const sheetName = sheetNameFor(tableName, y, settings);
-  dcWriteSheet(sheetName, headers, values, DC_TEXT_COLUMNS);
-  dcUpsertSyncStatus(tableName, y, sheetName, kept.length, maxDateCom, getYearWindow(settings));
+  // An exception from here on is logged and answered as an error, so
+  // syncAllData goes on to the next table and a failed trigger run leaves a
+  // trace in system_logs (#341). A sheet cleared before the exception stays
+  // as it is until the next save.
+  let archived, sheetName;
+  try {
+    archived = y === settings.current_year ? dcArchiveOldYears(tableName, y, settings) : [];
+    sheetName = sheetNameFor(tableName, y, settings);
+    dcWriteSheet(sheetName, headers, values, DC_TEXT_COLUMNS);
+    dcUpsertSyncStatus(tableName, y, sheetName, kept.length, maxDateCom, getYearWindow(settings));
+  } catch (e) {
+    logToSheet("ERROR", "Save failed " + tableName + " " + y, String(e));
+    return { status: "error", message: String(e) };
+  }
 
   Logger.log("Success: Synced " + kept.length + " rows for " + tableName + " " + y + " to " + sheetName);
   logToSheet("SUCCESS", "Synced " + tableName + " " + y, kept.length + " rows");
