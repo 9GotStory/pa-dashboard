@@ -2,7 +2,8 @@
 // npm run build. It exits 1, naming the page, when the JavaScript that the
 // home page, the report library, รายงานประชากร or a report page loads is over budget, or
 // when a Data Center page, /pa or a /pa/{year} preloads font files, which held
-// back each page's LCP (SPEC §4).
+// back each page's LCP (SPEC §4), or when /pa or a /pa/{year} hides its
+// content behind Suspense (#338).
 import fs from "node:fs";
 import path from "node:path";
 import zlib from "node:zlib";
@@ -143,6 +144,18 @@ if (preloading.length > 0) {
   problems.push(
     `${preloading.slice(0, 3).join(", ")}${preloading.length > 3 ? " and more" : ""} preload font files: ` +
       "the (dc) and /pa layouts set src/lib/dc/fonts.ts, which preloads none, and PA's fonts belong in the /sync layout only (SPEC §4)",
+  );
+}
+
+// A loading.tsx wraps the page in Suspense: its HTML then holds the built
+// table in <div hidden id="S:0"> until the browser parses $RC( far below (#338).
+const paOnly = paPages();
+const suspended = paOnly.filter((page) => /\bhidden id="S:|\$RC\(/.test(htmlOf(page)));
+console.log(`dc-budget: ${suspended.length} of ${paOnly.length} /pa pages hide their content behind Suspense`);
+if (suspended.length > 0) {
+  problems.push(
+    `${suspended.slice(0, 3).join(", ")}${suspended.length > 3 ? " and more" : ""} hide their content behind Suspense: ` +
+      "src/app/pa/ has no loading.tsx, which static export does not support and which held back /pa's LCP (SPEC §4)",
   );
 }
 
