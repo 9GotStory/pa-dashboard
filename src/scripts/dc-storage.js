@@ -207,8 +207,8 @@ function saveTableYear(tableName, year, rows, options) {
 
   // An exception from here on is logged and answered as an error, so
   // syncAllData goes on to the next table and a failed trigger run leaves a
-  // trace in system_logs (#341). A sheet cleared before it is left as it is
-  // until the next save.
+  // trace in system_logs (#341). A sheet cleared before the exception stays
+  // as it is until the next save.
   let archived, sheetName;
   try {
     archived = y === settings.current_year ? dcArchiveOldYears(tableName, y, settings) : [];
