@@ -135,7 +135,8 @@ console.log(
 );
 for (const { page, files } of reports) problems.push(...overBudget(page, files, REPORT_BUDGET));
 
-const fontPages = [...pages, ...paPages()];
+const pa = paPages();
+const fontPages = [...pages, ...pa];
 const preloading = fontPages.filter((page) =>
   /<link\b(?=[^>]*\brel="preload")(?=[^>]*\bas="font")[^>]*>/.test(htmlOf(page)),
 );
@@ -149,13 +150,13 @@ if (preloading.length > 0) {
 
 // A loading.tsx wraps the page in Suspense: its HTML then holds the built
 // table in <div hidden id="S:0"> until the browser parses $RC( far below (#338).
-const paOnly = paPages();
-const suspended = paOnly.filter((page) => /\bhidden id="S:|\$RC\(/.test(htmlOf(page)));
-console.log(`dc-budget: ${suspended.length} of ${paOnly.length} /pa pages hide their content behind Suspense`);
+const suspended = pa.filter((page) => /\bhidden id="S:|\$RC\(/.test(htmlOf(page)));
+console.log(`dc-budget: ${suspended.length} of ${pa.length} /pa pages hide their content behind Suspense`);
 if (suspended.length > 0) {
   problems.push(
     `${suspended.slice(0, 3).join(", ")}${suspended.length > 3 ? " and more" : ""} hide their content behind Suspense: ` +
-      "src/app/pa/ has no loading.tsx, which static export does not support and which held back /pa's LCP (SPEC §4)",
+      "delete the loading.tsx in src/app/, src/app/pa/ or below, or the <Suspense> around the page; " +
+      "static export does not support loading.tsx, and it held back /pa's LCP (SPEC §4)",
   );
 }
 
