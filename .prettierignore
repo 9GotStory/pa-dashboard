@@ -7,7 +7,6 @@ src/lib/*
 !src/lib/dc/
 !src/lib/pa/
 src/app/pa/page.tsx
-src/app/pa/loading.tsx
 src/app/sync/page.tsx
 src/scripts/รหัส.js
 src/scripts/sync-moph-to-gas.js
