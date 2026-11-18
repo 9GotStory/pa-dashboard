@@ -171,6 +171,38 @@ test("syncAllData that saved a table → one rebuild at the end, logged as Rebui
   assert.deepEqual({ ...h.lock }, { tryLock: 1, releaseLock: 1, nested: 0 });
 });
 
+// #341: s_kpi_anc12, the first sync unit, throws while its sheet is created;
+// s_x comes after it.
+test("syncAllData where saving s_kpi_anc12 throws → s_x is still saved, ERROR Save failed s_kpi_anc12 2569, and one rebuild", () => {
+  const h = load({
+    fetch: (url, payload) => {
+      if (url === HOOK) return { code: 200, body: { success: true } };
+      const rows = ["s_kpi_anc12", "s_x"].includes(payload.tableName) ? SX_ROWS : [];
+      return { code: 201, body: { data: rows, total: String(rows.length) } };
+    },
+  });
+  const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
+  const insertSheet = ss.insertSheet;
+  ss.insertSheet = (name) => {
+    if (name === "s_kpi_anc12") throw new Error("Service Spreadsheets timed out while accessing document");
+    return insertSheet(name);
+  };
+
+  h.gas.syncAllData();
+
+  assert.equal(h.sheet("s_x").length, 1 + 2);
+  const logged = h
+    .sheet("system_logs")
+    .slice(1)
+    .map((row) => [row[1], row[2]]);
+  assert.deepEqual(
+    logged.filter(([type]) => type === "ERROR"),
+    [["ERROR", "Save failed s_kpi_anc12 2569"]],
+  );
+  assert.equal(h.fetches.filter((f) => f.url === HOOK).length, 1);
+  assert.deepEqual(logged.at(-1), ["INFO", "Rebuild requested (daily sync)"]);
+});
+
 test("syncAllData that saved no table → the hook is not called", () => {
   const h = load({ fetch: syncFetch([]) });
 

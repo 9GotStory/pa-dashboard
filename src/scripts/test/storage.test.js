@@ -642,3 +642,54 @@ test("syncAllData: MOPH rows with a value beginning with = are not saved, and sy
     [["Save rejected s_x 2569", "Invalid value"]],
   );
 });
+
+// #341: an exception while saving (the archive included) is logged to
+// system_logs and answered as an error, so syncAllData goes on to the next
+// table. The message is the one Sheets gives when a service call fails.
+const SHEETS_TIMEOUT = "Service Spreadsheets timed out while accessing document";
+
+test("insertSheet of the new s_x_y2569 throws while archiving 2569 → error with the exception, ERROR Save failed s_x 2570 in system_logs", () => {
+  const h = load(2570, { s_x: oldPathSheet(provinceRows({ year: "2569", dateCom: "202609300930" })) });
+  const ss = h.gas.SpreadsheetApp.getActiveSpreadsheet();
+  const insertSheet = ss.insertSheet;
+  ss.insertSheet = (name) => {
+    if (name === "s_x_y2569") throw new Error(SHEETS_TIMEOUT);
+    return insertSheet(name);
+  };
+
+  const res = h.gas.saveTableYear("s_x", "2570", provinceRows({ year: "2570", dateCom: "202611010800" }), {});
+
+  assert.equal(res.status, "error");
+  assert.match(res.message, new RegExp(SHEETS_TIMEOUT));
+  const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+  assert.deepEqual(
+    errors.map((r) => r.Message),
+    ["Save failed s_x 2570"],
+  );
+  assert.match(errors[0].Details, new RegExp(SHEETS_TIMEOUT));
+});
+
+test("setValues of the current-year sheet s_x throws → error with the exception, ERROR Save failed s_x 2569 in system_logs", () => {
+  const h = load();
+  h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610300930" }), {});
+  const sheet = h.gas.SpreadsheetApp.getActiveSpreadsheet().getSheetByName("s_x");
+  const getRange = sheet.getRange;
+  sheet.getRange = (...args) => {
+    const range = getRange(...args);
+    range.setValues = () => {
+      throw new Error(SHEETS_TIMEOUT);
+    };
+    return range;
+  };
+
+  const res = h.gas.saveTableYear("s_x", "2569", provinceRows({ year: "2569", dateCom: "202610310930" }), {});
+
+  assert.equal(res.status, "error");
+  assert.match(res.message, new RegExp(SHEETS_TIMEOUT));
+  const errors = records(h.sheet("system_logs")).filter((r) => r.Type === "ERROR");
+  assert.deepEqual(
+    errors.map((r) => r.Message),
+    ["Save failed s_x 2569"],
+  );
+  assert.match(errors[0].Details, new RegExp(SHEETS_TIMEOUT));
+});
