@@ -100,7 +100,7 @@ export interface ReportQuery {
   area: "all" | string; // "all" or a 6-digit tambon code · default "all"
   period: Period; // default "year"
   measure: string | null; // measure prefix (M_B tables only) whose รายละเอียด is open · default null (ภาพรวม)
-  by: "area" | "hosp"; // default "area" · forced to "hosp" when area ≠ "all"
+  by: "area" | "hosp"; // default "hosp" · "area" only with ?by=area on area "all"
   domain: number | null; // ด้าน 1–9 of s_aged9 whose รายละเอียด is open · default null (ภาพรวม) · any other value or table = null
 }
 

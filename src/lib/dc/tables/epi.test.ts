@@ -243,6 +243,16 @@ test("ตำบลบ้านหนุน → รายละเอียด by
   assert.equal(epiValues(EPI1, { ...OVERVIEW_2569, by: "hosp", measure: "mmr" }, NAMES, YEARS).query.by, "area");
 });
 
+test("a link with no by, ?by=hosp or ?by=area → ทั้งอำเภอ still by ตำบล, ตำบลบ้านหนุน by หน่วยบริการ, though the other pages default to หน่วยบริการ (#345)", () => {
+  const by = (search: string) =>
+    epiValues(EPI1, reportQuery(EPI1, new URLSearchParams(search), NAMES), NAMES, YEARS).query.by;
+  assert.deepEqual(
+    ["", "by=hosp", "by=area", "measure=mmr"].map(by),
+    ["area", "area", "area", "area"],
+  );
+  assert.equal(by("area=540601"), "hosp");
+});
+
 test("รายละเอียด DTP2 2568, a year without its data → —: total, units and steps' totals null, and ภาพรวม keeps the other รายการ", () => {
   const { detail, rows } = epiValues(EPI1, { ...OVERVIEW_2569, year: "2568", measure: "dtp2" }, NAMES, YEARS);
   assert.equal(detail?.total, null);
