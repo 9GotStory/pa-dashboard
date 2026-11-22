@@ -463,8 +463,8 @@ export function reportQuery(data: DcReportData, params: URLSearchParams, names: 
   const measure = found.find((m) => m === params.get("measure")) ?? null;
   const period = (block ? periods(block, data.report) : []).find((p) => p === params.get("period")) ?? "year";
   const area = names.areas.find((a) => a.id === params.get("area"))?.id ?? "all";
-  // One ตำบล is compared by หน่วยบริการ only (SPEC §9.4)
-  const by = area !== "all" || params.get("by") === "hosp" ? "hosp" : "area";
+  // By หน่วยบริการ unless ?by=area on ทั้งอำเภอ: one ตำบล is compared by หน่วยบริการ only (SPEC §9.4)
+  const by = area === "all" && params.get("by") === "area" ? "area" : "hosp";
   // The ด้าน 1–9 of s_aged9 alone: result{k} of another table is not a ด้าน (SCHEMA §4.6.7)
   const asks = params.get("domain");
   const domain = data.report.source_table === "s_aged9" && asks && /^[1-9]$/.test(asks) ? Number(asks) : null;

@@ -505,8 +505,8 @@ const EPI2_DATA = {
 };
 const query = (search: string) => reportQuery(EPI2_DATA, new URLSearchParams(search), NAMES);
 
-test("no query on s_epi2 → the latest ปีงบประมาณ, ทั้งอำเภอ, ทั้งปี, no measure (ภาพรวม), by area (the defaults of SCHEMA §9)", () => {
-  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: null, by: "area", domain: null });
+test("no query on s_epi2 → the latest ปีงบประมาณ, ทั้งอำเภอ, ทั้งปี, no measure (ภาพรวม), by หน่วยบริการ (the defaults of SCHEMA §9)", () => {
+  assert.deepEqual(query(""), { year: "2569", area: "all", period: "year", measure: null, by: "hosp", domain: null });
 });
 
 test("?year=2560, a year without data → kept as 2560 with no measure, so the page says ไม่มีข้อมูลปี 2560 ในระบบ instead of another year", () => {
@@ -515,7 +515,7 @@ test("?year=2560, a year without data → kept as 2560 with no measure, so the p
     area: "all",
     period: "year",
     measure: null,
-    by: "area",
+    by: "hosp",
     domain: null,
   });
 });
@@ -575,9 +575,11 @@ test("?area=540601 → that ตำบล, compared by หน่วยบริ�
   assert.equal(query("area=540699").area, "all");
 });
 
-test("?by=hosp → by หน่วยบริการ for ทั้งอำเภอ; any other by → by area", () => {
+test("ทั้งอำเภอ ?by=area → by ตำบล; ?by=hosp, no by or any other by → by หน่วยบริการ", () => {
+  assert.equal(query("by=area").by, "area");
   assert.equal(query("by=hosp").by, "hosp");
-  assert.equal(query("by=tambon").by, "area");
+  assert.equal(query("").by, "hosp");
+  assert.equal(query("by=tambon").by, "hosp");
 });
 
 test("a ReportQuery → ?year=&area=&period=&measure=&by= in the order of SPEC §9.4, which reportQuery reads back as the same query", () => {
@@ -605,10 +607,11 @@ test("?domain=8 on another table (s_epi2) → null", () => {
   assert.equal(query("domain=8").domain, null);
 });
 
-test("s_aged9: ?area=540608&by=area → by หน่วยบริการ; ทั้งอำเภอ ?by=hosp → by หน่วยบริการ (SPEC §9.4 ตัวกรอง)", () => {
+test("s_aged9: ?area=540608&by=area → by หน่วยบริการ; ทั้งอำเภอ ?by=hosp or no by → by หน่วยบริการ, ?by=area → by ตำบล (SPEC §9.4 ตัวกรอง)", () => {
   assert.equal(aged9Query("area=540608&by=area").by, "hosp");
   assert.equal(aged9Query("by=hosp").by, "hosp");
-  assert.equal(aged9Query("").by, "area");
+  assert.equal(aged9Query("").by, "hosp");
+  assert.equal(aged9Query("by=area").by, "area");
 });
 
 test("a ReportQuery with a ด้าน → ?domain= after by, which reportQuery reads back as the same query", () => {

@@ -1012,7 +1012,7 @@ export interface ReportQuery {
   area: "all" | string;          // "all" หรือรหัสตำบล 6 หลัก · default "all"
   period: Period;                // default "year"
   measure: string | null;        // prefix ของรายการวัคซีน (เฉพาะตาราง M_B) ที่เปิดดูรายละเอียด · ไม่มีหรือไม่ใช่รายการของตาราง = null (ภาพรวม)
-  by: "area" | "hosp";           // default "area" · ถ้า area ≠ "all" บังคับเป็น "hosp" · ตาราง 1 แถวต่อหน่วยบริการ: "hosp" เสมอ และ area เป็น "all" (SPEC §9.4)
+  by: "area" | "hosp";           // default "hosp" · "area" เฉพาะ ?by=area และ area เป็น "all" · ตาราง 1 แถวต่อหน่วยบริการ: "hosp" เสมอ และ area เป็น "all" (SPEC §9.4)
   domain: number | null;         // ด้าน 1–9 ของ s_aged9 ที่เปิดดูรายละเอียด (F57) · ค่าอื่นหรือตารางอื่น = null
 }
 
