@@ -269,11 +269,12 @@ function blockTiles(page) {
   );
 }
 
-// The rows of unit bar charts unitChartRule has measured, on every page and width
-let unitChartRows = 0;
+// How many rows of unit bar charts unitChartRule has measured, a row once
+// for each page and width it is measured at
+let unitChartMeasures = 0;
 async function unitChartProblems(page) {
   const { problems, rows } = await page.evaluate(unitChartRule);
-  unitChartRows += rows;
+  unitChartMeasures += rows;
   return problems;
 }
 
@@ -523,10 +524,12 @@ const POPULATION_TAMBON = "/reports/population?area=540603";
 // the หมู่บ้าน <select> and the results' area at 320 px (FEATURES F69)
 const POPULATION_VILLAGE = "/reports/population?area=54060317";
 // The same reports compared by ตำบล, as by หน่วยบริการ is the default (SPEC
-// §9.4), and the รายละเอียด of AGED9's ด้าน 1, its counts by หน่วยบริการ
+// §9.4), and the รายละเอียด of AGED9's ด้าน 1, its counts by หน่วยบริการ and by ตำบล
 const unitReports = [
   ...wideReports.map((urlPath) => `${urlPath}?by=area`),
-  ...reports.filter((r) => r.source_table === "s_aged9").map((r) => `/reports/${r.opendata_id}?domain=1`),
+  ...reports
+    .filter((r) => r.source_table === "s_aged9")
+    .flatMap((r) => [`/reports/${r.opendata_id}?domain=1`, `/reports/${r.opendata_id}?domain=1&by=area`]),
 ];
 // Built pages, then รายงานประชากร at a ตำบล and a หมู่บ้าน: only there does the
 // หมู่บ้าน <select> show, and only at a หมู่บ้าน its results
@@ -581,6 +584,6 @@ const populationResult = !shownYear
 console.log(
   `dc-check: ${checkedPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON}, ${POPULATION_VILLAGE} and a report of each of ${wideReports.length} table(s) ` +
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
-    `the names of ${unitChartRows} row(s) of unit bar charts show whole and clear of their bars at every width checked; ` +
+    `the names of unit bar charts show whole (${unitChartMeasures} row(s) measured) and clear of their bars at every width checked; ` +
     `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
 );

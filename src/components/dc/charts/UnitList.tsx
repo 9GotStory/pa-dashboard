@@ -1,5 +1,5 @@
 /** A row of UnitList: its name, its bar as a share 0–100 of the track (null = no bar) and its value as shown */
-export type UnitRow = { key: string; name: string; share: number | null; value: string };
+type UnitRow = { key: string; name: string; share: number | null; value: string };
 
 /**
  * UnitChart and CountChart on a phone (SPEC §9.4): a row per ตำบล or
