@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { useState } from "react";
 import { preconnect } from "react-dom";
 import { formatCount } from "@/lib/dc/format";
+import { hospitalName } from "@/lib/dc/hospitals";
 import type { AreaVillages, DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
 import PopulationComparison from "./PopulationComparison";
 import PopulationPyramid from "./PopulationPyramid";
@@ -129,7 +130,9 @@ export default function DistrictExplorer({
                           key={h.hospcode}
                           className="flex justify-between gap-3 border-t border-dc-border-subtle py-2 text-[13px] first:border-t-0"
                         >
-                          <span className="font-semibold text-dc-brand-deep">{h.hospname}</span>
+                          <span className="font-semibold text-dc-brand-deep">
+                            {hospitalName(h.hospcode, hospitals)}
+                          </span>
                           <span className="text-xs whitespace-nowrap text-dc-text-secondary tabular-nums">
                             รหัส {h.hospcode}
                           </span>

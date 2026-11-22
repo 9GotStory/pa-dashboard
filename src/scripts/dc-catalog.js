@@ -284,11 +284,14 @@ function dcGetCatalog(settings) {
       .map(function (row) {
         return { id: String(row.id).trim(), name_th: String(row.name_th) };
       }),
-    hospitals: dcSheetRecords("hospitals", ["hospcode", "hospname", "tambon_id"]).map(function (row) {
+    // hospprefix is "" on a sheet without the column (SCHEMA §1): the pages
+    // then show the name alone.
+    hospitals: dcSheetRecords("hospitals", ["hospcode", "hospname", "tambon_id", "hospprefix"]).map(function (row) {
       return {
         hospcode: String(row.hospcode).trim(),
         hospname: String(row.hospname),
         tambon_id: String(row.tambon_id).trim(),
+        hospprefix: String(row.hospprefix).trim(),
       };
     }),
     topics: readHdcTopics(),

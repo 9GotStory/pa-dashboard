@@ -1,4 +1,5 @@
 import { changeOf } from "./change";
+import { hospitalName } from "./hospitals";
 import { POPULATION_REPORT } from "./population-report";
 import type {
   Cell,
@@ -304,7 +305,7 @@ function unitRows(
       : {
           column: "hospcode",
           keyOf: (hospcode: Cell | undefined) => String(hospcode),
-          nameOf: (key: string) => names.hospitals.find((h) => h.hospcode === key)?.hospname ?? `หน่วยบริการ ${key}`,
+          nameOf: (key: string) => hospitalName(key, names.hospitals),
         };
   const at = block.headers.indexOf(unit.column);
   const units = new Map<string, Cell[][]>();

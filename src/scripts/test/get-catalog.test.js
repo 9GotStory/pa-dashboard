@@ -129,11 +129,39 @@ test("areas are the tambon_master rows of district_code as { id, name_th }; hosp
   assert.equal(catalog.hospitals.length, 17);
   assert.deepEqual(
     catalog.hospitals.find((x) => x.hospcode === "06413"),
-    { hospcode: "06413", hospname: "บ้านหนุน", tambon_id: "540601" },
+    { hospcode: "06413", hospname: "บ้านหนุน", tambon_id: "540601", hospprefix: "" },
   );
   assert.deepEqual(
     catalog.hospitals.find((x) => x.hospcode === "11170"),
-    { hospcode: "11170", hospname: "สอง", tambon_id: "540601" },
+    { hospcode: "11170", hospname: "สอง", tambon_id: "540601", hospprefix: "" },
+  );
+});
+
+test('a hospitals sheet with hospprefix (column D) → hospitals[].hospprefix as the sheet has it, trimmed; without the column → "" (SCHEMA §3.1)', () => {
+  const withPrefix = HOSPITALS.map((row, i) =>
+    i === 0 ? [...row, "HospPrefix"] : [...row, { 11170: "รพ.", 10368: " สสช. " }[row[0]] ?? "รพ.สต."],
+  );
+  const h = loadGas({ sheets: { settings: SETTINGS, tambon_master: TAMBON_MASTER, hospitals: withPrefix } });
+
+  const catalog = getCatalog(h);
+
+  assert.equal(catalog.hospitals.length, 17);
+  assert.deepEqual(
+    catalog.hospitals.find((x) => x.hospcode === "11170"),
+    {
+      hospcode: "11170",
+      hospname: "สอง",
+      tambon_id: "540601",
+      hospprefix: "รพ.",
+    },
+  );
+  assert.equal(catalog.hospitals.find((x) => x.hospcode === "10368").hospprefix, "สสช.");
+  assert.equal(catalog.hospitals.find((x) => x.hospcode === "06413").hospprefix, "รพ.สต.");
+
+  const old = loadGas({ sheets: { settings: SETTINGS, tambon_master: TAMBON_MASTER, hospitals: HOSPITALS } });
+  assert.deepEqual(
+    getCatalog(old).hospitals.map((x) => x.hospprefix),
+    Array(17).fill(""),
   );
 });
 
@@ -265,7 +293,7 @@ const recordOf = (check) => (v) =>
 const GAS_CATALOG = {
   meta: { current_year: str, years: [str], district_code: str, generated_at: isoTime },
   areas: [{ id: str, name_th: str }],
-  hospitals: [{ hospcode: str, hospname: str, tambon_id: str }],
+  hospitals: [{ hospcode: str, hospname: str, tambon_id: str, hospprefix: str }],
   topics: [{ cat_id: str, category_name: str, main_report_id: str, main_report_name: str, order: orNull(num) }],
   reports: [
     {
@@ -436,7 +464,7 @@ test("hospitals and tambon_master are read by header name (trim + lower case), i
   const catalog = getCatalog(h);
 
   assert.deepEqual(catalog.areas, [{ id: "540601", name_th: "บ้านหนุน" }]);
-  assert.deepEqual(catalog.hospitals, [{ hospcode: "11170", hospname: "สอง", tambon_id: "540601" }]);
+  assert.deepEqual(catalog.hospitals, [{ hospcode: "11170", hospname: "สอง", tambon_id: "540601", hospprefix: "" }]);
 });
 
 test("an hdc_topics row whose cat_id fails the pattern is no topic; a hand-edited invalid source_table is skipped with a Logger.log WARNING", () => {

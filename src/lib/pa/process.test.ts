@@ -123,6 +123,18 @@ test("hospitals and tambon_master → the 17 hospitals and 8 ตำบล of the
   });
 });
 
+test("hospitals with a 4th column hospprefix (#346) → the same 17 names and ตำบล: PA reads the first 3 keys of a row", () => {
+  const snapshot = fixture();
+  snapshot.hospitals = snapshot.hospitals.map((h) => ({ ...h, hospprefix: h.hospcode === "11170" ? "รพ." : "รพ.สต." }));
+
+  const { hospitalMap } = processPaSnapshot(snapshot);
+
+  assert.equal(Object.keys(hospitalMap).length, 17);
+  assert.deepEqual(hospitalMap["06413"], { name: "บ้านหนุน", tambon_id: "540601" });
+  assert.deepEqual(hospitalMap["11170"], { name: "สอง", tambon_id: "540601" });
+  assert.deepEqual(hospitalMap, processPaSnapshot(fixture()).hospitalMap);
+});
+
 test("no meta.registry (GAS before the manifest) → the built-in pair kpi_master, kpi_epi gives the same 7 KPIs", () => {
   const snapshot = fixture();
   delete snapshot.BATCH_ALL.meta!.registry;
