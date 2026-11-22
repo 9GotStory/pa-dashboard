@@ -8,7 +8,10 @@
 // as well, and the check exits 1, naming the width, when one scrolls sideways
 // at one (SPEC §9.1). A report that loads the chunk of another table's page
 // exits 1, naming the report and the page (SPEC §9.4, §9.6); รายงานประชากร
-// has no table page, so it has no such check. /reports as built, before any
+// has no table page, so it has no such check. On every page at 360 px, and
+// on those reports, the same compared by ตำบล and AGED9's ด้าน 1 at the
+// review widths, the check exits 1, naming the width, when a name of a unit
+// bar chart is cut off or runs into its bar (SPEC §9.4). /reports as built, before any
 // JavaScript runs, must link every report on the site, รายงานประชากร among
 // them, and the check exits 1 naming each one it lacks (SPEC §9.3). A
 // รายงานที่รอวิเคราะห์ (its source table has no page) is not on the site: the
@@ -177,6 +180,39 @@ function domRules() {
   return found;
 }
 
+// The unit bar charts' rule (SPEC §9.4): the name of each ตำบล or หน่วยบริการ
+// shows whole inside its chart and clear of its bar, on the phone's list and
+// on the SVG alike. A chart is an element marked data-unit-chart, its rows
+// its g or li children, each with its name first and its bar second; a chart
+// hidden at this width has nothing to show. Runs inside the page, so it uses
+// nothing from this module; returns the problems and the rows it measured.
+function unitChartRule() {
+  const problems = [];
+  let rows = 0;
+  for (const chart of document.querySelectorAll("[data-unit-chart]")) {
+    if (!chart.checkVisibility()) continue;
+    const box = chart.getBoundingClientRect();
+    const title = chart.getAttribute("aria-label").split(":")[0];
+    for (const row of chart.querySelectorAll(":scope > g, :scope > li")) {
+      rows++;
+      const [name, bar] = row.children;
+      const n = name.getBoundingClientRect();
+      const b = bar.getBoundingClientRect();
+      const named = `"${name.textContent.trim()}" in ${title}`;
+      // Half a pixel for the rounding of fractional layouts.
+      if (n.left < box.left - 0.5 || n.right > box.right + 0.5)
+        problems.push(
+          `${named} is cut off: ${Math.round(n.left)}–${Math.round(n.right)}px in a chart of ${Math.round(box.left)}–${Math.round(box.right)}px`,
+        );
+      if (n.left < b.right && b.left < n.right && n.top < b.bottom && b.top < n.bottom)
+        problems.push(
+          `${named} runs into its bar: the name ends at ${Math.round(n.right)}px, the bar starts at ${Math.round(b.left)}px`,
+        );
+    }
+  }
+  return { problems, rows };
+}
+
 // Controls whose name, as Chrome computes it for screen readers, is empty or
 // comes from a placeholder alone, which goes once the field has text.
 async function unlabelledControls(page) {
@@ -214,7 +250,11 @@ async function checkPage(browser, url, scripts) {
       },
     );
     await page.goto(url, { waitUntil: "networkidle" });
-    problems.push(...(await page.evaluate(domRules)), ...(await unlabelledControls(page)));
+    problems.push(
+      ...(await page.evaluate(domRules)),
+      ...(await unitChartProblems(page)),
+      ...(await unlabelledControls(page)),
+    );
   } finally {
     await page.close();
   }
@@ -229,8 +269,17 @@ function blockTiles(page) {
   );
 }
 
-// The widths of REVIEW_WIDTHS at which a page scrolls sideways, as problems
-// naming the width; domRules checks the same at WIDTH.
+// The rows of unit bar charts unitChartRule has measured, on every page and width
+let unitChartRows = 0;
+async function unitChartProblems(page) {
+  const { problems, rows } = await page.evaluate(unitChartRule);
+  unitChartRows += rows;
+  return problems;
+}
+
+// The widths of REVIEW_WIDTHS at which a page scrolls sideways or a name of a
+// unit bar chart does not show whole, as problems naming the width; domRules
+// and unitChartRule check the same at WIDTH.
 async function overflowProblems(browser, url) {
   const problems = [];
   const page = await browser.newPage();
@@ -245,6 +294,7 @@ async function overflowProblems(browser, url) {
       });
       if (scrollWidth > clientWidth)
         problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
+      for (const problem of await unitChartProblems(page)) problems.push(`at ${width}px wide: ${problem}`);
     }
   } finally {
     await page.close();
@@ -472,6 +522,12 @@ const POPULATION_TAMBON = "/reports/population?area=540603";
 // รายงานประชากร at a หมู่บ้าน: หมู่ 17 ห้วยหม้ายหล่ายห้วย, the longest name, in
 // the หมู่บ้าน <select> and the results' area at 320 px (FEATURES F69)
 const POPULATION_VILLAGE = "/reports/population?area=54060317";
+// The same reports compared by ตำบล, as by หน่วยบริการ is the default (SPEC
+// §9.4), and the รายละเอียด of AGED9's ด้าน 1, its counts by หน่วยบริการ
+const unitReports = [
+  ...wideReports.map((urlPath) => `${urlPath}?by=area`),
+  ...reports.filter((r) => r.source_table === "s_aged9").map((r) => `/reports/${r.opendata_id}?domain=1`),
+];
 // Built pages, then รายงานประชากร at a ตำบล and a หมู่บ้าน: only there does the
 // หมู่บ้าน <select> show, and only at a หมู่บ้าน its results
 const checkedPaths = [...urlPaths, POPULATION_TAMBON, POPULATION_VILLAGE];
@@ -496,6 +552,7 @@ try {
     POPULATION_TAMBON,
     POPULATION_VILLAGE,
     ...wideReports,
+    ...unitReports,
   ]) {
     for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
@@ -524,5 +581,6 @@ const populationResult = !shownYear
 console.log(
   `dc-check: ${checkedPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON}, ${POPULATION_VILLAGE} and a report of each of ${wideReports.length} table(s) ` +
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
+    `the names of ${unitChartRows} row(s) of unit bar charts show whole and clear of their bars at every width checked; ` +
     `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
 );
