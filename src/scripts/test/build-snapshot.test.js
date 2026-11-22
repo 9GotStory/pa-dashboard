@@ -301,8 +301,8 @@ test("hospitals with hospprefix blank, not one of รพ. / รพ.สต. / ส
       ["06415", '""'],
     ].map(
       ([code, value]) =>
-        `build-snapshot: warning: hospitals row ${code} has hospprefix ${value}, not รพ., รพ.สต. or สสช.; ` +
-        "the pages show its hospname without a prefix (SCHEMA §1)",
+        `build-snapshot: warning: hospitals row ${code} has hospprefix ${value}, not one of รพ. รพ.สต. สสช.; ` +
+        "the pages show its hospname without a prefix (SCHEMA §7)",
     ),
   );
   assert.deepEqual(snapshot(res.cwd).read("catalog.json").hospitals, catalog.hospitals);

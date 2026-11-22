@@ -169,14 +169,14 @@ for (const entry of catalog.reports) {
 
 // A คำนำหน้าหน่วยบริการ outside these 3 (blank, or missing from GAS before
 // #346) only drops the prefix from that name, so it warns and goes on
-// (SCHEMA §1). The same 3 as HOSP_PREFIXES in src/lib/dc/hospitals.ts, which
+// (SCHEMA §7). The same 3 as HOSP_PREFIXES in src/lib/dc/hospitals.ts, which
 // this script cannot import without a module-type warning of Node's.
 const HOSP_PREFIXES = ["รพ.", "รพ.สต.", "สสช."];
 for (const h of catalog.hospitals) {
   if (!HOSP_PREFIXES.includes(h.hospprefix)) {
     console.warn(
       `build-snapshot: warning: hospitals row ${h.hospcode} has hospprefix ${JSON.stringify(h.hospprefix ?? "")}, ` +
-        "not รพ., รพ.สต. or สสช.; the pages show its hospname without a prefix (SCHEMA §1)",
+        `not one of ${HOSP_PREFIXES.join(" ")}; the pages show its hospname without a prefix (SCHEMA §7)`,
     );
   }
 }

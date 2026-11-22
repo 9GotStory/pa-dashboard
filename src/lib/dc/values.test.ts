@@ -403,6 +403,8 @@ test("the CSV of results by hosp → each หน่วยบริการ row 
     { hospcode: "06413", areacode: "54060101", target: 2, result: 1 },
     { hospcode: "11170", areacode: "54060107", target: 2, result: 2 },
   ]);
+  // The CSV as ดาวน์โหลด CSV builds it: the names of totalsBy through
+  // resultsText's unitTable into reportCsv
   const rowsOf = (by: "area" | "hosp") => {
     const query = { area: "540601", period: "year", measure: null, by } as const;
     const units = totalsBy(b, DM_SCREEN, query, NAMES)!;

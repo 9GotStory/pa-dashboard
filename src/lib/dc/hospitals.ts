@@ -1,7 +1,7 @@
 import type { DcCatalog } from "./types";
 
 /** The คำนำหน้าหน่วยบริการ a hospitals row may have (SCHEMA §1); the prebuild warns of any other */
-export const HOSP_PREFIXES = ["รพ.", "รพ.สต.", "สสช."];
+const HOSP_PREFIXES = ["รพ.", "รพ.สต.", "สสช."];
 
 /**
  * The name of a หน่วยบริการ wherever the Data Center shows one (SCHEMA §4.4):
