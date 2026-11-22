@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { MAINS, MCH, PROMOTION, SERVICE_PLAN, VACCINES } from "./fixtures/catalog-20261104";
+import { unitTable } from "../../components/dc/report/resultsText";
+import { reportCsv } from "./csv";
 import { HEADERS } from "./fixtures/headers-20261104";
 import { S_AGED9, S_EPI1, S_EPI2 as S_EPI2_CUT, S_KPI_FOOD } from "./fixtures/reports-20261111";
 import type {
@@ -350,7 +352,8 @@ test("area 540601 → only the rows whose areacode starts with 540601 (a tambon 
   });
 });
 
-// Names from catalog.json (tambon_master and hospitals of PA-Data), part of them
+// Names from catalog.json (tambon_master and hospitals of PA-Data, with the
+// คำนำหน้าหน่วยบริการ of #346), part of them
 const NAMES = {
   areas: [
     { id: "540601", name_th: "บ้านหนุน" },
@@ -358,9 +361,9 @@ const NAMES = {
     { id: "540608", name_th: "ทุ่งน้าว" },
   ],
   hospitals: [
-    { hospcode: "06413", hospname: "บ้านหนุน", tambon_id: "540601" },
-    { hospcode: "06414", hospname: "ทุ่งน้าว", tambon_id: "540608" },
-    { hospcode: "11170", hospname: "สอง", tambon_id: "540601" },
+    { hospcode: "06413", hospname: "บ้านหนุน", tambon_id: "540601", hospprefix: "รพ.สต." },
+    { hospcode: "06414", hospname: "ทุ่งน้าว", tambon_id: "540608", hospprefix: "รพ.สต." },
+    { hospcode: "11170", hospname: "สอง", tambon_id: "540601", hospprefix: "รพ." },
   ],
 };
 
@@ -378,7 +381,7 @@ test("by area → one row per tambon named from areas, in code order; a code not
   ]);
 });
 
-test("area 540601 by hosp → the rows of that tambon by hospcode, whatever the hospital's own tambon_id; a hospcode not in hospitals → หน่วยบริการ {hospcode}", () => {
+test("area 540601 by hosp → the rows of that tambon by hospcode, whatever the hospital's own tambon_id, named with คำนำหน้าหน่วยบริการ; a hospcode not in hospitals → หน่วยบริการ {hospcode}", () => {
   const b = block(HEADERS.s_dm_screen, [
     { hospcode: "11170", areacode: "54060107", target: 2, result: 2 },
     { hospcode: "06413", areacode: "54060101", target: 2, result: 1 },
@@ -388,11 +391,27 @@ test("area 540601 by hosp → the rows of that tambon by hospcode, whatever the 
     { hospcode: "77777", areacode: "54060103", target: 4, result: 3 },
   ]);
   assert.deepEqual(totalsBy(b, DM_SCREEN, { area: "540601", period: "year", measure: null, by: "hosp" }, NAMES), [
-    { key: "06413", name: "บ้านหนุน", totals: { target: 4, result: 3, pct: 75 } },
-    { key: "06414", name: "ทุ่งน้าว", totals: { target: 4, result: 1, pct: 25 } },
-    { key: "11170", name: "สอง", totals: { target: 2, result: 2, pct: 100 } },
+    { key: "06413", name: "รพ.สต.บ้านหนุน", totals: { target: 4, result: 3, pct: 75 } },
+    { key: "06414", name: "รพ.สต.ทุ่งน้าว", totals: { target: 4, result: 1, pct: 25 } },
+    { key: "11170", name: "รพ.สอง", totals: { target: 2, result: 2, pct: 100 } },
     { key: "77777", name: "หน่วยบริการ 77777", totals: { target: 4, result: 3, pct: 75 } },
   ]);
+});
+
+test("the CSV of results by hosp → each หน่วยบริการ row named with คำนำหน้าหน่วยบริการ; by area → the ตำบล names as they are", () => {
+  const b = block(HEADERS.s_dm_screen, [
+    { hospcode: "06413", areacode: "54060101", target: 2, result: 1 },
+    { hospcode: "11170", areacode: "54060107", target: 2, result: 2 },
+  ]);
+  const rowsOf = (by: "area" | "hosp") => {
+    const query = { area: "540601", period: "year", measure: null, by } as const;
+    const units = totalsBy(b, DM_SCREEN, query, NAMES)!;
+    const table = unitTable("หน่วยบริการ", units, totals(b, DM_SCREEN, query)!, "รวมตำบลบ้านหนุน");
+    const csv = reportCsv({ report: DM_SCREEN, year: "2569", filters: "", dateCom: "", table });
+    return csv.text.split("\r\n").slice(-3, -1);
+  };
+  assert.deepEqual(rowsOf("hosp"), ['"รพ.สต.บ้านหนุน","2","1","50.00"', '"รพ.สอง","2","2","100.00"']);
+  assert.deepEqual(rowsOf("area").slice(-1), ['"บ้านหนุน","4","3","75.00"']);
 });
 
 test("by area on a header no rule knows → null, as totals", () => {

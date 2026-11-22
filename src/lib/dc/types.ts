@@ -42,7 +42,8 @@ export interface DcTopic {
 export interface GasCatalog {
   meta: { current_year: string; years: string[]; district_code: string; generated_at: string };
   areas: { id: string; name_th: string }[];
-  hospitals: { hospcode: string; hospname: string; tambon_id: string }[];
+  // hospprefix: "" from a hospitals sheet without the column, missing from GAS before #346 (SCHEMA §3.1)
+  hospitals: { hospcode: string; hospname: string; tambon_id: string; hospprefix?: string }[];
   topics: DcTopic[];
   reports: DcReport[];
 }

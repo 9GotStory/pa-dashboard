@@ -123,13 +123,22 @@ function report(catId, [id, subgroup, order]) {
   };
 }
 
+// คำนำหน้าหน่วยบริการ as hcode.moph.go.th named them on 22 Nov 2569 (#346):
+// these two, and รพ.สต. for the other 15.
+const HOSP_PREFIX = { 11170: "รพ.", 10368: "สสช." };
+
 // ?action=catalog after F12: the seed in reverse, since GAS lists topics and
 // reports in sheet order, unsorted (SCHEMA §3.1).
 function seedCatalog() {
   return {
     meta: { current_year: "2569", years: WINDOW, district_code: "5406", generated_at: "2026-11-03T08:00:00.000Z" },
     areas: TAMBON_MASTER.slice(1).map(([id, name_th]) => ({ id, name_th })),
-    hospitals: HOSPITALS.slice(1).map(([hospcode, hospname, tambon_id]) => ({ hospcode, hospname, tambon_id })),
+    hospitals: HOSPITALS.slice(1).map(([hospcode, hospname, tambon_id]) => ({
+      hospcode,
+      hospname,
+      tambon_id,
+      hospprefix: HOSP_PREFIX[hospcode] ?? "รพ.สต.",
+    })),
     topics: SEED.map(([catId, order]) => topic(catId, order)).reverse(),
     reports: SEED.flatMap(([catId, , reports]) => reports.map((r) => report(catId, r))).reverse(),
   };
@@ -270,6 +279,33 @@ test("catalog and every report answered → meta.json, catalog.json, pa.json, po
       ["กลุ่มอายุ 5 ปี", ["s_epi5 c47283d3c2c1e6528ddcf88c254f21b3", "s_epi_complete f033ab37c30201f73f142449d037028d"]],
     ],
   );
+});
+
+test("hospitals with hospprefix blank, not one of รพ. / รพ.สต. / สสช., or missing → one warning per hospcode naming it, exit 0, and catalog.json keeps the rows as GAS sent them", async (t) => {
+  const catalog = seedCatalog();
+  const at = (code) => catalog.hospitals.find((h) => h.hospcode === code);
+  at("06413").hospprefix = "";
+  at("06414").hospprefix = "รพ.สต";
+  delete at("06415").hospprefix;
+  const gas = await startStub(t, gasOf(catalog));
+
+  const res = await run({ NEXT_PUBLIC_GAS_SCRIPT_URL: gas.url });
+
+  assert.equal(res.code, 0, res.stderr);
+  const warnings = res.stderr.split("\n").filter((line) => line.includes("warning"));
+  assert.deepEqual(
+    warnings,
+    [
+      ["06413", '""'],
+      ["06414", '"รพ.สต"'],
+      ["06415", '""'],
+    ].map(
+      ([code, value]) =>
+        `build-snapshot: warning: hospitals row ${code} has hospprefix ${value}, not รพ., รพ.สต. or สสช.; ` +
+        "the pages show its hospname without a prefix (SCHEMA §1)",
+    ),
+  );
+  assert.deepEqual(snapshot(res.cwd).read("catalog.json").hospitals, catalog.hospitals);
 });
 
 test("the seed listed in reverse → catalog.json has its หมวด, หัวข้อ, กลุ่ม and รายงาน in the order of SCHEMA §6", async (t) => {

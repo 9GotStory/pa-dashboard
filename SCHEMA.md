@@ -12,7 +12,7 @@
 | `settings` | แก้: เพิ่ม `district_code`, `deploy_hook_url` | ผู้ดูแล | GAS |
 | `kpi_registry`, `kpi_master` | เดิม | ผู้ดูแล | GAS → PA |
 | `kpi_epi` | เดิม (catalog อ่านเกณฑ์รายวัคซีน) | ผู้ดูแล | GAS → PA, catalog |
-| `hospitals`, `tambon_master` | เดิม (catalog อ่านด้วย) | ผู้ดูแล | GAS → PA, catalog |
+| `hospitals`, `tambon_master` | เดิม (catalog อ่านด้วย) · `hospitals` แก้: เพิ่มคอลัมน์ D `hospprefix` (#346) | ผู้ดูแล | GAS → PA, catalog |
 | `system_logs` | เดิม | GAS | ผู้ดูแล |
 | ชีตข้อมูลปีปัจจุบัน `s_*` | เดิม ชื่อเดิม โครงเดิม แต่เหลือเฉพาะแถวของอำเภอ | GAS | GAS (`BATCH_ALL`, report) |
 | ชีตข้อมูลปีย้อนหลัง `s_*_y{YYYY}` | ใหม่ | GAS | GAS (report) |
@@ -25,7 +25,7 @@
 
 - แถว 1 เป็น header · ตัวอ่านใหม่ทั้งหมด (`hdc_topics`, `hdc_reports`, `sync_status`, `registry_population`, `registry_population_age`, `registry_population_village` และการอ่าน `hospitals`/`tambon_master` ใน `?action=catalog`) อ่านคอลัมน์ตามชื่อ header (trim + ตัวพิมพ์เล็ก) แบบเดียวกับตัวอ่านแท็บ registry ของเดิม ลำดับคอลัมน์ไม่มีผล · ตัวอ่านเดิม (`settings` = trim อย่างเดียว, ชีตข้อมูล = header ตรง ๆ) ไม่แก้
 - ค่าติ๊กอ่านด้วย `parseBool` เดิม
-- header จริงที่ตรวจจากชีต 29 ต.ค. 2569: `hospitals` = `hospcode, hospname, tambon_id` (17 แถว) · `tambon_master` = `id, name_th, district_id, zip_code` (8 แถวของ `5406`) · PA อ่านสองชีตนี้ตามตำแหน่งคอลัมน์ ส่วนตัวอ่านใหม่อ่านตามชื่อ · ตารางข้อมูลทั้ง 18 ตารางตรวจ header แล้วตาม §4.1 รวม `s_kpi_dental28`/`s_kpi_dental33` ซึ่งมี `target`/`result` และมีค่า `target` จริง (comment ใน `verify-all.js` ที่ว่า dental33 ไม่มี target เป็นข้อมูลเก่า)
+- header จริงที่ตรวจจากชีต 29 ต.ค. 2569: `hospitals` = `hospcode, hospname, tambon_id` (17 แถว) · `tambon_master` = `id, name_th, district_id, zip_code` (8 แถวของ `5406`) · PA อ่านสองชีตนี้ตามตำแหน่งคอลัมน์ ส่วนตัวอ่านใหม่อ่านตามชื่อ · ตั้งแต่ #346 `hospitals` = `hospcode, hospname, tambon_id, hospprefix`: `hospprefix` ต่อท้ายเป็นคอลัมน์ D เก็บ**คำนำหน้าหน่วยบริการ** (GLOSSARY) ค่าใดค่าหนึ่งจาก `รพ.`, `รพ.สต.`, `สสช.` ตามชื่อทางการใน hcode.moph.go.th (ตรวจ 22 พ.ย. 2569: `11170` = `รพ.`, `10368` = `สสช.` อีก 15 แห่ง = `รพ.สต.`) ไม่ได้มาจากประเภทหน่วยงาน เพราะ hcode จัด 16 แห่งที่ไม่ใช่ รพ. เป็น "ศูนย์บริการสาธารณสุข อปท." หลังถ่ายโอน รหัส hostype จึงใช้แทนไม่ได้ · เก็บในชีต ไม่เก็บในโค้ด ผู้ดูแลแก้ได้เอง · PA อ่าน 3 key แรกของแถว คอลัมน์ D จึงไม่กระทบ PA · ตารางข้อมูลทั้ง 18 ตารางตรวจ header แล้วตาม §4.1 รวม `s_kpi_dental28`/`s_kpi_dental33` ซึ่งมี `target`/`result` และมีค่า `target` จริง (comment ใน `verify-all.js` ที่ว่า dental33 ไม่มี target เป็นข้อมูลเก่า)
 
 ## 2. รายละเอียดชีต
 
@@ -203,7 +203,7 @@
 | `meta.years` | window เรียงจากน้อยไปมาก |
 | `meta.generated_at` | เวลาที่สร้าง response (ISO) |
 | `areas` | `tambon_master` แถวที่ `district_id = district_code` → `{ id, name_th }` |
-| `hospitals` | `hospitals` → `{ hospcode, hospname, tambon_id }` |
+| `hospitals` | `hospitals` → `{ hospcode, hospname, tambon_id, hospprefix }` · `hospprefix` อ่านตามชื่อ header แล้ว trim ชีตที่ยังไม่มีคอลัมน์นี้ได้ `""` (#346) |
 | `topics` | ทุกแถวของ `hdc_topics` ที่ `cat_id` ผ่านรูปแบบ |
 | `reports` | รายงานที่ใช้งาน (§2.3) |
 | `reports[].measure_goals` | แถวของ `kpi_epi` ที่ `source_sheet = source_table` และมี `value_prefix` → `{ [value_prefix]: target }` · แถวที่ `target` ไม่ใช่ตัวเลข 0–100 (รวมช่องว่าง) ถูกข้าม รายการนั้นจึงไม่มีเกณฑ์ เหมือนรายการที่ไม่มีใน `kpi_epi` (§4.4, §6, #112) |
@@ -417,6 +417,7 @@ GAS ที่ยังไม่มี action นี้ (ก่อน deploy ข�
 - `T` = Σ เป้าหมาย, `R` = Σ ผลงาน และ `pct` = `R / T × 100` เมื่อ `T > 0` ไม่อย่างนั้น `null`
 - จัดกลุ่มรายตำบลด้วย `areacode.slice(0, 6)` แล้วหาชื่อจาก `areas` ถ้าไม่พบแสดง "รหัสพื้นที่ {6 หลัก}"
 - จัดกลุ่มรายหน่วยบริการด้วย `hospcode` แล้วหาชื่อจาก `hospitals` ถ้าไม่พบแสดง "หน่วยบริการ {hospcode}"
+- ชื่อหน่วยบริการทุกที่ของ Data Center (ป้ายแท่ง แถวตาราง ข้อความสรุป CSV และรายชื่อหน่วยบริการของตำบลบนหน้าแรก) มาจาก `hospitalName` ใน `src/lib/dc/hospitals.ts`: คำนำหน้าหน่วยบริการต่อติดกับ `hospname` เช่น "รพ.สอง", "รพ.สต.บ้านหนุน", "สสช.แม่แรม" · ใช้ `hospname` ตามชีต ไม่เติม "บ้าน" ตามชื่อทางการ · `hospprefix` ว่าง ไม่ใช่ 1 ใน 3 ค่า หรือไม่มีใน `catalog.json` (GAS ก่อน #346) → ชื่อเปล่า · ชื่อตำบลไม่มีคำนำหน้านี้ · PA (`/pa`) ไม่เปลี่ยน (#346)
 - แนวโน้ม: คำนวณซ้ำทีละ block ปี
 - ผ่านเกณฑ์เมื่อ `pct ≥ goal` โดยเทียบค่าก่อนปัดเหมือน PA และแสดงร้อยละด้วย `formatPct` ใน `src/lib/dc/format.ts` (ทศนิยม 2 ตำแหน่ง สำเนาของ PA)
 - เกณฑ์ของรายการวัคซีน = `measure_goals[measure]` อย่างเดียว ไม่มี → ไม่มีเกณฑ์ (`null`) ไม่ใช้ `goal` ของรายงาน (SPEC §9.4, ADR-0015)
@@ -855,6 +856,7 @@ Request (`Content-Type: application/json`):
 - ตัดกลุ่ม หัวข้อ และหมวดที่ไม่มีรายงานที่ใช้งานออก
 - ตรวจความครบ: ทุก block ปีต้อง `sheet_rows = expected_rows`, ทุกปีใน `report.years` ต้องมี block ใน `years` (§3.2 ข้ามปีที่ชีตหาย), รายงานที่ใช้งานทุกตัวที่มีปีปัจจุบันใน `years` ต้องได้ `rows.length > 0` และต้องมีรายงานที่ใช้งานอย่างน้อยหนึ่งตัวที่มีแถวในปีปัจจุบัน ไม่อย่างนั้น exit 1 (รายงานที่ยังไม่มีปีปัจจุบันผ่านได้ หน้าเว็บแสดงปีล่าสุดที่มีข้อมูล หรือ "ยังไม่มีข้อมูล" ถ้าไม่มีสักปี SPEC §9.3)
 - ตรวจขนาดไฟล์ตาม SPEC §6.1: เกินเป้าหมาย = exit 1, ถึง 80% = เตือน
+- เตือนหนึ่งบรรทัดต่อ `hospcode` ที่ `hospprefix` ว่าง ไม่ใช่ `รพ.`/`รพ.สต.`/`สสช.` หรือไม่มีฟิลด์ (§1) ไม่ล้ม เพราะหน้าเว็บแค่แสดงชื่อเปล่า · `catalog.json` เก็บแถวตามที่ GAS ส่ง (#346)
 
 `population.json` (เฟส 2) จากคำตอบของ `?action=registry_population` (§3.9):
 - `years` = ปีของคำตอบที่มีแถว `population` อย่างน้อย 1 แถว เรียงน้อยไปมาก ทุกปีมีแถว `population` ครบ ส่วน `age` และ `village` มีเฉพาะปีสุดท้าย (ปีล่าสุดที่มีแถว `population`) ปีอื่นเป็น `[]` และถ้าปีสุดท้ายไม่มีแถวอายุหรือแถวหมู่บ้านก็เป็น `[]` · แถวคัดลอกจากคำตอบโดยไม่แก้
@@ -953,7 +955,7 @@ export interface DcTopic {
 export interface GasCatalog {
   meta: { current_year: string; years: string[]; district_code: string; generated_at: string };
   areas: { id: string; name_th: string }[];
-  hospitals: { hospcode: string; hospname: string; tambon_id: string }[];
+  hospitals: { hospcode: string; hospname: string; tambon_id: string; hospprefix?: string }[];   // hospprefix ไม่มีเมื่อ GAS ก่อน #346 (§3.1)
   topics: DcTopic[];
   reports: DcReport[];
 }
