@@ -246,10 +246,7 @@ test("ตำบลบ้านหนุน → รายละเอียด by
 test("a link with no by, ?by=hosp or ?by=area → ทั้งอำเภอ still by ตำบล, ตำบลบ้านหนุน by หน่วยบริการ, though the other pages default to หน่วยบริการ (#345)", () => {
   const by = (search: string) =>
     epiValues(EPI1, reportQuery(EPI1, new URLSearchParams(search), NAMES), NAMES, YEARS).query.by;
-  assert.deepEqual(
-    ["", "by=hosp", "by=area", "measure=mmr"].map(by),
-    ["area", "area", "area", "area"],
-  );
+  assert.deepEqual(["", "by=hosp", "by=area", "by=area&measure=mmr"].map(by), ["area", "area", "area", "area"]);
   assert.equal(by("area=540601"), "hosp");
 });
 
