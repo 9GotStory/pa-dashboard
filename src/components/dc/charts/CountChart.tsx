@@ -1,5 +1,6 @@
 import { formatCount } from "@/lib/dc/format";
 import type { UnitCount } from "../report/resultsText";
+import { BarRect } from "./Bar";
 import UnitList from "./UnitList";
 
 const ROW = 30;
@@ -41,7 +42,7 @@ export default function CountChart({ title, units }: { title: string; units: Uni
             </text>
             <svg x={BARS_X} y={i * ROW + 8} width={BARS_WIDTH} height={ROW - 16}>
               <rect width="100%" height="100%" rx="3" className="fill-dc-canvas" />
-              <rect width={`${r.share}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
+              <BarRect width={`${r.share}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
             </svg>
             <text
               x="100%"

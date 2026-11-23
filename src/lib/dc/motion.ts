@@ -10,6 +10,23 @@ export const TRANSITION = { duration: 0.15, ease: [0.4, 0, 0.2, 1] as [number, n
 export const PRESS = { scale: 0.97 };
 export const PRESS_WIDE = { scale: 0.99 };
 
+// How a bar slides to its new value, and a folded part grows and shrinks
+// (F92): slower than TRANSITION, so the viewer sees which bars changed, on
+// the same easing. INSTANT is the same change at once, for a viewer who asks
+// for reduced motion: width and height are not transforms, which
+// MotionConfig would still for them.
+export const CHANGE = { duration: 0.3, ease: TRANSITION.ease };
+export const INSTANT = { duration: 0 };
+
+// The body of a folded part (src/lib/dc/fold.ts, F92): grown to the height
+// of what is in it (auto, which Motion measures), or shrunk to nothing. Motion
+// starts each from the height the body has, so a shut body must already be at
+// 0 when it starts to grow.
+export const FOLD_BODY = {
+  shown: { height: "auto" },
+  hidden: { height: 0 },
+};
+
 // How the results come in after แสดงผล (F91): from clear to shown, as
 // keyframes so the fade starts from clear even when it is already shown.
 export const FADE_IN = { opacity: [0, 1] };

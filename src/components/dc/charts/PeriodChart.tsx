@@ -1,5 +1,6 @@
 import { formatCount } from "@/lib/dc/format";
 import type { Totals } from "@/lib/dc/types";
+import { BarRect } from "./Bar";
 
 const HEIGHT = 210;
 const PLOT_TOP = 12;
@@ -74,14 +75,14 @@ export default function PeriodChart({
           (p, i) =>
             p.totals && (
               <g key={p.label}>
-                <rect
+                <BarRect
                   x={`${(i + 0.14) * slot}%`}
                   y={`${y(p.totals.target)}%`}
                   width={`${0.34 * slot}%`}
                   height={`${100 - y(p.totals.target)}%`}
                   className="fill-dc-brand-deep"
                 />
-                <rect
+                <BarRect
                   x={`${(i + 0.52) * slot}%`}
                   y={`${y(p.totals.result)}%`}
                   width={`${0.34 * slot}%`}

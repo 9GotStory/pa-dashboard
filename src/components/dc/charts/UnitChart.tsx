@@ -1,5 +1,6 @@
 import { formatPct } from "@/lib/dc/format";
 import type { UnitTotals } from "@/lib/dc/types";
+import { BarRect } from "./Bar";
 import UnitList from "./UnitList";
 
 const ROW = 30;
@@ -45,7 +46,7 @@ export default function UnitChart({ title, units, goal }: { title: string; units
             <svg x={BARS_X} y={i * ROW + 8} width={BARS_WIDTH} height={ROW - 16}>
               <rect width="100%" height="100%" rx="3" className="fill-dc-canvas" />
               {r.share !== null && (
-                <rect width={`${r.share}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
+                <BarRect width={`${r.share}%`} height="100%" rx="3" className="fill-dc-brand-primary" />
               )}
             </svg>
             <text
