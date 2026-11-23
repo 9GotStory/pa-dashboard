@@ -4,7 +4,7 @@ import { Fragment, type ReactNode } from "react";
 type Row = { term: string; detail: ReactNode };
 
 /** Term and detail rows */
-function Rows({ rows }: { rows: Row[] }) {
+function TermRows({ rows }: { rows: Row[] }) {
   return (
     <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
       {rows.map((s) => (
@@ -43,7 +43,7 @@ export default function ReportAbout(props: {
       <div className="mt-3 grid items-start gap-3 md:grid-cols-2">
         <div className="min-w-0 rounded-lg border border-dc-border-subtle bg-white p-4">
           <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">แหล่งข้อมูล</h3>
-          <Rows rows={sourceRows} />
+          <TermRows rows={sourceRows} />
         </div>
         <details className="group min-w-0 rounded-lg border border-dc-border-subtle bg-white print:details-content:[content-visibility:visible]">
           <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-4 font-prompt text-[13px] font-semibold text-dc-brand-deep [&::-webkit-details-marker]:hidden">
@@ -58,7 +58,7 @@ export default function ReportAbout(props: {
             {refRows && (
               <>
                 <h3 className="mt-3 font-prompt text-[13px] font-semibold text-dc-brand-deep">รหัสอ้างอิง</h3>
-                <Rows rows={refRows} />
+                <TermRows rows={refRows} />
               </>
             )}
           </div>
