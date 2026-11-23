@@ -48,7 +48,7 @@ export default function PopulationPyramid({
       <h2 id="pyramid-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
         โครงสร้างประชากร
       </h2>
-      <p className="text-xs text-dc-text-secondary">ช่วงอายุ 5 ปี ชายและหญิง · {source}</p>
+      <p className="text-sm text-dc-text-secondary">ช่วงอายุ 5 ปี ชายและหญิง · {source}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3">
         <p className="text-sm font-semibold text-dc-brand-deep">{scope}</p>
         <PressButton
@@ -80,7 +80,7 @@ export default function PopulationPyramid({
             </dd>
             <dd className="mt-2 text-xs text-dc-text-secondary">ของ {formatCount(age.age_total)} คนที่แยกอายุได้</dd>
           </dl>
-          <p className="mt-4 border-t border-dc-border-subtle pt-3 text-xs text-dc-text-secondary">
+          <p className="mt-4 border-t border-dc-border-subtle pt-3 text-sm text-dc-text-secondary">
             <UnsplitText unsplit={age.unsplit} />
           </p>
         </div>
@@ -142,7 +142,7 @@ export function PyramidRows({
     <div className="mx-auto max-w-3xl">
       <p
         aria-hidden="true"
-        className={`${ROW_GRID} border-b border-dc-border-subtle px-1 pb-2 text-[11px] font-bold text-dc-brand-deep sm:px-2`}
+        className={`${ROW_GRID} border-b border-dc-border-subtle px-1 pb-2 text-xs font-bold text-dc-brand-deep sm:px-2`}
       >
         <span className="inline-flex items-center justify-end gap-1.5">
           <i className="inline-block size-2.5 rounded-sm bg-dc-pyramid-male" />
@@ -177,7 +177,7 @@ export function PyramidRows({
               }
               onClick={() => setShown(b.label)}
               onFocus={() => setShown(b.label)}
-              className={`${ROW_GRID} min-h-7 rounded-md px-1 text-[11px] tabular-nums transition-colors sm:px-2 sm:text-xs ${
+              className={`${ROW_GRID} min-h-7 rounded-md px-1 text-xs tabular-nums transition-colors sm:px-2 ${
                 b.label === shown ? "bg-dc-highlight-soft" : "hover:bg-dc-canvas"
               }`}
             >
@@ -200,12 +200,12 @@ export function PyramidRows({
         })}
       </div>
       {first && (
-        <p className="mt-2 flex items-center gap-1.5 text-[11px] text-dc-text-secondary">
+        <p className="mt-2 flex items-center gap-1.5 text-sm text-dc-text-secondary">
           <i aria-hidden="true" className="inline-block h-2.5 w-4 shrink-0 rounded-sm border-2 border-dc-brand-deep" />
           เส้นขอบคือปี {first.year} ปีข้อมูลแรกที่มีข้อมูลอายุ ให้เห็นว่าโครงสร้างเปลี่ยนไปอย่างไร
         </p>
       )}
-      <p aria-live="polite" className="mt-3 rounded-md bg-dc-surface-muted px-3 py-2 text-xs text-dc-brand-deep">
+      <p aria-live="polite" className="mt-3 rounded-md bg-dc-surface-muted px-3 py-2 text-sm text-dc-brand-deep">
         {band
           ? `${scope} · ช่วงอายุ ${bandName(band.label)} รวม ${formatCount(bandTotal)} คน ร้อยละ ${formatPct((bandTotal / age.age_total) * 100)} ของผู้ที่แยกอายุได้`
           : "เลือกช่วงอายุเพื่อดูยอดรวมและร้อยละ"}

@@ -160,7 +160,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                     {e.report.report_name}
                   </strong>
                   {e.group.subgroup && (
-                    <small className="mt-1 text-[11px] text-dc-text-secondary">{e.group.subgroup}</small>
+                    <small className="mt-1 text-xs text-dc-text-secondary">{e.group.subgroup}</small>
                   )}
                 </PressLink>
               </li>

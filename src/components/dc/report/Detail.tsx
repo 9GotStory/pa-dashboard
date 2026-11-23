@@ -78,7 +78,7 @@ export default function Detail(props: {
         <section aria-labelledby={`${DETAIL_ID}-title`} className="mt-6">
           <div className="mb-4 flex flex-wrap items-start justify-between gap-2 border-b border-dc-border-subtle pb-3">
             <div className="min-w-0">
-              <p className="text-[11px] font-semibold text-dc-brand-accent">{eyebrow}</p>
+              <p className="text-xs font-semibold text-dc-brand-accent">{eyebrow}</p>
               <h3
                 id={`${DETAIL_ID}-title`}
                 ref={headingRef}

@@ -143,7 +143,7 @@ function Domains(props: {
         >
           ผลการคัดกรองทั้ง 9 ด้าน
         </h3>
-        <p className="text-xs text-dc-text-secondary">จำนวนรายการจากข้อมูลต้นทาง · เลือกด้านเพื่อดูรายละเอียดรายพื้นที่</p>
+        <p className="text-sm text-dc-text-secondary">จำนวนรายการจากข้อมูลต้นทาง · เลือกด้านเพื่อดูรายละเอียดรายพื้นที่</p>
       </div>
       <ul>
         {domains.map((d) => (
@@ -165,7 +165,7 @@ function Domains(props: {
           </li>
         ))}
       </ul>
-      <p className="border-t border-dc-border-subtle px-4 py-3 text-[11px] text-dc-text-secondary">
+      <p className="border-t border-dc-border-subtle px-4 py-3 text-sm text-dc-text-secondary">
         จำนวนรายด้านไม่ใช่อัตราความเสี่ยง ไม่ใช่ผลผ่านหรือไม่ผ่าน และไม่จำเป็นต้องเท่ากับผลงานที่คัดกรองครบ 9 ด้าน
       </p>
     </section>
@@ -190,7 +190,7 @@ function DomainFigures(props: {
   return (
     <>
       {/* What a ด้าน counts (SPEC §9.4, GLOSSARY "ด้าน") */}
-      <p className="mb-4 text-xs font-semibold text-dc-brand-deep">จำนวนรายการตามข้อมูลต้นทาง ไม่ใช่จำนวนผู้มีความเสี่ยง</p>
+      <p className="mb-4 text-sm font-semibold text-dc-brand-deep">จำนวนรายการตามข้อมูลต้นทาง ไม่ใช่จำนวนผู้มีความเสี่ยง</p>
       {detail.count !== null && shown ? (
         <Comparison unitLabel={unitLabel} valueLabel="จำนวน" sort={sort} onSort={onSort}>
           <CountPanel unitLabel={unitLabel} units={shown} />

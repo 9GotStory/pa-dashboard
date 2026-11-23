@@ -7,7 +7,7 @@ type Row = { term: string; detail: ReactNode };
 /** Term and detail rows */
 function TermRows({ rows }: { rows: Row[] }) {
   return (
-    <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-xs">
+    <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1.5 text-sm">
       {rows.map((s) => (
         <Fragment key={s.term}>
           <dt className="text-dc-text-secondary">{s.term}</dt>
@@ -54,7 +54,7 @@ export default function ReportAbout(props: {
             <ChevronRight aria-hidden="true" className="size-4 shrink-0 group-open:rotate-90 print:hidden" />
             {refRows ? "วิธีคำนวณ ข้อจำกัด และรหัสอ้างอิง" : "วิธีคำนวณและข้อจำกัด"}
           </PressSummary>
-          <div className="border-t border-dc-border-subtle p-4 text-xs leading-relaxed">
+          <div className="border-t border-dc-border-subtle p-4 text-sm leading-relaxed">
             <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
             <div className="mb-3">{method}</div>
             <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">ข้อจำกัด</h3>
