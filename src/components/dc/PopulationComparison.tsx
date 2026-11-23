@@ -5,6 +5,7 @@ import * as m from "motion/react-m";
 import { useState } from "react";
 import { formatCount } from "@/lib/dc/format";
 import type { AreaPopulation, HomePopulation } from "@/lib/dc/types";
+import { Bar } from "./charts/Bar";
 import { PressButton, usePress } from "./Press";
 import Segmented from "./Segmented";
 
@@ -28,7 +29,10 @@ const PICKED = "bg-dc-highlight-soft font-bold";
  * source as the summary is. A bar chart of รวม with the figure by each bar,
  * or a table with the อำเภอ's total, one at a time: both are on the page and
  * the one not shown is hidden. The ตำบล go by code, or by population with
- * ties by code. A bar or a row picks its ตำบล through onPick, for the ตำบล
+ * ties by code. A sort keeps the chart's rows in place and slides each bar
+ * from its old length to the new one's (F93): a row is keyed by its place,
+ * not by its ตำบล, as rows that move are layout animation (SPEC §9.1). A
+ * bar or a row picks its ตำบล through onPick, for the ตำบล
  * that are pickable: one that catalog.json's areas lacks has no map area to
  * pick. selected marks the ตำบล picked anywhere. DistrictExplorer renders
  * it, holding the ตำบล picked.
@@ -76,11 +80,11 @@ export default function PopulationComparison({
         <div hidden={view !== "chart"} className="px-2 py-3 sm:px-4">
           <p className="px-2 pb-2 text-sm text-dc-text-secondary">ประชากรรวมของแต่ละตำบล (คน) · เลือกแท่งเพื่อดูตำบลนั้น</p>
           <div role="group" aria-label={`กราฟประชากรรายตำบล (คน) · ${source}`} className="grid gap-0.5">
-            {areas.map((a) => {
+            {areas.map((a, place) => {
               const picked = a.key === selected;
               return (
                 <PressButton
-                  key={a.key}
+                  key={place}
                   wide
                   type="button"
                   aria-pressed={picked}
@@ -93,9 +97,9 @@ export default function PopulationComparison({
                 >
                   <span className="truncate text-dc-brand-deep">{a.name}</span>
                   <span aria-hidden="true" className="block h-3.5 overflow-hidden rounded-full bg-dc-surface-muted">
-                    <span
+                    <Bar
+                      width={`${(a.totals.total / top) * 100}%`}
                       className={`block h-full rounded-full ${picked ? "bg-dc-brand-primary" : "bg-dc-brand-accent"}`}
-                      style={{ width: `${(a.totals.total / top) * 100}%` }}
                     />
                   </span>
                   <span className="text-right font-semibold text-dc-brand-deep tabular-nums">

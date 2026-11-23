@@ -1,12 +1,16 @@
 "use client";
 
 import { RotateCcw } from "lucide-react";
+import * as m from "motion/react-m";
 import dynamic from "next/dynamic";
 import { useState } from "react";
 import { preconnect } from "react-dom";
 import { formatCount } from "@/lib/dc/format";
 import { hospitalName } from "@/lib/dc/hospitals";
+import { FADED, STILL_SHOWN } from "@/lib/dc/motion";
 import type { AreaVillages, DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
+import ChangeFlash from "./ChangeFlash";
+import { useMotionReady } from "./MotionRoot";
 import PopulationComparison from "./PopulationComparison";
 import PopulationPyramid from "./PopulationPyramid";
 import { PressButton } from "./Press";
@@ -35,7 +39,9 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * the comparison, labelled with source, comes next, then the โครงสร้างประชากร
  * of what is picked when the year has age rows. Without population, the
  * panel has no population rows and neither follows. A pick from the
- * comparison stays where it is: its bar or row shows the pick.
+ * comparison stays where it is: its bar or row shows the pick. The panel's
+ * title flashes at each pick (F93), and the cover over the map until it has
+ * come fades out.
  */
 export default function DistrictExplorer({
   areas,
@@ -53,6 +59,11 @@ export default function DistrictExplorer({
   preconnect(TILE_SERVER);
   const [selected, setSelected] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "failed">("loading");
+  // The cover over the map fades out once the map has come, then goes; at
+  // once if Motion's features have not loaded, as nothing would fade it.
+  const motionReady = useMotionReady();
+  const [coverGone, setCoverGone] = useState(false);
+  const mapCome = mapStatus === "ready";
   const area = areas.find((a) => a.id === selected);
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
@@ -75,15 +86,21 @@ export default function DistrictExplorer({
               tileServer={TILE_SERVER}
               selected={selected}
               onSelect={setSelected}
-              onLoad={(ok) => setMapStatus(ok ? "ready" : "failed")}
+              onLoad={(ok) => {
+                setMapStatus(ok ? "ready" : "failed");
+                if (ok && !motionReady) setCoverGone(true);
+              }}
             />
-            {mapStatus !== "ready" && (
-              <p
+            {!coverGone && (
+              <m.p
                 role="status"
-                className="absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-text-secondary"
+                initial={false}
+                animate={mapCome ? FADED : STILL_SHOWN}
+                onAnimationComplete={() => mapCome && setCoverGone(true)}
+                className={`absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-text-secondary ${mapCome ? "pointer-events-none" : ""}`}
               >
-                {mapStatus === "loading" ? "กำลังโหลดแผนที่…" : "โหลดขอบเขตตำบลไม่สำเร็จ เลือกตำบลจากรายการได้"}
-              </p>
+                {mapStatus === "failed" ? "โหลดขอบเขตตำบลไม่สำเร็จ เลือกตำบลจากรายการได้" : "กำลังโหลดแผนที่…"}
+              </m.p>
             )}
           </div>
 
@@ -116,7 +133,10 @@ export default function DistrictExplorer({
             </select>
 
             <div className="mt-5">
-              <h3 className="font-prompt text-lg font-semibold text-dc-brand-deep">{title}</h3>
+              <h3 className="relative font-prompt text-lg font-semibold text-dc-brand-deep">
+                <ChangeFlash on={title} />
+                <span className="relative">{title}</span>
+              </h3>
               {area ? (
                 <>
                   <p className="text-xs text-dc-text-secondary">รหัสตำบล {area.id}</p>

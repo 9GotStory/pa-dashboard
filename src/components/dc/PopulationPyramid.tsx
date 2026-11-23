@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import type { AgeProfile, PopulationAgeReport, UnsplitGroup } from "@/lib/dc/types";
+import ChangeFlash from "./ChangeFlash";
 import { Bar } from "./charts/Bar";
 import { PressButton } from "./Press";
 
@@ -29,7 +30,9 @@ const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
  * pyramid (PyramidRows) of scope, the ตำบล picked or the whole อำเภอ,
  * labelled with source. Beside it on a wide screen, under it on a phone: the
  * people aged 60 and over, their ร้อยละ of those split by age, and the
- * ประชากรที่ไม่แยกอายุ the pyramid leaves out, by kind. Every figure but a
+ * ประชากรที่ไม่แยกอายุ the pyramid leaves out, by kind. The scope line
+ * flashes when scope changes and the bars slide to the new values (F93).
+ * Every figure but a
  * row's รวม and ร้อยละ comes as computed (AgeProfile). ล้างการเลือก calls
  * onClear. DistrictExplorer renders it, holding the ตำบล picked.
  */
@@ -51,7 +54,10 @@ export default function PopulationPyramid({
       </h2>
       <p className="text-sm text-dc-text-secondary">ช่วงอายุ 5 ปี ชายและหญิง · {source}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3">
-        <p className="text-sm font-semibold text-dc-brand-deep">{scope}</p>
+        <p className="relative text-sm font-semibold text-dc-brand-deep">
+          <ChangeFlash on={scope} />
+          <span className="relative">{scope}</span>
+        </p>
         <PressButton
           type="button"
           onClick={onClear}
@@ -77,7 +83,7 @@ export default function PopulationPyramid({
               ร้อยละ {formatPct(age.aged60_pct)}
             </dd>
             <dd aria-hidden="true" className="mt-2 h-2 overflow-hidden rounded-full bg-dc-surface-muted">
-              <span className="block h-full rounded-full bg-dc-brand-accent" style={{ width: `${age.aged60_pct}%` }} />
+              <Bar width={`${age.aged60_pct}%`} className="block h-full rounded-full bg-dc-brand-accent" />
             </dd>
             <dd className="mt-2 text-xs text-dc-text-secondary">ของ {formatCount(age.age_total)} คนที่แยกอายุได้</dd>
           </dl>
