@@ -18,6 +18,7 @@ import TrendList from "../charts/TrendList";
 import { changeText } from "../report/changeText";
 import ReportActions from "../report/ReportActions";
 import ReportLoader from "../report/ReportLoader";
+import { PressButton } from "../Press";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsHeader from "../report/ResultsHeader";
 import { useUrlQuery } from "../report/useUrlQuery";
@@ -201,12 +202,12 @@ function PopulationFilters(props: {
             </select>
           </div>
         )}
-        <button
+        <PressButton
           type="submit"
-          className="h-11 rounded-md bg-dc-brand-primary px-5 font-semibold text-white hover:bg-dc-brand-deep"
+          className="h-11 rounded-md bg-dc-brand-primary px-5 font-semibold text-white transition-colors hover:bg-dc-brand-deep"
         >
           แสดงผล
-        </button>
+        </PressButton>
       </form>
     </section>
   );

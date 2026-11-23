@@ -9,6 +9,7 @@ import { hospitalName } from "@/lib/dc/hospitals";
 import type { AreaVillages, DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
 import PopulationComparison from "./PopulationComparison";
 import PopulationPyramid from "./PopulationPyramid";
+import { PressButton } from "./Press";
 
 type Area = DcCatalog["areas"][number];
 type Hospital = DcCatalog["hospitals"][number];
@@ -91,14 +92,14 @@ export default function DistrictExplorer({
               <label htmlFor="area-select" className="font-prompt font-semibold text-dc-brand-deep">
                 เลือกตำบล
               </label>
-              <button
+              <PressButton
                 type="button"
                 onClick={() => setSelected(null)}
                 className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-dc-brand-primary hover:underline"
               >
                 <RotateCcw className="size-3.5" />
                 ล้างการเลือก
-              </button>
+              </PressButton>
             </div>
             <select
               id="area-select"

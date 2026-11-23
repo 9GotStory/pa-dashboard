@@ -1,6 +1,7 @@
 "use client";
 
 import type { reportCsv } from "@/lib/dc/csv";
+import { PressButton } from "../Press";
 
 /**
  * ดาวน์โหลด CSV and พิมพ์รายงาน (SPEC §9.4). csv builds the file of what is
@@ -22,21 +23,21 @@ export default function ReportActions({ csv }: { csv: (() => ReturnType<typeof r
   };
   return (
     <div className="flex gap-2 print:hidden">
-      <button
+      <PressButton
         type="button"
         onClick={download}
         disabled={!csv}
-        className="min-h-10 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep hover:bg-dc-highlight-soft disabled:opacity-50 sm:flex-none"
+        className="min-h-10 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep transition-colors hover:bg-dc-highlight-soft disabled:opacity-50 sm:flex-none"
       >
         ดาวน์โหลด CSV
-      </button>
-      <button
+      </PressButton>
+      <PressButton
         type="button"
         onClick={() => window.print()}
-        className="min-h-10 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep hover:bg-dc-highlight-soft sm:flex-none"
+        className="min-h-10 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep transition-colors hover:bg-dc-highlight-soft sm:flex-none"
       >
         พิมพ์รายงาน
-      </button>
+      </PressButton>
     </div>
   );
 }

@@ -1,9 +1,11 @@
 "use client";
 
 import { ChartBar, MoveHorizontal, Table } from "lucide-react";
+import * as m from "motion/react-m";
 import { useState } from "react";
 import { formatCount } from "@/lib/dc/format";
 import type { AreaPopulation, HomePopulation } from "@/lib/dc/types";
+import { PressButton, usePress } from "./Press";
 import Segmented from "./Segmented";
 
 type View = "chart" | "table";
@@ -46,6 +48,7 @@ export default function PopulationComparison({
 }) {
   const [view, setView] = useState<View>("chart");
   const [sort, setSort] = useState<Sort>("code");
+  const pressRow = usePress(true);
   const { district } = population;
   // population.areas is by code already.
   const areas: AreaPopulation[] =
@@ -76,14 +79,15 @@ export default function PopulationComparison({
             {areas.map((a) => {
               const picked = a.key === selected;
               return (
-                <button
+                <PressButton
                   key={a.key}
+                  wide
                   type="button"
                   aria-pressed={picked}
                   aria-label={`ตำบล${a.name} ${formatCount(a.totals.total)} คน`}
                   disabled={!pickable(a.key)}
                   onClick={() => onPick(a.key)}
-                  className={`grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 rounded-md px-2 text-left text-xs sm:grid-cols-[8rem_minmax(0,1fr)_4.5rem] sm:text-[13px] ${
+                  className={`grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 rounded-md px-2 text-left text-xs transition-colors sm:grid-cols-[8rem_minmax(0,1fr)_4.5rem] sm:text-[13px] ${
                     picked ? PICKED : "hover:bg-dc-canvas"
                   }`}
                 >
@@ -97,7 +101,7 @@ export default function PopulationComparison({
                   <span className="text-right font-semibold text-dc-brand-deep tabular-nums">
                     {formatCount(a.totals.total)}
                   </span>
-                </button>
+                </PressButton>
               );
             })}
           </div>
@@ -134,10 +138,13 @@ export default function PopulationComparison({
                   const canPick = pickable(a.key);
                   return (
                     // A click anywhere on the row picks it; the ตำบล's button is the row for a keyboard.
-                    <tr
+                    <m.tr
                       key={a.key}
                       onClick={canPick ? () => onPick(a.key) : undefined}
-                      className={`border-t border-dc-border-subtle ${picked ? PICKED : canPick ? "cursor-pointer hover:bg-dc-canvas" : ""}`}
+                      whileTap={canPick ? pressRow : undefined}
+                      // Out of the Tab order that Motion's whileTap would put it in: the ตำบล's button is there
+                      tabIndex={-1}
+                      className={`border-t border-dc-border-subtle transition-colors ${picked ? PICKED : canPick ? "cursor-pointer hover:bg-dc-canvas" : ""}`}
                     >
                       <th scope="row" className="py-1 pr-3 pl-2 text-left font-semibold text-dc-brand-deep sm:pl-3">
                         {/* No onClick of its own: its click reaches the row's. */}
@@ -156,7 +163,7 @@ export default function PopulationComparison({
                         {formatCount(a.totals.total)}
                       </td>
                       <td className="py-1 pr-4 pl-3 text-right sm:pr-5">{formatCount(a.totals.house)}</td>
-                    </tr>
+                    </m.tr>
                   );
                 })}
               </tbody>

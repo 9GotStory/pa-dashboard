@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { PressLink } from "../Press";
 
 /** The breadcrumb of a report page (SPEC §9.4): รายงานสุขภาพ first; a crumb without href is plain text */
 export default function ReportBreadcrumb({ crumbs }: { crumbs: { label: string; href?: string }[] }) {
@@ -9,9 +9,12 @@ export default function ReportBreadcrumb({ crumbs }: { crumbs: { label: string; 
           <li key={c.label} className="flex items-center gap-2">
             {i > 0 && <span aria-hidden="true">/</span>}
             {c.href ? (
-              <Link href={c.href} className="font-semibold text-dc-brand-primary underline-offset-2 hover:underline">
+              <PressLink
+                href={c.href}
+                className="font-semibold text-dc-brand-primary underline-offset-2 hover:underline"
+              >
                 {c.label}
-              </Link>
+              </PressLink>
             ) : (
               c.label
             )}

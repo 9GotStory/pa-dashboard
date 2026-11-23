@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { DcCatalog, DcReportData, ReportQuery } from "@/lib/dc/types";
 import { dataYears, measureLabel, periods, reportQuery, shownMeasures, yearBlock } from "@/lib/dc/values";
+import { PressButton } from "../Press";
 import { PERIOD_LABELS, UNIT_LABELS } from "./labels";
 
 function Select(props: {
@@ -127,12 +128,12 @@ export default function ReportFilters(props: {
             />
           )}
         </div>
-        <button
+        <PressButton
           type="submit"
-          className="h-10 rounded-md bg-dc-brand-primary px-5 font-semibold text-white hover:bg-dc-brand-deep"
+          className="h-10 rounded-md bg-dc-brand-primary px-5 font-semibold text-white transition-colors hover:bg-dc-brand-deep"
         >
           แสดงผล
-        </button>
+        </PressButton>
       </form>
     </section>
   );

@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import type { AgeProfile, PopulationAgeReport, UnsplitGroup } from "@/lib/dc/types";
+import { PressButton } from "./Press";
 
 // The columns of a ช่วงอายุ row and of the header above the rows: ชาย bar,
 // ชาย figure, ช่วงอายุ, หญิง figure, หญิง bar. The figures keep their width
@@ -50,14 +51,14 @@ export default function PopulationPyramid({
       <p className="text-xs text-dc-text-secondary">ช่วงอายุ 5 ปี ชายและหญิง · {source}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3">
         <p className="text-sm font-semibold text-dc-brand-deep">{scope}</p>
-        <button
+        <PressButton
           type="button"
           onClick={onClear}
           className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-dc-brand-primary hover:underline"
         >
           <RotateCcw className="size-3.5" />
           ล้างการเลือก
-        </button>
+        </PressButton>
       </div>
 
       <div className="mt-1 grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(16rem,0.62fr)]">
@@ -163,8 +164,9 @@ export function PyramidRows({
         {[...age.bands].reverse().map((b) => {
           const was = firstOf(b.label);
           return (
-            <button
+            <PressButton
               key={b.label}
+              wide
               type="button"
               aria-pressed={b.label === shown}
               aria-label={
@@ -175,7 +177,7 @@ export function PyramidRows({
               }
               onClick={() => setShown(b.label)}
               onFocus={() => setShown(b.label)}
-              className={`${ROW_GRID} min-h-7 rounded-md px-1 text-[11px] tabular-nums sm:px-2 sm:text-xs ${
+              className={`${ROW_GRID} min-h-7 rounded-md px-1 text-[11px] tabular-nums transition-colors sm:px-2 sm:text-xs ${
                 b.label === shown ? "bg-dc-highlight-soft" : "hover:bg-dc-canvas"
               }`}
             >
@@ -193,7 +195,7 @@ export function PyramidRows({
                 <span className="block h-full bg-dc-pyramid-female" style={{ width: barWidth(b.female) }} />
                 {was && <span className={`${OUTLINE} left-0`} style={{ width: barWidth(was.female) }} />}
               </span>
-            </button>
+            </PressButton>
           );
         })}
       </div>

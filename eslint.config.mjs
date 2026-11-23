@@ -40,6 +40,22 @@ const populationData = {
     "values.ts takes POPULATION_REPORT alone from population-report.ts, or every page carries รายงานประชากร's data layer (CODING_STANDARDS §4): put what both need in a module of its own, as change.ts.",
 };
 
+// PA does not use Motion (ADR-0019), nor do the Masthead and Footer that /pa
+// shares (F97).
+const noMotion = {
+  "@typescript-eslint/no-restricted-imports": [
+    "error",
+    {
+      patterns: [
+        {
+          group: ["motion", "motion/*", "framer-motion", "framer-motion/*"],
+          message: "PA, and the Masthead and Footer it shares, do not use Motion (ADR-0019, CODING_STANDARDS §1).",
+        },
+      ],
+    },
+  ],
+};
+
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
@@ -87,6 +103,41 @@ const eslintConfig = defineConfig([
   {
     files: ["src/lib/dc/values.ts"],
     rules: { "no-restricted-imports": ["error", { patterns: [paFiles, fileReads, populationData] }] },
+  },
+  // Motion (ADR-0018, CODING_STANDARDS §4): the Data Center renders m under
+  // MotionRoot's strict LazyMotion, never the full motion component, which
+  // carries every feature into the JavaScript the HTML loads. These use
+  // typescript-eslint's rule, so the per-file options of the core
+  // no-restricted-imports above stay as they are.
+  {
+    files: ["src/app/(dc)/**/*.{ts,tsx}", "src/components/dc/**/*.{ts,tsx}", "src/lib/dc/**/*.{ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-restricted-imports": [
+        "error",
+        {
+          paths: [
+            ...["motion/react", "framer-motion"].map((name) => ({
+              name,
+              importNames: ["motion"],
+              message: "Data Center code renders m from motion/react-m, under MotionRoot's LazyMotion (ADR-0018).",
+            })),
+            {
+              name: "motion/react-client",
+              message: "Data Center code renders m from motion/react-m, under MotionRoot's LazyMotion (ADR-0018).",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
+    files: ["src/**/*.{ts,tsx}"],
+    ignores: ["src/app/(dc)/**", "src/components/dc/**", "src/lib/dc/**"],
+    rules: noMotion,
+  },
+  {
+    files: ["src/components/dc/{Masthead,MainNav,Footer}.tsx"],
+    rules: noMotion,
   },
   {
     files: ["src/lib/dc/**"],

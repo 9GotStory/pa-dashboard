@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type ReactNode, type RefObject } from "react";
+import { PressButton } from "../Press";
 
 // ส่วนเปิดดูรายละเอียด (SPEC §9.4): a page's ภาพรวม lists รายการ or ด้าน, and
 // one of them opens in a รายละเอียด kept in the URL (?measure=, ?domain=).
@@ -88,13 +89,13 @@ export default function Detail(props: {
               </h3>
               <p className="mt-1 text-xs text-dc-text-secondary">{context}</p>
             </div>
-            <button
+            <PressButton
               type="button"
               onClick={onClose}
-              className="min-h-10 rounded-md border border-dc-border-subtle bg-white px-3 text-xs text-dc-text-secondary hover:bg-dc-surface-muted print:hidden"
+              className="min-h-10 rounded-md border border-dc-border-subtle bg-white px-3 text-xs text-dc-text-secondary transition-colors hover:bg-dc-surface-muted print:hidden"
             >
               ปิดรายละเอียด
-            </button>
+            </PressButton>
           </div>
           {children}
         </section>
