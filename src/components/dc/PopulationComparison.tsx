@@ -142,6 +142,8 @@ export default function PopulationComparison({
                       key={a.key}
                       onClick={canPick ? () => onPick(a.key) : undefined}
                       whileTap={canPick ? pressRow : undefined}
+                      // Out of the Tab order that Motion's whileTap would put it in: the ตำบล's button is there
+                      tabIndex={-1}
                       className={`border-t border-dc-border-subtle transition-colors ${picked ? PICKED : canPick ? "cursor-pointer hover:bg-dc-canvas" : ""}`}
                     >
                       <th scope="row" className="py-1 pr-3 pl-2 text-left font-semibold text-dc-brand-deep sm:pl-3">

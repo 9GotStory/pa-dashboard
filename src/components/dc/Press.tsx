@@ -11,15 +11,20 @@ const MotionLink = m.create(Link);
 /** wide: a row or a card, which shrinks less (PRESS_WIDE) */
 type Wide = { wide?: boolean };
 
+// The whileTap of a person who asks for reduced motion. Not undefined: Motion
+// gives an element with a whileTap tabIndex 0, so the server's HTML, made
+// without knowing the setting, has it, and the browser's render must too.
+const STILL = {};
+
 /**
  * The whileTap of a control of the Data Center (SPEC §9.1 "สถานะของ
- * control", F90): it shrinks a little while pressed. Nothing for a person who
+ * control", F90): it shrinks a little while pressed. Not for a person who
  * asks for reduced motion, as MotionConfig would still snap it to the
  * shrunk size.
  */
 export function usePress(wide = false) {
   const reduce = useReducedMotion();
-  if (reduce) return undefined;
+  if (reduce) return STILL;
   return wide ? PRESS_WIDE : PRESS;
 }
 
