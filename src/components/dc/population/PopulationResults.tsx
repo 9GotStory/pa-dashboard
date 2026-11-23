@@ -19,6 +19,7 @@ import { changeText } from "../report/changeText";
 import ReportActions from "../report/ReportActions";
 import ReportLoader from "../report/ReportLoader";
 import { PressButton } from "../Press";
+import ReportLoading from "../report/ReportLoading";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
 import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
@@ -32,10 +33,10 @@ type Areas = DcCatalog["areas"];
 // since a Server Component's dynamic import of a Client Component is not code
 // split (ADR-0015).
 const PopulationUnits = dynamic(() => import("./PopulationUnits"), {
-  loading: () => <ReportStatus loading>กำลังโหลดส่วนเปรียบเทียบ…</ReportStatus>,
+  loading: () => <ReportLoading frame={false}>กำลังโหลดส่วนเปรียบเทียบ…</ReportLoading>,
 });
 const PopulationAge = dynamic(() => import("./PopulationAge"), {
-  loading: () => <ReportStatus loading>กำลังโหลดโครงสร้างอายุ…</ReportStatus>,
+  loading: () => <ReportLoading frame={false}>กำลังโหลดโครงสร้างอายุ…</ReportLoading>,
 });
 
 /**
