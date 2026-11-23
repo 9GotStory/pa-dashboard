@@ -180,7 +180,7 @@ export default function PopulationComparison({
               </tfoot>
             </table>
           </div>
-          <p className="flex items-center gap-1.5 border-t border-dc-border-subtle px-4 py-2 text-xs text-dc-text-secondary sm:hidden">
+          <p className="flex items-center gap-1.5 border-t border-dc-border-subtle px-4 py-2 text-sm text-dc-text-secondary sm:hidden">
             <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
             ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
           </p>

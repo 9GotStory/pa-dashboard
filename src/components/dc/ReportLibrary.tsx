@@ -144,7 +144,7 @@ function Directory({
             </PressButton>
           )}
         </div>
-        <p id="library-help" className="mt-2 px-1 text-xs text-dc-text-secondary">
+        <p id="library-help" className="mt-2 px-1 text-sm text-dc-text-secondary">
           ค้นหาในหัวข้อที่เลือก และแสดงผลทันที
         </p>
       </section>

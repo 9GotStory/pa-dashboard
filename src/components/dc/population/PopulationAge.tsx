@@ -188,7 +188,7 @@ function BandTable({ report, age, area }: { report: PopulationReport; age: Popul
           </table>
         </div>
       </div>
-      <p className="mt-2 flex items-center gap-1.5 text-xs text-dc-text-secondary md:hidden">
+      <p className="mt-2 flex items-center gap-1.5 text-sm text-dc-text-secondary md:hidden">
         <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
         ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
       </p>
