@@ -9,6 +9,7 @@ import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
@@ -34,7 +35,7 @@ export default function FollowPage({ id, names, years }: { id: string; names: Na
 }
 
 function Follow({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query: asked, search, apply, heading } = useReportQuery(data, names);
+  const { query: asked, search, apply, applyCount, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const { query, block, total, change, goal, units, trend, quarters, bpMethods } = followValues(
@@ -57,20 +58,22 @@ function Follow({ data, names, years }: { data: DcReportData; names: Names; year
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {block ? (
-        <QuarterFigures
-          {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
-          onSort={setSort}
-          steps={quarters}
-          year={query.year}
-        >
-          {total && bpMethods && (
-            <BpMethodsPanel year={query.year} period={query.period} result={total.result} bpMethods={bpMethods} />
-          )}
-        </QuarterFigures>
-      ) : (
-        <NoYear year={query.year} />
-      )}
+      <ResultsFade applyCount={applyCount}>
+        {block ? (
+          <QuarterFigures
+            {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
+            onSort={setSort}
+            steps={quarters}
+            year={query.year}
+          >
+            {total && bpMethods && (
+              <BpMethodsPanel year={query.year} period={query.period} result={total.result} bpMethods={bpMethods} />
+            )}
+          </QuarterFigures>
+        ) : (
+          <NoYear year={query.year} />
+        )}
+      </ResultsFade>
     </>
   );
 }

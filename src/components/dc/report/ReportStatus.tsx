@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** A line in place of the results: loading, a failed load, or why there is nothing to show */
+/** A line in place of the results: a failed load, or why there is nothing to show (กำลังโหลด: ReportLoading) */
 export default function ReportStatus({ children }: { children: ReactNode }) {
   return (
     <p role="status" className="px-4 py-12 text-center text-dc-text-secondary sm:px-6">

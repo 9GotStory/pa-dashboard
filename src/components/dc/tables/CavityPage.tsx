@@ -13,6 +13,7 @@ import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
@@ -44,7 +45,7 @@ export default function CavityPage({ id, names }: { id: string; names: Names; ye
 }
 
 function Cavity({ data, names }: { data: DcReportData; names: Names }) {
-  const { query, search, apply, heading } = useReportQuery(data, names);
+  const { query, search, apply, applyCount, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const { block, goal, passed, funnel, units } = cavityValues(data, query, names);
@@ -73,25 +74,27 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {!block ? (
-        <NoYear year={query.year} />
-      ) : units?.length === 0 ? (
-        <ReportStatus>
-          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
-        </ReportStatus>
-      ) : !funnel || !shown ? (
-        <ReportStatus>ไม่มีข้อมูลในปีงบประมาณ {query.year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</ReportStatus>
-      ) : (
-        <div className="px-4 pb-6 sm:px-6">
-          <FunnelSummary funnel={funnel} goal={goal} passed={passed} />
-          <div className="mt-4">
-            <Comparison unitLabel={unitLabel} valueLabel="ร้อยละฟันดีไม่มีผุ" sort={sort} onSort={setSort}>
-              <UnitPanel unitLabel={unitLabel} units={shown} goal={goal} pctLabel="ร้อยละฟันดีไม่มีผุ" />
-              <CavityTable unitLabel={unitLabel} units={shown} funnel={funnel} totalLabel={totalLabel} />
-            </Comparison>
+      <ResultsFade applyCount={applyCount}>
+        {!block ? (
+          <NoYear year={query.year} />
+        ) : units?.length === 0 ? (
+          <ReportStatus>
+            ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+          </ReportStatus>
+        ) : !funnel || !shown ? (
+          <ReportStatus>ไม่มีข้อมูลในปีงบประมาณ {query.year}: ผลงานรวมทั้งอำเภอว่างทั้งปี</ReportStatus>
+        ) : (
+          <div className="px-4 pb-6 sm:px-6">
+            <FunnelSummary funnel={funnel} goal={goal} passed={passed} />
+            <div className="mt-4">
+              <Comparison unitLabel={unitLabel} valueLabel="ร้อยละฟันดีไม่มีผุ" sort={sort} onSort={setSort}>
+                <UnitPanel unitLabel={unitLabel} units={shown} goal={goal} pctLabel="ร้อยละฟันดีไม่มีผุ" />
+                <CavityTable unitLabel={unitLabel} units={shown} funnel={funnel} totalLabel={totalLabel} />
+              </Comparison>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </ResultsFade>
     </>
   );
 }

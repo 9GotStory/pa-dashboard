@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { loadReport } from "@/lib/dc/client";
 import type { DcReportData } from "@/lib/dc/types";
+import ReportLoading from "./ReportLoading";
 import ReportStatus from "./ReportStatus";
 
 /**
@@ -19,7 +20,7 @@ export default function ReportLoader<T = DcReportData>({
   children: (data: T) => ReactNode;
 }) {
   return (
-    <Suspense fallback={<ReportStatus>กำลังโหลดข้อมูลรายงาน…</ReportStatus>}>
+    <Suspense fallback={<ReportLoading>กำลังโหลดข้อมูลรายงาน…</ReportLoading>}>
       <Load<T> id={id}>{children}</Load>
     </Suspense>
   );
@@ -43,7 +44,7 @@ function Load<T>({ id, children }: { id: string; children: (data: T) => ReactNod
     };
   }, [id, attempt]);
 
-  if (load === "loading") return <ReportStatus>กำลังโหลดข้อมูลรายงาน…</ReportStatus>;
+  if (load === "loading") return <ReportLoading>กำลังโหลดข้อมูลรายงาน…</ReportLoading>;
   if (load === "failed") {
     return (
       <ReportStatus>

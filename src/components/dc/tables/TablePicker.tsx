@@ -4,13 +4,13 @@ import dynamic from "next/dynamic";
 import type { ComponentType } from "react";
 import type { tablePage } from "@/lib/dc/tables";
 import type { DcCatalog } from "@/lib/dc/types";
-import ReportStatus from "../report/ReportStatus";
+import ReportLoading from "../report/ReportLoading";
 
 type Props = { id: string; names: Pick<DcCatalog, "areas" | "hospitals">; years: string[] };
 /** A page of src/lib/dc/tables/index.ts */
 type Page = NonNullable<ReturnType<typeof tablePage>>;
 
-const loading = () => <ReportStatus>กำลังโหลดข้อมูลรายงาน…</ReportStatus>;
+const loading = () => <ReportLoading>กำลังโหลดข้อมูลรายงาน…</ReportLoading>;
 
 // Each page in a chunk of its own, so a report loads its own table's page
 // only (SPEC §9.4, §9.6). A Client Component, since a Server Component's

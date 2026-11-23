@@ -14,6 +14,7 @@ import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { measuresCsv, resultsText } from "../report/resultsText";
 import SummaryTiles from "../report/SummaryTiles";
@@ -50,7 +51,7 @@ export default function EpiPage({ id, names, years }: { id: string; names: Names
 }
 
 function Epi({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query: asked, search, apply, push, heading } = useReportQuery(data, names);
+  const { query: asked, search, apply, applyCount, push, heading } = useReportQuery(data, names);
   const { query, block, rows, detail } = epiValues(data, asked, names, years);
   const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.measure, (measure) =>
     push({ ...query, measure }),
@@ -77,30 +78,32 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
           csv={!block ? null : detail ? csv : measuresCsv(data.report, query.year, summary, block.max_date_com, rows)}
         />
       </ResultsHeader>
-      {block ? (
-        <div className="px-4 pb-6 sm:px-6">
-          <Overview
-            layout={LAYOUTS[data.report.source_table]}
-            rows={rows}
-            open={query.measure}
-            headingRef={overviewHeading}
-            buttonProps={buttonProps}
-          />
-          <Detail
-            headingRef={detailHeading}
-            onClose={close}
-            title={detail && `วัคซีน ${detail.label}`}
-            eyebrow="รายละเอียดเฉพาะวัคซีนที่เลือก"
-            context={describe({ ...query, measure: null }, names, FIELDS)}
-          >
-            {detail && (
-              <MeasureFigures {...{ detail, unitLabel, totalLabel, sort }} year={query.year} onSort={setSort} />
-            )}
-          </Detail>
-        </div>
-      ) : (
-        <NoYear year={query.year} />
-      )}
+      <ResultsFade applyCount={applyCount}>
+        {block ? (
+          <div className="px-4 pb-6 sm:px-6">
+            <Overview
+              layout={LAYOUTS[data.report.source_table]}
+              rows={rows}
+              open={query.measure}
+              headingRef={overviewHeading}
+              buttonProps={buttonProps}
+            />
+            <Detail
+              headingRef={detailHeading}
+              onClose={close}
+              title={detail && `วัคซีน ${detail.label}`}
+              eyebrow="รายละเอียดเฉพาะวัคซีนที่เลือก"
+              context={describe({ ...query, measure: null }, names, FIELDS)}
+            >
+              {detail && (
+                <MeasureFigures {...{ detail, unitLabel, totalLabel, sort }} year={query.year} onSort={setSort} />
+              )}
+            </Detail>
+          </div>
+        ) : (
+          <NoYear year={query.year} />
+        )}
+      </ResultsFade>
     </>
   );
 }

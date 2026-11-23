@@ -19,7 +19,9 @@ import { changeText } from "../report/changeText";
 import ReportActions from "../report/ReportActions";
 import ReportLoader from "../report/ReportLoader";
 import { PressButton } from "../Press";
+import ReportLoading from "../report/ReportLoading";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { useUrlQuery } from "../report/useUrlQuery";
 
@@ -31,10 +33,10 @@ type Areas = DcCatalog["areas"];
 // since a Server Component's dynamic import of a Client Component is not code
 // split (ADR-0015).
 const PopulationUnits = dynamic(() => import("./PopulationUnits"), {
-  loading: () => <ReportStatus>กำลังโหลดส่วนเปรียบเทียบ…</ReportStatus>,
+  loading: () => <ReportLoading frame={false}>กำลังโหลดส่วนเปรียบเทียบ…</ReportLoading>,
 });
 const PopulationAge = dynamic(() => import("./PopulationAge"), {
-  loading: () => <ReportStatus>กำลังโหลดโครงสร้างอายุ…</ReportStatus>,
+  loading: () => <ReportLoading frame={false}>กำลังโหลดโครงสร้างอายุ…</ReportLoading>,
 });
 
 /**
@@ -59,6 +61,7 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
     query: asked,
     search,
     apply,
+    applyCount,
     heading,
   } = useUrlQuery<PopulationQuery>(
     (params) => ({ year: params.get("year") ?? "", area: params.get("area") ?? "all" }),
@@ -78,30 +81,32 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
       <ResultsHeader heading={heading} summary={`${populationArea(report)} · ${yearAsOf(query.year)}`} dateCom={null}>
         <ReportActions csv={shown ? () => populationCsv(report, units, districtCode) : null} />
       </ResultsHeader>
-      {!hasYear ? (
-        <NoYear year={query.year} />
-      ) : !shown ? (
-        <ReportStatus>
-          ไม่มีข้อมูลของ{populationArea(report)}ในปี {query.year}
-        </ReportStatus>
-      ) : (
-        <div className="space-y-4 px-4 pb-6 sm:px-6">
-          <Summary year={query.year} shown={shown} change={change} share={share} level={report.level} />
-          <Trend report={report} />
-          {units && <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />}
-          {report.age && <PopulationAge report={report} age={report.age} />}
-          {report.level === "village" && (
-            <section aria-labelledby="population-age">
-              <h2 id="population-age" className="mb-2 font-prompt text-base font-semibold text-dc-brand-deep">
-                โครงสร้างอายุ
-              </h2>
-              <p className="text-sm text-dc-text-secondary">
-                ไฟล์อายุของกรมการปกครองมีแค่ระดับตำบล จึงไม่มีโครงสร้างอายุของหมู่บ้าน
-              </p>
-            </section>
-          )}
-        </div>
-      )}
+      <ResultsFade applyCount={applyCount}>
+        {!hasYear ? (
+          <NoYear year={query.year} />
+        ) : !shown ? (
+          <ReportStatus>
+            ไม่มีข้อมูลของ{populationArea(report)}ในปี {query.year}
+          </ReportStatus>
+        ) : (
+          <div className="space-y-4 px-4 pb-6 sm:px-6">
+            <Summary year={query.year} shown={shown} change={change} share={share} level={report.level} />
+            <Trend report={report} />
+            {units && <PopulationUnits report={report} units={units} sort={sort} onSort={setSort} />}
+            {report.age && <PopulationAge report={report} age={report.age} />}
+            {report.level === "village" && (
+              <section aria-labelledby="population-age">
+                <h2 id="population-age" className="mb-2 font-prompt text-base font-semibold text-dc-brand-deep">
+                  โครงสร้างอายุ
+                </h2>
+                <p className="text-sm text-dc-text-secondary">
+                  ไฟล์อายุของกรมการปกครองมีแค่ระดับตำบล จึงไม่มีโครงสร้างอายุของหมู่บ้าน
+                </p>
+              </section>
+            )}
+          </div>
+        )}
+      </ResultsFade>
     </>
   );
 }
