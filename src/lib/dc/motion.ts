@@ -31,13 +31,13 @@ export const FOLD_BODY = {
 // keyframes so the fade starts from clear even when it is already shown.
 export const FADE_IN = { opacity: [0, 1] };
 
-// The flash of a part of the home page that a ตำบล pick changed (F93): its
-// highlight shows at once and fades over CHANGE, as the bars slide. A fade,
-// so it plays for a viewer who asks for reduced motion too.
+// The highlight behind a line of the home page that a ตำบล pick changed
+// (ChangeFlash, F93): it shows at once and fades over TRANSITION. A fade, so
+// it plays for a viewer who asks for reduced motion too.
 export const FLASH = { opacity: [1, 0] };
 
-// The "กำลังโหลดแผนที่…" cover once the map has come (F93): it fades out over
-// TRANSITION, then goes.
+// The "กำลังโหลดแผนที่…" cover once the map has loaded (F93): from
+// STILL_SHOWN, it fades out over TRANSITION, then goes.
 export const FADED = { opacity: 0 };
 
 // The grey blocks of a box that waits for data (ReportLoading, F91): they dim

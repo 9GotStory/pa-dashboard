@@ -40,8 +40,8 @@ const TILE_SERVER = "https://tile.openstreetmap.org";
  * of what is picked when the year has age rows. Without population, the
  * panel has no population rows and neither follows. A pick from the
  * comparison stays where it is: its bar or row shows the pick. The panel's
- * title flashes at each pick (F93), and the cover over the map until it has
- * come fades out.
+ * title flashes at each pick (F93), and the cover over the map fades out
+ * once the map has loaded.
  */
 export default function DistrictExplorer({
   areas,
@@ -59,11 +59,11 @@ export default function DistrictExplorer({
   preconnect(TILE_SERVER);
   const [selected, setSelected] = useState<string | null>(null);
   const [mapStatus, setMapStatus] = useState<"loading" | "ready" | "failed">("loading");
-  // The cover over the map fades out once the map has come, then goes; at
+  // The cover over the map fades out once the map has loaded, then goes; at
   // once if Motion's features have not loaded, as nothing would fade it.
   const motionReady = useMotionReady();
   const [coverGone, setCoverGone] = useState(false);
-  const mapCome = mapStatus === "ready";
+  const mapLoaded = mapStatus === "ready";
   const area = areas.find((a) => a.id === selected);
   const areaHospitals = hospitals.filter((h) => h.tambon_id === selected);
   const title = area ? `ตำบล${area.name_th}` : "ภาพรวมอำเภอสอง";
@@ -95,9 +95,9 @@ export default function DistrictExplorer({
               <m.p
                 role="status"
                 initial={false}
-                animate={mapCome ? FADED : STILL_SHOWN}
-                onAnimationComplete={() => mapCome && setCoverGone(true)}
-                className={`absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-text-secondary ${mapCome ? "pointer-events-none" : ""}`}
+                animate={mapLoaded ? FADED : STILL_SHOWN}
+                onAnimationComplete={() => mapLoaded && setCoverGone(true)}
+                className={`absolute inset-0 z-10 flex items-center justify-center bg-dc-canvas px-5 text-center text-dc-text-secondary ${mapLoaded ? "pointer-events-none" : ""}`}
               >
                 {mapStatus === "failed" ? "โหลดขอบเขตตำบลไม่สำเร็จ เลือกตำบลจากรายการได้" : "กำลังโหลดแผนที่…"}
               </m.p>
@@ -134,8 +134,7 @@ export default function DistrictExplorer({
 
             <div className="mt-5">
               <h3 className="relative font-prompt text-lg font-semibold text-dc-brand-deep">
-                <ChangeFlash on={title} />
-                <span className="relative">{title}</span>
+                <ChangeFlash text={title} />
               </h3>
               {area ? (
                 <>

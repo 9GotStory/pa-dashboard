@@ -32,9 +32,9 @@ const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
  * people aged 60 and over, their ร้อยละ of those split by age, and the
  * ประชากรที่ไม่แยกอายุ the pyramid leaves out, by kind. The scope line
  * flashes when scope changes and the bars slide to the new values (F93).
- * Every figure but a
- * row's รวม and ร้อยละ comes as computed (AgeProfile). ล้างการเลือก calls
- * onClear. DistrictExplorer renders it, holding the ตำบล picked.
+ * Every figure but a row's รวม and ร้อยละ comes as computed (AgeProfile).
+ * ล้างการเลือก calls onClear. DistrictExplorer renders it, holding the ตำบล
+ * picked.
  */
 export default function PopulationPyramid({
   scope,
@@ -55,8 +55,7 @@ export default function PopulationPyramid({
       <p className="text-sm text-dc-text-secondary">ช่วงอายุ 5 ปี ชายและหญิง · {source}</p>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-x-3">
         <p className="relative text-sm font-semibold text-dc-brand-deep">
-          <ChangeFlash on={scope} />
-          <span className="relative">{scope}</span>
+          <ChangeFlash text={scope} />
         </p>
         <PressButton
           type="button"

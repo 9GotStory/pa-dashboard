@@ -32,10 +32,10 @@ const PICKED = "bg-dc-highlight-soft font-bold";
  * ties by code. A sort keeps the chart's rows in place and slides each bar
  * from its old length to the new one's (F93): a row is keyed by its place,
  * not by its ตำบล, as rows that move are layout animation (SPEC §9.1). A
- * bar or a row picks its ตำบล through onPick, for the ตำบล
- * that are pickable: one that catalog.json's areas lacks has no map area to
- * pick. selected marks the ตำบล picked anywhere. DistrictExplorer renders
- * it, holding the ตำบล picked.
+ * bar or a row picks its ตำบล through onPick, for the ตำบล that are
+ * pickable: one that catalog.json's areas lacks has no map area to pick.
+ * selected marks the ตำบล picked anywhere. DistrictExplorer renders it,
+ * holding the ตำบล picked.
  */
 export default function PopulationComparison({
   population,
