@@ -135,7 +135,7 @@ function Overview(props: {
           >
             ภาพรวมการได้รับวัคซีน <span className="font-normal text-dc-text-secondary">({rows.length} รายการ)</span>
           </h3>
-          <p aria-live="polite" className="text-xs text-dc-text-secondary">
+          <p aria-live="polite" className="text-sm text-dc-text-secondary">
             {search.trim() ? `พบ ${found.length} จาก ${rows.length} รายการ` : "เลือกวัคซีนเพื่อดูรายละเอียดรายพื้นที่และแนวโน้ม"}
           </p>
         </div>
@@ -212,7 +212,7 @@ function Overview(props: {
                       {pctText(r.total?.pct ?? null)}
                     </strong>
                   </span>
-                  <span className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 text-[11px] text-dc-text-secondary">
+                  <span className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 text-xs text-dc-text-secondary">
                     <span>
                       ผลงาน {countText(r.total?.result ?? null)} / เป้าหมาย {countText(r.total?.target ?? null)} · เกณฑ์{" "}
                       {goalText(r.goal)}

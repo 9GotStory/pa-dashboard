@@ -29,7 +29,7 @@ export default function Hero({ hasComparison }: { hasComparison: boolean }) {
         >
           มองเห็นพื้นที่ <span className="block text-dc-brand-accent">เข้าใจสุขภาพ.</span>
         </h1>
-        <p className="mt-4 max-w-[490px] text-[13px] leading-[1.9] text-dc-text-secondary sm:mt-5 sm:text-[15px]">
+        <p className="mt-4 max-w-[490px] text-sm leading-[1.9] text-dc-text-secondary sm:mt-5 sm:text-[15px]">
           ศูนย์รวมข้อมูลประชากร โครงสร้างช่วงวัย และรายงานสาธารณสุขอำเภอสอง เพื่อให้ทุกการตัดสินใจเริ่มต้นจากบริบทของพื้นที่จริง
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">

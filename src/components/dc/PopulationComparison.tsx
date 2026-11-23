@@ -64,7 +64,7 @@ export default function PopulationComparison({
           <h2 id="comparison-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
             เปรียบเทียบประชากรรายตำบล
           </h2>
-          <p className="text-xs text-dc-text-secondary">รวมส่วนที่อยู่ในเขตเทศบาลแล้ว · {source}</p>
+          <p className="text-sm text-dc-text-secondary">รวมส่วนที่อยู่ในเขตเทศบาลแล้ว · {source}</p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Segmented label="รูปแบบการแสดง" options={VIEWS} value={view} onChange={setView} />
@@ -74,7 +74,7 @@ export default function PopulationComparison({
 
       <div className="mt-3 overflow-hidden rounded-[10px] border border-dc-border-subtle bg-dc-surface">
         <div hidden={view !== "chart"} className="px-2 py-3 sm:px-4">
-          <p className="px-2 pb-2 text-xs text-dc-text-secondary">ประชากรรวมของแต่ละตำบล (คน) · เลือกแท่งเพื่อดูตำบลนั้น</p>
+          <p className="px-2 pb-2 text-sm text-dc-text-secondary">ประชากรรวมของแต่ละตำบล (คน) · เลือกแท่งเพื่อดูตำบลนั้น</p>
           <div role="group" aria-label={`กราฟประชากรรายตำบล (คน) · ${source}`} className="grid gap-0.5">
             {areas.map((a) => {
               const picked = a.key === selected;
@@ -180,7 +180,7 @@ export default function PopulationComparison({
               </tfoot>
             </table>
           </div>
-          <p className="flex items-center gap-1.5 border-t border-dc-border-subtle px-4 py-2 text-[11px] text-dc-text-secondary sm:hidden">
+          <p className="flex items-center gap-1.5 border-t border-dc-border-subtle px-4 py-2 text-xs text-dc-text-secondary sm:hidden">
             <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
             ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
           </p>

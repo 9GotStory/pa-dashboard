@@ -30,7 +30,7 @@ export default function PopulationAge({ report, age }: { report: PopulationRepor
           <h2 id="population-age" className="font-prompt text-base font-semibold text-dc-brand-deep">
             โครงสร้างอายุ
           </h2>
-          <p className="text-xs text-dc-text-secondary">
+          <p className="text-sm text-dc-text-secondary">
             ทุกค่าในส่วนนี้คิดจากผู้ที่แยกอายุได้
             {shown && ` ${formatCount(shown.age_total)} คนในปี ${year}`} ไม่รวมประชากรที่ไม่แยกอายุ
           </p>
@@ -65,7 +65,7 @@ export default function PopulationAge({ report, age }: { report: PopulationRepor
             <p className="text-sm text-dc-brand-deep tabular-nums">
               ปี {year} <UnsplitText unsplit={shown.unsplit} />
             </p>
-            <p className="mt-1 text-xs text-dc-text-secondary">
+            <p className="mt-1 text-sm text-dc-text-secondary">
               ไฟล์อายุของกรมการปกครองไม่ได้นับคนกลุ่มนี้ไว้ในจำนวนรายปีอายุ จึงไม่อยู่ในส่วนโครงสร้างอายุข้างบน
             </p>
           </div>
@@ -128,7 +128,7 @@ function Aged60Trend({ age }: { age: PopulationAgeReport }) {
       <div className="hidden sm:block">
         <TrendChart title={title} points={points} goal={null} unit="pct" />
       </div>
-      <p className="mt-2 text-xs text-dc-text-secondary">
+      <p className="mt-2 text-sm text-dc-text-secondary">
         ของผู้ที่แยกอายุได้ในปีเดียวกัน
         {points.some((p) => p.value === null) && ` · "—" คือปีที่ไม่มีข้อมูลอายุ`}
       </p>
@@ -188,12 +188,12 @@ function BandTable({ report, age, area }: { report: PopulationReport; age: Popul
           </table>
         </div>
       </div>
-      <p className="mt-2 flex items-center gap-1.5 text-[11px] text-dc-text-secondary md:hidden">
+      <p className="mt-2 flex items-center gap-1.5 text-xs text-dc-text-secondary md:hidden">
         <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
         ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
       </p>
       {age.bands[0].totals.includes(null) && (
-        <p className="mt-2 text-xs text-dc-text-secondary">&quot;—&quot; คือปีที่ไม่มีข้อมูลอายุ</p>
+        <p className="mt-2 text-sm text-dc-text-secondary">&quot;—&quot; คือปีที่ไม่มีข้อมูลอายุ</p>
       )}
     </div>
   );

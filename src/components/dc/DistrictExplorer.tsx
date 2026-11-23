@@ -67,7 +67,7 @@ export default function DistrictExplorer({
         <h2 id="area-title" className="font-prompt text-lg font-semibold text-dc-brand-deep">
           สำรวจข้อมูลในพื้นที่
         </h2>
-        <p className="text-xs text-dc-text-secondary">เลือกตำบลจากแผนที่หรือรายการ เพื่อดูประชากรและหน่วยบริการที่ตั้งอยู่ในตำบลนั้น</p>
+        <p className="text-sm text-dc-text-secondary">เลือกตำบลจากแผนที่หรือรายการ เพื่อดูประชากรและหน่วยบริการที่ตั้งอยู่ในตำบลนั้น</p>
         <div className="mt-3 grid overflow-hidden rounded-[10px] border border-dc-border-subtle bg-dc-surface lg:grid-cols-[minmax(0,1.48fr)_minmax(300px,0.83fr)]">
           <div className="relative h-[345px] min-w-0 border-b border-dc-border-subtle sm:h-[410px] lg:h-[500px] lg:border-r lg:border-b-0">
             <DistrictMap
@@ -141,7 +141,7 @@ export default function DistrictExplorer({
                       ))}
                     </ul>
                   ) : (
-                    <p className="mt-1 text-xs text-dc-text-secondary">ไม่มีหน่วยบริการที่ตั้งอยู่ในตำบลนี้</p>
+                    <p className="mt-1 text-sm text-dc-text-secondary">ไม่มีหน่วยบริการที่ตั้งอยู่ในตำบลนี้</p>
                   )}
                   {panelPopulation?.villages && <VillageRows villages={panelPopulation.villages} />}
                 </>
@@ -153,7 +153,7 @@ export default function DistrictExplorer({
                     {` · หน่วยบริการ ${hospitals.length} แห่ง`}
                   </p>
                   {panelPopulation && <PopulationRows totals={panelPopulation.totals} />}
-                  <p className="mt-4 text-xs text-dc-text-secondary">เลือกตำบลเพื่อดูหน่วยบริการที่ตั้งอยู่ในตำบลนั้น</p>
+                  <p className="mt-4 text-sm text-dc-text-secondary">เลือกตำบลเพื่อดูหน่วยบริการที่ตั้งอยู่ในตำบลนั้น</p>
                 </>
               )}
               <p role="status" className="sr-only">

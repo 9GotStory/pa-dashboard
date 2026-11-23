@@ -144,7 +144,7 @@ function Directory({
             </PressButton>
           )}
         </div>
-        <p id="library-help" className="mt-2 px-1 text-[11px] text-dc-text-secondary">
+        <p id="library-help" className="mt-2 px-1 text-xs text-dc-text-secondary">
           ค้นหาในหัวข้อที่เลือก และแสดงผลทันที
         </p>
       </section>
@@ -254,7 +254,7 @@ function Directory({
               </p>
             </div>
             {libraryByReference(mains, query) && (
-              <p className="mt-4 rounded-md bg-dc-surface-muted px-3 py-2 text-xs leading-[1.7] text-dc-text-secondary">
+              <p className="mt-4 rounded-md bg-dc-surface-muted px-3 py-2 text-sm leading-[1.7] text-dc-text-secondary">
                 บางรายการตรงกับข้อมูลอ้างอิงภายในระบบ จึงอาจไม่พบคำค้นหาในชื่อรายงาน
               </p>
             )}
@@ -263,7 +263,7 @@ function Directory({
               <div className="px-2 py-16 text-center">
                 <Search aria-hidden="true" strokeWidth={1.5} className="mx-auto size-9 text-dc-text-secondary" />
                 <h3 className="mt-4 font-prompt text-lg font-semibold">ไม่พบรายงานที่ตรงกับการค้นหา</h3>
-                <p className="mt-1 text-[13px] text-dc-text-secondary">ลองเปลี่ยนคำค้นหา หรือค้นหาจากหัวข้ออื่น</p>
+                <p className="mt-1 text-sm text-dc-text-secondary">ลองเปลี่ยนคำค้นหา หรือค้นหาจากหัวข้ออื่น</p>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
                   {/* Only when the search finds reports outside the หมวด or หัวข้อ picked */}
                   {!all && libraryList(mains, everywhere).total > 0 && (
@@ -300,7 +300,7 @@ function Directory({
                             {t.category_name}
                           </h3>
                         </div>
-                        <span className="pt-1 text-[11px] text-dc-text-secondary tabular-nums">
+                        <span className="pt-1 text-xs text-dc-text-secondary tabular-nums">
                           {section.reduce((n, g) => n + g.reports.length, 0)} รายงาน
                         </span>
                       </div>
@@ -367,7 +367,7 @@ function Pick(props: {
 /** The number of reports beside รายงานทั้งหมด and the หมวด or หัวข้อ picked */
 function Count({ n }: { n: number }) {
   return (
-    <span className="shrink-0 text-[11px] font-normal text-dc-text-secondary tabular-nums">
+    <span className="shrink-0 text-xs font-normal text-dc-text-secondary tabular-nums">
       {n}
       <span className="sr-only"> รายงาน</span>
     </span>
@@ -397,9 +397,9 @@ function Row({ report, q }: { report: LibraryReport; q: string }) {
           ),
         )}
         {report.removed && (
-          <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">HDC ไม่แสดงรายงานนี้แล้ว</span>
+          <span className="mt-1 block text-xs leading-[1.7] text-dc-text-secondary">HDC ไม่แสดงรายงานนี้แล้ว</span>
         )}
-        {report.empty && <span className="mt-1 block text-[11px] leading-[1.7] text-dc-text-secondary">ยังไม่มีข้อมูล</span>}
+        {report.empty && <span className="mt-1 block text-xs leading-[1.7] text-dc-text-secondary">ยังไม่มีข้อมูล</span>}
       </span>
       <ArrowRight
         aria-hidden="true"

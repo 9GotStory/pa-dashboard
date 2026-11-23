@@ -11,7 +11,10 @@
 // has no table page, so it has no such check. On every page at 360 px, and
 // on those reports, the same compared by ตำบล and AGED9's ด้าน 1 at the
 // review widths, the check exits 1, naming the width, when a name of a unit
-// bar chart is cut off or runs into its bar (SPEC §9.4). /reports as built, before any
+// bar chart is cut off or runs into its bar (SPEC §9.4). On every page at
+// 360 px, and on those opened at the review widths at each of them, the
+// check exits 1, naming the width, the size and the text, when text of the
+// site shows smaller than 12 px (SPEC §9.1). /reports as built, before any
 // JavaScript runs, must link every report on the site, รายงานประชากร among
 // them, and the check exits 1 naming each one it lacks (SPEC §9.3). A
 // รายงานที่รอวิเคราะห์ (its source table has no page) is not on the site: the
@@ -31,6 +34,8 @@ const OUT = path.resolve("out");
 const WIDTH = 360;
 // The widths V7.6 reviews the home page at (design.md §3.3), and V1.4 /reports.
 const REVIEW_WIDTHS = [320, 390, 768, 1440, 1920];
+// The smallest text the site shows, in px (SPEC §9.1 "ขนาดตัวอักษร").
+const MIN_TEXT = 12;
 // The width the population rules read the home page at: a desktop's, with
 // the map and the panel side by side.
 const POPULATION_WIDTH = 1280;
@@ -213,6 +218,35 @@ function unitChartRule() {
   return { problems, rows };
 }
 
+// The type size rule (SPEC §9.1 "ขนาดตัวอักษร"): no text of the site shows
+// smaller than min px. The size is the one on screen, so text in an SVG
+// counts at its size after the SVG's viewBox scales it. Text the page shows
+// counts, and so does the text of a closed <details>, opened for the measure
+// and closed again; text hidden at this width does not. Leaflet's zoom
+// buttons and attribution are Leaflet's, not the site's, so they do not count.
+// Runs inside the page, so it uses nothing from this module; returns a
+// problem for each text and size, naming both.
+function smallTextRule(min) {
+  const closed = [...document.querySelectorAll("details:not([open])")];
+  closed.forEach((d) => (d.open = true));
+  const found = new Set();
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+  for (let node = walker.nextNode(); node; node = walker.nextNode()) {
+    const el = node.parentElement;
+    const text = node.textContent.replace(/\s+/g, " ").trim();
+    if (!text || el.closest("script, style, template, noscript, .leaflet-control-container")) continue;
+    if (!el.checkVisibility({ visibilityProperty: true })) continue;
+    let size = parseFloat(getComputedStyle(el).fontSize);
+    // The scale of the SVG's user units to screen pixels, 1 without a viewBox
+    const m = el instanceof SVGGraphicsElement ? el.getScreenCTM() : null;
+    if (m) size *= Math.sqrt(Math.abs(m.a * m.d - m.b * m.c));
+    // A hundredth of a pixel for the rounding of a scale
+    if (size < min - 0.01) found.add(`text at ${Math.round(size * 10) / 10}px, under ${min}px: "${text.slice(0, 60)}"`);
+  }
+  closed.forEach((d) => (d.open = false));
+  return [...found];
+}
+
 // Controls whose name, as Chrome computes it for screen readers, is empty or
 // comes from a placeholder alone, which goes once the field has text.
 async function unlabelledControls(page) {
@@ -253,6 +287,7 @@ async function checkPage(browser, url, scripts) {
     problems.push(
       ...(await page.evaluate(domRules)),
       ...(await unitChartProblems(page)),
+      ...(await page.evaluate(smallTextRule, MIN_TEXT)).map((problem) => `at ${WIDTH}px wide: ${problem}`),
       ...(await unlabelledControls(page)),
     );
   } finally {
@@ -296,6 +331,8 @@ async function overflowProblems(browser, url) {
       if (scrollWidth > clientWidth)
         problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
       for (const problem of await unitChartProblems(page)) problems.push(`at ${width}px wide: ${problem}`);
+      for (const problem of await page.evaluate(smallTextRule, MIN_TEXT))
+        problems.push(`at ${width}px wide: ${problem}`);
     }
   } finally {
     await page.close();
@@ -585,5 +622,6 @@ console.log(
   `dc-check: ${checkedPaths.length} page(s) pass at ${WIDTH} px wide; /, /reports, /reports/population, ${POPULATION_TAMBON}, ${POPULATION_VILLAGE} and a report of each of ${wideReports.length} table(s) ` +
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
     `the names of unit bar charts show whole (${unitChartMeasures} row(s) measured) and clear of their bars at every width checked; ` +
+    `no text shows under ${MIN_TEXT} px at any width checked; ` +
     `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
 );

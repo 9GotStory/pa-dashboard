@@ -54,14 +54,14 @@ export default function PeriodChart({
           {formatCount(t)}
         </text>
       ))}
-      {/* 12 months stagger on two lines, so their names never touch at 360 px */}
+      {/* 12 months and 4 ไตรมาส stagger on two lines, so their names never touch at 320 px */}
       {points.map((p, i) => (
         <text
           key={p.label}
           x={`${plotX + (plotWidth * (i + 0.5) * slot) / 100}%`}
-          y={HEIGHT - (points.length > 6 && i % 2 === 1 ? 4 : 17)}
+          y={HEIGHT - (points.length > 3 && i % 2 === 1 ? 4 : 17)}
           textAnchor="middle"
-          className="fill-dc-brand-deep text-[11px]"
+          className="fill-dc-brand-deep"
         >
           {p.label}
         </text>

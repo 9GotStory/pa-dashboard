@@ -50,7 +50,7 @@ export function UnitPanel({
   const title = `${pctLabel}ราย${unitLabel}`;
   return (
     <Surface title={title}>
-      <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+      <p className="mb-2 flex flex-wrap gap-x-4 text-xs text-dc-text-secondary">
         <Key swatch="h-2 w-4 rounded-sm bg-dc-brand-primary">{pctLabel}</Key>
         <GoalKey goal={goal} />
       </p>
@@ -67,7 +67,7 @@ export function TrendPanel({ points: trend, goal }: { points: TrendPoint[]; goal
   const points = trend.map((p) => ({ year: p.b_year, value: p.totals?.pct ?? null }));
   return (
     <Surface title="แนวโน้มร้อยละรายปี">
-      <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+      <p className="mb-2 flex flex-wrap gap-x-4 text-xs text-dc-text-secondary">
         {/* A bar like TrendList's on a phone, the line of TrendChart from sm up */}
         <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">
           ร้อยละรายปี
@@ -93,7 +93,7 @@ export function PeriodPanel(props: {
   const { year, stepName, points } = props;
   return (
     <Surface title={`เป้าหมายและผลงานราย${stepName} ปีงบประมาณ ${year}`}>
-      <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+      <p className="mb-2 flex flex-wrap gap-x-4 text-xs text-dc-text-secondary">
         <Key swatch="size-2.5 rounded-sm bg-dc-brand-deep">เป้าหมาย</Key>
         <Key swatch="size-2.5 rounded-sm bg-dc-brand-accent">ผลงาน</Key>
       </p>
@@ -118,7 +118,7 @@ export function CumulativePanel(props: {
   const points = quarters.map((q) => ({ year: PERIOD_LABELS[q.period].short, value: q.pct }));
   return (
     <Surface title={`ร้อยละสะสมรายไตรมาส ปีงบประมาณ ${year}`}>
-      <p className="mb-2 flex flex-wrap gap-x-4 text-[11px] text-dc-text-secondary">
+      <p className="mb-2 flex flex-wrap gap-x-4 text-xs text-dc-text-secondary">
         <Key swatch="h-2 w-4 rounded-full bg-dc-brand-accent sm:h-0.5 sm:rounded-none sm:bg-dc-brand-primary">
           ร้อยละสะสม
         </Key>
@@ -132,7 +132,7 @@ export function CumulativePanel(props: {
       </div>
       <div role="region" tabIndex={0} aria-label="ตารางรายไตรมาส (เลื่อนดูแนวนอนได้)" className="mt-3 overflow-x-auto">
         <table className="w-full border-collapse text-xs tabular-nums">
-          <caption className="pb-2 text-left text-[11px] text-dc-text-secondary">
+          <caption className="pb-2 text-left text-xs text-dc-text-secondary">
             ผลงานรายไตรมาสและร้อยละสะสม (ผลงานสะสม ÷ เป้าหมายทั้งปี {formatCount(target)})
           </caption>
           <thead className="bg-dc-highlight-soft text-dc-brand-deep">
@@ -220,7 +220,7 @@ export function BpMethodsPanel(props: {
   return (
     <Surface title={`จำนวนตามวิธีวัดความดัน ${PERIOD_LABELS[period].short} ปีงบประมาณ ${year}`}>
       <CountCards grid="grid-cols-2" cards={bpMethods} />
-      <p className="mt-3 text-[11px] text-dc-text-secondary">
+      <p className="mt-3 text-sm text-dc-text-secondary">
         HBPM วัดความดันที่บ้าน · OBPM วัดที่สถานบริการ · คนหนึ่งวัดได้ทั้งสองวิธี ผลรวมสองวิธีจึงเกินผลงาน ({formatCount(result)} คน) ได้
       </p>
     </Surface>
@@ -240,7 +240,7 @@ export function AgeMonthsPanel(props: { year: string; result: number; ageMonths:
         grid="grid-cols-2 sm:grid-cols-3"
         cards={ageMonths.map((m) => ({ label: `อายุ ${m.month} เดือน`, count: m.count }))}
       />
-      <p className="mt-3 text-[11px] text-dc-text-secondary">
+      <p className="mt-3 text-sm text-dc-text-secondary">
         นับเด็กที่ตอบว่ากินนมแม่อย่างเดียวในแต่ละช่วงอายุ เด็กคนหนึ่งนับได้หลายเดือนอายุ ผลรวมจึงเกินผลงาน ({formatCount(result)} คน) ได้
       </p>
     </Surface>
@@ -265,7 +265,7 @@ export function AskingPanel(props: { year: string; asking: { children: number; a
           { label: "ร้อยละสอบถาม", value: pctText(asking.pct) },
         ]}
       />
-      <p className="mt-3 text-[11px] text-dc-text-secondary">
+      <p className="mt-3 text-sm text-dc-text-secondary">
         ร้อยละสอบถาม = ถูกสอบถาม ÷ เด็กอายุครบ 6 เดือน × 100 · บอกว่าสอบถามครอบคลุมแค่ไหน ไม่ใช่ร้อยละของรายงาน จึงไม่มีเกณฑ์
       </p>
     </Surface>

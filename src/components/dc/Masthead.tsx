@@ -20,9 +20,7 @@ export default function Masthead() {
             <strong className="block font-prompt text-base leading-snug font-bold text-dc-brand-deep transition-colors group-hover:text-dc-brand-primary group-active:text-dc-brand-accent sm:text-lg">
               Song Health <span className="text-dc-brand-accent">Data Center</span>
             </strong>
-            <small className="mt-0.5 block text-[11px] text-dc-text-secondary sm:text-xs">
-              ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่
-            </small>
+            <small className="mt-0.5 block text-xs text-dc-text-secondary">ศูนย์ข้อมูลสุขภาพอำเภอสอง จังหวัดแพร่</small>
           </span>
         </Link>
         <nav

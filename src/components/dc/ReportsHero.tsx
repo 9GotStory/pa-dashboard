@@ -18,7 +18,7 @@ export default function ReportsHero() {
         >
           รายงานสุขภาพ<span className="text-dc-brand-accent">.</span>
         </h1>
-        <p className="mt-3 max-w-[535px] text-[13px] leading-[1.85] text-dc-text-secondary sm:text-sm">
+        <p className="mt-3 max-w-[535px] text-sm leading-[1.85] text-dc-text-secondary">
           สำรวจและค้นหารายงานด้านสุขภาพและสาธารณสุขของอำเภอสอง จังหวัดแพร่
         </p>
       </div>
@@ -78,7 +78,7 @@ export default function ReportsHero() {
             />
           </g>
         </svg>
-        <p className="absolute bottom-5 left-8 flex items-center gap-2 text-[11px] text-dc-highlight-soft">
+        <p className="absolute bottom-5 left-8 flex items-center gap-2 text-xs text-dc-highlight-soft">
           <span aria-hidden="true" className="h-px w-7 bg-dc-highlight-soft/70" />
           ค้นพบข้อมูลได้ง่ายในที่เดียว
         </p>
