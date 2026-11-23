@@ -43,7 +43,7 @@ export default function Aged9Page({ id, names, years }: { id: string; names: Nam
 }
 
 function Aged9({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query, search, apply, applied, push, heading } = useReportQuery(data, names);
+  const { query, search, apply, applyCount, push, heading } = useReportQuery(data, names);
   const { block, total, change, goal, units, trend, domains, detail } = aged9Values(data, query, names, years);
   const { overviewHeading, detailHeading, buttonProps, close } = useDetail(
     query.domain === null ? null : String(query.domain),
@@ -83,7 +83,7 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      <ResultsFade applied={applied}>
+      <ResultsFade applyCount={applyCount}>
         {!block ? (
           <NoYear year={query.year} />
         ) : units?.length === 0 ? (

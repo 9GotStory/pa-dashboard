@@ -35,7 +35,7 @@ export default function FollowPage({ id, names, years }: { id: string; names: Na
 }
 
 function Follow({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query: asked, search, apply, applied, heading } = useReportQuery(data, names);
+  const { query: asked, search, apply, applyCount, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const { query, block, total, change, goal, units, trend, quarters, bpMethods } = followValues(
@@ -58,7 +58,7 @@ function Follow({ data, names, years }: { data: DcReportData; names: Names; year
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      <ResultsFade applied={applied}>
+      <ResultsFade applyCount={applyCount}>
         {block ? (
           <QuarterFigures
             {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}

@@ -45,7 +45,7 @@ export default function CavityPage({ id, names }: { id: string; names: Names; ye
 }
 
 function Cavity({ data, names }: { data: DcReportData; names: Names }) {
-  const { query, search, apply, applied, heading } = useReportQuery(data, names);
+  const { query, search, apply, applyCount, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const { block, goal, passed, funnel, units } = cavityValues(data, query, names);
@@ -74,7 +74,7 @@ function Cavity({ data, names }: { data: DcReportData; names: Names }) {
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      <ResultsFade applied={applied}>
+      <ResultsFade applyCount={applyCount}>
         {!block ? (
           <NoYear year={query.year} />
         ) : units?.length === 0 ? (

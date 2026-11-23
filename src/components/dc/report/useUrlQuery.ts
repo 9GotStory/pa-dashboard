@@ -8,7 +8,7 @@ import { startTransition, useEffect, useOptimistic, useRef, useState } from "rea
  * the page's data layer. push writes it with history.pushState, which
  * Next.js passes to useSearchParams, so back, forward and a shared link show
  * the same result; apply (แสดงผล) also scrolls to and focuses the heading of
- * the results, and counts the presses in applied. search is the URL's query:
+ * the results, and counts the presses in applyCount. search is the URL's query:
  * a form keyed on it is drawn again when the query changes. A page calling
  * this sits inside ReportLoader, whose Suspense boundary useSearchParams
  * needs.
@@ -34,21 +34,21 @@ export function useUrlQuery<Q>(read: (search: URLSearchParams) => Q, write: (q: 
   };
   // How many times แสดงผล was pressed: a press with the query unchanged
   // counts too, so ResultsFade fades the results in on every press
-  const [applied, setApplied] = useState(0);
+  const [applyCount, setApplyCount] = useState(0);
   // After a press the page goes to the heading, just under the Masthead (its
   // scroll-margin-top), smoothly unless the viewer asks for reduced motion
   // (SPEC §9.1, F91). Here, once the new results are drawn: from the click, a
   // page shorter than the screen stopped where the old results ended.
   useEffect(() => {
-    if (applied === 0) return;
+    if (applyCount === 0) return;
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     heading.current?.scrollIntoView({ block: "start", behavior: reduce ? "instant" : "smooth" });
-  }, [applied]);
+  }, [applyCount]);
   const apply = (q: Q) => {
     push(q);
-    setApplied(applied + 1);
+    setApplyCount(applyCount + 1);
     // As R6 does: focus on the result, not on a form that is drawn again
     heading.current?.focus({ preventScroll: true });
   };
-  return { query, search, apply, applied, push, heading };
+  return { query, search, apply, applyCount, push, heading };
 }

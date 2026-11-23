@@ -42,8 +42,8 @@ export default function ReportActions({ csv }: { csv: (() => ReturnType<typeof r
       >
         {/* Both labels in one cell, so the button is as wide as the longer one whichever shows */}
         <span className="grid">
-          <span className={`col-start-1 row-start-1 ${done ? "invisible" : ""}`}>ดาวน์โหลด CSV</span>
-          <span className={`col-start-1 row-start-1 ${done ? "" : "invisible"}`}>ดาวน์โหลดแล้ว</span>
+          <span className={done ? "invisible col-start-1 row-start-1" : "col-start-1 row-start-1"}>ดาวน์โหลด CSV</span>
+          <span className={done ? "col-start-1 row-start-1" : "invisible col-start-1 row-start-1"}>ดาวน์โหลดแล้ว</span>
         </span>
       </PressButton>
       <span role="status" className="sr-only">

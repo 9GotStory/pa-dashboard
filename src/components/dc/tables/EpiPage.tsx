@@ -51,7 +51,7 @@ export default function EpiPage({ id, names, years }: { id: string; names: Names
 }
 
 function Epi({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query: asked, search, apply, applied, push, heading } = useReportQuery(data, names);
+  const { query: asked, search, apply, applyCount, push, heading } = useReportQuery(data, names);
   const { query, block, rows, detail } = epiValues(data, asked, names, years);
   const { overviewHeading, detailHeading, buttonProps, close } = useDetail(query.measure, (measure) =>
     push({ ...query, measure }),
@@ -78,7 +78,7 @@ function Epi({ data, names, years }: { data: DcReportData; names: Names; years: 
           csv={!block ? null : detail ? csv : measuresCsv(data.report, query.year, summary, block.max_date_com, rows)}
         />
       </ResultsHeader>
-      <ResultsFade applied={applied}>
+      <ResultsFade applyCount={applyCount}>
         {block ? (
           <div className="px-4 pb-6 sm:px-6">
             <Overview

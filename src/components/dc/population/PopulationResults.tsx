@@ -60,7 +60,7 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
     query: asked,
     search,
     apply,
-    applied,
+    applyCount,
     heading,
   } = useUrlQuery<PopulationQuery>(
     (params) => ({ year: params.get("year") ?? "", area: params.get("area") ?? "all" }),
@@ -80,7 +80,7 @@ function Results({ data, areas, districtCode }: { data: PopulationReportData; ar
       <ResultsHeader heading={heading} summary={`${populationArea(report)} · ${yearAsOf(query.year)}`} dateCom={null}>
         <ReportActions csv={shown ? () => populationCsv(report, units, districtCode) : null} />
       </ResultsHeader>
-      <ResultsFade applied={applied}>
+      <ResultsFade applyCount={applyCount}>
         {!hasYear ? (
           <NoYear year={query.year} />
         ) : !shown ? (
