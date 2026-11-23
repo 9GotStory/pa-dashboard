@@ -74,7 +74,6 @@ export default function ReportFilters(props: {
       <h2 id="filters-title" className="font-prompt text-[15px] font-semibold text-dc-brand-deep">
         ตัวกรองรายงาน
       </h2>
-      <p className="text-xs text-dc-text-secondary">เลือกเงื่อนไขแล้วกดแสดงผล</p>
       <form
         onSubmit={(e) => {
           e.preventDefault();
