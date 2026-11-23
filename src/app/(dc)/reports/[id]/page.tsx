@@ -78,20 +78,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
       <ReportBreadcrumb crumbs={crumbs} />
       <ReportHero
         badges={
-          <>
-            <span className="rounded-[5px] bg-dc-highlight-soft px-2.5 py-1 text-xs font-bold text-dc-brand-deep">
-              {report.source_table}
+          report.catalog_status === "removed" && (
+            <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">
+              HDC ไม่แสดงรายงานนี้แล้ว
             </span>
-            {report.catalog_status === "removed" && (
-              <span className="rounded-[5px] border border-dc-gold px-2.5 py-1 text-xs font-semibold text-dc-brand-deep">
-                HDC ไม่แสดงรายงานนี้แล้ว
-              </span>
-            )}
-          </>
+          )
         }
-        topic={topic.category_name}
         title={report.report_name}
-        subgroup={group.subgroup}
         credit="ข้อมูลจาก HDC Open Data"
       />
 
@@ -105,13 +98,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
 
         <ReportAbout
           sourceRows={[
-            { term: "ตารางต้นทาง", detail: report.source_table },
-            { term: "รหัสรายงาน", detail: report.opendata_id },
-            {
-              term: "ปีที่มีในระบบ",
-              detail: report.years.length > 0 ? report.years.map((y) => y.b_year).join(", ") : "ยังไม่มีข้อมูล",
-            },
-            { term: "วันที่ข้อมูลล่าสุด", detail: formatThaiDate(latest) || "—" },
             {
               term: "ต้นทาง",
               detail: (
@@ -126,6 +112,15 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 </>
               ),
             },
+            { term: "วันที่ข้อมูลล่าสุด", detail: formatThaiDate(latest) || "—" },
+            {
+              term: "ปีที่มีในระบบ",
+              detail: report.years.length > 0 ? report.years.map((y) => y.b_year).join(", ") : "ยังไม่มีข้อมูล",
+            },
+          ]}
+          refRows={[
+            { term: "ตารางต้นทาง", detail: report.source_table },
+            { term: "รหัสรายงาน", detail: report.opendata_id },
           ]}
           method={<TableMethod page={page} report={report} districtCode={catalog.meta.district_code} />}
           limits={
@@ -147,7 +142,6 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <h2 id="related-title" className="font-prompt text-base font-semibold text-dc-brand-deep">
             รายงานที่เกี่ยวข้อง
           </h2>
-          <p className="text-xs text-dc-text-secondary">รายงานในกลุ่มและหัวข้อเดียวกัน</p>
           <ul className="mt-3 grid gap-3 md:grid-cols-3">
             {others.map((e) => (
               <li key={e.report.opendata_id} className="min-w-0">
@@ -158,10 +152,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   <strong className="text-[13px] leading-snug font-semibold text-dc-brand-deep">
                     {e.report.report_name}
                   </strong>
-                  <small className="mt-1 text-[11px] text-dc-text-secondary">
-                    {e.report.source_table}
-                    {e.group.subgroup && ` · ${e.group.subgroup}`}
-                  </small>
+                  {e.group.subgroup && (
+                    <small className="mt-1 text-[11px] text-dc-text-secondary">{e.group.subgroup}</small>
+                  )}
                 </Link>
               </li>
             ))}

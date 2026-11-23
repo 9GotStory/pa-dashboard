@@ -29,7 +29,7 @@ export default function PopulationReportPage() {
           { label: category_name, href: `/reports?cat=${cat_id}` },
         ]}
       />
-      <ReportHero topic={category_name} title={report_name} credit="ข้อมูลจากกรมการปกครอง" />
+      <ReportHero title={report_name} credit="ข้อมูลจากกรมการปกครอง" />
 
       <div className="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0">
         {years.length > 0 ? (
