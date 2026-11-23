@@ -1,12 +1,12 @@
 "use client";
 
-import { LazyMotion, MotionConfig } from "motion/react";
+import { LazyMotion, MotionConfig, useReducedMotion } from "motion/react";
 import { createContext, useCallback, useContext, useState, type ReactNode } from "react";
-import { TRANSITION } from "@/lib/dc/motion";
+import { CHANGE, INSTANT, TRANSITION } from "@/lib/dc/motion";
 
 const loadFeatures = () => import("./motion-features").then((mod) => mod.default);
 
-const Ready = createContext(false);
+const MotionReady = createContext(false);
 
 /**
  * Whether Motion's feature set has loaded. Until then an m component keeps
@@ -14,7 +14,16 @@ const Ready = createContext(false);
  * must show a new value (Bar, F92) renders a plain element before then.
  */
 export function useMotionReady() {
-  return useContext(Ready);
+  return useContext(MotionReady);
+}
+
+/**
+ * The transition of a bar or a fold that moves to a new value (F92): CHANGE,
+ * or INSTANT for a viewer who asks for reduced motion, as width and height
+ * are not transforms, which MotionConfig would still.
+ */
+export function useChangeTransition() {
+  return useReducedMotion() ? INSTANT : CHANGE;
 }
 
 /**
@@ -37,7 +46,7 @@ export default function MotionRoot({ children }: { children: ReactNode }) {
   return (
     <LazyMotion features={features} strict>
       <MotionConfig reducedMotion="user" transition={TRANSITION}>
-        <Ready value={ready}>{children}</Ready>
+        <MotionReady value={ready}>{children}</MotionReady>
       </MotionConfig>
     </LazyMotion>
   );

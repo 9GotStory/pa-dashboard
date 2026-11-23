@@ -4,8 +4,7 @@ import * as m from "motion/react-m";
 import { useReducer, type ReactNode } from "react";
 import { FOLDED, foldStep } from "@/lib/dc/fold";
 import { FOLD_BODY } from "@/lib/dc/motion";
-import { useChange } from "../charts/Bar";
-import { useMotionReady } from "../MotionRoot";
+import { useChangeTransition, useMotionReady } from "../MotionRoot";
 import { PressSummary } from "../Press";
 
 // Print shows a shut body whole, over the height of 0 Motion left on it
@@ -32,7 +31,7 @@ export default function Fold({
   children: ReactNode;
 }) {
   const ready = useMotionReady();
-  const transition = useChange();
+  const transition = useChangeTransition();
   const [fold, step] = useReducer(foldStep, FOLDED);
   // The chevron turns back at the press, not when the shrink has ended
   const shrinking = fold.open && !fold.shown;

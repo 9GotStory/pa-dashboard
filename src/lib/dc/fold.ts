@@ -6,7 +6,7 @@
  * open: the <details>'s open. shown: whether the body is growing or grown,
  * not shrinking or shut; the <details> stays open while its body shrinks.
  */
-type Fold = { open: boolean; shown: boolean };
+type FoldState = { open: boolean; shown: boolean };
 
 /**
  * What moves a fold: press, a press on its summary that Motion moves; done,
@@ -16,9 +16,9 @@ type Fold = { open: boolean; shown: boolean };
  */
 type FoldEvent = { type: "press" } | { type: "done" } | { type: "toggle"; open: boolean };
 
-export const FOLDED: Fold = { open: false, shown: false };
+export const FOLDED: FoldState = { open: false, shown: false };
 
-export function foldStep(fold: Fold, event: FoldEvent): Fold {
+export function foldStep(fold: FoldState, event: FoldEvent): FoldState {
   switch (event.type) {
     case "press":
       return { open: true, shown: !fold.shown };
