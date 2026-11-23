@@ -7,7 +7,8 @@
 | คำ | ความหมาย | เลี่ยง |
 |---|---|---|
 | **Data Center** (Song Health Data Center) | เว็บสาธารณะของ สสอ.สอง ที่ `/`, `/reports`, `/reports/{id}` อ่านจาก snapshot | "dashboard" (ใช้กับ PA เท่านั้น) |
-| **PA** (PA Dashboard) | หน้าตัวชี้วัดเดิมของ คปสอ.สอง ย้ายไป `/pa` แสดงตัวเลขของ build จาก `pa.json` แล้วดึง GAS สดในพื้นหลัง · ห้ามแก้ ยกเว้น `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` (ADR-0017) | |
+| **PA** (PA Dashboard) | หน้าตัวชี้วัดเดิมของ คปสอ.สอง ย้ายไป `/pa` แสดงตัวเลขของ build จาก `pa.json` แล้วดึง GAS สดในพื้นหลัง · ห้ามแก้ ยกเว้น `src/app/pa/page.tsx` และ `src/lib/useKPIData.ts` (ADR-0017) และ class ของสีกับ transition ในไฟล์ component ของ PA ซึ่งอยู่ใต้ Masthead และ Footer ของ Data Center (ADR-0019) | |
+| **ผู้ชม** | ทุกคนที่เปิด Data Center หรือ PA โดยไม่ต้องเข้าสู่ระบบ ทั้งเจ้าหน้าที่สาธารณสุขและประชาชนที่ต้องการข้อมูล · คนที่ใช้หน้า `/sync` ด้วย PIN เรียกว่าผู้ดูแล | |
 | **GAS** | Google Apps Script web app ใน `src/scripts/` เป็น API และตัว sync | "backend" |
 | **PA-Data** | สเปรดชีต Google Sheets ที่ GAS ใช้เป็นฐานข้อมูล | |
 | **HDC Open Data** / **MOPH** | แหล่งข้อมูลต้นทาง `opendata.moph.go.th` ทั้ง `report_data` และ API แค็ตตาล็อก | |
