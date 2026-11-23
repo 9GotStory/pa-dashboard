@@ -147,9 +147,16 @@ for (const { page, files } of reports) problems.push(...overBudget(page, files, 
 // build with no file of it means the words above no longer find it, which
 // would make this check pass on anything.
 const STATIC = path.join(OUT, "_next/static");
+const holding = new Map();
 const holdsFeatures = (file) => {
-  const text = fs.readFileSync(file, "utf8");
-  return FEATURE_WORDS.every((word) => text.includes(word));
+  if (!holding.has(file)) {
+    const text = fs.readFileSync(file, "utf8");
+    holding.set(
+      file,
+      FEATURE_WORDS.every((word) => text.includes(word)),
+    );
+  }
+  return holding.get(file);
 };
 const featureFiles = fs
   .readdirSync(STATIC, { recursive: true })

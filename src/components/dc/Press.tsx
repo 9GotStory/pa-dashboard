@@ -35,8 +35,8 @@ export function PressButton({ wide, ...props }: HTMLMotionProps<"button"> & Wide
 }
 
 /** An <a> that shrinks while pressed: a link within the page or to another site */
-export function PressA({ wide, ...props }: HTMLMotionProps<"a"> & Wide) {
-  return <m.a whileTap={usePress(wide)} {...props} />;
+export function PressA(props: HTMLMotionProps<"a">) {
+  return <m.a whileTap={usePress()} {...props} />;
 }
 
 /** A next/link Link that shrinks while pressed */

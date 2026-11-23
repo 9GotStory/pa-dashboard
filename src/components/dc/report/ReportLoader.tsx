@@ -3,7 +3,6 @@
 import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { loadReport } from "@/lib/dc/client";
 import type { DcReportData } from "@/lib/dc/types";
-import { PressButton } from "../Press";
 import ReportStatus from "./ReportStatus";
 
 /**
@@ -49,16 +48,17 @@ function Load<T>({ id, children }: { id: string; children: (data: T) => ReactNod
     return (
       <ReportStatus>
         โหลดข้อมูลรายงานไม่สำเร็จ{" "}
-        <PressButton
+        {/* In the sentence, so it changes colour when pressed and does not shrink, as a link in a sentence (F90) */}
+        <button
           type="button"
           onClick={() => {
             setLoad("loading");
             setAttempt(attempt + 1);
           }}
-          className="font-semibold text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent"
+          className="font-semibold text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
         >
           ลองอีกครั้ง
-        </PressButton>
+        </button>
       </ReportStatus>
     );
   }
