@@ -5,6 +5,7 @@ import { useState, type RefObject } from "react";
 import { epiValues, findMeasures } from "@/lib/dc/tables/epi";
 import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { sortedUnits } from "@/lib/dc/values";
+import { Bar } from "../charts/Bar";
 import { PressButton } from "../Press";
 import Comparison from "../report/Comparison";
 import Detail, { useDetail } from "../report/Detail";
@@ -309,10 +310,7 @@ function PctBar({ pct, passed }: { pct: number | null; passed: boolean | null })
   return (
     <span aria-hidden="true" className="block h-2 w-full flex-1 overflow-hidden rounded-full bg-dc-surface-muted">
       {pct !== null && (
-        <span
-          className={`block h-full rounded-full ${verdictFill(passed)}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
+        <Bar width={`${Math.min(pct, 100)}%`} className={`block h-full rounded-full ${verdictFill(passed)}`} />
       )}
     </span>
   );

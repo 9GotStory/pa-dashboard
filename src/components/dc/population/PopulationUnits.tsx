@@ -3,6 +3,7 @@ import { formatCount } from "@/lib/dc/format";
 import { populationArea, populationUnitLabel } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
 import type { PopulationReport, PopulationSort, PopulationUnit } from "@/lib/dc/types";
+import { Bar } from "../charts/Bar";
 import Segmented from "../Segmented";
 import { changeText } from "../report/changeText";
 
@@ -56,10 +57,7 @@ export default function PopulationUnits(props: {
                   <span className="break-words text-dc-brand-deep">{u.name}</span>
                   <span aria-hidden="true" className="block h-3.5 overflow-hidden rounded-full bg-dc-surface-muted">
                     {value !== null && top > 0 && (
-                      <span
-                        className="block h-full rounded-full bg-dc-brand-accent"
-                        style={{ width: `${(value / top) * 100}%` }}
-                      />
+                      <Bar width={`${(value / top) * 100}%`} className="block h-full rounded-full bg-dc-brand-accent" />
                     )}
                   </span>
                   <span className="text-right font-semibold text-dc-brand-deep tabular-nums">

@@ -1,3 +1,5 @@
+import { Bar } from "./Bar";
+
 /** A row of UnitList: its name, its bar as a share 0–100 of the track (null = no bar) and its value as shown */
 type UnitRow = { key: string; name: string; share: number | null; value: string };
 
@@ -16,7 +18,7 @@ export default function UnitList({ title, rows, goal }: { title: string; rows: U
           <span className="col-span-3 text-xs text-dc-brand-deep">{r.name}</span>
           <span aria-hidden="true" className="relative col-start-2 h-2.5 overflow-hidden rounded-full bg-dc-canvas">
             {r.share !== null && (
-              <span className="block h-full rounded-full bg-dc-brand-primary" style={{ width: `${r.share}%` }} />
+              <Bar width={`${r.share}%`} className="block h-full rounded-full bg-dc-brand-primary" />
             )}
             {goal !== null && (
               <span

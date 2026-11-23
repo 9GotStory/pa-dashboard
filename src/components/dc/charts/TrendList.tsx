@@ -1,3 +1,4 @@
+import { Bar } from "./Bar";
 import { formatValue, trendScale } from "./TrendChart";
 
 /**
@@ -28,9 +29,9 @@ export default function TrendList({
           <span className="text-xs text-dc-text-secondary tabular-nums">{year}</span>
           <span aria-hidden="true" className="relative h-2.5 overflow-hidden rounded-full bg-dc-surface-muted">
             {value !== null && (
-              <span
+              <Bar
+                width={`${Math.min(value / top, 1) * 100}%`}
                 className="block h-full rounded-full bg-dc-brand-accent"
-                style={{ width: `${Math.min(value / top, 1) * 100}%` }}
               />
             )}
             {goal !== null && (

@@ -4,6 +4,7 @@ import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import type { AgeProfile, PopulationAgeReport, UnsplitGroup } from "@/lib/dc/types";
+import { Bar } from "./charts/Bar";
 import { PressButton } from "./Press";
 
 // The columns of a ช่วงอายุ row and of the header above the rows: ชาย bar,
@@ -185,15 +186,15 @@ export function PyramidRows({
                 aria-hidden="true"
                 className="relative flex h-3.5 justify-end overflow-hidden rounded-sm bg-dc-surface-muted"
               >
-                <span className="block h-full bg-dc-pyramid-male" style={{ width: barWidth(b.male) }} />
-                {was && <span className={`${OUTLINE} right-0`} style={{ width: barWidth(was.male) }} />}
+                <Bar width={barWidth(b.male)} className="block h-full bg-dc-pyramid-male" />
+                {was && <Bar width={barWidth(was.male)} className={`${OUTLINE} right-0`} />}
               </span>
               <span className="text-right font-semibold text-dc-brand-deep">{formatCount(b.male)}</span>
               <span className="text-center text-dc-text-secondary">{b.label}</span>
               <span className="text-left font-semibold text-dc-brand-deep">{formatCount(b.female)}</span>
               <span aria-hidden="true" className="relative flex h-3.5 overflow-hidden rounded-sm bg-dc-surface-muted">
-                <span className="block h-full bg-dc-pyramid-female" style={{ width: barWidth(b.female) }} />
-                {was && <span className={`${OUTLINE} left-0`} style={{ width: barWidth(was.female) }} />}
+                <Bar width={barWidth(b.female)} className="block h-full bg-dc-pyramid-female" />
+                {was && <Bar width={barWidth(was.female)} className={`${OUTLINE} left-0`} />}
               </span>
             </PressButton>
           );

@@ -1,6 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
-import { PressSummary } from "../Press";
+import Fold from "./Fold";
 
 type Row = { term: string; detail: ReactNode };
 
@@ -21,8 +21,7 @@ function TermRows({ rows }: { rows: Row[] }) {
 /**
  * เกี่ยวกับรายงานนี้ (SPEC §9.4, §9.4.1): แหล่งข้อมูล always shown, then
  * วิธีคำนวณ, ข้อจำกัด (the report's <li> items) and รหัสอ้างอิง, if any, folded
- * in a <details> (F88): the keyboard, the expanded state for a screen reader
- * and opening without JavaScript are the browser's, and print shows it open.
+ * in a Fold (F88, F92).
  * What each holds is the report's: an HDC report links HDC and names its
  * source table among refRows.
  */
@@ -46,27 +45,21 @@ export default function ReportAbout(props: {
           <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">แหล่งข้อมูล</h3>
           <TermRows rows={sourceRows} />
         </div>
-        <details className="group min-w-0 rounded-lg border border-dc-border-subtle bg-white print:details-content:[content-visibility:visible]">
-          <PressSummary
-            wide
-            className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-4 font-prompt text-[13px] font-semibold text-dc-brand-deep transition-colors hover:bg-dc-canvas [&::-webkit-details-marker]:hidden"
-          >
-            <ChevronRight aria-hidden="true" className="size-4 shrink-0 group-open:rotate-90 print:hidden" />
-            {refRows ? "วิธีคำนวณ ข้อจำกัด และรหัสอ้างอิง" : "วิธีคำนวณและข้อจำกัด"}
-          </PressSummary>
-          <div className="border-t border-dc-border-subtle p-4 text-sm leading-relaxed">
-            <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
-            <div className="mb-3">{method}</div>
-            <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">ข้อจำกัด</h3>
-            <ul className="mt-1 list-disc pl-4">{limits}</ul>
-            {refRows && (
-              <>
-                <h3 className="mt-3 font-prompt text-[13px] font-semibold text-dc-brand-deep">รหัสอ้างอิง</h3>
-                <TermRows rows={refRows} />
-              </>
-            )}
-          </div>
-        </details>
+        <Fold
+          chevron={<ChevronRight className="size-4" />}
+          summary={refRows ? "วิธีคำนวณ ข้อจำกัด และรหัสอ้างอิง" : "วิธีคำนวณและข้อจำกัด"}
+        >
+          <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
+          <div className="mb-3">{method}</div>
+          <h3 className="font-prompt text-[13px] font-semibold text-dc-brand-deep">ข้อจำกัด</h3>
+          <ul className="mt-1 list-disc pl-4">{limits}</ul>
+          {refRows && (
+            <>
+              <h3 className="mt-3 font-prompt text-[13px] font-semibold text-dc-brand-deep">รหัสอ้างอิง</h3>
+              <TermRows rows={refRows} />
+            </>
+          )}
+        </Fold>
       </div>
     </section>
   );

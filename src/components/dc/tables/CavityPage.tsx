@@ -6,6 +6,7 @@ import { formatCount } from "@/lib/dc/format";
 import { cavityValues } from "@/lib/dc/tables/cavity";
 import type { Cell, DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { sortedUnits } from "@/lib/dc/values";
+import { Bar } from "../charts/Bar";
 import Comparison from "../report/Comparison";
 import { areaLabel, goalText, passText, pctText } from "../report/labels";
 import { UnitPanel } from "../report/panels";
@@ -142,9 +143,9 @@ function FunnelSummary(props: { funnel: Funnel; goal: number | null; passed: boo
                 </span>
               </div>
               <span aria-hidden="true" className="mt-1 block h-2.5 rounded-full bg-dc-surface-muted">
-                <span
+                <Bar
+                  width={`${funnel.children > 0 ? (s.count / funnel.children) * 100 : 0}%`}
                   className="block h-full rounded-full bg-dc-brand-accent"
-                  style={{ width: `${funnel.children > 0 ? (s.count / funnel.children) * 100 : 0}%` }}
                 />
               </span>
             </li>

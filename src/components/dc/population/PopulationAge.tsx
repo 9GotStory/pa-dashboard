@@ -3,6 +3,7 @@ import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import { populationArea } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
 import type { PopulationAgeReport, PopulationReport } from "@/lib/dc/types";
+import { Bar } from "../charts/Bar";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
 import { PyramidRows, UnsplitText } from "../PopulationPyramid";
@@ -106,7 +107,7 @@ function Stages(props: { sexRatio: number; stages: NonNullable<PopulationAgeRepo
               )}
             </dd>
             <dd aria-hidden="true" className="mt-1 h-2 overflow-hidden rounded-full bg-dc-surface-muted">
-              <span className="block h-full rounded-full bg-dc-brand-accent" style={{ width: `${r.pct}%` }} />
+              <Bar width={`${r.pct}%`} className="block h-full rounded-full bg-dc-brand-accent" />
             </dd>
           </div>
         ))}
