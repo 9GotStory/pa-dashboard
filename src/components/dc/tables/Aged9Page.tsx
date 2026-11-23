@@ -5,6 +5,7 @@ import { useState, type RefObject } from "react";
 import { aged9Values } from "@/lib/dc/tables/aged9";
 import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { sortedUnits } from "@/lib/dc/values";
+import { PressButton } from "../Press";
 import Comparison from "../report/Comparison";
 import CountTable from "../report/CountTable";
 import Detail, { useDetail } from "../report/Detail";
@@ -147,9 +148,10 @@ function Domains(props: {
       <ul>
         {domains.map((d) => (
           <li key={d.domain} className="border-t border-dc-border-subtle">
-            <button
+            <PressButton
               {...buttonProps(String(d.domain))}
-              className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left hover:bg-dc-surface-muted ${d.domain === open ? "bg-dc-highlight-soft" : "bg-white"}`}
+              wide
+              className={`grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-dc-surface-muted ${d.domain === open ? "bg-dc-highlight-soft" : "bg-white"}`}
             >
               <span className="text-[13px] font-medium text-dc-brand-deep">
                 {d.domain}. {d.label}
@@ -159,7 +161,7 @@ function Domains(props: {
                 <span className="sr-only">{d.count === null ? "ไม่มีข้อมูล" : "รายการ"}</span>
                 <ChevronRight aria-hidden="true" className="size-3.5 text-dc-text-secondary" />
               </span>
-            </button>
+            </PressButton>
           </li>
         ))}
       </ul>

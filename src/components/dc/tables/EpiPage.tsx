@@ -5,6 +5,7 @@ import { useState, type RefObject } from "react";
 import { epiValues, findMeasures } from "@/lib/dc/tables/epi";
 import type { DcCatalog, DcReportData, ReportQuery, ReportSort } from "@/lib/dc/types";
 import { sortedUnits } from "@/lib/dc/values";
+import { PressButton } from "../Press";
 import Comparison from "../report/Comparison";
 import Detail, { useDetail } from "../report/Detail";
 import { PERIOD_LABELS, countText, describe, goalText, passText, pctText } from "../report/labels";
@@ -165,9 +166,10 @@ function Overview(props: {
         <ul className="grid gap-3 border-t border-dc-border-subtle p-4 sm:grid-cols-2">
           {found.map((r) => (
             <li key={r.measure}>
-              <button
+              <PressButton
                 {...buttonProps(r.measure)}
-                className={`block h-full w-full rounded-[9px] border p-4 text-left hover:bg-dc-surface-muted ${r.measure === open ? "border-dc-brand-primary bg-dc-highlight-soft" : "border-dc-border-subtle bg-white"}`}
+                wide
+                className={`block h-full w-full rounded-[9px] border p-4 text-left transition-colors hover:bg-dc-surface-muted ${r.measure === open ? "border-dc-brand-primary bg-dc-highlight-soft" : "border-dc-border-subtle bg-white"}`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <strong className="font-prompt text-base text-dc-brand-deep">{r.label}</strong>
@@ -186,7 +188,7 @@ function Overview(props: {
                     <ChevronRight aria-hidden="true" className="size-3.5" />
                   </span>
                 </span>
-              </button>
+              </PressButton>
             </li>
           ))}
         </ul>
@@ -195,9 +197,10 @@ function Overview(props: {
           <ul className="md:hidden">
             {found.map((r) => (
               <li key={r.measure} className="border-t border-dc-border-subtle">
-                <button
+                <PressButton
                   {...buttonProps(r.measure)}
-                  className={`block w-full px-4 py-3.5 text-left hover:bg-dc-surface-muted ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
+                  wide
+                  className={`block w-full px-4 py-3.5 text-left transition-colors hover:bg-dc-surface-muted ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
                 >
                   <span className="flex items-center justify-between gap-2">
                     <strong className="text-sm text-dc-brand-deep">{r.label}</strong>
@@ -219,7 +222,7 @@ function Overview(props: {
                       <ChevronRight aria-hidden="true" className="size-3.5" />
                     </span>
                   </span>
-                </button>
+                </PressButton>
               </li>
             ))}
           </ul>
@@ -260,13 +263,13 @@ function Overview(props: {
                     className={`border-t border-dc-border-subtle ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
                   >
                     <th scope="row" className="px-4 py-2.5 text-left">
-                      <button
+                      <PressButton
                         {...buttonProps(r.measure)}
                         aria-label={`ดูรายละเอียดวัคซีน ${r.label}`}
                         className="rounded-sm text-[13px] font-semibold text-dc-brand-deep underline-offset-4 hover:underline"
                       >
                         {r.label}
-                      </button>
+                      </PressButton>
                     </th>
                     <td className="px-3 py-2.5 text-right">{countText(r.total?.target ?? null)}</td>
                     <td className="px-3 py-2.5 text-right">{countText(r.total?.result ?? null)}</td>

@@ -47,7 +47,7 @@ export default function PopulationReportPage() {
                   กรมการปกครอง ผ่านไฟล์รายปีของ{" "}
                   <a
                     href="https://stat.bora.dopa.go.th/"
-                    className="text-dc-brand-primary underline underline-offset-2"
+                    className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
                   >
                     stat.bora
                   </a>

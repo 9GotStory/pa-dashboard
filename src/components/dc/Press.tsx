@@ -1,0 +1,45 @@
+"use client";
+
+import { useReducedMotion, type HTMLMotionProps } from "motion/react";
+import * as m from "motion/react-m";
+import Link from "next/link";
+import type { ComponentProps } from "react";
+import { PRESS, PRESS_WIDE } from "@/lib/dc/motion";
+
+const MotionLink = m.create(Link);
+
+/** wide: a row or a card, which shrinks less (PRESS_WIDE) */
+type Wide = { wide?: boolean };
+
+/**
+ * The whileTap of a control of the Data Center (SPEC §9.1 "สถานะของ
+ * control", F90): it shrinks a little while pressed. Nothing for a person who
+ * asks for reduced motion, as MotionConfig would still snap it to the
+ * shrunk size.
+ */
+export function usePress(wide = false) {
+  const reduce = useReducedMotion();
+  if (reduce) return undefined;
+  return wide ? PRESS_WIDE : PRESS;
+}
+
+/** A <button> that shrinks while pressed, unless it is disabled */
+export function PressButton({ wide, ...props }: HTMLMotionProps<"button"> & Wide) {
+  const press = usePress(wide);
+  return <m.button whileTap={props.disabled ? undefined : press} {...props} />;
+}
+
+/** An <a> that shrinks while pressed: a link within the page or to another site */
+export function PressA({ wide, ...props }: HTMLMotionProps<"a"> & Wide) {
+  return <m.a whileTap={usePress(wide)} {...props} />;
+}
+
+/** A next/link Link that shrinks while pressed */
+export function PressLink({ wide, ...props }: ComponentProps<typeof MotionLink> & Wide) {
+  return <MotionLink whileTap={usePress(wide)} {...props} />;
+}
+
+/** The <summary> of a <details> that shrinks while pressed */
+export function PressSummary({ wide, ...props }: HTMLMotionProps<"summary"> & Wide) {
+  return <m.summary whileTap={usePress(wide)} {...props} />;
+}

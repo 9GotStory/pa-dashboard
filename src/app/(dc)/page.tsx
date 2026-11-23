@@ -12,9 +12,9 @@ import {
   Users,
   type LucideIcon,
 } from "lucide-react";
-import Link from "next/link";
 import DistrictExplorer from "@/components/dc/DistrictExplorer";
 import Hero from "@/components/dc/Hero";
+import { PressLink } from "@/components/dc/Press";
 import { formatBuildTime, formatCount, formatThaiDate } from "@/lib/dc/format";
 import { homePopulation } from "@/lib/dc/population";
 import { registryAsOf } from "@/lib/dc/population-totals";
@@ -129,13 +129,13 @@ export default function Home() {
             </h2>
             <p className="text-xs text-dc-text-secondary">เลือกหัวข้อเพื่อดูรายงานในหน้ารายงานสุขภาพ</p>
           </div>
-          <Link
+          <PressLink
             href="/reports"
             className="inline-flex min-h-11 items-center gap-1.5 self-start text-xs font-bold text-dc-brand-primary hover:underline sm:self-auto"
           >
             ดูรายงานทั้งหมด
             <ArrowRight aria-hidden="true" className="size-4 shrink-0" />
-          </Link>
+          </PressLink>
         </div>
         <ul className="grid overflow-hidden rounded-[10px] border border-dc-border-subtle bg-dc-surface md:grid-cols-2">
           {topics.map(({ topic, count }) => {
@@ -145,9 +145,10 @@ export default function Home() {
                 key={topic.cat_id}
                 className="min-w-0 border-t border-dc-border-subtle first:border-t-0 md:even:border-l md:nth-2:border-t-0"
               >
-                <Link
+                <PressLink
                   href={`/reports?cat=${topic.cat_id}`}
-                  className="group flex h-full min-h-11 items-center gap-3 px-4 py-3.5 hover:bg-dc-canvas focus-visible:-outline-offset-3 sm:gap-4 sm:px-5"
+                  wide
+                  className="group flex h-full min-h-11 items-center gap-3 px-4 py-3.5 transition-colors hover:bg-dc-canvas focus-visible:-outline-offset-3 sm:gap-4 sm:px-5"
                 >
                   <span
                     aria-hidden="true"
@@ -164,7 +165,7 @@ export default function Home() {
                     </span>
                   </span>
                   <ChevronRight aria-hidden="true" className="size-4 shrink-0 text-dc-text-secondary" />
-                </Link>
+                </PressLink>
               </li>
             );
           })}
@@ -181,14 +182,20 @@ export default function Home() {
         </h2>
         <p>
           รายงาน:{" "}
-          <a href="https://opendata.moph.go.th" className="text-dc-brand-primary underline underline-offset-2">
+          <a
+            href="https://opendata.moph.go.th"
+            className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
+          >
             HDC Open Data
           </a>{" "}
           กระทรวงสาธารณสุข ข้อมูลล่าสุด {formatThaiDate(latest_date_com) || "—"} ·{" "}
           {population && (
             <>
               ประชากร:{" "}
-              <a href="https://stat.bora.dopa.go.th/" className="text-dc-brand-primary underline underline-offset-2">
+              <a
+                href="https://stat.bora.dopa.go.th/"
+                className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
+              >
                 stat.bora
               </a>{" "}
               กรมการปกครอง ·{" "}
@@ -197,14 +204,14 @@ export default function Home() {
           ขอบเขตตำบล:{" "}
           <a
             href="https://pherportal.moph.go.th/arcgis/rest/services/MOPH_DATA/tambon/MapServer/0"
-            className="text-dc-brand-primary underline underline-offset-2"
+            className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
           >
             MOPH GIS
           </a>{" "}
           ดาวน์โหลด {BOUNDARY_DOWNLOADED} · แผนที่พื้นหลัง:{" "}
           <a
             href="https://www.openstreetmap.org/copyright"
-            className="text-dc-brand-primary underline underline-offset-2"
+            className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
           >
             OpenStreetMap
           </a>{" "}

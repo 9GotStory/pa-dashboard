@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+import { PressLink } from "@/components/dc/Press";
 import ReportAbout from "@/components/dc/report/ReportAbout";
 import ReportBreadcrumb from "@/components/dc/report/ReportBreadcrumb";
 import ReportHero from "@/components/dc/report/ReportHero";
@@ -102,11 +102,17 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
               term: "ต้นทาง",
               detail: (
                 <>
-                  <a href={hdc} className="text-dc-brand-primary underline underline-offset-2">
+                  <a
+                    href={hdc}
+                    className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
+                  >
                     HDC
                   </a>{" "}
                   ·{" "}
-                  <a href={openData} className="text-dc-brand-primary underline underline-offset-2">
+                  <a
+                    href={openData}
+                    className="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
+                  >
                     HDC Open Data
                   </a>
                 </>
@@ -145,9 +151,10 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <ul className="mt-3 grid gap-3 md:grid-cols-3">
             {others.map((e) => (
               <li key={e.report.opendata_id} className="min-w-0">
-                <Link
+                <PressLink
                   href={`/reports/${e.report.opendata_id}`}
-                  className="flex h-full flex-col rounded-lg border border-dc-border-subtle bg-dc-canvas/40 p-3 hover:border-dc-brand-primary"
+                  wide
+                  className="flex h-full flex-col rounded-lg border border-dc-border-subtle bg-dc-canvas/40 p-3 transition-colors hover:border-dc-brand-primary"
                 >
                   <strong className="text-[13px] leading-snug font-semibold text-dc-brand-deep">
                     {e.report.report_name}
@@ -155,7 +162,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                   {e.group.subgroup && (
                     <small className="mt-1 text-[11px] text-dc-text-secondary">{e.group.subgroup}</small>
                   )}
-                </Link>
+                </PressLink>
               </li>
             ))}
           </ul>

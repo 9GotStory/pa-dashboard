@@ -9,7 +9,7 @@ export default function Masthead() {
   return (
     <header className="sticky top-0 z-30 border-b border-dc-border-subtle bg-white print:static">
       <div className="mx-auto flex max-w-330 flex-wrap items-center justify-between gap-x-5 px-4 sm:px-8">
-        <Link href="/" className="flex min-h-11 min-w-0 items-center gap-3 py-3">
+        <Link href="/" className="group flex min-h-11 min-w-0 items-center gap-3 py-3">
           <span
             aria-hidden="true"
             className="flex size-11 shrink-0 items-center justify-center rounded-[14px] bg-dc-brand-primary font-prompt text-xl font-bold text-white"
@@ -17,7 +17,7 @@ export default function Masthead() {
             S<span className="text-dc-highlight-soft">+</span>
           </span>
           <span className="min-w-0">
-            <strong className="block font-prompt text-base leading-snug font-bold text-dc-brand-deep sm:text-lg">
+            <strong className="block font-prompt text-base leading-snug font-bold text-dc-brand-deep transition-colors group-hover:text-dc-brand-primary group-active:text-dc-brand-accent sm:text-lg">
               Song Health <span className="text-dc-brand-accent">Data Center</span>
             </strong>
             <small className="mt-0.5 block text-[11px] text-dc-text-secondary sm:text-xs">

@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import { Fragment, type ReactNode } from "react";
+import { PressSummary } from "../Press";
 
 type Row = { term: string; detail: ReactNode };
 
@@ -46,10 +47,13 @@ export default function ReportAbout(props: {
           <TermRows rows={sourceRows} />
         </div>
         <details className="group min-w-0 rounded-lg border border-dc-border-subtle bg-white print:details-content:[content-visibility:visible]">
-          <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-4 font-prompt text-[13px] font-semibold text-dc-brand-deep [&::-webkit-details-marker]:hidden">
+          <PressSummary
+            wide
+            className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-lg px-4 font-prompt text-[13px] font-semibold text-dc-brand-deep transition-colors hover:bg-dc-canvas [&::-webkit-details-marker]:hidden"
+          >
             <ChevronRight aria-hidden="true" className="size-4 shrink-0 group-open:rotate-90 print:hidden" />
             {refRows ? "วิธีคำนวณ ข้อจำกัด และรหัสอ้างอิง" : "วิธีคำนวณและข้อจำกัด"}
-          </summary>
+          </PressSummary>
           <div className="border-t border-dc-border-subtle p-4 text-xs leading-relaxed">
             <h3 className="mb-1 font-prompt text-[13px] font-semibold text-dc-brand-deep">วิธีคำนวณ</h3>
             <div className="mb-3">{method}</div>

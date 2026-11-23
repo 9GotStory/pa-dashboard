@@ -1,4 +1,5 @@
 import { ArrowRight, ChevronRight } from "lucide-react";
+import { PressA } from "./Press";
 
 /**
  * The Hero of the home page after V7.6 (SPEC §9.2): the page's <h1>, one
@@ -32,21 +33,21 @@ export default function Hero({ hasComparison }: { hasComparison: boolean }) {
           ศูนย์รวมข้อมูลประชากร โครงสร้างช่วงวัย และรายงานสาธารณสุขอำเภอสอง เพื่อให้ทุกการตัดสินใจเริ่มต้นจากบริบทของพื้นที่จริง
         </p>
         <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
-          <a
+          <PressA
             href="#area"
-            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-dc-brand-primary px-5 font-bold text-white hover:bg-dc-brand-deep"
+            className="inline-flex min-h-12 items-center gap-2 rounded-xl bg-dc-brand-primary px-5 font-bold text-white transition-colors hover:bg-dc-brand-deep"
           >
             สำรวจข้อมูลพื้นที่
             <ArrowRight aria-hidden="true" className="size-4" />
-          </a>
+          </PressA>
           {hasComparison && (
-            <a
+            <PressA
               href="#comparison"
               className="inline-flex min-h-11 items-center gap-1.5 px-2 font-bold text-dc-brand-primary hover:underline"
             >
               เปรียบเทียบประชากร
               <ChevronRight aria-hidden="true" className="size-4" />
-            </a>
+            </PressA>
           )}
         </div>
       </div>

@@ -1,11 +1,11 @@
 "use client";
 
 import { ArrowRight, ChevronDown, Search, X } from "lucide-react";
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, startTransition, useOptimistic, useRef, type ReactNode, type RefObject } from "react";
 import type { LibraryMain, LibraryQuery, LibraryReport } from "@/lib/dc/types";
 import { libraryByReference, libraryList, libraryNameParts, libraryQuery, librarySearch } from "@/lib/dc/values";
+import { PressButton, PressLink } from "./Press";
 
 type Mains = LibraryMain[];
 type Topic = Mains[number]["topics"][number];
@@ -17,18 +17,18 @@ const ALL: LibraryQuery = { main: null, cat: null, q: "" };
 /** A row of the left bar: รายงานทั้งหมด or a หัวข้อ, marked on its left when picked; a หมวด is a heading-like row of its own */
 function barItem(current: boolean, main: boolean): string {
   const look = main
-    ? `px-1 py-2 text-xs font-semibold ${current ? "text-dc-brand-primary" : "text-dc-brand-deep"}`
+    ? `px-1 py-2 text-xs font-semibold ${current ? "text-dc-brand-primary" : "text-dc-brand-deep hover:text-dc-brand-primary"}`
     : `border-l-[3px] px-3 py-2.5 text-[13px] ${
         current
           ? "border-dc-brand-primary bg-dc-highlight-soft font-medium text-dc-brand-primary"
           : "border-transparent text-dc-text-secondary hover:bg-dc-canvas hover:text-dc-brand-primary"
       }`;
-  return `flex min-h-11 items-center justify-between gap-3 rounded-md leading-[1.65] ${look}`;
+  return `flex min-h-11 items-center justify-between gap-3 rounded-md leading-[1.65] transition-colors ${look}`;
 }
 
 /** A button-like link of the empty list */
 const EMPTY_LINK =
-  "inline-flex min-h-11 items-center rounded-md px-1 text-[13px] font-medium text-dc-brand-primary underline underline-offset-4 hover:text-dc-brand-accent";
+  "inline-flex min-h-11 items-center rounded-md px-1 text-[13px] font-medium text-dc-brand-primary underline underline-offset-4 transition-colors hover:text-dc-brand-accent";
 
 /** The reports of some หัวข้อ */
 function count(topics: Topic[]): number {
@@ -131,17 +131,17 @@ function Directory({
             className="w-full min-w-0 flex-1 bg-transparent px-3 py-3.5 text-sm text-dc-brand-deep placeholder:text-dc-text-secondary leading-[1.8] focus-visible:outline-none sm:px-4 sm:text-[15px] [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query.q && (
-            <button
+            <PressButton
               type="button"
               aria-label="ล้างคำค้นหา"
               onClick={() => {
                 actions?.go({ ...query, q: "" }, "replace");
                 box.current?.focus();
               }}
-              className="mr-3 flex size-11 shrink-0 items-center justify-center rounded-lg text-dc-text-secondary hover:bg-dc-surface-muted"
+              className="mr-3 flex size-11 shrink-0 items-center justify-center rounded-lg text-dc-text-secondary transition-colors hover:bg-dc-surface-muted"
             >
               <X aria-hidden="true" className="size-4" />
-            </button>
+            </PressButton>
           )}
         </div>
         <p id="library-help" className="mt-2 px-1 text-[11px] text-dc-text-secondary">
@@ -346,7 +346,7 @@ function Pick(props: {
 }) {
   const { actions, to } = props;
   return (
-    <Link
+    <PressLink
       href={`/reports${librarySearch(to)}`}
       prefetch={false}
       aria-current={props.current ? "true" : undefined}
@@ -360,7 +360,7 @@ function Pick(props: {
       className={props.className}
     >
       {props.children}
-    </Link>
+    </PressLink>
   );
 }
 
@@ -381,11 +381,12 @@ function Count({ n }: { n: number }) {
  */
 function Row({ report, q }: { report: LibraryReport; q: string }) {
   return (
-    <Link
+    <PressLink
       href={`/reports/${report.id}`}
-      className="group flex min-h-16 min-w-0 items-center justify-between gap-4 border-b border-dc-border-subtle py-4 hover:bg-dc-canvas focus-visible:rounded-md sm:gap-6 sm:px-2"
+      wide
+      className="group flex min-h-16 min-w-0 items-center justify-between gap-4 border-b border-dc-border-subtle py-4 transition-colors hover:bg-dc-canvas focus-visible:rounded-md sm:gap-6 sm:px-2"
     >
-      <span className="min-w-0 flex-1 text-sm leading-[1.8] group-hover:text-dc-brand-primary sm:text-[15px]">
+      <span className="min-w-0 flex-1 text-sm leading-[1.8] transition-colors group-hover:text-dc-brand-primary sm:text-[15px]">
         {libraryNameParts(report.report_name, q).map((part, i) =>
           part.mark ? (
             <mark key={i} className="rounded-[3px] bg-dc-highlight-soft px-px font-medium text-dc-brand-deep">
@@ -404,6 +405,6 @@ function Row({ report, q }: { report: LibraryReport; q: string }) {
         aria-hidden="true"
         className="size-[17px] shrink-0 text-dc-text-secondary transition-transform duration-150 group-hover:translate-x-1 group-hover:text-dc-brand-accent motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
       />
-    </Link>
+    </PressLink>
   );
 }

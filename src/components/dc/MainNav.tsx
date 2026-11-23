@@ -25,7 +25,7 @@ export default function MainNav() {
             href={href}
             prefetch={prefetch}
             aria-current={inSection ? (pathname === href ? "page" : "true") : undefined}
-            className={`flex min-h-11 items-center border-b-2 px-2 text-[13px] sm:px-3 ${
+            className={`flex min-h-11 items-center border-b-2 px-2 text-[13px] transition-colors active:text-dc-brand-accent sm:px-3 ${
               inSection
                 ? "border-dc-brand-accent font-bold text-dc-brand-primary"
                 : "border-transparent text-dc-text-secondary hover:text-dc-brand-primary"

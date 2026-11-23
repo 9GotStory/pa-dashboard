@@ -1,6 +1,7 @@
 // Data Center budget check (SPEC §9.6, CODING_STANDARDS §5). CI runs it after
 // npm run build. It exits 1, naming the page, when the JavaScript that the
-// home page, the report library, รายงานประชากร or a report page loads is over budget, or
+// home page, the report library, รายงานประชากร or a report page loads is over budget,
+// or holds Motion's feature set (ADR-0018), or
 // when a Data Center page, /pa or a /pa/{year} preloads font files, which held
 // back each page's LCP (SPEC §4), or when /pa or a /pa/{year} hides its
 // content behind Suspense (#338).
@@ -12,16 +13,22 @@ const OUT = path.resolve("out");
 // SPEC's KB is 1024 bytes, as build-snapshot.mjs counts it.
 const KB = 1024;
 // The pages §9.6 budgets, by the gzip (zlib's default level) of the scripts
-// their HTML loads. Leaflet loads later through a dynamic import, so it is in
-// no <script> or preload of the HTML and does not count.
+// their HTML loads: 170 KB since Track O brought in Motion (ADR-0018, F90).
+// Leaflet and Motion's feature set load later through a dynamic import, so
+// they are in no <script> or preload of the HTML and do not count.
 // /reports/population (Track K) loads its เปรียบเทียบ and age sections with
 // next/dynamic once its data is in (F70): its HTML neither runs nor preloads
 // their chunks, so every script the HTML loads counts.
 const POPULATION_PAGE = "/reports/population";
-const JS_BUDGET = { "/": 150 * KB, "/reports": 150 * KB, [POPULATION_PAGE]: 150 * KB };
+const JS_BUDGET = { "/": 170 * KB, "/reports": 170 * KB, [POPULATION_PAGE]: 170 * KB };
 // Each /reports/{id} (SPEC §9.6, since F52), without the chunks of the table
 // pages that src/components/dc/tables/TablePicker.tsx loads with next/dynamic.
-const REPORT_BUDGET = 150 * KB;
+const REPORT_BUDGET = 170 * KB;
+// Words of Motion's feature set (domAnimation) that its m components and
+// LazyMotion lack: the names of its animation's orchestration options, which
+// minifying keeps. Motion 14.14.0 has them in the one chunk that
+// src/components/dc/MotionRoot.tsx imports (F90).
+const FEATURE_WORDS = ["staggerChildren", "beforeChildren"];
 // Where next build lists the files of each next/dynamic import of
 // /reports/[id], as paths under _next/. Not in the Next.js docs: when a
 // version stops writing it, this check fails rather than count those chunks.
@@ -134,6 +141,37 @@ console.log(
     `(gzip, ${most.page}) of ${kb(REPORT_BUDGET)}, without the table pages' chunks`,
 );
 for (const { page, files } of reports) problems.push(...overBudget(page, files, REPORT_BUDGET));
+
+// Motion's feature set loads with a dynamic import, outside the budget
+// (ADR-0018): no script that a Data Center page's HTML loads may hold it. A
+// build with no file of it means the words above no longer find it, which
+// would make this check pass on anything.
+const STATIC = path.join(OUT, "_next/static");
+const holdsFeatures = (file) => {
+  const text = fs.readFileSync(file, "utf8");
+  return FEATURE_WORDS.every((word) => text.includes(word));
+};
+const featureFiles = fs
+  .readdirSync(STATIC, { recursive: true })
+  .filter((f) => f.endsWith(".js") && holdsFeatures(path.join(STATIC, f)));
+const featurePages = pages.filter((page) => scriptsOf(htmlOf(page)).some((src) => holdsFeatures(path.join(OUT, src))));
+console.log(
+  `dc-budget: Motion's feature set is in ${featureFiles.length} file(s); ` +
+    `${featurePages.length} of ${pages.length} Data Center pages load it from their HTML`,
+);
+if (featureFiles.length === 0) {
+  problems.push(
+    `no file in out/_next/static holds ${FEATURE_WORDS.join(" and ")}: find words of this Motion version's domAnimation ` +
+      "that its m and LazyMotion lack, and set FEATURE_WORDS in src/scripts/dc-budget.mjs",
+  );
+}
+if (featurePages.length > 0) {
+  problems.push(
+    `${featurePages.slice(0, 3).join(", ")}${featurePages.length > 3 ? " and more" : ""} load Motion's feature set from their HTML: ` +
+      "import domAnimation only in src/components/dc/motion-features.ts, which MotionRoot loads with a dynamic import, " +
+      "and render m, never the full motion component (ADR-0018)",
+  );
+}
 
 const pa = paPages();
 const fontPages = [...pages, ...pa];
