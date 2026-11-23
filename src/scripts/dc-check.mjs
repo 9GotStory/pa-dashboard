@@ -287,7 +287,7 @@ async function checkPage(browser, url, scripts) {
     problems.push(
       ...(await page.evaluate(domRules)),
       ...(await unitChartProblems(page)),
-      ...(await page.evaluate(smallTextRule, MIN_TEXT)).map((problem) => `at ${WIDTH}px wide: ${problem}`),
+      ...(await smallTextProblems(page, WIDTH)),
       ...(await unlabelledControls(page)),
     );
   } finally {
@@ -313,9 +313,15 @@ async function unitChartProblems(page) {
   return problems;
 }
 
-// The widths of REVIEW_WIDTHS at which a page scrolls sideways or a name of a
-// unit bar chart does not show whole, as problems naming the width; domRules
-// and unitChartRule check the same at WIDTH.
+// smallTextRule's problems on the page as shown at width px, each naming it
+async function smallTextProblems(page, width) {
+  return (await page.evaluate(smallTextRule, MIN_TEXT)).map((problem) => `at ${width}px wide: ${problem}`);
+}
+
+// The widths of REVIEW_WIDTHS at which a page scrolls sideways, a name of a
+// unit bar chart does not show whole or text shows under MIN_TEXT px, as
+// problems naming the width; domRules, unitChartRule and smallTextRule check
+// the same at WIDTH.
 async function overflowProblems(browser, url) {
   const problems = [];
   const page = await browser.newPage();
@@ -331,8 +337,7 @@ async function overflowProblems(browser, url) {
       if (scrollWidth > clientWidth)
         problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
       for (const problem of await unitChartProblems(page)) problems.push(`at ${width}px wide: ${problem}`);
-      for (const problem of await page.evaluate(smallTextRule, MIN_TEXT))
-        problems.push(`at ${width}px wide: ${problem}`);
+      problems.push(...(await smallTextProblems(page, width)));
     }
   } finally {
     await page.close();
