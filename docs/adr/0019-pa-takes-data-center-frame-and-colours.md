@@ -32,4 +32,4 @@ PA ใช้สีผ่าน token ของ `globals.css` (`brand-*`, `neutra
 - ภาพของ `/pa` ไม่ตรงกับ production เดิมทุก pixel อีก การเทียบภาพของ SPEC §11 (ตรวจ 4 พ.ย. 2569) ใช้เป็นเกณฑ์ไม่ได้ เหลือ `pa:compare` ที่ตรวจตัวเลข
 - `/sync` ใช้ token `brand-*` 6 จุดและ `slate-*` 13 จุด การเปลี่ยนค่า token ทั้งเว็บจึงเปลี่ยนสีของ `/sync` ด้วย ซึ่งยอมรับ: ค่าสีมีชุดเดียวทั้งเว็บ ไม่จำกัดไว้ใต้ `/pa` และไม่แก้ไฟล์ของ `/sync`
 - Masthead เพิ่ม HTML และ CSS ให้ `/pa` ซึ่งเหลืองบ LCP 113 ms
-- SPEC §11, CODING_STANDARDS §1 และ GLOSSARY "PA" ต้องแก้ตามใน ticket ของ PA
+- SPEC §11, CODING_STANDARDS §1 และ GLOSSARY "PA" แก้ตามแล้วใน F87

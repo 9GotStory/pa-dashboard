@@ -49,4 +49,4 @@ Product Owner ต้องการ animation, micro-interaction และกา
 - ทุกหน้าของ Data Center โหลด JavaScript เพิ่มราว 16 KB ตอนแรก และราว 22 KB ทีหลัง ตัวเลขนี้วัดด้วย esbuild ตัวเลขจริงต้องวัดด้วย `dc:budget` ใน ticket แรก
 - animation เริ่มทำงานเมื่อชุด feature โหลดเสร็จ ก่อนหน้านั้นสถานะเปลี่ยนทันทีแบบเดิม
 - เอกสารของ Motion ระบุว่า `reducedMotion="user"` ของ `MotionConfig` ปิดเฉพาะ animation ของ transform กับ layout ส่วน opacity และสียังทำงาน (<https://motion.dev/docs/react-motion-config>) เส้นใน Hero จึงต้องปิดเองเมื่อผู้ชมตั้งลดการเคลื่อนไหว
-- CODING_STANDARDS §4, SPEC §9.1, §9.6 และ `dc:budget` ต้องแก้ตามใน ticket แรกของงานนี้
+- CODING_STANDARDS §4, SPEC §9.1 และ §9.6 แก้ตามแล้วใน F87 · `dc:budget` แก้ใน F90
