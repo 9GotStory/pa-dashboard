@@ -10,7 +10,7 @@ type Props = { id: string; names: Pick<DcCatalog, "areas" | "hospitals">; years:
 /** A page of src/lib/dc/tables/index.ts */
 type Page = NonNullable<ReturnType<typeof tablePage>>;
 
-const loading = () => <ReportStatus>กำลังโหลดข้อมูลรายงาน…</ReportStatus>;
+const loading = () => <ReportStatus loading>กำลังโหลดข้อมูลรายงาน…</ReportStatus>;
 
 // Each page in a chunk of its own, so a report loads its own table's page
 // only (SPEC §9.4, §9.6). A Client Component, since a Server Component's

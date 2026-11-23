@@ -9,6 +9,7 @@ import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
@@ -33,7 +34,7 @@ export default function AncPage({ id, names, years }: { id: string; names: Names
 }
 
 function Anc({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query, search, apply, heading } = useReportQuery(data, names);
+  const { query, search, apply, applied, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const { block, total, change, goal, units, trend, quarters } = ancValues(data, query, names, years);
@@ -51,20 +52,22 @@ function Anc({ data, names, years }: { data: DcReportData; names: Names; years: 
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {!block ? (
-        <NoYear year={query.year} />
-      ) : units?.length === 0 ? (
-        <ReportStatus>
-          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
-        </ReportStatus>
-      ) : (
-        <QuarterFigures
-          {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
-          onSort={setSort}
-          steps={quarters}
-          year={query.year}
-        />
-      )}
+      <ResultsFade applied={applied}>
+        {!block ? (
+          <NoYear year={query.year} />
+        ) : units?.length === 0 ? (
+          <ReportStatus>
+            ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+          </ReportStatus>
+        ) : (
+          <QuarterFigures
+            {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
+            onSort={setSort}
+            steps={quarters}
+            year={query.year}
+          />
+        )}
+      </ResultsFade>
     </>
   );
 }

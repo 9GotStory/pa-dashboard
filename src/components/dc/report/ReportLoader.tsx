@@ -19,7 +19,7 @@ export default function ReportLoader<T = DcReportData>({
   children: (data: T) => ReactNode;
 }) {
   return (
-    <Suspense fallback={<ReportStatus>กำลังโหลดข้อมูลรายงาน…</ReportStatus>}>
+    <Suspense fallback={<ReportStatus loading>กำลังโหลดข้อมูลรายงาน…</ReportStatus>}>
       <Load<T> id={id}>{children}</Load>
     </Suspense>
   );
@@ -43,7 +43,7 @@ function Load<T>({ id, children }: { id: string; children: (data: T) => ReactNod
     };
   }, [id, attempt]);
 
-  if (load === "loading") return <ReportStatus>กำลังโหลดข้อมูลรายงาน…</ReportStatus>;
+  if (load === "loading") return <ReportStatus loading>กำลังโหลดข้อมูลรายงาน…</ReportStatus>;
   if (load === "failed") {
     return (
       <ReportStatus>

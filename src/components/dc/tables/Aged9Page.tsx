@@ -16,6 +16,7 @@ import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { countsCsv, domainsCsv, resultsText, unitTable } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
@@ -42,7 +43,7 @@ export default function Aged9Page({ id, names, years }: { id: string; names: Nam
 }
 
 function Aged9({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query, search, apply, push, heading } = useReportQuery(data, names);
+  const { query, search, apply, applied, push, heading } = useReportQuery(data, names);
   const { block, total, change, goal, units, trend, domains, detail } = aged9Values(data, query, names, years);
   const { overviewHeading, detailHeading, buttonProps, close } = useDetail(
     query.domain === null ? null : String(query.domain),
@@ -82,41 +83,43 @@ function Aged9({ data, names, years }: { data: DcReportData; names: Names; years
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {!block ? (
-        <NoYear year={query.year} />
-      ) : units?.length === 0 ? (
-        <ReportStatus>
-          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
-        </ReportStatus>
-      ) : (
-        <>
-          <QuarterFigures
-            {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
-            onSort={setSort}
-            steps={[]}
-            year={query.year}
-          />
-          <div className="px-4 pb-6 sm:px-6">
-            <Domains domains={domains} open={query.domain} headingRef={overviewHeading} buttonProps={buttonProps} />
-            <Detail
-              headingRef={detailHeading}
-              onClose={close}
-              title={detail?.label ?? null}
-              eyebrow="รายละเอียดด้านที่เลือก"
-              context={describe({ ...query, domain: null }, names, ["year", "area"])}
-            >
-              {detail && (
-                <DomainFigures
-                  {...{ detail, unitLabel, totalLabel }}
-                  year={query.year}
-                  sort={domainSort}
-                  onSort={setDomainSort}
-                />
-              )}
-            </Detail>
-          </div>
-        </>
-      )}
+      <ResultsFade applied={applied}>
+        {!block ? (
+          <NoYear year={query.year} />
+        ) : units?.length === 0 ? (
+          <ReportStatus>
+            ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+          </ReportStatus>
+        ) : (
+          <>
+            <QuarterFigures
+              {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
+              onSort={setSort}
+              steps={[]}
+              year={query.year}
+            />
+            <div className="px-4 pb-6 sm:px-6">
+              <Domains domains={domains} open={query.domain} headingRef={overviewHeading} buttonProps={buttonProps} />
+              <Detail
+                headingRef={detailHeading}
+                onClose={close}
+                title={detail?.label ?? null}
+                eyebrow="รายละเอียดด้านที่เลือก"
+                context={describe({ ...query, domain: null }, names, ["year", "area"])}
+              >
+                {detail && (
+                  <DomainFigures
+                    {...{ detail, unitLabel, totalLabel }}
+                    year={query.year}
+                    sort={domainSort}
+                    onSort={setDomainSort}
+                  />
+                )}
+              </Detail>
+            </div>
+          </>
+        )}
+      </ResultsFade>
     </>
   );
 }

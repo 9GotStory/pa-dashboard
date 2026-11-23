@@ -11,6 +11,7 @@ import ReportActions from "../report/ReportActions";
 import ReportFilters from "../report/ReportFilters";
 import ReportLoader from "../report/ReportLoader";
 import ReportStatus, { NoYear } from "../report/ReportStatus";
+import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { resultsText, unitTable } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
@@ -46,7 +47,7 @@ export default function AnnualPage({ id, names, years }: { id: string; names: Na
 }
 
 function Annual({ data, names, years }: { data: DcReportData; names: Names; years: string[] }) {
-  const { query, search, apply, heading } = useReportQuery(data, names);
+  const { query, search, apply, applied, heading } = useReportQuery(data, names);
   // The order of the เปรียบเทียบ section, kept here so it stays through แสดงผล (SPEC §9.4)
   const [sort, setSort] = useState<ReportSort>("code");
   const { block, total, change, goal, units, trend, ageMonths, asking } = annualValues(data, query, names, years);
@@ -73,28 +74,30 @@ function Annual({ data, names, years }: { data: DcReportData; names: Names; year
       <ResultsHeader heading={heading} summary={summary} dateCom={block ? block.max_date_com : null}>
         <ReportActions csv={csv} />
       </ResultsHeader>
-      {!block ? (
-        <NoYear year={query.year} />
-      ) : units?.length === 0 ? (
-        <ReportStatus>
-          ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
-        </ReportStatus>
-      ) : (
-        <QuarterFigures
-          {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
-          onSort={setSort}
-          steps={[]}
-          year={query.year}
-        >
-          {total && (ageMonths || asking) && (
-            // One cell of the grid, beside แนวโน้ม: the two panels of s_kpi_food
-            <div className="grid min-w-0 content-start gap-4">
-              {ageMonths && <AgeMonthsPanel year={query.year} result={total.result} ageMonths={ageMonths} />}
-              {asking && <AskingPanel year={query.year} asking={asking} />}
-            </div>
-          )}
-        </QuarterFigures>
-      )}
+      <ResultsFade applied={applied}>
+        {!block ? (
+          <NoYear year={query.year} />
+        ) : units?.length === 0 ? (
+          <ReportStatus>
+            ไม่มีข้อมูลของ{areaLabel(query.area, names)}ในปี {query.year}
+          </ReportStatus>
+        ) : (
+          <QuarterFigures
+            {...{ total, change, goal, units, trend, unitLabel, totalLabel, sort }}
+            onSort={setSort}
+            steps={[]}
+            year={query.year}
+          >
+            {total && (ageMonths || asking) && (
+              // One cell of the grid, beside แนวโน้ม: the two panels of s_kpi_food
+              <div className="grid min-w-0 content-start gap-4">
+                {ageMonths && <AgeMonthsPanel year={query.year} result={total.result} ageMonths={ageMonths} />}
+                {asking && <AskingPanel year={query.year} asking={asking} />}
+              </div>
+            )}
+          </QuarterFigures>
+        )}
+      </ResultsFade>
     </>
   );
 }

@@ -9,3 +9,7 @@ export const TRANSITION = { duration: 0.15, ease: [0.4, 0, 0.2, 1] as [number, n
 // row or a card, which can be a page wide, by 1%, so both move a few pixels.
 export const PRESS = { scale: 0.97 };
 export const PRESS_WIDE = { scale: 0.99 };
+
+// How the results come in after แสดงผล (F91): from clear to shown, as
+// keyframes so the fade starts from clear even when it is already shown.
+export const FADE_IN = { opacity: [0, 1] };
