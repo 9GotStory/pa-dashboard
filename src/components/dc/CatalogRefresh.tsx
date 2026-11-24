@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { refreshCatalog } from "@/lib/dc/catalog-refresh";
 import type { CatalogRefreshSummary, CatalogTopicResult } from "@/lib/dc/types";
 
@@ -25,12 +25,25 @@ function resultText(t: CatalogTopicResult): string {
 
 export default function CatalogRefresh() {
   const [running, setRunning] = useState(false);
+  const [total, setTotal] = useState<number | null>(null);
   const [topics, setTopics] = useState<CatalogTopicResult[]>([]);
   const [summary, setSummary] = useState<CatalogRefreshSummary | null>(null);
   const [stopped, setStopped] = useState<string | null>(null);
 
+  // The browser's own warning on leaving the page mid-refresh (SPEC §12.1, F96).
+  useEffect(() => {
+    if (!running) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = true; // MDN, beforeunload event: "Included for legacy support, e.g. Chrome/Edge < 119"
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [running]);
+
   async function refresh() {
     setRunning(true);
+    setTotal(null);
     setTopics([]);
     setSummary(null);
     setStopped(null);
@@ -40,6 +53,7 @@ export default function CatalogRefresh() {
           fetch,
           gasUrl: GAS_URL,
           wait,
+          onListed: setTotal,
           onTopic: (result) => setTopics((prev) => [...prev, result]),
         }),
       );
@@ -52,7 +66,7 @@ export default function CatalogRefresh() {
   return (
     <section
       aria-labelledby="hdc-catalog"
-      className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep"
+      className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep tabular-nums"
     >
       <h2 id="hdc-catalog" className="font-prompt text-lg font-bold text-dc-brand-deep">
         แค็ตตาล็อก HDC
@@ -90,16 +104,24 @@ export default function CatalogRefresh() {
         </ul>
       )}
 
-      {(summary || stopped) && (
-        <p
-          role="status"
-          className={`mt-3 rounded-lg px-3 py-2 ${summary && summary.skipped + summary.failed === 0 ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
-        >
-          {summary
-            ? `รีเฟรชจบ ${summary.topics.length} หัวข้อ: บันทึก ${summary.saved} · ข้าม ${summary.skipped} · ล้ม ${summary.failed}`
-            : `หยุด: ${stopped}`}
-        </p>
-      )}
+      {/* In the page from the start, so a screen reader hears each change without focus moving (F96) */}
+      <div role="status">
+        {running ? (
+          <p className="mt-3 rounded-lg bg-dc-canvas px-3 py-2">
+            {total === null ? "กำลังอ่านหัวข้อจาก hdc_topics…" : `ทำไปแล้ว ${topics.length} จาก ${total} หัวข้อ`}
+          </p>
+        ) : (
+          (summary || stopped) && (
+            <p
+              className={`mt-3 rounded-lg px-3 py-2 ${summary && summary.skipped + summary.failed === 0 ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
+            >
+              {summary
+                ? `รีเฟรชจบ ${summary.topics.length} หัวข้อ: บันทึก ${summary.saved} · ข้าม ${summary.skipped} · ล้ม ${summary.failed}`
+                : `หยุด: ${stopped}`}
+            </p>
+          )
+        )}
+      </div>
     </section>
   );
 }

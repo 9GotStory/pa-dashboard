@@ -40,7 +40,10 @@ function stub({
   const requests: { method: string; url: string; body?: { action: string; cat_id: string; reports: unknown[] } }[] = [];
   const waits: number[] = [];
   const next = (answers: Answer[], n: number) => answers[Math.min(n, answers.length - 1)];
-  const fetch = async (input: string | URL | Request, init?: RequestInit) => {
+  // A function, not an arrow, so that it sees its this: the browser's fetch
+  // throws "Illegal invocation" when called as a method of another object.
+  const fetch = async function (this: unknown, input: string | URL | Request, init?: RequestInit) {
+    if (this !== undefined && this !== globalThis) throw new TypeError("Illegal invocation");
     const url = String(input);
     const method = init?.method ?? "GET";
     const body = typeof init?.body === "string" ? JSON.parse(init.body) : undefined;
@@ -239,13 +242,22 @@ test("the summary counts topics saved, skipped and failed, and each topic's resu
   assert.deepEqual(seen, [`${EPI} saved`, `${SURVEILLANCE} skipped`, `${SCREENING} failed`, `${FOURTH} saved`]);
 });
 
-test("?action=catalog fails: stops with GAS's message or why, before any request to MOPH", async () => {
+test("?action=catalog fails: stops with GAS's message or why, then the admin's next step for that cause, before any request to MOPH", async () => {
+  // Busy, 5xx and a network error pass: press again later.
+  const again = " · รอสักครู่แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง ถ้ากำลัง sync อยู่ให้รอจบก่อน";
+  // Any other answer does not come from the web app of this site's GAS.
+  const check = " · ตรวจว่า NEXT_PUBLIC_GAS_SCRIPT_URL เป็น URL ของ web app ของ GAS ที่ deploy อยู่ แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง";
   const cases: [Answer, string][] = [
-    [{ status: 200, body: { status: "error", message: "Busy" } }, "อ่านหัวข้อจาก hdc_topics ไม่ได้: Busy"],
-    [{ status: 500, body: "" }, "อ่านหัวข้อจาก hdc_topics ไม่ได้: HTTP 500"],
-    ["network error", "อ่านหัวข้อจาก hdc_topics ไม่ได้: Failed to fetch"],
-    [{ status: 200, body: { rows: [] } }, "อ่านหัวข้อจาก hdc_topics ไม่ได้: คำตอบของ GAS ไม่มี topics"],
-    [{ status: 200, body: { topics: [] } }, "hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน"],
+    [{ status: 200, body: { status: "error", message: "Busy" } }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: Busy${again}`],
+    [{ status: 500, body: "" }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: HTTP 500${again}`],
+    ["network error", `อ่านหัวข้อจาก hdc_topics ไม่ได้: Failed to fetch${again}`],
+    [{ status: 404, body: "" }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: HTTP 404${check}`],
+    [
+      { status: 200, body: { status: "error", message: 'Missing "sheet" parameter' } },
+      `อ่านหัวข้อจาก hdc_topics ไม่ได้: Missing "sheet" parameter${check}`,
+    ],
+    [{ status: 200, body: { rows: [] } }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: คำตอบของ GAS ไม่มี topics${check}`],
+    [{ status: 200, body: { topics: [] } }, "hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง"],
   ];
   for (const [answer, message] of cases) {
     const { deps, requests } = stub({ catalog: [answer] });
@@ -255,4 +267,15 @@ test("?action=catalog fails: stops with GAS's message or why, before any request
       [`${GAS}?action=catalog`],
     );
   }
+});
+
+test("onListed gets how many topics hdc_topics has, before the first topic starts (F96)", async () => {
+  const { deps, requests } = stub();
+  const seen: string[] = [];
+  await refreshCatalog({
+    ...deps,
+    onListed: (total) => seen.push(`listed ${total} after ${requests.length} requests`),
+    onTopic: (t) => seen.push(`${t.cat_id} ${t.outcome}`),
+  });
+  assert.deepEqual(seen, ["listed 3 after 1 requests", `${EPI} saved`, `${SURVEILLANCE} saved`, `${SCREENING} saved`]);
 });

@@ -104,7 +104,20 @@ export default function RegistryPopulationUpload() {
   const [picked, setPicked] = useState<Picked[]>([]);
   const [rebuild, setRebuild] = useState<Outcome | null>(null);
   const [saving, setSaving] = useState(false);
+  // What the save is on: the index in picked of the file being saved, or the rebuild after the files
+  const [current, setCurrent] = useState<number | "rebuild" | null>(null);
   const input = useRef<HTMLInputElement>(null);
+
+  // The browser's own warning on leaving the page mid-save (SPEC §12.1, F96).
+  useEffect(() => {
+    if (!saving) return;
+    const warn = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = true; // MDN, beforeunload event: "Included for legacy support, e.g. Chrome/Edge < 119"
+    };
+    window.addEventListener("beforeunload", warn);
+    return () => window.removeEventListener("beforeunload", warn);
+  }, [saving]);
 
   // district_code from the site's own catalog.json, so files are checked
   // without asking GAS (SCHEMA §11.2).
@@ -173,6 +186,7 @@ export default function RegistryPopulationUpload() {
     const statMFirst = [...picked.entries()].sort(([, a], [, b]) => Number(isAge(a)) - Number(isAge(b)));
     const savedYears = new Set<string>(); // the yymm of each stat_m whose ตำบล rows were saved
     for (const [i, { read }] of statMFirst) {
+      if (read.ok) setCurrent(i);
       let outcome: Outcome;
       if (!read.ok) {
         outcome = { ok: false, text: `ไม่ส่ง: ${read.reason}` };
@@ -196,21 +210,31 @@ export default function RegistryPopulationUpload() {
     // One rebuild of the website when any year was saved (SPEC §12.1): the
     // years are saved either way.
     if (anySaved) {
+      setCurrent("rebuild");
       setRebuild(await rebuildSite());
       reloadYears();
     }
     // Cleared so that picking the same files again, to retry, is a change.
     if (input.current) input.current.value = "";
+    setCurrent(null);
     setSaving(false);
   }
 
   const toSave = picked.filter((p) => p.read.ok).length;
   const finished = !saving && picked.some((p) => p.outcome);
+  const count = (match: (p: Picked) => boolean) => picked.filter(match).length;
+  const tally = {
+    saved: count((p) => p.outcome?.ok === true),
+    partial: count((p) => p.outcome?.partial === true),
+    failed: count((p) => p.read.ok && p.outcome?.ok === false && !p.outcome.partial),
+    refused: count((p) => !p.read.ok),
+  };
+  const sent = count((p) => p.read.ok && p.outcome !== undefined);
 
   return (
     <section
       aria-labelledby="registry-population"
-      className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep"
+      className="dc mt-6 rounded-xl border border-dc-border-subtle bg-white p-6 font-dc text-sm text-dc-brand-deep tabular-nums"
     >
       <h2 id="registry-population" className="font-prompt text-lg font-bold text-dc-brand-deep">
         ประชากรทะเบียนราษฎร (กรมการปกครอง)
@@ -284,20 +308,23 @@ export default function RegistryPopulationUpload() {
       {picked.length > 0 && (
         <ul aria-live="polite" className="mt-4 space-y-2">
           {picked.map(({ read, outcome }, i) => {
+            const savingThis = saving && current === i;
             const ok = outcome ? outcome.ok : read.ok;
-            const label = outcome
-              ? outcome.ok
-                ? "บันทึกแล้ว"
-                : outcome.partial
-                  ? "บันทึกบางส่วน"
-                  : "ไม่บันทึก"
-              : read.ok
-                ? "ผ่านการตรวจ"
-                : "ไม่รับไฟล์";
+            const label = savingThis
+              ? "กำลังบันทึก"
+              : outcome
+                ? outcome.ok
+                  ? "บันทึกแล้ว"
+                  : outcome.partial
+                    ? "บันทึกบางส่วน"
+                    : "ไม่บันทึก"
+                : read.ok
+                  ? "ผ่านการตรวจ"
+                  : "ไม่รับไฟล์";
             return (
               <li key={i} className="rounded-lg border border-dc-border-subtle px-3 py-2">
                 <span
-                  className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
+                  className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${savingThis ? "bg-dc-highlight-soft" : ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
                 >
                   {label}
                 </span>
@@ -309,14 +336,33 @@ export default function RegistryPopulationUpload() {
         </ul>
       )}
 
-      {rebuild && (
-        <p
-          role="status"
-          className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
-        >
-          {rebuild.text}
-        </p>
-      )}
+      {/* In the page from the start, so a screen reader hears each change without focus moving (F96) */}
+      <div role="status">
+        {saving ? (
+          <p className="mt-3 rounded-lg bg-dc-canvas px-3 py-2">
+            {current === "rebuild"
+              ? "บันทึกไฟล์ครบแล้ว กำลังสั่ง rebuild…"
+              : `กำลังบันทึกไฟล์ที่ ${sent + 1} จาก ${toSave}${typeof current === "number" ? `: ${picked[current].read.name}` : ""}`}
+          </p>
+        ) : (
+          <>
+            {finished && (
+              <p
+                className={`mt-3 rounded-lg px-3 py-2 ${tally.failed + tally.partial === 0 ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
+              >
+                {`บันทึกจบ: บันทึก ${tally.saved} ไฟล์ · ล้ม ${tally.failed} ไฟล์`}
+                {tally.partial > 0 && ` · บันทึกบางส่วน ${tally.partial} ไฟล์`}
+                {tally.refused > 0 && ` · ไม่ได้ส่ง ${tally.refused} ไฟล์ที่ไม่ผ่านการตรวจ`}
+              </p>
+            )}
+            {rebuild && (
+              <p className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}>
+                {rebuild.text}
+              </p>
+            )}
+          </>
+        )}
+      </div>
 
       {picked.length > 0 && !finished && (
         <button
