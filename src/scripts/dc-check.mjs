@@ -36,7 +36,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright-core";
 import { TABLE_PAGES, awaitingWarnings, catalogReports, shownCatalog, tablePage } from "../lib/dc/tables/index.ts";
-import { failingPairs, formatPairs, groupPairs, measurePage } from "./dc-contrast.mjs";
+import { failingPairs, formatPairs, groupPairs, measureLoaded } from "./dc-contrast.mjs";
 import { serve } from "./dc-serve.mjs";
 
 const OUT = path.resolve("out");
@@ -55,10 +55,6 @@ const POPULATION_WIDTH = 1280;
 const DISTRICT = "ภาพรวมอำเภอสอง";
 // The label of the home page's ตำบล <select> (SPEC §9.2).
 const PICKER = "เลือกตำบล";
-// How long a page may take to load its data once the network is idle, in ms,
-// and what every status of a page loading begins with, as dc-contrast.mjs.
-const LOAD_TIMEOUT = 20_000;
-const LOADING = "กำลังโหลด";
 // The ช่วงอายุ of a pyramid (SCHEMA §11.3).
 const AGE_BANDS = 17;
 // How long a ตำบล picked in เลือกตำบล may take to show on the pyramid, in ms.
@@ -343,7 +339,7 @@ async function overflowProblems(browser, url) {
 const contrastRows = [];
 // How many pages, each at one width, measureContrast has read
 let contrastLoads = 0;
-// How many requests to script.google.com the pages opened by contrastProblems aborted
+// How many requests to script.google.com the pages opened by contrastPage aborted
 let gasAborted = 0;
 
 // The path and query of a URL, as the rule names a page
@@ -352,22 +348,25 @@ const pathOf = (url) => {
   return pathname + search;
 };
 
-// Measures the colour pairs of a page as it is, once it shows no LOADING,
-// adding its rows to contrastRows, each naming where (its path and width).
+// Measures the colour pairs of a page as it is, once it has loaded its data
+// (measureLoaded), adding its rows to contrastRows, each naming where (its
+// path and width); throws naming where when it cannot.
 async function measureContrast(page, where) {
-  await page.waitForFunction(
-    (loading) => !(document.querySelector("main") ?? document.body).innerText.includes(loading),
-    LOADING,
-    { timeout: LOAD_TIMEOUT },
-  );
-  contrastRows.push(...(await measurePage(page, where)));
+  try {
+    contrastRows.push(...(await measureLoaded(page, where)));
+  } catch (err) {
+    throw new Error(`${where}: colour pair rule: ${err.message}`);
+  }
   contrastLoads++;
 }
 
 // Opens a page at width px on its own and measures it: map tiles blocked, so
-// the text on the map is read against the same ground every run, and any
-// request to script.google.com aborted, so /pa keeps its build's numbers
-// (useKPIData) and never reaches the production GAS.
+// the text on the map (Leaflet's attribution, on a translucent ground) is read
+// against the same ground every run, not against a tile that may or may not
+// have loaded, and any request to script.google.com aborted, so /pa keeps its
+// build's numbers (useKPIData) and never reaches the production GAS. Not on
+// checkPage's page: it loads the tiles, as a blocked tile is a console error
+// there.
 async function contrastPage(browser, url, width) {
   const page = await browser.newPage({ viewport: { width, height: 800 } });
   try {

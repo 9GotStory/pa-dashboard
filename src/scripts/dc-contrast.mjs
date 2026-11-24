@@ -522,6 +522,20 @@ function die(message) {
   process.exit(2);
 }
 
+// The rows of a Playwright page once <main> (or the body) shows no LOADING,
+// each with where, as measurePage gives them; throws when it never stops
+// loading or no text shows. dc-check.mjs measures its pages with it too.
+export async function measureLoaded(page, where) {
+  await page.waitForFunction(
+    (loading) => !(document.querySelector("main") ?? document.body).innerText.includes(loading),
+    LOADING,
+    { timeout: LOAD_TIMEOUT },
+  );
+  const rows = await measurePage(page, where);
+  if (rows.length === 0) throw new Error("no text shows once loaded: open the page and see what it shows");
+  return rows;
+}
+
 // The arguments: { base, widths, paths }, or die naming what is wrong.
 function parseArgs(args) {
   let base;
@@ -557,14 +571,7 @@ async function measureUrl(browser, url, width, where, sent) {
     });
     const response = await page.goto(url, { waitUntil: "networkidle" });
     if (!response?.ok()) throw new Error(`HTTP ${response?.status()}: is the path a page of out/ or of --base?`);
-    await page.waitForFunction(
-      (loading) => !(document.querySelector("main") ?? document.body).innerText.includes(loading),
-      LOADING,
-      { timeout: LOAD_TIMEOUT },
-    );
-    const rows = await measurePage(page, where);
-    if (rows.length === 0) throw new Error("no text shows once loaded: open the page and see what it shows");
-    return rows;
+    return await measureLoaded(page, where);
   } finally {
     await page.close();
   }
