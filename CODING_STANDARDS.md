@@ -47,7 +47,7 @@
   - สถานะกด (F90): control ของ Data Center ใช้ `PressButton`, `PressA`, `PressLink` หรือ `PressSummary` ของ `src/components/dc/Press.tsx` (`wide` สำหรับแถว แท่ง และการ์ด) หรือ `usePress` กับ `m` เมื่อเป็น element อื่น · Motion ใส่ `tabIndex` 0 ให้ element ที่มี `whileTap` element ที่ไม่ใช่ control เอง (เช่น `<tr>` ที่มีปุ่มข้างใน) จึงตั้ง `tabIndex={-1}` · ลิงก์ในประโยค Masthead และเมนูหลักไม่ยุบ ใช้สีตอนกด (`active:`) แทน
   - การเปลี่ยนสีตอน hover และ focus ใช้ transition ของ Tailwind ระบุ property (`transition-colors` ฯลฯ) ไม่ใช้ `transition-all` · การเคลื่อนที่อื่นใช้ Motion · ไม่ติดตั้ง tw-animate-css และไม่เขียน keyframes เอง
   - ทุก motion ต้องตอบการกระทำของผู้ชม บอกว่าข้อมูลส่วนไหนเปลี่ยน หรือบอกสถานะรอ ตามรายการใน SPEC §9.1 · motion ที่ไม่อยู่ในรายการคือ finding
-  - ผู้ชมที่ตั้ง `prefers-reduced-motion` ไม่เห็นการเคลื่อนที่ (การจางสั้น ๆ ได้) · `reducedMotion="user"` ของ `MotionConfig` ปิดเฉพาะ animation ของ transform กับ layout (ADR-0018 "ผลที่ตามมา") motion ที่ไม่ใช่ transform (การวาดเส้น ความกว้าง ความสูง) ต้องเช็กการตั้งค่าของผู้ชมเอง
+  - ผู้ชมที่ตั้ง `prefers-reduced-motion` ไม่เห็นการเคลื่อนที่ (การจางสั้น ๆ ได้) · `reducedMotion="user"` ของ `MotionConfig` ปิดเฉพาะ animation ของ transform กับ layout (ADR-0018 "ผลที่ตามมา") motion ที่ไม่ใช่ transform (ความกว้าง ความสูง) ต้องเช็กการตั้งค่าของผู้ชมเอง
   - HTML ที่ build มีเนื้อหาครบและมองเห็นได้ ไม่มี `initial` ที่ซ่อนหรือย่อ element ตอนโหลดแรก · แท่งอยู่ที่ค่าจริงตั้งแต่ HTML
   - การบอกสถานะอยู่ที่ตัว control ไม่ใช้ toast และไม่ import sonner ในโค้ดของ Data Center
   - Masthead, Footer และลิงก์ข้ามไปเนื้อหาหลัก (`SkipLink`) ไม่ import `motion` เพราะ `/pa` ใช้ร่วม (§1)
