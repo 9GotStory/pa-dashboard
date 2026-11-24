@@ -96,7 +96,7 @@ export function KPIDetailModal({
             <h3 className="text-base md:text-lg font-bold text-neutral-800 truncate">{facilityName}</h3>
             <p className="text-xs md:text-sm text-neutral-500 truncate">{title}</p>
             {lastUpdated && (
-               <p className="text-[10px] md:text-xs text-neutral-400 mt-0.5">
+               <p className="text-[10px] md:text-xs text-neutral-500 mt-0.5">
                  ข้อมูลล่าสุด: {formatDate(lastUpdated)}
                </p>
             )}
@@ -153,7 +153,7 @@ export function KPIDetailModal({
                           {formatPct(pct)}%
                         </span>
                       ) : (
-                        <span className="text-neutral-400 text-xs">(N/A)</span>
+                        <span className="text-neutral-500 text-xs">(N/A)</span>
                       )}
                     </td>
                   </tr>
@@ -162,7 +162,7 @@ export function KPIDetailModal({
               
               {data.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 md:px-6 md:py-12 text-center text-neutral-400 italic">
+                  <td colSpan={4} className="px-4 py-8 md:px-6 md:py-12 text-center text-neutral-500 italic">
                     No detailed records found for this facility.
                   </td>
                 </tr>

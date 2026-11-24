@@ -113,7 +113,7 @@ export function KPICard({
         {/* Main Stats */}
         <div className="flex items-end justify-between border-t border-neutral-50 pt-3">
           <div>
-            <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wide">
+            <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-wide">
               Performance
             </p>
             <div className="flex items-baseline gap-1.5">
@@ -131,7 +131,7 @@ export function KPICard({
           </div>
 
           <div className="text-right">
-            <p className="text-[10px] text-neutral-400 font-medium uppercase tracking-wide">
+            <p className="text-[10px] text-neutral-500 font-medium uppercase tracking-wide">
               Target ≥ {targetVal}{" "}
               <span className="normal-case tracking-normal">
                 ({kpi.targetMonths} เดือน)
@@ -139,7 +139,7 @@ export function KPICard({
             </p>
             <div className="text-xs text-neutral-600 mt-0.5 font-medium flex items-center justify-end gap-1">
               <span>R: {totalResult.toLocaleString()}</span>
-              <span className="text-neutral-300">/</span>
+              <span className="text-neutral-500">/</span>
               <span>T: {totalTarget.toLocaleString()}</span>
             </div>
           </div>
@@ -171,7 +171,7 @@ export function KPICard({
             onClick={(e) => e.stopPropagation()}
           >
             <table className="w-full text-xs">
-              <thead className="text-neutral-400 font-medium border-b border-neutral-200">
+              <thead className="text-neutral-500 font-medium border-b border-neutral-200">
                 <tr>
                   <th className="py-2 text-left w-[60%]">หน่วยบริการ</th>
                   <th className="py-2 text-right">ผลงาน</th>

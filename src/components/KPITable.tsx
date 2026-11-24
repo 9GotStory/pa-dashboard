@@ -134,7 +134,7 @@ export default function KPITable({
           className:
             "md:sticky left-0 z-20 bg-white min-w-[24px] w-[24px] max-w-[24px] text-center pb-4 px-1 font-medium text-neutral-500 text-xs border-r border-neutral-200",
           headerClassName:
-            "md:sticky left-0 z-30 bg-slate-50 w-[24px] max-w-[24px] text-center pb-4 px-1 border-r border-slate-200",
+            "md:sticky left-0 z-30 bg-neutral-50 w-[24px] max-w-[24px] text-center pb-4 px-1 border-r border-neutral-200",
         },
       }),
       columnHelper.accessor("title", {
@@ -154,7 +154,7 @@ export default function KPITable({
                       href={link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-all block whitespace-normal"
+                      className="text-neutral-800 hover:text-accent-700 hover:underline font-medium text-sm leading-relaxed group transition-colors block whitespace-normal"
                     >
                       {title}{" "}
                       <ExternalLink className="w-3.5 h-3.5 inline text-neutral-400 group-hover:text-accent-500 ml-1 transform -translate-y-px transition-colors" />
@@ -195,7 +195,7 @@ export default function KPITable({
           className:
             "md:sticky left-[24px] z-20 bg-white w-[250px] min-w-[250px] text-left align-top shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-2 py-2",
           headerClassName:
-            "md:sticky left-[24px] z-30 bg-slate-50 w-[250px] min-w-[250px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-slate-200 px-2",
+            "md:sticky left-[24px] z-30 bg-neutral-50 w-[250px] min-w-[250px] text-left shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)] border-r border-neutral-200 px-2",
         },
       }),
       columnHelper.accessor("percentage", {
@@ -222,7 +222,7 @@ export default function KPITable({
         meta: {
           // Sticky Position = 24 (Index) + 250 (Title) = 274px
           getHeaderClassName: () =>
-            "md:sticky left-[274px] z-40 bg-slate-50 w-[75px] min-w-[75px] text-center border-r-[3px] border-slate-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+            "md:sticky left-[274px] z-40 bg-neutral-50 w-[75px] min-w-[75px] text-center border-r-[3px] border-neutral-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]",
           getCellClassName: (row: Row<KPISummary>) => {
             const kpi = row.original;
             const { totalTarget, percentage } = computeAggregate(
@@ -234,7 +234,7 @@ export default function KPITable({
 
             // Common Sticky Style + Separator
             const stickyStyle =
-              "md:sticky left-[274px] z-30 w-[75px] min-w-[75px] border-r-[3px] border-slate-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
+              "md:sticky left-[274px] z-30 w-[75px] min-w-[75px] border-r-[3px] border-neutral-200 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.15)]";
 
             if (isRawCount) {
               return `${stickyStyle} bg-neutral-100 text-center font-medium text-neutral-600`;
@@ -256,7 +256,7 @@ export default function KPITable({
           id: key,
           header: () => (
             <div className="w-full flex items-center justify-center">
-              <span className="whitespace-nowrap text-xs truncate max-w-17.5 font-bold text-slate-700 text-left line-clamp-1">
+              <span className="whitespace-nowrap text-xs truncate max-w-17.5 font-bold text-neutral-700 text-left line-clamp-1">
                 {hospitalMap[key]?.name?.replace(
                   "โรงพยาบาลส่งเสริมสุขภาพตำบล",
                   "รพ.สต.",
@@ -269,7 +269,7 @@ export default function KPITable({
             const kpi = info.row.original;
 
             if (!facilityData)
-              return <span className="text-neutral-300 text-[10px]">-</span>;
+              return <span className="text-neutral-500 text-[10px]">-</span>;
 
             const isRawCount = kpi.totalTarget === 0;
 
@@ -286,7 +286,7 @@ export default function KPITable({
                     {facilityData.result.toLocaleString()}
                   </span>
                 ) : facilityData.target === 0 ? (
-                  <span className="text-neutral-300 text-[10px]">-</span>
+                  <span className="text-neutral-500 text-[10px]">-</span>
                 ) : (
                   <span className="text-xs font-bold">
                     {formatPct(facilityData.percentage)}%
@@ -297,7 +297,7 @@ export default function KPITable({
           },
           meta: {
             headerClassName:
-              "px-2 py-2 text-center min-w-17.5 w-17.5 bg-slate-50 border-b border-slate-200 align-middle overflow-hidden",
+              "px-2 py-2 text-center min-w-17.5 w-17.5 bg-neutral-50 border-b border-neutral-200 align-middle overflow-hidden",
             getCellClassName: (row: Row<KPISummary>) => {
               const kpi = row.original;
               const targetVal = kpi.targetValue || DEFAULT_TARGET;
@@ -333,7 +333,7 @@ export default function KPITable({
         cell: (info) => (
           <span className="text-xs">
             ≥{info.getValue() || DEFAULT_TARGET}
-            <span className="block text-[9px] font-normal text-warning-600/80">
+            <span className="block text-[9px] font-normal text-warning-700">
               ({info.row.original.targetMonths} เดือน)
             </span>
           </span>
@@ -341,9 +341,9 @@ export default function KPITable({
         meta: {
           // DISTINCT TARGET COLUMN -- SOLID BG + WALL EFFECT
           className:
-            "md:sticky right-0 z-50 bg-warning-50 text-center text-xs w-[80px] min-w-[80px] font-bold text-warning-700 border-l-[3px] border-slate-200 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+            "md:sticky right-0 z-50 bg-warning-50 text-center text-xs w-[80px] min-w-[80px] font-bold text-warning-700 border-l-[3px] border-neutral-200 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
           headerClassName:
-            "md:sticky right-0 z-50 bg-slate-50 w-[80px] text-center min-w-[80px] text-warning-800 border-l-[3px] border-slate-200 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
+            "md:sticky right-0 z-50 bg-neutral-50 w-[80px] text-center min-w-[80px] text-warning-800 border-l-[3px] border-neutral-200 shadow-[-4px_0_12px_-4px_rgba(0,0,0,0.15)]",
         },
       }),
     ];
@@ -388,16 +388,16 @@ export default function KPITable({
     <>
       <div className="flex flex-col gap-6">
         {/* Table Actions Header — standalone toolbar above the category cards */}
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm px-6 py-4 flex justify-between items-center">
+        <div className="rounded-xl border border-neutral-200 bg-white shadow-sm px-6 py-4 flex justify-between items-center">
           <div>
-            <h3 className="font-bold text-slate-800 font-prompt text-lg">
+            <h3 className="font-bold text-neutral-800 font-prompt text-lg">
               ผลการดำเนินงาน
             </h3>
           </div>
           <button
             onClick={handleExport}
             disabled={isExporting}
-            className={`flex items-center gap-1 px-3 py-1.5 text-slate-600 bg-white border border-slate-200 text-xs font-medium rounded-lg shadow-sm transition-all hover:bg-slate-50 active:scale-95 font-prompt ${
+            className={`flex items-center gap-1 px-3 py-1.5 text-neutral-600 bg-white border border-neutral-200 text-xs font-medium rounded-lg shadow-sm transition-[background-color,opacity,scale] hover:bg-neutral-50 active:scale-95 font-prompt ${
               isExporting ? "opacity-50 cursor-not-allowed" : ""
             }`}
           >
@@ -407,7 +407,7 @@ export default function KPITable({
               </>
             ) : (
               <>
-                <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-600" />
+                <FileSpreadsheet className="w-3.5 h-3.5 text-brand-600" />
                 <span className="hidden md:inline">Export Excel</span>
               </>
             )}
@@ -417,7 +417,7 @@ export default function KPITable({
         {blocks.map((block) => (
           <div
             key={block.key}
-            className="rounded-xl border border-slate-200 bg-white overflow-hidden shadow-sm"
+            className="rounded-xl border border-neutral-200 bg-white overflow-hidden shadow-sm"
           >
             {/* Block title bar — one per category. Hidden when only one
                 category is in view (the tab already labels it). */}
@@ -439,11 +439,11 @@ export default function KPITable({
             )}
             <div className="relative w-full overflow-auto">
               <Table className="w-full table-fixed text-sm text-left border-separate border-spacing-0">
-                <TableHeader className="bg-slate-50 sticky top-0 z-40 shadow-sm">
+                <TableHeader className="bg-neutral-50 sticky top-0 z-40 shadow-sm">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <TableRow
                       key={headerGroup.id}
-                      className="h-auto hover:bg-transparent border-b border-slate-200"
+                      className="h-auto hover:bg-transparent border-b border-neutral-200"
                     >
                       {headerGroup.headers.map((header) => {
                         const meta = header.column.columnDef.meta;
@@ -455,7 +455,7 @@ export default function KPITable({
                           <TableHead
                             key={header.id}
                             className={cn(
-                              "h-auto px-4 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wide",
+                              "h-auto px-4 py-4 text-xs font-semibold text-neutral-500 uppercase tracking-wide",
                               className,
                             )}
                           >
@@ -488,7 +488,7 @@ export default function KPITable({
                     return (
                       <TableRow
                         key={row.id}
-                        className="bg-white hover:bg-slate-50 border-b border-slate-100 transition-colors"
+                        className="bg-white hover:bg-neutral-50 border-b border-neutral-100 transition-colors"
                       >
                         {row.getVisibleCells().map((cell) => {
                           const meta = cell.column.columnDef.meta;
