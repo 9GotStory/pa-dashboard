@@ -1,4 +1,3 @@
-import { MoveHorizontal } from "lucide-react";
 import { formatCount } from "@/lib/dc/format";
 import { populationArea, populationUnitLabel } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
@@ -6,6 +5,7 @@ import type { PopulationReport, PopulationSort, PopulationUnit } from "@/lib/dc/
 import { Bar } from "../charts/Bar";
 import Segmented from "../Segmented";
 import { changeText } from "../report/changeText";
+import ScrollBox from "../ScrollBox";
 
 /**
  * The เปรียบเทียบ section of รายงานประชากร (SPEC §9.4.1): the ตำบล of the
@@ -75,13 +75,9 @@ export default function PopulationUnits(props: {
             <p aria-hidden="true" className="px-4 pt-4 pb-3 font-prompt text-sm font-semibold text-dc-brand-deep">
               {caption}
             </p>
-            {/* Wider than a phone: it scrolls inside this box, never the page (SPEC §9.1).
-                Focusable, so a keyboard scrolls it. */}
-            <div
-              role="region"
-              tabIndex={0}
-              aria-label={`ตารางประชากรราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
-              className="overflow-x-auto"
+            <ScrollBox
+              label={`ตารางประชากรราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
+              hintClassName="border-t border-dc-border-subtle px-4 py-2"
             >
               <table className="w-full border-collapse text-xs tabular-nums">
                 <caption className="sr-only">{caption}</caption>
@@ -125,12 +121,8 @@ export default function PopulationUnits(props: {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollBox>
           </div>
-          <p className="mt-2 flex items-center gap-1.5 text-sm text-dc-text-secondary md:hidden">
-            <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
-            ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
-          </p>
           <p className="mt-2 text-sm text-dc-text-secondary">
             เปลี่ยนแปลงจากปีแรกที่{unitLabel}นั้นมีข้อมูลถึงปี {query.year}
             {report.partial && ` · "—" คือ${unitLabel}นั้นไม่มีข้อมูลในปีนั้น การเปลี่ยนแปลงจึงนับจากปีแรกที่มีข้อมูล`}

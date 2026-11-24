@@ -1,4 +1,3 @@
-import { MoveHorizontal } from "lucide-react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import { populationArea } from "@/lib/dc/population-report";
 import { yearAsOf } from "@/lib/dc/population-totals";
@@ -7,6 +6,7 @@ import { Bar } from "../charts/Bar";
 import TrendChart from "../charts/TrendChart";
 import TrendList from "../charts/TrendList";
 import { PyramidRows, UnsplitText } from "../PopulationPyramid";
+import ScrollBox from "../ScrollBox";
 
 const NO_AGE = "ไม่มีข้อมูลอายุของปีนี้";
 
@@ -149,8 +149,10 @@ function BandTable({ report, age, area }: { report: PopulationReport; age: Popul
         <p aria-hidden="true" className="px-4 pt-4 pb-3 font-prompt text-sm font-semibold text-dc-brand-deep">
           {caption}
         </p>
-        {/* Wider than a phone: it scrolls inside this box, never the page (SPEC §9.1). Focusable, so a keyboard scrolls it. */}
-        <div role="region" tabIndex={0} aria-label="ตารางประชากรรายช่วงอายุ (เลื่อนดูแนวนอนได้)" className="overflow-x-auto">
+        <ScrollBox
+          label="ตารางประชากรรายช่วงอายุ (เลื่อนดูแนวนอนได้)"
+          hintClassName="border-t border-dc-border-subtle px-4 py-2"
+        >
           <table className="w-full border-collapse text-xs tabular-nums">
             <caption className="sr-only">{caption}</caption>
             <thead className="bg-dc-highlight-soft text-dc-brand-deep">
@@ -187,12 +189,8 @@ function BandTable({ report, age, area }: { report: PopulationReport; age: Popul
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollBox>
       </div>
-      <p className="mt-2 flex items-center gap-1.5 text-sm text-dc-text-secondary md:hidden">
-        <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
-        ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
-      </p>
       {age.bands[0].totals.includes(null) && (
         <p className="mt-2 text-sm text-dc-text-secondary">&quot;—&quot; คือปีที่ไม่มีข้อมูลอายุ</p>
       )}

@@ -1,5 +1,6 @@
 import { formatCount } from "@/lib/dc/format";
 import type { Totals, UnitTotals } from "@/lib/dc/types";
+import ScrollBox from "../ScrollBox";
 import { pctText } from "./labels";
 
 /**
@@ -15,11 +16,10 @@ export default function UnitTable(props: {
   const { unitLabel, units, total, totalLabel } = props;
   return (
     <section className="min-w-0">
-      <div
-        role="region"
-        tabIndex={0}
-        aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
-        className="overflow-x-auto rounded-[9px] border border-dc-border-subtle"
+      <ScrollBox
+        label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
+        className="rounded-[9px] border border-dc-border-subtle"
+        hintClassName="mt-2"
       >
         <table className="w-full border-collapse text-xs tabular-nums">
           <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">
@@ -64,7 +64,7 @@ export default function UnitTable(props: {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </ScrollBox>
     </section>
   );
 }

@@ -17,7 +17,7 @@ const ALL: LibraryQuery = { main: null, cat: null, q: "" };
 /** A row of the left bar: รายงานทั้งหมด or a หัวข้อ, marked on its left when picked; a หมวด is a heading-like row of its own */
 function barItem(current: boolean, main: boolean): string {
   const look = main
-    ? `px-1 py-2 text-xs font-semibold ${current ? "text-dc-brand-primary" : "text-dc-brand-deep hover:text-dc-brand-primary"}`
+    ? `px-1 py-2 text-xs font-semibold ${current ? "text-dc-brand-primary" : "text-dc-brand-deep hover:bg-dc-canvas hover:text-dc-brand-primary"}`
     : `border-l-[3px] px-3 py-2.5 text-[13px] ${
         current
           ? "border-dc-brand-primary bg-dc-highlight-soft font-medium text-dc-brand-primary"
@@ -125,7 +125,7 @@ function Directory({
             type="search"
             value={query.q}
             onChange={(e) => actions?.go({ ...query, q: e.target.value }, "replace")}
-            placeholder="ค้นหาชื่อรายงานหรือหัวข้อที่สนใจ..."
+            placeholder="ค้นหาชื่อรายงานหรือหัวข้อที่สนใจ…"
             autoComplete="off"
             aria-describedby="library-help"
             className="w-full min-w-0 flex-1 bg-transparent px-3 py-3.5 text-sm text-dc-brand-deep placeholder:text-dc-text-secondary leading-[1.8] focus-visible:outline-none sm:px-4 sm:text-[15px] [&::-webkit-search-cancel-button]:appearance-none"
@@ -403,7 +403,7 @@ function Row({ report, q }: { report: LibraryReport; q: string }) {
       </span>
       <ArrowRight
         aria-hidden="true"
-        className="size-[17px] shrink-0 text-dc-text-secondary transition-transform duration-150 group-hover:translate-x-1 group-hover:text-dc-brand-accent motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+        className="size-[17px] shrink-0 text-dc-text-secondary transition-[color,translate] duration-150 group-hover:translate-x-1 group-hover:text-dc-brand-accent motion-reduce:group-hover:translate-x-0"
       />
     </PressLink>
   );

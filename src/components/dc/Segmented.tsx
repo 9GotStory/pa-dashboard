@@ -1,20 +1,18 @@
 import type { LucideIcon } from "lucide-react";
 import { PressButton } from "./Press";
 
-// One compact segmented control (design.md §4): a button per option, the one on show pressed.
-// tall makes each button 44px high, the target of a report page's control (SPEC §9.4).
+// One compact segmented control (design.md §4): a button per option, the one on show pressed,
+// each 44px high, the target of a control on a touch screen (SPEC §9.1, F95).
 export default function Segmented<T extends string>({
   label,
   options,
   value,
   onChange,
-  tall = false,
 }: {
   label: string;
   options: [T, string, LucideIcon?][];
   value: T;
   onChange: (value: T) => void;
-  tall?: boolean;
 }) {
   return (
     <div role="group" aria-label={label} className="flex rounded-md border border-dc-border-subtle bg-dc-surface p-0.5">
@@ -24,7 +22,7 @@ export default function Segmented<T extends string>({
           type="button"
           aria-pressed={option === value}
           onClick={() => onChange(option)}
-          className={`inline-flex ${tall ? "min-h-11" : "min-h-10"} items-center gap-1.5 rounded px-3 text-xs font-bold transition-colors ${
+          className={`inline-flex min-h-11 items-center gap-1.5 rounded px-3 text-xs font-bold transition-colors ${
             option === value ? "bg-dc-brand-primary text-white" : "text-dc-brand-deep hover:bg-dc-canvas"
           }`}
         >

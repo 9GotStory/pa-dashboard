@@ -18,6 +18,7 @@ import ResultsFade from "../report/ResultsFade";
 import ResultsHeader from "../report/ResultsHeader";
 import { resultsText } from "../report/resultsText";
 import { useReportQuery } from "../report/useReportQuery";
+import ScrollBox from "../ScrollBox";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
 type Values = ReturnType<typeof cavityValues>;
@@ -158,7 +159,7 @@ function FunnelSummary(props: { funnel: Funnel; goal: number | null; passed: boo
           <dd className="font-prompt text-2xl font-semibold text-dc-brand-deep tabular-nums">
             {pctText(funnel.cavityFreePct)}
           </dd>
-          <dd className="text-xs text-dc-text-secondary">เกณฑ์ {goalText(goal)}</dd>
+          <dd className="text-xs text-dc-text-secondary tabular-nums">เกณฑ์ {goalText(goal)}</dd>
           {passed !== null && (
             <dd
               className={`mt-1 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${passed ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
@@ -184,11 +185,10 @@ function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; t
   const { unitLabel, units, funnel, totalLabel } = props;
   return (
     <section className="min-w-0">
-      <div
-        role="region"
-        tabIndex={0}
-        aria-label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
-        className="overflow-x-auto rounded-[9px] border border-dc-border-subtle"
+      <ScrollBox
+        label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
+        className="rounded-[9px] border border-dc-border-subtle"
+        hintClassName="mt-2"
       >
         <table className="w-full border-collapse text-xs tabular-nums">
           <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">
@@ -233,7 +233,7 @@ function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; t
             </tr>
           </tfoot>
         </table>
-      </div>
+      </ScrollBox>
     </section>
   );
 }

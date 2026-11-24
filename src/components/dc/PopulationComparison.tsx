@@ -1,12 +1,13 @@
 "use client";
 
-import { ChartBar, MoveHorizontal, Table } from "lucide-react";
+import { ChartBar, Table } from "lucide-react";
 import * as m from "motion/react-m";
 import { useState } from "react";
 import { formatCount } from "@/lib/dc/format";
 import type { AreaPopulation, HomePopulation } from "@/lib/dc/types";
 import { Bar } from "./charts/Bar";
 import { PressButton, usePress } from "./Press";
+import ScrollBox from "./ScrollBox";
 import Segmented from "./Segmented";
 
 type View = "chart" | "table";
@@ -22,6 +23,8 @@ const SORTS: [Sort, string][] = [
 ];
 // The ตำบล picked, the same in the chart and the table.
 const PICKED = "bg-dc-highlight-soft font-bold";
+// A ตำบล that cannot be picked: dimmed, with no hover (F95).
+const DISABLED = "cursor-not-allowed opacity-50";
 
 /**
  * The เปรียบเทียบประชากรรายตำบล section of the home page (SPEC §9.2): ชาย
@@ -82,6 +85,7 @@ export default function PopulationComparison({
           <div role="group" aria-label={`กราฟประชากรรายตำบล (คน) · ${source}`} className="grid gap-0.5">
             {areas.map((a, place) => {
               const picked = a.key === selected;
+              const canPick = pickable(a.key);
               return (
                 <PressButton
                   key={place}
@@ -89,10 +93,10 @@ export default function PopulationComparison({
                   type="button"
                   aria-pressed={picked}
                   aria-label={`ตำบล${a.name} ${formatCount(a.totals.total)} คน`}
-                  disabled={!pickable(a.key)}
+                  disabled={!canPick}
                   onClick={() => onPick(a.key)}
                   className={`grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 rounded-md px-2 text-left text-xs transition-colors sm:grid-cols-[8rem_minmax(0,1fr)_4.5rem] sm:text-[13px] ${
-                    picked ? PICKED : "hover:bg-dc-canvas"
+                    picked ? PICKED : canPick ? "hover:bg-dc-canvas" : DISABLED
                   }`}
                 >
                   <span className="truncate text-dc-brand-deep">{a.name}</span>
@@ -112,9 +116,8 @@ export default function PopulationComparison({
         </div>
 
         <div hidden={view !== "table"}>
-          {/* Wider than a phone: it scrolls inside this box, never the page (SPEC §9.1).
-              Focusable, so a keyboard scrolls it to the columns past the buttons. */}
-          <div role="region" aria-label="ตารางประชากรรายตำบล" tabIndex={0} className="overflow-x-auto">
+          {/* A keyboard scrolls it to the columns past the buttons. */}
+          <ScrollBox label="ตารางประชากรรายตำบล" hintClassName="border-t border-dc-border-subtle px-4 py-2">
             <table className="w-full min-w-[30rem] border-collapse text-[13px] tabular-nums">
               <caption className="sr-only">ประชากรรายตำบล ชาย หญิง รวม และบ้าน · {source}</caption>
               <thead className="bg-dc-surface-muted text-xs text-dc-brand-deep">
@@ -156,7 +159,7 @@ export default function PopulationComparison({
                           type="button"
                           aria-pressed={picked}
                           disabled={!canPick}
-                          className="min-h-10 rounded px-2 text-left"
+                          className={`min-h-11 rounded px-2 text-left ${canPick ? "" : DISABLED}`}
                         >
                           {a.name}
                         </button>
@@ -183,11 +186,7 @@ export default function PopulationComparison({
                 </tr>
               </tfoot>
             </table>
-          </div>
-          <p className="flex items-center gap-1.5 border-t border-dc-border-subtle px-4 py-2 text-sm text-dc-text-secondary sm:hidden">
-            <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
-            ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
-          </p>
+          </ScrollBox>
         </div>
       </div>
     </section>

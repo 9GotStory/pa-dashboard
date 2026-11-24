@@ -62,7 +62,14 @@ export default function DistrictMap({
 
   useEffect(() => {
     const map = L.map(box.current!, { zoomControl: false, scrollWheelZoom: false });
-    L.control.zoom({ position: "bottomright", zoomInTitle: "ขยายแผนที่", zoomOutTitle: "ย่อแผนที่" }).addTo(map);
+    const zoom = L.control
+      .zoom({ position: "bottomright", zoomInTitle: "ขยายแผนที่", zoomOutTitle: "ย่อแผนที่" })
+      .addTo(map);
+    // Leaflet's +/− are 30px on a touch screen: 44px there, as every control (SPEC §9.1, F95).
+    // Important (!), as Leaflet's stylesheet beats a utility (below).
+    for (const button of zoom.getContainer()!.querySelectorAll("a")) {
+      button.classList.add("pointer-coarse:size-11!", "pointer-coarse:leading-11!");
+    }
     L.tileLayer(`${tileServer}/{z}/{x}/{y}.png`, {
       maxZoom: 18,
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',

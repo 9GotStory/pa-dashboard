@@ -29,7 +29,7 @@ export default function Comparison(props: {
         <span aria-hidden="true" className="text-xs text-dc-text-secondary">
           {label}
         </span>
-        <Segmented label={label} options={sorts} value={sort} onChange={onSort} tall />
+        <Segmented label={label} options={sorts} value={sort} onChange={onSort} />
       </div>
       {children}
     </div>

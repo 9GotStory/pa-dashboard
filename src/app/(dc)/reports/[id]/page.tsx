@@ -154,7 +154,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
                 <PressLink
                   href={`/reports/${e.report.opendata_id}`}
                   wide
-                  className="flex h-full flex-col rounded-lg border border-dc-border-subtle bg-dc-canvas/40 p-3 transition-colors hover:border-dc-brand-primary"
+                  className="flex h-full min-h-11 flex-col rounded-lg border border-dc-border-subtle bg-dc-canvas/40 p-3 transition-colors hover:border-dc-brand-primary"
                 >
                   <strong className="text-[13px] leading-snug font-semibold text-dc-brand-deep">
                     {e.report.report_name}
