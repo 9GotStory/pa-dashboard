@@ -2,7 +2,15 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import test, { after, before } from "node:test";
 import { chromium } from "playwright-core";
-import { composite, contrastRatio, exitCode, groupPairs, measurePage, requiredRatio } from "../dc-contrast.mjs";
+import {
+  composite,
+  contrastRatio,
+  exitCode,
+  groupPairs,
+  measurePage,
+  requiredRatio,
+  summaryLine,
+} from "../dc-contrast.mjs";
 
 // dc-contrast.mjs (#383). The expected ratios come from sources other than
 // the code: WCAG 2.2's understanding doc of 1.4.3 (#767676 on white is the
@@ -156,6 +164,14 @@ test("exitCode: 0 with no pair below AA but a disabled one, 1 with another below
   assert.equal(exitCode(groupPairs([SIDE]), ["/sync 360: net::ERR_CONNECTION_REFUSED"]), 2);
 });
 
+test("summaryLine: counts the texts measured apart from the unmeasurable ones", () => {
+  const rows = [SIDE, SVG, CLEAR, { kind: "text", text: "บนรูป", unmeasurable: "img", where: "/ 1280" }];
+  assert.equal(
+    summaryLine(rows, groupPairs(rows)),
+    "dc-contrast: 3 text(s) measured, 3 pair(s), 1 below AA (1 disabled), 1 unmeasurable",
+  );
+});
+
 // The measure that runs in the page, on fixtures/contrast.html in Google
 // Chrome: one text a case, each expected pair written by hand from the
 // fixture's colours.
@@ -227,6 +243,20 @@ test("measurePage: text on two translucent grounds, one over the other", () => {
 
 test("measurePage: text on a gradient is unmeasurable, naming the element", () => {
   assert.deepEqual(rowOf("gradient-text"), { kind: "text", unmeasurable: "background-image on section.gradient" });
+});
+
+test("measurePage: a gradient under an opaque card is not the text's ground; the card is", () => {
+  assert.deepEqual(rowOf("card-on-gradient"), pair("#000000", "#ffffff"));
+});
+
+test("measurePage: a translucent veil over the text is composited over both colours", () => {
+  // white at half over black: 127.5 of each channel
+  assert.deepEqual(rowOf("under-veil"), pair("#808080", "#ffffff"));
+});
+
+test("measurePage: a text after an element's child is measured as well as the one before", () => {
+  assert.deepEqual(rowOf("lead-text"), pair("#000000", "#ffffff"));
+  assert.deepEqual(rowOf("tail-text"), pair("#000000", "#ffffff"));
 });
 
 test("measurePage: text below the fold is measured", () => {

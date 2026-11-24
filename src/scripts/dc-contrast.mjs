@@ -129,17 +129,20 @@ export function exitCode(pairs, errors) {
 // it, so it uses nothing from this module). For each text: its kind (text,
 // svg, select, placeholder), its first 40 characters, its size on screen and
 // weight, whether it is part of a control that cannot be used, and its
-// samples: at up to 3 points across each of its first 3 boxes, the layers
-// that paint the point under the text, bottom to top, and the text's own
-// colour as the top layer (composite's form); or, when a layer under it is a
-// picture or a gradient, unmeasurable with the element. Text that shows at
-// no point is left out: hidden, clipped by an overflow or a clip, off the
-// screen, or covered at every point by an element that paints over it. The
+// samples: at up to 3 points across each of its first 3 boxes, { under,
+// text, over } in composite's form: the layers that paint the point under the
+// text, bottom to top, down to the first opaque one; the text's own colour;
+// and the translucent layers over it. A picture or a gradient that shows
+// under it makes the text unmeasurable, naming the element. Text that shows
+// at no point is left out: hidden, clipped by an overflow or a clip, off the
+// screen, or covered at every point by an opaque element or a picture. The
 // page is scrolled so each text is near the middle of the viewport when it is
 // read, then scrolled back.
 async function collectInPage() {
-  const cvs = Object.assign(document.createElement("canvas"), { width: 1, height: 1 });
-  const cx = cvs.getContext("2d", { willReadFrequently: true });
+  // A 1×1 canvas that turns a CSS colour into sRGB
+  const swatch = Object.assign(document.createElement("canvas"), { width: 1, height: 1 }).getContext("2d", {
+    willReadFrequently: true,
+  });
   const colours = new Map();
   // A computed CSS colour as [r, g, b, a], each 0–1: r, g and b in sRGB as
   // Chrome's canvas paints the colour opaque, a from the text, as the canvas
@@ -154,10 +157,10 @@ async function collectInPage() {
         : modern
           ? [`${modern[1]})`, modern[2]]
           : [css, "1"];
-      cx.fillStyle = "#000";
-      cx.fillStyle = opaque;
-      cx.fillRect(0, 0, 1, 1);
-      const d = cx.getImageData(0, 0, 1, 1).data;
+      swatch.fillStyle = "#000";
+      swatch.fillStyle = opaque;
+      swatch.fillRect(0, 0, 1, 1);
+      const d = swatch.getImageData(0, 0, 1, 1).data;
       colours.set(css, [d[0] / 255, d[1] / 255, d[2] / 255, parseFloat(alpha)]);
     }
     return colours.get(css);
@@ -214,6 +217,7 @@ async function collectInPage() {
     const [x, y, w, h] = [pattern.x, pattern.y, pattern.width, pattern.height].map((l) => l.baseVal.value);
     const mod = (v, n) => ((v % n) + n) % n;
     const local = new DOMPoint(mod(at.x - x, w), mod(at.y - y, h));
+    const shapeOpacity = parseFloat(style(shape).fillOpacity);
     let paint = { rgba: [0, 0, 0, 0], groups: groupsOf(shape) };
     for (const child of pattern.children) {
       if (!(child instanceof SVGGeometryElement)) return undefined;
@@ -221,7 +225,8 @@ async function collectInPage() {
       if (cs.fill === "none" || !child.isPointInFill(local)) continue;
       if (cs.fill.startsWith("url(")) return undefined;
       const [r, g, b, a] = rgba(cs.fill);
-      paint = { rgba: [r, g, b, a * parseFloat(cs.fillOpacity) * parseFloat(cs.opacity)], groups: groupsOf(shape) };
+      const alpha = a * parseFloat(cs.fillOpacity) * parseFloat(cs.opacity) * shapeOpacity;
+      paint = { rgba: [r, g, b, alpha], groups: groupsOf(shape) };
     }
     return paint;
   };
@@ -255,22 +260,20 @@ async function collectInPage() {
   // which then paints the whole canvas (CSS backgrounds §2.11.2).
   const root = document.documentElement;
   const canvasOwners = rgba(style(root).backgroundColor)[3] > 0 ? [root] : [root, document.body];
-  const canvas = { rgba: rgba(style(canvasOwners.at(-1)).backgroundColor), groups: [] };
+  const canvasLayer = { rgba: rgba(style(canvasOwners.at(-1)).backgroundColor), groups: [] };
 
-  // The texts to measure: { el, kind, text, colour, boxes(), disabled }.
+  // The texts to measure, a text node each: { el, kind, text, colour(), boxes() }.
   const disabled = (el) => {
     if (el.closest('[aria-disabled="true"], :disabled')) return true;
     const control = el.closest("label")?.control;
     return Boolean(control && (control.disabled || control.getAttribute("aria-disabled") === "true"));
   };
   const items = [];
-  const seen = new Set();
   const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
   for (let node = walker.nextNode(); node; node = walker.nextNode()) {
     const el = node.parentElement;
     const text = node.textContent.replace(/\s+/g, " ").trim();
-    if (!text || seen.has(el) || el.closest("script, style, noscript, template, select, textarea")) continue;
-    seen.add(el);
+    if (!text || el.closest("script, style, noscript, template, select, textarea")) continue;
     const svg = el instanceof SVGElement;
     items.push({
       el,
@@ -351,23 +354,43 @@ async function collectInPage() {
       samples: [],
     };
     if (colour.unmeasurable) return { ...row, unmeasurable: colour.unmeasurable };
-    const fg = { rgba: colour, groups: groupsOf(el) };
+    const text = { rgba: colour, groups: groupsOf(el) };
+    // A layer no colour shows through: opaque, in no translucent group
+    const opaque = (paint) => paint.rgba[3] === 1 && paint.groups.length === 0;
     for (const [x, y] of pointsOf(item)) {
       if (x < 0 || y < 0 || x >= innerWidth || y >= innerHeight) continue;
       const stack = document.elementsFromPoint(x, y);
       const at = stack.indexOf(el);
       // Not on the text here: clipped, or outside its glyphs
       if (at < 0) continue;
-      const over = stack.slice(0, at).filter((e) => !el.contains(e));
-      if (over.some((e) => paintAt(e, x, y))) continue;
-      const layers = [canvas];
-      for (const e of stack.slice(at).reverse()) {
+      // Over the text: translucent layers dim it; an opaque one or a picture covers it here
+      const over = [];
+      let covered = false;
+      for (const e of stack.slice(0, at).reverse()) {
+        if (el.contains(e)) continue;
+        const paint = paintAt(e, x, y);
+        if (!paint) continue;
+        if (paint.unmeasurable || opaque(paint)) covered = true;
+        else over.push(paint);
+      }
+      if (covered) continue;
+      // Under the text, from its own element down to the first opaque layer,
+      // or to the canvas; a picture or a gradient above that is unmeasurable
+      const under = [];
+      let grounded = false;
+      for (const e of stack.slice(at)) {
         if (canvasOwners.includes(e)) continue;
         const paint = paintAt(e, x, y);
-        if (paint?.unmeasurable) return { ...row, unmeasurable: paint.unmeasurable };
-        if (paint) layers.push(paint);
+        if (!paint) continue;
+        if (paint.unmeasurable) return { ...row, unmeasurable: paint.unmeasurable };
+        under.unshift(paint);
+        if (opaque(paint)) {
+          grounded = true;
+          break;
+        }
       }
-      row.samples.push([...layers, fg]);
+      if (!grounded) under.unshift(canvasLayer);
+      row.samples.push({ under, text, over });
     }
     return row.samples.length > 0 ? row : null;
   };
@@ -440,9 +463,9 @@ export async function measurePage(page, where = page.url()) {
   const { rows, opacities } = await page.evaluate(collectInPage);
   return rows.map(({ kind, text, size, weight, disabled, samples, unmeasurable }) => {
     if (unmeasurable) return { kind, text, where, unmeasurable };
-    const pairs = samples.map((layers) => {
-      const fg = composite(layers, opacities);
-      const bg = composite(layers.slice(0, -1), opacities);
+    const pairs = samples.map(({ under, text, over }) => {
+      const fg = composite([...under, text, ...over], opacities);
+      const bg = composite([...under, ...over], opacities);
       return { fg, bg, ratio: contrastRatio(fg, bg) };
     });
     const worst = pairs.reduce((a, b) => (b.ratio < a.ratio ? b : a));
@@ -463,11 +486,11 @@ export async function measurePage(page, where = page.url()) {
 // disabled for a control that cannot be used, or UNMEASURABLE and what; then
 // how many texts, up to 3 of them, and up to 4 of the pages they are on.
 export function formatPairs(pairs) {
-  const some = (list, n) => list.slice(0, n).join(", ") + (list.length > n ? `, +${list.length - n}` : "");
+  const firstOf = (list, n) => list.slice(0, n).join(", ") + (list.length > n ? `, +${list.length - n}` : "");
   return pairs.map((p) => {
-    const found = `×${p.count} "${some(p.texts, 3)}" on ${some(p.wheres, 4)}`;
+    const found = `×${p.count} "${firstOf(p.texts, 3)}" on ${firstOf(p.wheres, 4)}`;
     if (p.unmeasurable) return `UNMEASURABLE ${p.kind.padEnd(11)} ${p.unmeasurable} ${found}`;
-    const verdict = p.ratio < p.need ? "FAIL" : "ok";
+    const verdict = below(p) ? "FAIL" : "ok";
     const ratio = `${p.ratio.toFixed(2).padStart(5)} / ${p.need}`;
     return `${verdict.padEnd(4)} ${ratio.padEnd(11)} ${p.kind.padEnd(11)} ${(p.disabled ? "disabled" : "").padEnd(8)} ${p.fg} on ${p.bg} ${found}`;
   });
@@ -475,10 +498,10 @@ export function formatPairs(pairs) {
 
 // The summary line of rows grouped into pairs.
 export function summaryLine(rows, pairs) {
-  const fails = pairs.filter((p) => !p.unmeasurable && p.ratio < p.need);
+  const fails = pairs.filter((p) => !p.unmeasurable && below(p));
   const disabled = fails.filter((p) => p.disabled).length;
   const unmeasurable = pairs.filter((p) => p.unmeasurable).length;
-  return `dc-contrast: ${rows.length} text(s) measured, ${pairs.length - unmeasurable} pair(s), ${fails.length} below AA (${disabled} disabled), ${unmeasurable} unmeasurable`;
+  return `dc-contrast: ${rows.filter((r) => !r.unmeasurable).length} text(s) measured, ${pairs.length - unmeasurable} pair(s), ${fails.length} below AA (${disabled} disabled), ${unmeasurable} unmeasurable`;
 }
 
 // How long a page may take to load its data once the network is idle, in ms,
@@ -527,14 +550,14 @@ async function measureUrl(browser, url, width, where, sent) {
       return route.fallback();
     });
     const response = await page.goto(url, { waitUntil: "networkidle" });
-    if (!response?.ok()) throw new Error(`HTTP ${response?.status()}`);
+    if (!response?.ok()) throw new Error(`HTTP ${response?.status()}: is the path a page of out/ or of --base?`);
     await page.waitForFunction(
       (loading) => !(document.querySelector("main") ?? document.body).innerText.includes(loading),
       LOADING,
       { timeout: LOAD_TIMEOUT },
     );
     const rows = await measurePage(page, where);
-    if (rows.length === 0) throw new Error("no text shows");
+    if (rows.length === 0) throw new Error("no text shows once loaded: open the page and see what it shows");
     return rows;
   } finally {
     await page.close();

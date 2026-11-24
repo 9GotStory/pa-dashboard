@@ -122,6 +122,20 @@
       <span style="color: #ffffff">gradient-text</span>
     </section>
 
+    <!-- A white card on a gradient: the card is the ground, the gradient under it does not show. -->
+    <section style="background: linear-gradient(#000000, #ffffff); padding: 8px">
+      <div style="background: #ffffff"><span>card-on-gradient</span></div>
+    </section>
+
+    <!-- A translucent veil over the text dims it; it does not hide it. -->
+    <section style="position: relative">
+      <span>under-veil</span>
+      <div style="position: absolute; inset: 0; background: rgba(255, 255, 255, 0.5)"></div>
+    </section>
+
+    <!-- Each text of an element is measured, the one after a child too. -->
+    <p>lead-text <b>bold-text</b> tail-text</p>
+
     <!-- Below the fold of a 600 px viewport. -->
     <p style="margin-top: 1500px">below-fold</p>
   </body>
