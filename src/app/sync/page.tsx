@@ -120,10 +120,10 @@ const DATE_TONE_CLASS: Record<
   NonNullable<ReturnType<typeof syncStatusDate>>["tone"],
   string
 > = {
-  fresh: "text-emerald-500 font-medium",
-  recent: "text-amber-500 font-medium",
-  old: "text-orange-500 font-medium",
-  past: "text-slate-400",
+  fresh: "text-emerald-700 font-medium",
+  recent: "text-amber-700 font-medium",
+  old: "text-red-800 font-medium",
+  past: "text-slate-500",
 };
 
 export default function SyncPage() {
@@ -621,7 +621,7 @@ export default function SyncPage() {
             type="password"
             value={pin}
             onChange={(e) => setPin(e.target.value)}
-            className="mb-4 w-full rounded-lg border border-gray-300 p-3 text-center text-2xl tracking-widest outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+            className="mb-4 w-full rounded-lg border border-gray-300 p-3 text-center text-2xl tracking-widest outline-none placeholder:text-gray-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
             placeholder="PIN CODE"
             maxLength={4}
             autoFocus
@@ -667,7 +667,7 @@ export default function SyncPage() {
           {metaError ? (
             <button
               onClick={fetchMetadata}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-6 py-3 font-bold text-white shadow-md transition-all hover:bg-amber-700 active:scale-95 sm:w-auto"
+              className="flex w-full items-center justify-center gap-2 rounded-lg bg-amber-700 px-6 py-3 font-bold text-white shadow-md transition-all hover:bg-amber-800 active:scale-95 sm:w-auto"
             >
               <RefreshCw /> Retry config load
             </button>
@@ -677,8 +677,8 @@ export default function SyncPage() {
               disabled={isSyncing || !settings || kpiList.length === 0}
               className={`flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 font-bold text-white shadow-md transition-all sm:w-auto ${
                 isSyncing || !settings || kpiList.length === 0
-                  ? "cursor-not-allowed bg-gray-400"
-                  : "bg-green-600 hover:bg-green-700 active:scale-95"
+                  ? "cursor-not-allowed bg-gray-500"
+                  : "bg-green-700 hover:bg-green-800 active:scale-95"
               }`}
             >
               {isSyncing ? (
@@ -702,7 +702,7 @@ export default function SyncPage() {
           <div className="mb-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800">
             <p className="font-semibold mb-1">Could not load config from server.</p>
             <p className="text-amber-700 break-words">{metaError}</p>
-            <p className="mt-2 text-xs text-amber-600">
+            <p className="mt-2 text-xs text-amber-700">
               Check that รหัส.js is deployed with the latest version, then click
               &ldquo;Retry config load&rdquo;.
             </p>
@@ -728,7 +728,7 @@ export default function SyncPage() {
               >
                 Select All
               </button>
-              <span className="text-slate-300">|</span>
+              <span className="text-slate-500">|</span>
               <button
                 onClick={() => setSelectedKPIs([])}
                 className="text-slate-500 hover:text-slate-700 font-medium"
@@ -741,7 +741,7 @@ export default function SyncPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
             {kpiList.length === 0 ? (
-              <p className="text-sm text-slate-400 italic col-span-full text-center py-6">
+              <p className="text-sm text-slate-500 italic col-span-full text-center py-6">
                 Loading KPI list from server...
               </p>
             ) : (
@@ -750,7 +750,7 @@ export default function SyncPage() {
 
               // The data date of (table, year picked) (SPEC §12.1)
               let dateStrOut = "โหลดวันที่ไม่ได้";
-              let dateColor = "text-slate-400";
+              let dateColor = "text-slate-500";
               if (typeof syncStatus === "object" && settings) {
                 const date = syncStatusDate(
                   syncStatus,
@@ -832,7 +832,7 @@ export default function SyncPage() {
           </div>
           <div className="flex-1 overflow-y-auto max-h-[500px] space-y-2">
             {logs.length === 0 ? (
-              <span className="text-gray-600 italic">Ready to sync...</span>
+              <span className="text-gray-400 italic">Ready to sync...</span>
             ) : (
               logs.map((log, i) => (
                 <div
@@ -860,7 +860,7 @@ export default function SyncPage() {
                     >
                       {log.message}
                     </span>
-                    <span className="text-[10px] text-gray-500">
+                    <span className="text-[10px] text-gray-400">
                       {log.timestamp}
                     </span>
                   </div>
@@ -875,7 +875,7 @@ export default function SyncPage() {
 
         <RegistryPopulationUpload />
 
-        <div className="mt-8 text-center text-xs text-gray-400">
+        <div className="mt-8 text-center text-xs text-gray-500">
           Secure Sync Manager • Protected Node • PA Dashboard
         </div>
       </div>
