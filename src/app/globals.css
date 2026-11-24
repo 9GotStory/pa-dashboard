@@ -13,8 +13,9 @@
      SPEC §9.1 "PA ใต้ Masthead", F98). The steps that match a V7.6 token take
      its value (the dc-* tokens below); the steps between are filled in OKLCH
      at that token's hue. Each step keeps its use in PA (50–200 backgrounds
-     and borders, darker steps text), and every pair PA and /sync show passes
-     WCAG AA (the PR of F98 lists them). ผ่าน stays green and ไม่ผ่าน red. */
+     and borders, darker steps text), and every pair PA shows passes WCAG AA
+     (the PR of F98 lists them, with /sync's pairs in Tailwind's own colours,
+     which these tokens do not set). ผ่าน stays green and ไม่ผ่าน red. */
 
   /* Colors - Brand: V7.6's green. 50 is dc-highlight-soft, 500 dc-brand-accent,
      600 dc-brand-primary, 700 dc-brand-dark-surface, 800 dc-brand-deep. */
@@ -42,9 +43,10 @@
   /* SEMANTIC TOKENS */
 
   /* Success: brand's green, one step lighter from 500, so 600 is
-     dc-brand-accent, the Data Center's ผ่าน. A ผ่าน cell beside a ไม่ผ่าน one
-     (50, 100) differs no less than emerald beside rose did, with normal
-     sight or a missing red, green or blue cone (F98). */
+     dc-brand-accent, the Data Center's ผ่าน. The backgrounds of a ผ่าน and a
+     ไม่ผ่าน cell (50, 100) differ no less than emerald and rose did (distance
+     in OKLab), with normal sight and with each missing cone as Machado et al.
+     (2009) simulate it; the darker steps, of lower chroma, differ less (F98). */
   --color-success-50: #e8f5e9;
   --color-success-100: #cfebdb;
   --color-success-200: #b0ddc8;
@@ -57,10 +59,11 @@
   --color-success-900: #153d32;
   --color-success-950: #0e2d24;
 
-  /* Error: a red of lower chroma than Tailwind's rose (V7.6 has no red), 600
-     darker than success-600 so the two still differ without the red cone */
-  --color-error-50: #fbe9e7;
-  --color-error-100: #fed4d2;
+  /* Error: V7.6 has no red. 500 and darker have lower chroma than Tailwind's
+     rose, and 600 is darker than success-600 so the two still differ without
+     the red cone; 50 and 100 are set by the ผ่าน/ไม่ผ่าน cells above. */
+  --color-error-50: #fae8e6;
+  --color-error-100: #ffd3d0;
   --color-error-200: #fbbbb7;
   --color-error-300: #f29892;
   --color-error-400: #e06d67;
