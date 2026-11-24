@@ -58,12 +58,13 @@ const STATIC_FILE = /(\/_next\/static\/)[^"'\s)\\]+/g;
 
 // The comments around a Suspense boundary, <!--$--> before it and <!--/$-->
 // after (#374). One build's page came with them at one opening and without
-// them at the next: of 22 report pages opened twice, 12 and 16 had the same
-// <main> with them in, all 22 both times with them out. <!--$?--> and
-// <!--$!--> are not matched: the HTML next build writes has them, <!--$?-->
-// ahead of the status a report page shows while it loads, and no <main> of
-// the 22 had one once loaded, so one that shows is a page in another state.
-// The <!--/$--> that closes it goes all the same.
+// them at the next, and two builds of the same page code, their 22 report
+// pages compared in two rounds, had the same <main> on 12 and 16 pages with
+// them in, on all 22 both rounds with them out. <!--$?--> and <!--$!--> are
+// not matched: the HTML next build writes has them, <!--$?--> ahead of the
+// status a report page shows while it loads, and no <main> of the 22 had one
+// once loaded, so one that shows is a page in another state. The <!--/$-->
+// that closes it goes all the same.
 const SUSPENSE_COMMENT = /<!--\/?\$-->/g;
 
 // HTML with what changes though the code does not taken out: from build to

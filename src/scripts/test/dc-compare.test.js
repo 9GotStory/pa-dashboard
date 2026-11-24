@@ -52,21 +52,19 @@ test("normalizeHtml takes out <!--$--> and <!--/$-->, keeping <!-- --> and each 
   assert.equal(normalizeHtml(EPI_WITHOUT_COMMENTS), neither);
 });
 
-// As next build 16.4.6 wrote them on 24 Nov 2569, before any JavaScript:
-// <!--$?--> in out/reports/c88658f4d09acb8c76e6c06ffb58ebaf.html, ahead of
-// the status the page shows while its report loads, and <!--$!--> in
-// out/reports.html, ahead of ค้นหารายงาน. No report page in out/reports/ has
-// <!--$!-->.
+// From the HTML next build 16.4.6 wrote on 24 Nov 2569, before any
+// JavaScript, cut to the tags around each comment: <!--$?--> in
+// out/reports/c88658f4d09acb8c76e6c06ffb58ebaf.html, ahead of the status the
+// page shows while its report loads and closed by <!--/$-->, and <!--$!-->
+// in out/reports.html, ahead of ค้นหารายงาน. No report page in out/reports/
+// has <!--$!-->.
 test("normalizeHtml keeps <!--$?--> and <!--$!-->", () => {
   const loading =
-    '<div class="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0"><!--$?--><template id="B:0"></template><div role="status" class="min-h-svh px-4 py-5 sm:px-6"><p class="text-dc-text-secondary">กำลังโหลดข้อมูลรายงาน…</p></div><!--/$--></div>';
-  assert.equal(
-    normalizeHtml(loading),
-    '<div class="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0"><!--$?--><template id="B:0"></template><div role="status" class="min-h-svh px-4 py-5 sm:px-6"><p class="text-dc-text-secondary">กำลังโหลดข้อมูลรายงาน…</p></div></div>',
-  );
-  const find =
+    '<!--$?--><template id="B:0"></template><div role="status" class="min-h-svh px-4 py-5 sm:px-6"><p class="text-dc-text-secondary">กำลังโหลดข้อมูลรายงาน…</p></div>';
+  assert.equal(normalizeHtml(`${loading}<!--/$-->`), loading);
+  const findReports =
     '<!--$!--><template data-dgst=""></template><section aria-labelledby="library-find-title" class="mt-5 sm:mt-6"><h2 id="library-find-title" class="sr-only">ค้นหารายงาน</h2></section>';
-  assert.equal(normalizeHtml(find), find);
+  assert.equal(normalizeHtml(findReports), findReports);
 });
 
 // Each test writes an out/ of its own, with the files next build writes for a
