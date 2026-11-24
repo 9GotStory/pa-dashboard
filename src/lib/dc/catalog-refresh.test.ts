@@ -239,13 +239,14 @@ test("the summary counts topics saved, skipped and failed, and each topic's resu
   assert.deepEqual(seen, [`${EPI} saved`, `${SURVEILLANCE} skipped`, `${SCREENING} failed`, `${FOURTH} saved`]);
 });
 
-test("?action=catalog fails: stops with GAS's message or why, before any request to MOPH", async () => {
+test("?action=catalog fails: stops with GAS's message or why, then the admin's next step, before any request to MOPH", async () => {
+  const again = " · รอสักครู่แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง ถ้ากำลัง sync อยู่ให้รอจบก่อน";
   const cases: [Answer, string][] = [
-    [{ status: 200, body: { status: "error", message: "Busy" } }, "อ่านหัวข้อจาก hdc_topics ไม่ได้: Busy"],
-    [{ status: 500, body: "" }, "อ่านหัวข้อจาก hdc_topics ไม่ได้: HTTP 500"],
-    ["network error", "อ่านหัวข้อจาก hdc_topics ไม่ได้: Failed to fetch"],
-    [{ status: 200, body: { rows: [] } }, "อ่านหัวข้อจาก hdc_topics ไม่ได้: คำตอบของ GAS ไม่มี topics"],
-    [{ status: 200, body: { topics: [] } }, "hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน"],
+    [{ status: 200, body: { status: "error", message: "Busy" } }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: Busy${again}`],
+    [{ status: 500, body: "" }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: HTTP 500${again}`],
+    ["network error", `อ่านหัวข้อจาก hdc_topics ไม่ได้: Failed to fetch${again}`],
+    [{ status: 200, body: { rows: [] } }, `อ่านหัวข้อจาก hdc_topics ไม่ได้: คำตอบของ GAS ไม่มี topics${again}`],
+    [{ status: 200, body: { topics: [] } }, "hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง"],
   ];
   for (const [answer, message] of cases) {
     const { deps, requests } = stub({ catalog: [answer] });
@@ -255,4 +256,15 @@ test("?action=catalog fails: stops with GAS's message or why, before any request
       [`${GAS}?action=catalog`],
     );
   }
+});
+
+test("onListed gets how many topics hdc_topics has, before the first topic starts (F96)", async () => {
+  const { deps, requests } = stub();
+  const seen: string[] = [];
+  await refreshCatalog({
+    ...deps,
+    onListed: (total) => seen.push(`listed ${total} after ${requests.length} requests`),
+    onTopic: (t) => seen.push(`${t.cat_id} ${t.outcome}`),
+  });
+  assert.deepEqual(seen, ["listed 3 after 1 requests", `${EPI} saved`, `${SURVEILLANCE} saved`, `${SCREENING} saved`]);
 });

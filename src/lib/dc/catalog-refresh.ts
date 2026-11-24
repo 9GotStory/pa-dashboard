@@ -94,10 +94,12 @@ async function refreshTopic(deps: Deps, topic: DcTopic): Promise<CatalogTopicRes
 
 /**
  * Every topic of hdc_topics, top row first: the first topic to save a report
- * keeps it (SPEC §5.3). onTopic gets each topic's result as it ends.
+ * keeps it (SPEC §5.3). onListed gets how many topics there are once they are
+ * read, so the page can say how far it is (SPEC §12.1, F96); onTopic gets each
+ * topic's result as it ends.
  */
 export async function refreshCatalog(
-  deps: Deps & { onTopic?: (result: CatalogTopicResult) => void },
+  deps: Deps & { onListed?: (total: number) => void; onTopic?: (result: CatalogTopicResult) => void },
 ): Promise<CatalogRefreshSummary> {
   let listed: DcTopic[];
   try {
@@ -109,9 +111,15 @@ export async function refreshCatalog(
     if (!Array.isArray(answer.topics)) throw new Error("คำตอบของ GAS ไม่มี topics");
     listed = answer.topics;
   } catch (err) {
-    throw new Error(`อ่านหัวข้อจาก hdc_topics ไม่ได้: ${errorText(err)}`);
+    // Busy, the commonest, means the lock is held, as by a sync (SPEC §12.1).
+    throw new Error(
+      `อ่านหัวข้อจาก hdc_topics ไม่ได้: ${errorText(err)} · รอสักครู่แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง ถ้ากำลัง sync อยู่ให้รอจบก่อน`,
+    );
   }
-  if (listed.length === 0) throw new Error("hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน");
+  if (listed.length === 0) {
+    throw new Error("hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง");
+  }
+  deps.onListed?.(listed.length);
   const topics: CatalogTopicResult[] = [];
   for (const topic of listed) {
     const result = await refreshTopic(deps, topic);
