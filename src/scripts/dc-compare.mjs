@@ -21,11 +21,11 @@
 // Usage: npm run dc:compare [-- <url> ...], such as
 //   npm run dc:compare -- "/reports/population?area=540603"
 import fs from "node:fs";
-import http from "node:http";
 import os from "node:os";
 import path from "node:path";
 import { chromium } from "playwright-core";
 import { MAIN_BUILD, buildMain, git, hasMainBuild, mainBuildKey, run, snapshotHash } from "./dc-main-build.mjs";
+import { serve } from "./dc-serve.mjs";
 
 const MAIN_OUT = path.join(MAIN_BUILD, "out");
 // A desktop's width, with the panels side by side.
@@ -35,19 +35,6 @@ const LOAD_TIMEOUT = 20_000;
 // Every status a report page shows while it loads begins with it
 // (ReportLoader, TablePicker, PopulationResults).
 const LOADING = "กำลังโหลด";
-const TYPES = {
-  ".html": "text/html; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-  ".js": "text/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".geojson": "application/geo+json",
-  ".woff2": "font/woff2",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".ico": "image/x-icon",
-};
-
 // An id of React 19.2.3's useId: _R_…_ in a hydrated tree, with H and a
 // counter for a component's second id, and _r_…_ in one the browser rendered
 // alone. A component added above shifts every id below it.
@@ -155,24 +142,6 @@ export function pagesToOpen(branchOut, mainOut, asked) {
 function die(message) {
   console.error(`dc-compare: ${message}`);
   process.exit(2);
-}
-
-// Serves an out/ the way the static host does: /reports/x is reports/x.html,
-// and a page it lacks is a 404, with a body, as Chrome fails page.goto on an
-// empty one.
-function serve(dir) {
-  const root = path.resolve(dir);
-  const server = http.createServer((req, res) => {
-    const urlPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-    const tries = urlPath.endsWith("/") ? [urlPath + "index.html"] : [urlPath, urlPath + ".html"];
-    const file = tries
-      .map((p) => path.join(root, p))
-      .find((f) => f.startsWith(root + path.sep) && fs.statSync(f, { throwIfNoEntry: false })?.isFile());
-    if (!file) return res.writeHead(404, { "content-type": TYPES[".txt"] }).end("not found");
-    res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream" });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
 
 // What a page shows once loaded, as comparePage reads it, or null for a 404.
