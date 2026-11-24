@@ -2,10 +2,12 @@ import Footer from "@/components/dc/Footer";
 import HeadingFocus from "@/components/dc/HeadingFocus";
 import Masthead from "@/components/dc/Masthead";
 import MotionRoot from "@/components/dc/MotionRoot";
+import SkipLink from "@/components/dc/SkipLink";
 import { prompt, sarabun } from "@/lib/dc/fonts";
 
 // Frame of the Data Center pages /, /reports and /reports/[id] (SPEC §4,
-// §9.1). /pa and /sync sit outside this route group, so PA keeps its look.
+// §9.1). /pa and /sync sit outside this route group: /pa's layout sets the
+// same Masthead and Footer around PA (F97), without this wrapper's classes.
 // The wrapper sets the font variables that font-dc and font-prompt read.
 // wrap-break-word: HDC names such as "BCG ,HBV1,DTP1,…" have no break point
 // after their commas and would widen the page at 360 px. The scroll margin is
@@ -22,12 +24,7 @@ export default function DcLayout({
     <div
       className={`${prompt.variable} ${sarabun.variable} dc flex min-h-screen touch-manipulation flex-col bg-dc-canvas **:scroll-mt-32 md:**:scroll-mt-20 [&_:is(h1,h2,h3,h4)]:text-balance font-dc text-sm/[1.65] text-dc-brand-deep wrap-break-word`}
     >
-      <a
-        href="#main"
-        className="absolute -top-24 left-4 z-50 rounded-md border-2 border-dc-brand-accent bg-white px-3.5 py-2.5 font-bold text-dc-brand-deep transition-colors hover:bg-dc-highlight-soft focus:top-2 active:bg-dc-surface-muted"
-      >
-        ข้ามไปยังเนื้อหาหลัก
-      </a>
+      <SkipLink />
       <Masthead />
       <main
         id="main"

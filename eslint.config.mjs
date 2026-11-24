@@ -136,7 +136,7 @@ const eslintConfig = defineConfig([
     rules: noMotion,
   },
   {
-    files: ["src/components/dc/{Masthead,MainNav,Footer}.tsx"],
+    files: ["src/components/dc/{Masthead,MainNav,Footer,SkipLink}.tsx"],
     rules: noMotion,
   },
   {

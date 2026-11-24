@@ -127,7 +127,8 @@
 }
 
 /* V7.6's focus ring on Data Center pages only (the .dc wrapper of the (dc)
-   layout); in the base layer so a utility can still change it. */
+   layout) and on the frame of /pa (its layout's .dc wrappers around the
+   Masthead and Footer); in the base layer so a utility can still change it. */
 @layer base {
   .dc :focus-visible {
     outline: 3px solid var(--color-dc-brand-accent);
