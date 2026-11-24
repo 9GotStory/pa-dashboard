@@ -117,12 +117,18 @@ export function groupPairs(rows) {
 // Whether a pair is below its threshold, compared unrounded.
 const below = (pair) => pair.ratio < pair.need;
 
+// The pairs that fail a run, in their order: each row that could not be
+// measured and each pair below its threshold that is not disabled, as a
+// disabled control is exempt (WCAG 1.4.3).
+export function failingPairs(pairs) {
+  return pairs.filter((pair) => pair.unmeasurable || (!pair.disabled && below(pair)));
+}
+
 // The exit code of a run: 2 when a page could not be measured (errors names
-// each), 1 when a pair that is not disabled is below its threshold or a row
-// could not be measured, else 0. A disabled control is exempt (WCAG 1.4.3).
+// each), 1 when a pair fails (failingPairs), else 0.
 export function exitCode(pairs, errors) {
   if (errors.length > 0) return 2;
-  return pairs.some((pair) => pair.unmeasurable || (!pair.disabled && below(pair))) ? 1 : 0;
+  return failingPairs(pairs).length > 0 ? 1 : 0;
 }
 
 // What paints under each text the page shows, read from the page (runs inside

@@ -6,6 +6,7 @@ import {
   composite,
   contrastRatio,
   exitCode,
+  failingPairs,
   groupPairs,
   measurePage,
   requiredRatio,
@@ -162,6 +163,23 @@ test("exitCode: 0 with no pair below AA but a disabled one, 1 with another below
   assert.equal(exitCode(groupPairs([SIDE, { ...SVG, ratio: 4.49 }]), []), 1);
   assert.equal(exitCode(groupPairs([SIDE, { kind: "text", text: "x", unmeasurable: "img", where: "/ 360" }]), []), 1);
   assert.equal(exitCode(groupPairs([SIDE]), ["/sync 360: net::ERR_CONNECTION_REFUSED"]), 2);
+});
+
+test("failingPairs: the pairs below AA that are not disabled and the unmeasurable rows, in groupPairs' order", () => {
+  const unmeasurable = { kind: "text", text: "บนรูป", unmeasurable: "background-image on div.hero", where: "/ 1280" };
+  const pairs = groupPairs([
+    SIDE,
+    SVG,
+    HERO,
+    CLEAR,
+    { ...SVG, text: "ไม่ผ่าน", ratio: 4.49, fg: "#777777" },
+    unmeasurable,
+  ]);
+  assert.deepEqual(
+    failingPairs(pairs).map((p) => p.unmeasurable ?? p.texts[0]),
+    ["background-image on div.hero", "ไม่ผ่าน"],
+  );
+  assert.deepEqual(failingPairs(groupPairs([SIDE, SVG, HERO, CLEAR])), []);
 });
 
 test("summaryLine: counts the texts measured apart from the unmeasurable ones", () => {
