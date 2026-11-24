@@ -26,6 +26,41 @@ A ticket that touches `src/components/dc/` or `src/lib/dc/` runs `npm run dc:com
 - Read each page that is not `same` against the ticket: a difference the ticket asks for is the change; any other is a finding. Nothing is passed in as an intended difference.
 - Evidence: the last line, and every page that is not `same` with its lines.
 
+## Colour pairs against WCAG AA: `dc:contrast`
+
+`npm run dc:contrast -- [--base <url>] [--width <px> ...] <path> ...` measures each colour pair (คู่สี, GLOSSARY) of the text a page shows: its colour and the colour painted under it, read from the rendered page. A ticket that changes a colour or a ground runs it before `code-review` on the pages it touches; #377 and F98 wrote their own measure five times outside the repo, and both missed pairs in states they did not open.
+
+- Without `--base` it serves `out/` (after a build); with it, it opens a server already running, such as `npm run dc:sync-local`'s (`--base http://localhost:3217 /sync`) or the live site. It sends only GET and HEAD (`next/link`'s prefetch) and aborts any other request, printing a line for each. Widths default to 360 and 1280 px; `--width` replaces them, once a width. Map tiles are blocked, and a page is read once `<main>` (or the body) shows no `กำลังโหลด`, as `dc:compare` waits.
+- What it measures: each text node, labels in an SVG (their `fill`), what a `<select>` shows and the placeholder of an empty field. The ground is what paints under the text at 3 points across each of its first 3 boxes, through `document.elementsFromPoint`, down to the first opaque layer: the backgrounds of HTML elements and the fills of SVG shapes, siblings and elements placed on their own included, translucent ones composited, an `opacity` applied to its element as a whole. A translucent layer over the text (a veil) is composited over both colours; an opaque one or a picture covers the text at that point. A stroke is a line, not a ground: a chart's line through a label does not count, and the white stroke round a label's figures does not help it. A text's pair is its lowest ratio of those points. Text that does not show is left out: `sr-only`, clipped by an overflow, off the screen, or covered at every point. It measures no graphics (bars, the progress bar, focus rings).
+- The output: a summary line (texts measured, pairs, how many below AA and how many of those disabled, unmeasurable rows), then a line a page that did not open or a request aborted, then a pair a line: unmeasurable rows first, then from nearest the threshold. Each line: `FAIL` or `ok` by the unrounded ratio, the ratio and the threshold (4.5, or 3 for large text: 24 px, or 18.66 px at weight 700), the kind (`text`, `svg`, `select`, `placeholder`), `disabled` for a control that cannot be used (`aria-disabled="true"`, `:disabled`, the text and label of either), the two colours, `×` the count of texts, up to 3 texts and up to 4 pages with their width. `UNMEASURABLE` names the element whose ground is a picture or a gradient; nothing is guessed. A plain `<pattern>` (the Hero's dots) is read: only its shapes paint.
+- It exits 0 when no pair is below AA, 1 when a pair that is not `disabled` is or a row is unmeasurable, 2 when it cannot run (no `out/`, a page that does not open).
+- Evidence: the summary line, every `FAIL` and `UNMEASURABLE` line, and the lines of the pairs the ticket changed.
+
+### A state after a click
+
+`dc:contrast` logs in to nothing and presses nothing. A state behind a PIN or a click is a Playwright script of the ticket's own, in the scratchpad, that imports the measure by path and calls it on its own `page`:
+
+```js
+import { chromium } from "<repo>/node_modules/playwright-core/index.mjs";
+import { exitCode, formatPairs, groupPairs, measurePage, summaryLine } from "<repo>/src/scripts/dc-contrast.mjs";
+// … open the page, put it in the state …
+const rows = await measurePage(page, "/sync unlocked 1280px"); // the label of the page column
+const pairs = groupPairs(rows);
+console.log([summaryLine(rows, pairs), ...formatPairs(pairs)].join("\n"));
+process.exitCode = exitCode(pairs, []);
+```
+
+`measurePage` reads the page as it is, scrolls it to reach each text and scrolls it back; call it once per state and concatenate the rows before `groupPairs`. For `/sync` start from `.wizard/377/scripts/measure.mjs`, #377's script on `dc:sync-local`: it opens the login, the list at each age of the data date, a past year, `sync_status` cut, the config cut (error) and held (loading). Its own measure predates this one: swap its `measure` for `measurePage`. `/sync`'s files are frozen apart from colour classes, so its state script is not committed.
+
+Before measuring, go through the states the change can show; each of these was missed once:
+
+- every level of a colour that depends on the data, with the page's clock (`page.clock.setFixedTime`) or a fixture set so each level shows (F98 saw one of the data date's three)
+- hover and focus of each control the ticket touched (`locator.hover()`, `locator.focus()`)
+- a control that cannot be used
+- loading (hold the data back with `page.route`, as above), error (abort it), and while working (#377's log lines during a sync)
+- an empty state, such as a console with no line yet
+- graphics that need 3:1 against what is next to them (a bar, the progress bar's fill, an icon that carries meaning): measured by hand, from the colours' values, as `dc:contrast` does not judge shapes
+
 ## PA against production: `pa:compare`
 
 `npm run pa:snapshot` reads `PA_URL` from `.env.local`, and a `PA_URL` set on the command wins, so a local build is snapshotted with `PA_URL=http://localhost:<port>/pa npm run pa:snapshot -- <name>`. Both sides of a compare are taken the same day: the daily sync (14:00–15:00) brings new MOPH data, which `pa:compare` reports as CHANGED.

@@ -23,7 +23,8 @@
     "dc:budget": "node src/scripts/dc-budget.mjs",
     "dc:lcp": "node src/scripts/dc-lcp.mjs",
     "dc:compare": "node src/scripts/dc-compare.mjs",
-    "dc:sync-local": "node src/scripts/dc-sync-local.mjs"
+    "dc:sync-local": "node src/scripts/dc-sync-local.mjs",
+    "dc:contrast": "node src/scripts/dc-contrast.mjs"
   },
   "dependencies": {
     "@tanstack/react-table": "^8.21.3",

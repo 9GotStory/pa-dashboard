@@ -25,10 +25,10 @@
 // the installed Google Chrome, the one dependency CODING_STANDARDS §3 allows a
 // node script.
 import fs from "node:fs";
-import http from "node:http";
 import path from "node:path";
 import { chromium } from "playwright-core";
 import { TABLE_PAGES, awaitingWarnings, catalogReports, shownCatalog, tablePage } from "../lib/dc/tables/index.ts";
+import { serve } from "./dc-serve.mjs";
 
 const OUT = path.resolve("out");
 const WIDTH = 360;
@@ -76,18 +76,6 @@ const CONTROL_ROLES = new Set([
   "ColorWell",
   "DisclosureTriangle",
 ]);
-const TYPES = {
-  ".html": "text/html; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-  ".js": "text/javascript",
-  ".css": "text/css",
-  ".json": "application/json",
-  ".geojson": "application/geo+json",
-  ".woff2": "font/woff2",
-  ".svg": "image/svg+xml",
-  ".png": "image/png",
-  ".ico": "image/x-icon",
-};
 
 function fail(message) {
   console.error(`dc-check: ${message}`);
@@ -121,21 +109,6 @@ function populationYearShown() {
   const file = path.join(OUT, "data", "population.json");
   if (!fs.existsSync(file)) fail("out/ lacks data/population.json: run npm run build first");
   return JSON.parse(fs.readFileSync(file, "utf8")).years.at(-1);
-}
-
-// Serves out/ the way the static host does: /reports is reports.html.
-function serveOut() {
-  const server = http.createServer((req, res) => {
-    const urlPath = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-    const tries = urlPath.endsWith("/") ? [urlPath + "index.html"] : [urlPath, urlPath + ".html"];
-    const file = tries
-      .map((p) => path.join(OUT, p))
-      .find((f) => f.startsWith(OUT + path.sep) && fs.statSync(f, { throwIfNoEntry: false })?.isFile());
-    if (!file) return res.writeHead(404).end();
-    res.writeHead(200, { "content-type": TYPES[path.extname(file)] ?? "application/octet-stream" });
-    fs.createReadStream(file).pipe(res);
-  });
-  return new Promise((resolve) => server.listen(0, "127.0.0.1", () => resolve(server)));
 }
 
 // The rules that the DOM shows. Runs inside the page, so it uses nothing from
@@ -576,7 +549,7 @@ const unitReports = [
 // Built pages, then รายงานประชากร at a ตำบล and a หมู่บ้าน: only there does the
 // หมู่บ้าน <select> show, and only at a หมู่บ้าน its results
 const checkedPaths = [...urlPaths, POPULATION_TAMBON, POPULATION_VILLAGE];
-const server = await serveOut();
+const server = await serve(OUT);
 const origin = `http://127.0.0.1:${server.address().port}`;
 const problems = [];
 let browser;
