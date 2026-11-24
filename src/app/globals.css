@@ -14,8 +14,9 @@
      its value (the dc-* tokens below); the steps between are filled in OKLCH
      at that token's hue. Each step keeps its use in PA (50–200 backgrounds
      and borders, darker steps text), and every pair PA shows passes WCAG AA
-     (the PR of F98 lists them, with /sync's pairs in Tailwind's own colours,
-     which these tokens do not set). ผ่าน stays green and ไม่ผ่าน red. */
+     (the PR of F98 lists them); /sync's pairs in Tailwind's own colours, which
+     these tokens do not set, pass too since #377. ผ่าน stays green and ไม่ผ่าน
+     red. */
 
   /* Colors - Brand: V7.6's green. 50 is dc-highlight-soft, 500 dc-brand-accent,
      600 dc-brand-primary, 700 dc-brand-dark-surface, 800 dc-brand-deep. */
@@ -155,9 +156,7 @@
   }
 }
 
-/* The page behind PA and /sync: neutral-50, and neutral-900 rather than 800,
-   as /sync's PIN placeholder is half this colour and stays no lighter than
-   it was under slate-800 (F98) */
+/* The page behind PA and /sync: neutral-50, and neutral-900 (F98) */
 :root {
   --background: #f8f9f6;
   --foreground: #0d2a22;
