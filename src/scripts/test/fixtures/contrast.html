@@ -1,0 +1,128 @@
+<!doctype html>
+<!-- dc-contrast.test.js (#383): one text a case, each named by its text. -->
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <style>
+      body {
+        margin: 0;
+        padding: 16px;
+        background: #ffffff;
+        color: #000000;
+        font: 16px sans-serif;
+      }
+      section {
+        margin: 8px 0;
+      }
+      /* Tailwind 4's sr-only */
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+        border-width: 0;
+      }
+      .ph::placeholder {
+        color: #5b7064;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- An SVG label: its colour is its fill, not the color it inherits. -->
+    <section>
+      <svg width="300" height="40" style="color: #000000">
+        <text x="10" y="26" font-size="16" fill="#5b7064">svg-fill</text>
+      </svg>
+    </section>
+
+    <!-- A label with a white stroke on a bar: against the bar's fill. -->
+    <section>
+      <svg width="300" height="40">
+        <rect x="0" y="0" width="300" height="40" fill="#155f4b" />
+        <text x="10" y="26" font-size="16" fill="#ffffff" stroke="#ffffff" stroke-width="3" paint-order="stroke">
+          on-bar
+        </text>
+      </svg>
+    </section>
+
+    <!-- A line of the chart under a label: against the filled area under it. -->
+    <section>
+      <svg width="300" height="40">
+        <rect x="0" y="0" width="300" height="40" fill="#e8f5e9" />
+        <line x1="0" y1="20" x2="300" y2="20" stroke="#c89240" stroke-width="8" />
+        <text x="10" y="26" font-size="16" fill="#5b7064">over-line</text>
+      </svg>
+    </section>
+
+    <!-- The Hero: the dark ground is an SVG beside the text, not its ancestor. -->
+    <section style="position: relative; width: 300px; height: 60px">
+      <svg width="300" height="60" style="position: absolute; inset: 0">
+        <rect width="300" height="60" fill="#174e42" />
+      </svg>
+      <p style="position: relative; margin: 0; color: #ffffff; font-size: 32px">hero-text</p>
+    </section>
+
+    <!-- The Hero's dots: a pattern paints only where a dot of its tile is. -->
+    <section style="position: relative; width: 300px; height: 60px">
+      <svg width="300" height="60" style="position: absolute; inset: 0">
+        <defs>
+          <pattern id="dots" width="26" height="26" patternUnits="userSpaceOnUse">
+            <circle cx="1" cy="1" r="0.85" fill="#ff0000" />
+          </pattern>
+        </defs>
+        <rect width="300" height="60" fill="#174e42" />
+        <rect width="300" height="60" fill="url(#dots)" />
+      </svg>
+      <p style="position: relative; margin: 0; color: #ffffff; font-size: 32px">dots-text</p>
+    </section>
+
+    <!-- Text that does not show. -->
+    <section>
+      <span class="sr-only">sr-only-text</span>
+      <div style="width: 60px; overflow: hidden; white-space: nowrap">
+        <span style="margin-left: 200px">clipped-text</span>
+      </div>
+      <a href="#" style="position: absolute; left: -9999px">offscreen-text</a>
+      <div style="position: relative">
+        <span>covered-text</span>
+        <div style="position: absolute; inset: 0; background: #ffffff"></div>
+      </div>
+    </section>
+
+    <!-- Controls that cannot be used, and a label of one. -->
+    <section>
+      <button disabled style="color: #9aa5a0; background: #ffffff; border: 0">disabled-button</button>
+      <button aria-disabled="true" style="color: #9aa5a0; background: #ffffff; border: 0">aria-disabled-button</button>
+      <label for="off">disabled-label</label>
+      <input id="off" disabled value="" />
+      <button style="color: #000000; background: #ffffff; border: 0">enabled-button</button>
+    </section>
+
+    <!-- What a <select> shows, and a placeholder in its own colour. -->
+    <section>
+      <select style="color: #333333; background: #ffffff">
+        <option>select-value</option>
+      </select>
+      <input class="ph" placeholder="placeholder-text" style="color: #000000; background: #ffffff" />
+    </section>
+
+    <!-- Two translucent grounds, one over the other. -->
+    <section style="background: rgba(0, 0, 0, 0.5)">
+      <div style="background: rgba(0, 0, 0, 0.5)">
+        <span style="color: #ffffff">translucent-text</span>
+      </div>
+    </section>
+
+    <!-- A gradient cannot be measured. -->
+    <section class="gradient" style="background: linear-gradient(#000000, #ffffff)">
+      <span style="color: #ffffff">gradient-text</span>
+    </section>
+
+    <!-- Below the fold of a 600 px viewport. -->
+    <p style="margin-top: 1500px">below-fold</p>
+  </body>
+</html>

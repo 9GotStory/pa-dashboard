@@ -113,10 +113,11 @@ NEXT_PUBLIC_SYNC_PIN_CODE=<PIN ของหน้า /sync>
 | `npm start` | เปิดดูผล build ที่ <http://localhost:3000> ด้วย `npx serve@latest out` (`next start` ใช้กับ static export ไม่ได้) |
 | `npm run lint` | ESLint (รวมกฎ import ของ Data Center), format ตาม Prettier, วลีที่ GLOSSARY ให้เลี่ยง และไฟล์เทสต์ใต้ `src/` ที่ตารางของ CODING_STANDARDS §5 ไม่มีชื่อ |
 | `npm run format` | จัด format ตาม Prettier ทุกไฟล์ที่ไม่อยู่ใน `.prettierignore` |
-| `npm test` | เทสต์ GAS และเทสต์ของ Data Center |
+| `npm test` | เทสต์ GAS และเทสต์ของ Data Center · เทสต์ของ `dc-contrast.mjs` เปิดหน้า fixture ใน Google Chrome ที่ติดตั้งในเครื่อง จึงต้องมี Chrome |
 | `npm run dc:check` | หลัง build เปิดทุกหน้า Data Center ใน `out/` ที่กว้าง 360 px แล้วตรวจกฎ CODING_STANDARDS §4 และเปิดหน้าแรกที่จอกว้างเพื่อเทียบตัวเลขประชากรบนหน้ากันเอง (§5) (CI รันทุก PR) |
 | `npm run dc:budget` | หลัง build ตรวจงบ JavaScript ของ SPEC §9.6 และ font preload บนหน้า Data Center, `/pa` และ `/pa/{ปี}` กับเนื้อหาที่ซ่อนรอ Suspense บน `/pa` และ `/pa/{ปี}` (CI รันทุก PR) |
 | `npm run dc:compare [-- <url> ...]` | หลัง `npx next build` เปิดทุกหน้ารายงานของ `out/` กับ build ของ `main` (เก็บใน `.dc-lcp/main/`) แล้วบอกว่าหน้าไหนต่างที่ข้อความ HTML หรือ CSV · ใช้บนเครื่อง ไม่อยู่ใน CI ([docs/agents/page-checks.md](docs/agents/page-checks.md)) |
+| `npm run dc:contrast -- [--base <url>] [--width <px> ...] <path> ...` | วัดคู่สีของข้อความทุกจุดที่หน้าแสดง (ป้ายใน SVG ค่าที่ `<select>` แสดง และ placeholder ด้วย) เทียบกับ WCAG AA ที่ 360 และ 1280 px แล้วพิมพ์ตารางคู่สีเรียงจากเฉียดเกณฑ์ที่สุด · ไม่ใส่ `--base` เสิร์ฟ `out/` เอง · ใช้บนเครื่อง ไม่อยู่ใน CI ([docs/agents/page-checks.md](docs/agents/page-checks.md)) |
 | `npm run dc:sync-local [-- <port>]` | เปิด `/sync` ใน `next dev` (พอร์ต 3217) คู่กับ GAS ใน harness ซึ่งเก็บข้อมูลในหน่วยความจำ ลองอัปโหลดได้โดยไม่แตะ GAS จริง พิมพ์ URL, PIN และทุก POST · Ctrl-C ปิดทั้งคู่ |
 | `npm run snapshot` | ดึง snapshot อย่างเดียวโดยไม่ build |
 | `npm run gas:push` · `gas:deploy` · `gas:sync` | push โค้ด GAS · deploy ทับ deployment เดิม · ทำทั้งสองอย่าง (ดูหัวข้อ Deploy) |
