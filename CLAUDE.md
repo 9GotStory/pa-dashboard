@@ -72,7 +72,7 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 
 - `npm ci` · `npm run dev` (http://localhost:3000) · `npm run lint`
 - `npm run build` writes the static site to `out/`. Its prebuild reads the live GAS (GET, about 2.5 minutes); `npx next build` rebuilds from the snapshot already in `public/data/`. After a build, `npm run dc:check` and `npm run dc:budget` check the Data Center pages, and a ticket touching `src/components/dc/` or `src/lib/dc/` runs `npm run dc:compare` before `code-review`: every report page against `main`'s build. Preview with `npx serve@latest out`; `next start` does not work with `output: 'export'`. An acceptance check by hand (a Playwright script of your own, reading `dc:compare`'s output, a look against the reference design, the LCP comparison with `main`, a check on the live site): docs/agents/page-checks.md.
-- `npm test` runs the GAS tests in `src/scripts/test/` and the Data Center tests in `src/lib/dc/`.
+- `npm test` runs the GAS tests in `src/scripts/test/` and the Data Center tests in `src/lib/dc/`: two runners, each printing its own count, and Evidence quotes both.
 - To try `/sync` in a browser, run `npm run dc:sync-local [-- <port>]`: `next dev` on port 3217 against the GAS of the test harness, in memory, and it prints the URL and PIN. `npm run dev` reads the production GAS URL from `.env.local`, so a save there is a POST to production.
 - `next build` downloads Google Fonts (Prompt, Sarabun) through `next/font/google`. If a build fails while fetching fonts, the network is blocked; it is not a code bug.
 
@@ -83,7 +83,7 @@ Song Health Data Center (สสอ.สอง) and PA Dashboard (คปสอ.ส
 - Production is shared with PA. Unless the user asks in this session, never run `npm run gas:push`, `gas:deploy` or `gas:sync`, `npm run gas:diag` with `setup=` or `run=`, `src/scripts/sync-moph-to-gas.js`, `hdc-catalog.js refresh`, a `rebuild`, or any POST to the live GAS URL. When asked to deploy GAS, follow docs/agents/gas-deploy.md: deploy from `main` and redeploy the existing deployment (`npm run gas:sync`); never create a new deployment, because PA hardcodes the web app URL in `src/lib/useKPIData.ts`.
 - Git: one branch per ticket (`feat/F##-<slug>`) from `main`, PR into `main`, never push to `main`. Never commit `public/data/` or `.env*`.
 - Write to the user, and write PR bodies and issues, in Thai; code, comments and commit messages are English. Website UI text is Thai. The spreadsheet's admin menu and toasts are English, matching PA's existing ones (#137). Use the terms in GLOSSARY.md in code, tests, issues and commit messages.
-- Read a library's docs before writing code against it or answering an API question about it; don't ask first, and don't rely on memory. Next.js: `node_modules/next/dist/docs/`, which ships with the installed version. React 19.2, Tailwind CSS 4, clasp 3, Leaflet 1.9: the Context7 MCP tools.
+- Read a library's docs before writing code against it or answering an API question about it; don't ask first, and don't rely on memory. Next.js: `node_modules/next/dist/docs/`, which ships with the installed version. React 19.2, Tailwind CSS 4, clasp 3, Leaflet 1.9: the Context7 MCP tools. Motion: CODING_STANDARDS §4 "motion" first, for what its docs leave out.
 
 ## Docs map
 

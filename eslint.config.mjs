@@ -152,6 +152,26 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // Apps Script runs src/scripts/dc-*.js as scripts in one global scope and
+  // calls their top-level functions by name (menu items, triggers,
+  // google.script.run), so only a local left unused is one.
+  {
+    files: ["src/scripts/dc-*.js"],
+    // eslint-config-next sets parserOptions.sourceType too, which wins.
+    languageOptions: { sourceType: "script", parserOptions: { sourceType: "script" } },
+    rules: { "@typescript-eslint/no-unused-vars": ["warn", { vars: "local" }] },
+  },
+  // Frozen PA files (CODING_STANDARDS §1): รหัส.js changes only at SPEC §12.4's
+  // points and keeps its unused catch bindings and MASTER_COLS; KPITable.tsx
+  // keeps TanStack Table's useReactTable. lint runs with --max-warnings 0.
+  {
+    files: ["src/scripts/รหัส.js"],
+    rules: { "@typescript-eslint/no-unused-vars": "off" },
+  },
+  {
+    files: ["src/components/KPITable.tsx"],
+    rules: { "react-hooks/incompatible-library": "off" },
+  },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:
