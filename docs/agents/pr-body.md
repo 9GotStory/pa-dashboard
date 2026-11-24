@@ -32,7 +32,10 @@ The new tests as pseudocode in a text block, and where their expected values
 come from (CODING_STANDARDS §5).
 
 Each acceptance check of FEATURES F## in a text block: its number, ผ่าน or not,
-what ran and what it showed. Screenshots are described in words, not attached.
+what ran and what it showed. Before and after screenshots, saved in
+.wizard/<ticket>/shots/: with the user's go-ahead and Chrome open, uploaded
+(page-checks.md "Screenshots on GitHub") and shown here; otherwise each
+described in words with its path.
 
 code review:
 
@@ -54,3 +57,15 @@ Closes #n
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
+
+## After `gh pr create`
+
+CI's `build_check` starts a few seconds after the PR opens and takes 6–9 minutes. Wait in the background (`run_in_background`), on the run of the commit the PR carries:
+
+```sh
+sha=$(git rev-parse HEAD)
+until id=$(gh run list --commit "$sha" --workflow ci.yml --json databaseId --jq '.[0].databaseId') && [ -n "$id" ]; do sleep 5; done
+gh run watch "$id" --exit-status
+```
+
+`gh pr checks --watch` run before the check exists reports no checks and exits 0, which reads as green (F88).
