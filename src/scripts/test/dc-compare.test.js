@@ -31,6 +31,44 @@ test("normalizeHtml takes out the names of chunks and the build's id under /_nex
   );
 });
 
+// The <main> of /reports/c88658f4d09acb8c76e6c06ffb58ebaf (s_epi1) as Chrome
+// showed it on 24 Nov 2569, opened 5 times from one build of 900b443 (next
+// build 16.4.6, React 19.2.3), cut to the tags around its comments (#374).
+// 4 openings had <!--$--> and <!--/$--> around the table's page and a pair
+// inside it; 1 had neither. Every opening had the pair before </main> and
+// the <!-- --> on each side of the · in แหล่งข้อมูล.
+const EPI_TOP =
+  '<main id="main" tabindex="-1" class="mx-auto w-full max-w-330 flex-1 px-4 pt-5 pb-12 focus:outline-none sm:px-8 sm:pt-7"><div class="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0">';
+const EPI_FILTERS =
+  '<section aria-labelledby="filters-title" class="border-b border-dc-border-subtle bg-dc-highlight-soft/50 px-4 py-5 sm:px-6 print:hidden"><h2 id="filters-title" class="font-prompt text-[15px] font-semibold text-dc-brand-deep">ตัวกรองรายงาน</h2></section>';
+const EPI_ABOUT =
+  '<section aria-labelledby="about-title" class="border-t border-dc-border-subtle bg-dc-canvas/60 px-4 py-5 sm:px-6"><h2 id="about-title" class="font-prompt text-[15px] font-semibold text-dc-brand-deep">เกี่ยวกับรายงานนี้</h2><a href="https://hdc.moph.go.th/pre/public/standard-report-detail/c88658f4d09acb8c76e6c06ffb58ebaf?subcatalogId=4df360514655f79f13901ef1181ca1c7" class="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep">HDC</a> <!-- -->·<!-- --> <a href="https://opendata.moph.go.th/th/services/summary-table/73daf277928bc32a1b3c8e772192543c/s_epi1/c88658f4d09acb8c76e6c06ffb58ebaf" class="text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep">HDC Open Data</a></section>';
+const EPI_WITH_COMMENTS = `${EPI_TOP}<!--$--><div data-table-page="epi"><!--$--><!--/$-->${EPI_FILTERS}</div><!--/$-->${EPI_ABOUT}</div><!--$--><!--/$--></main>`;
+const EPI_WITHOUT_COMMENTS = `${EPI_TOP}<div data-table-page="epi">${EPI_FILTERS}</div>${EPI_ABOUT}</div><!--$--><!--/$--></main>`;
+
+test("normalizeHtml takes out <!--$--> and <!--/$-->, keeping <!-- --> and each class", () => {
+  const neither = `${EPI_TOP}<div data-table-page="epi">${EPI_FILTERS}</div>${EPI_ABOUT}</div></main>`;
+  assert.equal(normalizeHtml(EPI_WITH_COMMENTS), neither);
+  assert.equal(normalizeHtml(EPI_WITHOUT_COMMENTS), neither);
+});
+
+// As next build 16.4.6 wrote them on 24 Nov 2569, before any JavaScript:
+// <!--$?--> in out/reports/c88658f4d09acb8c76e6c06ffb58ebaf.html, ahead of
+// the status the page shows while its report loads, and <!--$!--> in
+// out/reports.html, ahead of ค้นหารายงาน. No report page in out/reports/ has
+// <!--$!-->.
+test("normalizeHtml keeps <!--$?--> and <!--$!-->", () => {
+  const loading =
+    '<div class="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0"><!--$?--><template id="B:0"></template><div role="status" class="min-h-svh px-4 py-5 sm:px-6"><p class="text-dc-text-secondary">กำลังโหลดข้อมูลรายงาน…</p></div><!--/$--></div>';
+  assert.equal(
+    normalizeHtml(loading),
+    '<div class="overflow-hidden rounded-[10px] border border-dc-border-subtle bg-white print:border-0"><!--$?--><template id="B:0"></template><div role="status" class="min-h-svh px-4 py-5 sm:px-6"><p class="text-dc-text-secondary">กำลังโหลดข้อมูลรายงาน…</p></div></div>',
+  );
+  const find =
+    '<!--$!--><template data-dgst=""></template><section aria-labelledby="library-find-title" class="mt-5 sm:mt-6"><h2 id="library-find-title" class="sr-only">ค้นหารายงาน</h2></section>';
+  assert.equal(normalizeHtml(find), find);
+});
+
 // Each test writes an out/ of its own, with the files next build writes for a
 // page under out/reports/ (the HTML, its .txt and a directory of segments),
 // in a temp dir.
@@ -159,6 +197,13 @@ test("comparePage gives same for a page whose HTML differs only in the ids of us
     html: FOOD.html.replace("</main>", '<script src="/_next/static/chunks/36lpvbb_w2pg3.js"></script></main>'),
   };
   assert.equal(comparePage("/reports/4164a7c49fcb2b8c3ccca67dcdf28bd0", branch, main).verdict, "same");
+});
+
+test("comparePage gives same for a page whose HTML differs only in <!--$--> and <!--/$-->", () => {
+  const text = "ตัวกรองรายงาน\nเกี่ยวกับรายงานนี้\nHDC · HDC Open Data";
+  const branch = { text, html: EPI_WITHOUT_COMMENTS, csv: null };
+  const main = { text, html: EPI_WITH_COMMENTS, csv: null };
+  assert.equal(comparePage("/reports/c88658f4d09acb8c76e6c06ffb58ebaf", branch, main).verdict, "same");
 });
 
 // The exit code, as diff's: 0 when every page is the same, 1 when one is not,

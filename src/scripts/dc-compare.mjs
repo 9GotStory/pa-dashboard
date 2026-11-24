@@ -5,10 +5,12 @@
 // (after npx next build) and on main's build that dc-lcp.mjs keeps in
 // .dc-lcp/main/ (dc-main-build.mjs), at 1280 px wide with the map tiles
 // blocked, once the page has loaded its data. It compares the innerText of
-// <main>, the HTML of <main> with what changes from build to build taken out
-// (normalizeHtml), and the file name and content of the CSV that ดาวน์โหลด
-// CSV gives; no screenshots. Prints a line a page, same, differs with the
-// first lines that differ of each part, only on branch or only on main.
+// <main>, the HTML of <main> with what changes though the code does not taken
+// out (normalizeHtml: the ids of useId, the names of chunks, and the comments
+// <!--$--> and <!--/$--> around a Suspense boundary), and the file name and
+// content of the CSV that ดาวน์โหลด CSV gives; no screenshots. Prints a line
+// a page, same, differs with the first lines that differ of each part, only
+// on branch or only on main.
 // When main's build is not of main's SHA, this public/data/ and node_modules/
 // it builds main and the branch again, as dc-lcp.mjs does, in a clean working
 // tree; with uncommitted files it stops. Exits as diff does: 0 when every
@@ -54,11 +56,23 @@ const USE_ID = /_[Rr]_[0-9a-v]+(?:H[0-9a-v]+)?_/g;
 // hash, or a path under the build's id.
 const STATIC_FILE = /(\/_next\/static\/)[^"'\s)\\]+/g;
 
-// HTML with what changes from build to build though the code does not taken
-// out: the ids of useId and the names of chunks. Each class stays, as a
-// changed class is a changed look.
+// The comments around a Suspense boundary, <!--$--> before it and <!--/$-->
+// after (#374). One build's page came with them at one opening and without
+// them at the next: of 22 report pages opened twice, 12 and 16 had the same
+// <main> with them in, all 22 both times with them out. <!--$?--> and
+// <!--$!--> are not matched: the HTML next build writes has them, <!--$?-->
+// ahead of the status a report page shows while it loads, and no <main> of
+// the 22 had one once loaded, so one that shows is a page in another state.
+// The <!--/$--> that closes it goes all the same.
+const SUSPENSE_COMMENT = /<!--\/?\$-->/g;
+
+// HTML with what changes though the code does not taken out: from build to
+// build, the ids of useId and the names of chunks; from one opening to the
+// next, the comments around a Suspense boundary. Each class stays, as a
+// changed class is a changed look, and so does every other comment, <!-- -->
+// among them.
 export function normalizeHtml(html) {
-  return html.replace(USE_ID, "«id»").replace(STATIC_FILE, "$1«chunk»");
+  return html.replace(USE_ID, "«id»").replace(STATIC_FILE, "$1«chunk»").replace(SUSPENSE_COMMENT, "");
 }
 
 // The URL paths of the pages under /reports/ in an out/: every /reports/{id}
