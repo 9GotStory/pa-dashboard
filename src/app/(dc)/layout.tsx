@@ -10,7 +10,9 @@ import { prompt, sarabun } from "@/lib/dc/fonts";
 // wrap-break-word: HDC names such as "BCG ,HBV1,DTP1,…" have no break point
 // after their commas and would widen the page at 360 px. The scroll margin is
 // taller than the sticky Masthead (two rows below md, one from md), so an
-// element scrolled to by focus is not hidden under it.
+// element scrolled to by focus is not hidden under it. touch-manipulation: a
+// tap on a touch screen acts at once, as no double tap zooms (SPEC §9.1,
+// F95); a pinch still does. Every heading wraps to lines of even length.
 export default function DcLayout({
   children,
 }: Readonly<{
@@ -18,7 +20,7 @@ export default function DcLayout({
 }>) {
   return (
     <div
-      className={`${prompt.variable} ${sarabun.variable} dc flex min-h-screen flex-col bg-dc-canvas **:scroll-mt-32 md:**:scroll-mt-20 font-dc text-sm/[1.65] text-dc-brand-deep wrap-break-word`}
+      className={`${prompt.variable} ${sarabun.variable} dc flex min-h-screen touch-manipulation flex-col bg-dc-canvas **:scroll-mt-32 md:**:scroll-mt-20 [&_:is(h1,h2,h3,h4)]:text-balance font-dc text-sm/[1.65] text-dc-brand-deep wrap-break-word`}
     >
       <a
         href="#main"

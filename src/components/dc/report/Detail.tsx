@@ -57,7 +57,8 @@ function scrollToAndFocus(heading: HTMLHeadingElement | null) {
 /**
  * Where the รายละเอียด of useDetail goes: always on the page, as the buttons
  * of ภาพรวม point at it, and empty for ภาพรวม (title null). Its heading
- * (useDetail's detailHeading) takes focus without a ring, as no key put it there;
+ * (useDetail's detailHeading) takes focus, with the ring of :focus-visible
+ * when a key opened it, as every heading focused by script (F95);
  * ปิดรายละเอียด (useDetail's close) goes back to ภาพรวม.
  */
 export default function Detail(props: {
@@ -83,7 +84,7 @@ export default function Detail(props: {
                 id={`${DETAIL_ID}-title`}
                 ref={headingRef}
                 tabIndex={-1}
-                className="mt-0.5 font-prompt text-xl font-semibold text-dc-brand-deep focus:outline-none"
+                className="mt-0.5 font-prompt text-xl font-semibold text-dc-brand-deep"
               >
                 {title}
               </h3>
@@ -92,7 +93,7 @@ export default function Detail(props: {
             <PressButton
               type="button"
               onClick={onClose}
-              className="min-h-10 rounded-md border border-dc-border-subtle bg-white px-3 text-xs text-dc-text-secondary transition-colors hover:bg-dc-surface-muted print:hidden"
+              className="min-h-11 rounded-md border border-dc-border-subtle bg-white px-3 text-xs text-dc-text-secondary transition-colors hover:bg-dc-surface-muted print:hidden"
             >
               ปิดรายละเอียด
             </PressButton>

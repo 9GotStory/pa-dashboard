@@ -24,7 +24,7 @@ function Select(props: {
         name={props.name}
         value={props.value}
         onChange={(e) => props.onPick(props.name, e.target.value)}
-        className="h-10 w-full min-w-0 rounded-md border border-dc-border-subtle bg-white px-2 text-[13px] text-dc-brand-deep"
+        className="h-11 w-full min-w-0 rounded-md border border-dc-border-subtle bg-white px-2 text-[13px] text-dc-brand-deep"
       >
         {props.options.map(([value, text]) => (
           <option key={value} value={value} disabled={props.disabled?.includes(value)}>
@@ -130,7 +130,7 @@ export default function ReportFilters(props: {
         </div>
         <PressButton
           type="submit"
-          className="h-10 rounded-md bg-dc-brand-primary px-5 font-semibold text-white transition-colors hover:bg-dc-brand-deep"
+          className="h-11 rounded-md bg-dc-brand-primary px-5 font-semibold text-white transition-colors hover:bg-dc-brand-deep"
         >
           แสดงผล
         </PressButton>

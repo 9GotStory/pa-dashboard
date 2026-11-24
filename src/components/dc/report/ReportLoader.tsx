@@ -49,14 +49,15 @@ function Load<T>({ id, children }: { id: string; children: (data: T) => ReactNod
     return (
       <ReportStatus>
         โหลดข้อมูลรายงานไม่สำเร็จ{" "}
-        {/* In the sentence, so it changes colour when pressed and does not shrink, as a link in a sentence (F90) */}
+        {/* In the sentence, so it changes colour when pressed and does not shrink, as a link in a sentence (F90),
+            yet the one thing to press here: 24px high, 44px on a touch screen (F95) */}
         <button
           type="button"
           onClick={() => {
             setLoad("loading");
             setAttempt(attempt + 1);
           }}
-          className="font-semibold text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep"
+          className="inline-flex min-h-6 items-center font-semibold text-dc-brand-primary underline underline-offset-2 transition-colors hover:text-dc-brand-accent active:text-dc-brand-deep pointer-coarse:min-h-11"
         >
           ลองอีกครั้ง
         </button>

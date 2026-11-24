@@ -38,7 +38,7 @@ export default function ReportActions({ csv }: { csv: (() => ReturnType<typeof r
         type="button"
         onClick={download}
         disabled={!csv}
-        className="min-h-10 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep transition-colors hover:bg-dc-highlight-soft disabled:opacity-50 sm:flex-none"
+        className="min-h-11 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep transition-colors enabled:hover:bg-dc-highlight-soft disabled:cursor-not-allowed disabled:opacity-50 sm:flex-none"
       >
         {/* Both labels in one cell, so the button is as wide as the longer one whichever shows */}
         <span className="grid">
@@ -52,7 +52,7 @@ export default function ReportActions({ csv }: { csv: (() => ReturnType<typeof r
       <PressButton
         type="button"
         onClick={() => window.print()}
-        className="min-h-10 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep transition-colors hover:bg-dc-highlight-soft sm:flex-none"
+        className="min-h-11 flex-1 rounded-md border border-dc-border-subtle bg-white px-3 text-xs font-semibold text-dc-brand-deep transition-colors hover:bg-dc-highlight-soft sm:flex-none"
       >
         พิมพ์รายงาน
       </PressButton>

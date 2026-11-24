@@ -1,6 +1,5 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
 import * as m from "motion/react-m";
 import dynamic from "next/dynamic";
 import { useState } from "react";
@@ -10,10 +9,10 @@ import { hospitalName } from "@/lib/dc/hospitals";
 import { FADED, STILL_SHOWN } from "@/lib/dc/motion";
 import type { AreaVillages, DcCatalog, HomePopulation, PopulationTotals } from "@/lib/dc/types";
 import ChangeFlash from "./ChangeFlash";
+import ClearPick from "./ClearPick";
 import { useMotionReady } from "./MotionRoot";
 import PopulationComparison from "./PopulationComparison";
 import PopulationPyramid from "./PopulationPyramid";
-import { PressButton } from "./Press";
 
 type Area = DcCatalog["areas"][number];
 type Hospital = DcCatalog["hospitals"][number];
@@ -71,6 +70,8 @@ export default function DistrictExplorer({
   const scope = area ? title : "ทั้งอำเภอสอง";
   // The population of what the panel shows: the ตำบล picked, or the อำเภอ.
   const panelPopulation = area ? population?.areas.find((a) => a.key === area.id) : population?.district;
+  // ล้างการเลือก, which has nothing to clear while the อำเภอ is shown
+  const clear = selected === null ? null : () => setSelected(null);
 
   return (
     <div className="flex flex-col gap-5">
@@ -109,14 +110,7 @@ export default function DistrictExplorer({
               <label htmlFor="area-select" className="font-prompt font-semibold text-dc-brand-deep">
                 เลือกตำบล
               </label>
-              <PressButton
-                type="button"
-                onClick={() => setSelected(null)}
-                className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-dc-brand-primary hover:underline"
-              >
-                <RotateCcw className="size-3.5" />
-                ล้างการเลือก
-              </PressButton>
+              <ClearPick onClear={clear} />
             </div>
             <select
               id="area-select"
@@ -195,7 +189,7 @@ export default function DistrictExplorer({
         />
       )}
       {panelPopulation?.age && (
-        <PopulationPyramid scope={scope} age={panelPopulation.age} source={source} onClear={() => setSelected(null)} />
+        <PopulationPyramid scope={scope} age={panelPopulation.age} source={source} onClear={clear} />
       )}
     </div>
   );

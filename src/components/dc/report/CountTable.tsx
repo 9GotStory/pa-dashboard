@@ -1,4 +1,5 @@
 import { formatCount } from "@/lib/dc/format";
+import ScrollBox from "../ScrollBox";
 import type { UnitCount } from "./resultsText";
 
 /**
@@ -15,11 +16,10 @@ export default function CountTable(props: {
   const { unitLabel, units, total, totalLabel } = props;
   return (
     <section className="min-w-0">
-      <div
-        role="region"
-        tabIndex={0}
-        aria-label={`ตารางจำนวนราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
-        className="overflow-x-auto rounded-[9px] border border-dc-border-subtle"
+      <ScrollBox
+        label={`ตารางจำนวนราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
+        className="rounded-[9px] border border-dc-border-subtle"
+        hint="mt-2"
       >
         <table className="w-full border-collapse text-xs tabular-nums">
           <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">
@@ -54,7 +54,7 @@ export default function CountTable(props: {
             </tr>
           </tfoot>
         </table>
-      </div>
+      </ScrollBox>
     </section>
   );
 }

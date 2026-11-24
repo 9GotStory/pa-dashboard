@@ -28,10 +28,11 @@ export function usePress(wide = false) {
   return wide ? PRESS_WIDE : PRESS;
 }
 
-/** A <button> that shrinks while pressed, unless it is disabled */
+/** A <button> that shrinks while pressed, unless it is disabled or aria-disabled */
 export function PressButton({ wide, ...props }: HTMLMotionProps<"button"> & Wide) {
   const press = usePress(wide);
-  return <m.button whileTap={props.disabled ? undefined : press} {...props} />;
+  const off = props.disabled || props["aria-disabled"] === true || props["aria-disabled"] === "true";
+  return <m.button whileTap={off ? undefined : press} {...props} />;
 }
 
 /** An <a> that shrinks while pressed: a link within the page or to another site */

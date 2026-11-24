@@ -1,10 +1,10 @@
 "use client";
 
-import { RotateCcw } from "lucide-react";
 import { useState } from "react";
 import { bandName, formatCount, formatPct } from "@/lib/dc/format";
 import type { AgeProfile, PopulationAgeReport, UnsplitGroup } from "@/lib/dc/types";
 import ChangeFlash from "./ChangeFlash";
+import ClearPick from "./ClearPick";
 import { Bar } from "./charts/Bar";
 import { PressButton } from "./Press";
 
@@ -33,8 +33,8 @@ const UNSPLIT_NAMES: Record<UnsplitGroup, string> = {
  * ประชากรที่ไม่แยกอายุ the pyramid leaves out, by kind. The scope line
  * flashes when scope changes and the bars slide to the new values (F93).
  * Every figure but a row's รวม and ร้อยละ comes as computed (AgeProfile).
- * ล้างการเลือก calls onClear. DistrictExplorer renders it, holding the ตำบล
- * picked.
+ * ล้างการเลือก calls onClear, null when no ตำบล is picked. DistrictExplorer
+ * renders it, holding the ตำบล picked.
  */
 export default function PopulationPyramid({
   scope,
@@ -45,7 +45,7 @@ export default function PopulationPyramid({
   scope: string;
   age: AgeProfile;
   source: string;
-  onClear: () => void;
+  onClear: (() => void) | null;
 }) {
   return (
     <section aria-labelledby="pyramid-title" className="min-w-0">
@@ -57,14 +57,7 @@ export default function PopulationPyramid({
         <p className="relative text-sm font-semibold text-dc-brand-deep">
           <ChangeFlash text={scope} />
         </p>
-        <PressButton
-          type="button"
-          onClick={onClear}
-          className="inline-flex min-h-11 items-center gap-1.5 text-xs font-bold text-dc-brand-primary hover:underline"
-        >
-          <RotateCcw className="size-3.5" />
-          ล้างการเลือก
-        </PressButton>
+        <ClearPick onClear={onClear} />
       </div>
 
       <div className="mt-1 grid gap-4 lg:grid-cols-[minmax(0,1.75fr)_minmax(16rem,0.62fr)]">
@@ -84,9 +77,11 @@ export default function PopulationPyramid({
             <dd aria-hidden="true" className="mt-2 h-2 overflow-hidden rounded-full bg-dc-surface-muted">
               <Bar width={`${age.aged60_pct}%`} className="block h-full rounded-full bg-dc-brand-accent" />
             </dd>
-            <dd className="mt-2 text-xs text-dc-text-secondary">ของ {formatCount(age.age_total)} คนที่แยกอายุได้</dd>
+            <dd className="mt-2 text-xs text-dc-text-secondary tabular-nums">
+              ของ {formatCount(age.age_total)} คนที่แยกอายุได้
+            </dd>
           </dl>
-          <p className="mt-4 border-t border-dc-border-subtle pt-3 text-sm text-dc-text-secondary">
+          <p className="mt-4 border-t border-dc-border-subtle pt-3 text-sm text-dc-text-secondary tabular-nums">
             <UnsplitText unsplit={age.unsplit} />
           </p>
         </div>
@@ -183,7 +178,7 @@ export function PyramidRows({
               }
               onClick={() => setShown(b.label)}
               onFocus={() => setShown(b.label)}
-              className={`${ROW_GRID} min-h-7 rounded-md px-1 text-xs tabular-nums transition-colors sm:px-2 ${
+              className={`${ROW_GRID} min-h-7 rounded-md px-1 text-xs tabular-nums transition-colors sm:px-2 pointer-coarse:min-h-11 ${
                 b.label === shown ? "bg-dc-highlight-soft" : "hover:bg-dc-canvas"
               }`}
             >
@@ -211,7 +206,10 @@ export function PyramidRows({
           เส้นขอบคือปี {first.year} ปีข้อมูลแรกที่มีข้อมูลอายุ ให้เห็นว่าโครงสร้างเปลี่ยนไปอย่างไร
         </p>
       )}
-      <p aria-live="polite" className="mt-3 rounded-md bg-dc-surface-muted px-3 py-2 text-sm text-dc-brand-deep">
+      <p
+        aria-live="polite"
+        className="mt-3 rounded-md bg-dc-surface-muted px-3 py-2 text-sm text-dc-brand-deep tabular-nums"
+      >
         {band
           ? `${scope} · ช่วงอายุ ${bandName(band.label)} รวม ${formatCount(bandTotal)} คน ร้อยละ ${formatPct((bandTotal / age.age_total) * 100)} ของผู้ที่แยกอายุได้`
           : "เลือกช่วงอายุเพื่อดูยอดรวมและร้อยละ"}

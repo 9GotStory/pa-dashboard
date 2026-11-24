@@ -21,6 +21,7 @@ import { measuresCsv, resultsText } from "../report/resultsText";
 import SummaryTiles from "../report/SummaryTiles";
 import UnitTable from "../report/UnitTable";
 import { useReportQuery } from "../report/useReportQuery";
+import ScrollBox from "../ScrollBox";
 
 type Names = Pick<DcCatalog, "areas" | "hospitals">;
 type Values = ReturnType<typeof epiValues>;
@@ -135,11 +136,11 @@ function Overview(props: {
             id="overview-title"
             ref={headingRef}
             tabIndex={-1}
-            className="font-prompt text-base font-semibold text-dc-brand-deep focus:outline-none"
+            className="font-prompt text-base font-semibold text-dc-brand-deep"
           >
             ภาพรวมการได้รับวัคซีน <span className="font-normal text-dc-text-secondary">({rows.length} รายการ)</span>
           </h3>
-          <p aria-live="polite" className="text-sm text-dc-text-secondary">
+          <p aria-live="polite" className="text-sm text-dc-text-secondary tabular-nums">
             {search.trim() ? `พบ ${found.length} จาก ${rows.length} รายการ` : "เลือกวัคซีนเพื่อดูรายละเอียดรายพื้นที่และแนวโน้ม"}
           </p>
         </div>
@@ -159,7 +160,7 @@ function Overview(props: {
               onChange={(e) => setSearch(e.target.value)}
               placeholder="ค้นหาวัคซีน เช่น MMR"
               autoComplete="off"
-              className="h-10 w-full rounded-md border border-dc-border-subtle bg-dc-canvas pr-3 pl-9 text-[13px] text-dc-brand-deep placeholder:text-dc-text-secondary"
+              className="h-11 w-full rounded-md border border-dc-border-subtle bg-dc-canvas pr-3 pl-9 text-[13px] text-dc-brand-deep placeholder:text-dc-text-secondary"
             />
           </div>
         )}
@@ -173,7 +174,7 @@ function Overview(props: {
               <PressButton
                 {...buttonProps(r.measure)}
                 wide
-                className={`block h-full w-full rounded-[9px] border p-4 text-left transition-colors hover:bg-dc-surface-muted ${r.measure === open ? "border-dc-brand-primary bg-dc-highlight-soft" : "border-dc-border-subtle bg-white"}`}
+                className={`block h-full w-full rounded-[9px] border p-4 text-left transition-colors ${r.measure === open ? "border-dc-brand-primary bg-dc-highlight-soft" : "border-dc-border-subtle bg-white hover:bg-dc-surface-muted"}`}
               >
                 <span className="flex items-center justify-between gap-2">
                   <strong className="font-prompt text-base text-dc-brand-deep">{r.label}</strong>
@@ -186,7 +187,7 @@ function Overview(props: {
                   <PctBar pct={r.total?.pct ?? null} passed={r.passed} />
                 </span>
                 <span className="mt-2 flex flex-wrap items-center justify-between gap-x-3 text-xs text-dc-text-secondary">
-                  <span>เกณฑ์ {goalText(r.goal)}</span>
+                  <span className="tabular-nums">เกณฑ์ {goalText(r.goal)}</span>
                   <span className="inline-flex items-center font-semibold text-dc-brand-primary">
                     ดูรายละเอียด
                     <ChevronRight aria-hidden="true" className="size-3.5" />
@@ -204,7 +205,7 @@ function Overview(props: {
                 <PressButton
                   {...buttonProps(r.measure)}
                   wide
-                  className={`block w-full px-4 py-3.5 text-left transition-colors hover:bg-dc-surface-muted ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
+                  className={`block w-full px-4 py-3.5 text-left transition-colors ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white hover:bg-dc-surface-muted"}`}
                 >
                   <span className="flex items-center justify-between gap-2">
                     <strong className="text-sm text-dc-brand-deep">{r.label}</strong>
@@ -217,7 +218,7 @@ function Overview(props: {
                     </strong>
                   </span>
                   <span className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 text-xs text-dc-text-secondary">
-                    <span>
+                    <span className="tabular-nums">
                       ผลงาน {countText(r.total?.result ?? null)} / เป้าหมาย {countText(r.total?.target ?? null)} · เกณฑ์{" "}
                       {goalText(r.goal)}
                     </span>
@@ -230,11 +231,10 @@ function Overview(props: {
               </li>
             ))}
           </ul>
-          <div
-            role="region"
-            tabIndex={0}
-            aria-label="ตารางภาพรวมการได้รับวัคซีน (เลื่อนดูแนวนอนได้)"
-            className="hidden overflow-x-auto md:block"
+          <ScrollBox
+            label="ตารางภาพรวมการได้รับวัคซีน (เลื่อนดูแนวนอนได้)"
+            className="hidden md:block"
+            hint="border-t border-dc-border-subtle px-4 py-2"
           >
             <table className="w-full border-collapse text-xs tabular-nums">
               <caption className="sr-only">เป้าหมาย ผลงาน ร้อยละ เกณฑ์ และผลประเมินรายวัคซีน</caption>
@@ -266,11 +266,12 @@ function Overview(props: {
                     key={r.measure}
                     className={`border-t border-dc-border-subtle ${r.measure === open ? "bg-dc-highlight-soft" : "bg-white"}`}
                   >
-                    <th scope="row" className="px-4 py-2.5 text-left">
+                    {/* The button at least 24px a side, 44px high on a touch screen, in a row no taller than its cells (F95) */}
+                    <th scope="row" className="px-4 py-1.5 text-left pointer-coarse:py-0">
                       <PressButton
                         {...buttonProps(r.measure)}
                         aria-label={`ดูรายละเอียดวัคซีน ${r.label}`}
-                        className="rounded-sm text-[13px] font-semibold text-dc-brand-deep underline-offset-4 hover:underline"
+                        className="inline-flex min-h-6 min-w-6 items-center rounded-sm text-[13px] font-semibold text-dc-brand-deep underline-offset-4 hover:underline pointer-coarse:min-h-11"
                       >
                         {r.label}
                       </PressButton>
@@ -293,7 +294,7 @@ function Overview(props: {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollBox>
         </>
       )}
     </section>
