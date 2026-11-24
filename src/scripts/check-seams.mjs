@@ -32,9 +32,10 @@ export function unlistedTests(testPaths, names) {
       .split("/")
       .pop()
       .replace(/\.test\.[jt]s$/, "");
-    const own = [".ts", ".js", ".mjs", ".test.ts", ".test.js"].map((ext) => x + ext);
+    const sourceNames = [".ts", ".js", ".mjs", ".test.ts", ".test.js"].map((ext) => x + ext);
     return !names.some(
-      (name) => own.includes(name.split("/").pop()) || (/\{[^}]+\}/.test(name) && dirOf(name) === dirOf(testPath)),
+      (name) =>
+        sourceNames.includes(name.split("/").pop()) || (/\{[^}]+\}/.test(name) && dirOf(name) === dirOf(testPath)),
     );
   });
 }

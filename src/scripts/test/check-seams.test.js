@@ -2,9 +2,8 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { seamNames, unlistedTests } from "../check-seams.mjs";
 
-// check-seams.mjs (#382): every test file under src/ is named in the table of
-// CODING_STANDARDS.md §5. In F92, fold.test.ts landed before §5 had a row for
-// fold.ts, and review caught it only after the code was done.
+// check-seams.mjs (#382), without the file system: a small hand-written
+// CODING_STANDARDS.md with names in and around §5's table.
 
 const STANDARDS = `# CODING_STANDARDS
 
