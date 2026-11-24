@@ -110,7 +110,7 @@ export default function PaDashboard({
   );
 
   return (
-    <main className="min-h-screen bg-slate-50/50 font-[family-name:var(--font-geist-sans)]">
+    <main className="min-h-screen bg-neutral-50/50 font-[family-name:var(--font-geist-sans)]">
       <div className="w-[98%] max-w-none mx-auto px-2 md:px-4 pb-12">
         {/* A closed year loads nothing new, so no "อัปเดตข้อมูลเรียบร้อย" toast */}
         {!closedYear && <DataStatusNotifier recordCount={data.length} />}
@@ -119,12 +119,14 @@ export default function PaDashboard({
         <div className="mt-6 mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-3 text-center md:text-left">
           <div>
             <h1 className="text-2xl font-bold text-brand-700 font-prompt tracking-tight">PA Dashboard</h1>
-            <p className="text-slate-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
+            <p className="text-neutral-500 text-sm font-medium mt-0.5">คณะกรรมการประสานงานสาธารณสุขระดับอำเภอสอง</p>
           </div>
           <div className="flex justify-center md:justify-end opacity-80 hover:opacity-100 transition-opacity">
-            <div className="flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-slate-200 shadow-sm backdrop-blur-sm">
-              <CalendarClock className="w-3.5 h-3.5 text-slate-400" />
-              <span className="text-xs font-medium text-slate-500 font-prompt">อัปเดตล่าสุด: {lastUpdated || "N/A"}</span>
+            <div className="flex items-center gap-1.5 bg-white/50 px-3 py-1.5 rounded-full border border-neutral-200 shadow-sm backdrop-blur-sm">
+              <CalendarClock className="w-3.5 h-3.5 text-neutral-400" />
+              <span className="text-xs font-medium text-neutral-700 font-prompt">
+                อัปเดตล่าสุด: {lastUpdated || "N/A"}
+              </span>
             </div>
           </div>
         </div>
@@ -132,7 +134,7 @@ export default function PaDashboard({
         {/* ปีงบประมาณ — shown once a closed year exists (SPEC §4) */}
         {years.length > 0 && (
           <nav aria-label="ปีงบประมาณ" className="mb-4 flex flex-wrap items-center gap-1.5 font-prompt">
-            <span className="text-xs font-medium text-slate-500 mr-1">ปีงบประมาณ</span>
+            <span className="text-xs font-medium text-neutral-500 mr-1">ปีงบประมาณ</span>
             {/* <a>, not <Link>: Link would prefetch every other year's page payload */}
             {years.map(({ year, href }) => (
               <a
@@ -143,7 +145,7 @@ export default function PaDashboard({
                   "px-3 py-1 rounded-full text-[13px] font-semibold border transition-colors",
                   href === pagePath
                     ? "bg-brand-600 border-brand-600 text-white"
-                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+                    : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50",
                 )}
               >
                 {year}
@@ -174,10 +176,10 @@ export default function PaDashboard({
             <button
               onClick={() => setPickedCategory("")}
               className={cn(
-                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all shadow-sm border font-prompt",
+                "flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-colors shadow-sm border font-prompt",
                 currentCategory === ""
                   ? "bg-brand-600 border-brand-600 text-white"
-                  : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+                  : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50",
               )}
             >
               <LayoutGrid className="w-3.5 h-3.5" />
@@ -190,17 +192,17 @@ export default function PaDashboard({
                   key={cat}
                   onClick={() => setPickedCategory(cat)}
                   className={cn(
-                    "px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-all shadow-sm border font-prompt",
+                    "px-3.5 py-2 rounded-xl text-[13px] sm:text-sm font-semibold whitespace-nowrap transition-colors shadow-sm border font-prompt",
                     currentCategory === cat
                       ? "bg-brand-600 border-brand-600 text-white"
-                      : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+                      : "bg-white border-neutral-200 text-neutral-700 hover:bg-neutral-50",
                   )}
                 >
                   {cat}
                   <span
                     className={cn(
                       "ml-1.5 text-[10px] font-medium",
-                      currentCategory === cat ? "text-white/80" : "text-slate-400",
+                      currentCategory === cat ? "text-white/80" : "text-neutral-500",
                     )}
                   >
                     {count}
@@ -226,7 +228,7 @@ export default function PaDashboard({
           />
         </div>
 
-        <div className="block md:hidden p-4 bg-slate-50/50 rounded-xl">
+        <div className="block md:hidden p-4 bg-neutral-50/50 rounded-xl">
           <KPICardList
             data={tabData}
             hospitalMap={hospitalMap}

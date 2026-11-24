@@ -71,12 +71,12 @@ export default function KPICardList({
         {partitionByCategory(data).map((block, _blockIndex, all) => (
           <div
             key={block.key}
-            className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden"
+            className="bg-white rounded-xl border border-neutral-200 shadow-sm overflow-hidden"
           >
             {/* Title hidden when only one category is in view (the tab
                 already labels it). */}
             {all.length > 1 && (
-              <div className="px-4 py-2.5 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
+              <div className="px-4 py-2.5 bg-neutral-50/80 border-b border-neutral-200 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span
                     aria-hidden
@@ -86,7 +86,7 @@ export default function KPICardList({
                     {block.label || "ตัวชี้วัด"}
                   </h3>
                 </div>
-                <span className="text-[11px] font-medium text-slate-500 font-prompt">
+                <span className="text-[11px] font-medium text-neutral-500 font-prompt">
                   {block.count} ตัวชี้วัด
                 </span>
               </div>
@@ -97,7 +97,7 @@ export default function KPICardList({
                   return (
                     <div
                       key={item.key}
-                      className="pb-1 px-1 font-prompt text-xs font-semibold text-slate-500"
+                      className="pb-1 px-1 font-prompt text-xs font-semibold text-neutral-500"
                     >
                       {item.label}
                     </div>
