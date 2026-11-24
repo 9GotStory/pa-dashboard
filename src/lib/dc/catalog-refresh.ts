@@ -102,19 +102,35 @@ export async function refreshCatalog(
   deps: Deps & { onListed?: (total: number) => void; onTopic?: (result: CatalogTopicResult) => void },
 ): Promise<CatalogRefreshSummary> {
   let listed: DcTopic[];
+  // Busy (the lock held, as by a sync, SPEC §12.1), 5xx and a network error
+  // pass, so the admin presses again later; any other answer does not come
+  // from the web app of this site's GAS, so the URL is what to check.
+  let passing = false;
   try {
-    const answer = await gasJson<Partial<Pick<GasCatalog, "topics">> | GasError>(
-      deps.fetch,
-      `${deps.gasUrl}?action=catalog`,
-    );
-    if ("status" in answer) throw new Error(answer.message);
+    const { fetch } = deps; // called bare: the browser's fetch refuses another object as its this
+    let res: Response;
+    try {
+      res = await fetch(`${deps.gasUrl}?action=catalog`);
+    } catch (err) {
+      passing = true;
+      throw err;
+    }
+    if (!res.ok) {
+      passing = res.status >= 500;
+      throw new Error(`HTTP ${res.status}`);
+    }
+    const answer = (await res.json()) as Partial<Pick<GasCatalog, "topics">> | GasError;
+    if ("status" in answer) {
+      passing = answer.message === "Busy";
+      throw new Error(answer.message);
+    }
     if (!Array.isArray(answer.topics)) throw new Error("คำตอบของ GAS ไม่มี topics");
     listed = answer.topics;
   } catch (err) {
-    // Busy, the commonest, means the lock is held, as by a sync (SPEC §12.1).
-    throw new Error(
-      `อ่านหัวข้อจาก hdc_topics ไม่ได้: ${errorText(err)} · รอสักครู่แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง ถ้ากำลัง sync อยู่ให้รอจบก่อน`,
-    );
+    const next = passing
+      ? "รอสักครู่แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง ถ้ากำลัง sync อยู่ให้รอจบก่อน"
+      : "ตรวจว่า NEXT_PUBLIC_GAS_SCRIPT_URL เป็น URL ของ web app ของ GAS ที่ deploy อยู่ แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง";
+    throw new Error(`อ่านหัวข้อจาก hdc_topics ไม่ได้: ${errorText(err)} · ${next}`);
   }
   if (listed.length === 0) {
     throw new Error("hdc_topics ไม่มีหัวข้อ ใส่ cat_id ของหัวข้อในชีตก่อน แล้วกดรีเฟรชแค็ตตาล็อกอีกครั้ง");

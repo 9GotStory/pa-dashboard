@@ -113,7 +113,7 @@ export default function RegistryPopulationUpload() {
     if (!saving) return;
     const warn = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = true; // browsers before preventDefault was enough, e.g. Chrome < 119
+      e.returnValue = true; // MDN, beforeunload event: "Included for legacy support, e.g. Chrome/Edge < 119"
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
@@ -223,7 +223,7 @@ export default function RegistryPopulationUpload() {
   const toSave = picked.filter((p) => p.read.ok).length;
   const finished = !saving && picked.some((p) => p.outcome);
   const count = (match: (p: Picked) => boolean) => picked.filter(match).length;
-  const ended = {
+  const tally = {
     saved: count((p) => p.outcome?.ok === true),
     partial: count((p) => p.outcome?.partial === true),
     failed: count((p) => p.read.ok && p.outcome?.ok === false && !p.outcome.partial),
@@ -308,9 +308,9 @@ export default function RegistryPopulationUpload() {
       {picked.length > 0 && (
         <ul aria-live="polite" className="mt-4 space-y-2">
           {picked.map(({ read, outcome }, i) => {
-            const now = saving && current === i;
+            const savingThis = saving && current === i;
             const ok = outcome ? outcome.ok : read.ok;
-            const label = now
+            const label = savingThis
               ? "กำลังบันทึก"
               : outcome
                 ? outcome.ok
@@ -324,7 +324,7 @@ export default function RegistryPopulationUpload() {
             return (
               <li key={i} className="rounded-lg border border-dc-border-subtle px-3 py-2">
                 <span
-                  className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${now ? "bg-dc-highlight-soft" : ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
+                  className={`mr-2 inline-block rounded px-2 py-0.5 text-xs font-bold text-dc-brand-deep ${savingThis ? "bg-dc-highlight-soft" : ok ? "bg-dc-brand-accent/20" : "bg-dc-gold/30"}`}
                 >
                   {label}
                 </span>
@@ -345,26 +345,24 @@ export default function RegistryPopulationUpload() {
               : `กำลังบันทึกไฟล์ที่ ${sent + 1} จาก ${toSave}${typeof current === "number" ? `: ${picked[current].read.name}` : ""}`}
           </p>
         ) : (
-          finished && (
-            <p
-              className={`mt-3 rounded-lg px-3 py-2 ${ended.failed + ended.partial === 0 ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
-            >
-              {`บันทึกจบ: บันทึก ${ended.saved} ไฟล์ · ล้ม ${ended.failed} ไฟล์`}
-              {ended.partial > 0 && ` · บันทึกบางส่วน ${ended.partial} ไฟล์`}
-              {ended.refused > 0 && ` · ไม่ได้ส่ง ${ended.refused} ไฟล์ที่ไม่ผ่านการตรวจ`}
-            </p>
-          )
+          <>
+            {finished && (
+              <p
+                className={`mt-3 rounded-lg px-3 py-2 ${tally.failed + tally.partial === 0 ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
+              >
+                {`บันทึกจบ: บันทึก ${tally.saved} ไฟล์ · ล้ม ${tally.failed} ไฟล์`}
+                {tally.partial > 0 && ` · บันทึกบางส่วน ${tally.partial} ไฟล์`}
+                {tally.refused > 0 && ` · ไม่ได้ส่ง ${tally.refused} ไฟล์ที่ไม่ผ่านการตรวจ`}
+              </p>
+            )}
+            {rebuild && (
+              <p className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}>
+                {rebuild.text}
+              </p>
+            )}
+          </>
         )}
       </div>
-
-      {rebuild && (
-        <p
-          role="status"
-          className={`mt-3 rounded-lg px-3 py-2 ${rebuild.ok ? "bg-dc-brand-accent/10" : "bg-dc-gold/10"}`}
-        >
-          {rebuild.text}
-        </p>
-      )}
 
       {picked.length > 0 && !finished && (
         <button

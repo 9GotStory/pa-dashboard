@@ -35,7 +35,7 @@ export default function CatalogRefresh() {
     if (!running) return;
     const warn = (e: BeforeUnloadEvent) => {
       e.preventDefault();
-      e.returnValue = true; // browsers before preventDefault was enough, e.g. Chrome < 119
+      e.returnValue = true; // MDN, beforeunload event: "Included for legacy support, e.g. Chrome/Edge < 119"
     };
     window.addEventListener("beforeunload", warn);
     return () => window.removeEventListener("beforeunload", warn);
