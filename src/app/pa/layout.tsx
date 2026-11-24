@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 
 // The Data Center's text and focus ring, as the (dc) layout's wrapper sets
 // them, for the frame alone: PA's content does not take them (SPEC §4).
-const FRAME = "dc contents font-dc text-sm/[1.65] text-dc-brand-deep";
+const DC_FRAME_TEXT = "dc contents font-dc text-sm/[1.65] text-dc-brand-deep";
 
 // PA under the Data Center's Masthead and Footer (ADR-0019, SPEC §9.1 "PA ใต้
 // Masthead", F97). The toaster sits here and in /sync's layout rather than in
@@ -24,7 +24,8 @@ const FRAME = "dc contents font-dc text-sm/[1.65] text-dc-brand-deep";
 // paint waits on (#332). display: contents lays the page out as it was
 // directly in <body>, where the font variables used to be, and keeps <body>
 // the box the Masthead sticks in. PA's own <main> stays the one main; the
-// skip link targets the block around it. KPITable's sticky header and columns
+// skip link targets the block around it, whose scroll margin is the (dc)
+// layout's, taller than the Masthead, so the jump does not hide PA's title. KPITable's sticky header and columns
 // (z-20 to z-50) would paint over the Masthead's z-30 as they scroll under
 // it, so each <table> is a stacking context of its own; KPIDetailModal, a
 // sibling of the tables, keeps its z-50 over the Masthead.
@@ -35,14 +36,14 @@ export default function PaLayout({
 }>) {
   return (
     <div className={`${prompt.variable} ${sarabun.variable} contents`}>
-      <div className={FRAME}>
+      <div className={DC_FRAME_TEXT}>
         <SkipLink />
         <Masthead />
       </div>
-      <div id="main" tabIndex={-1} className="focus:outline-none [&_table]:isolate">
+      <div id="main" tabIndex={-1} className="scroll-mt-32 focus:outline-none md:scroll-mt-20 [&_table]:isolate">
         {children}
       </div>
-      <div className={FRAME}>
+      <div className={DC_FRAME_TEXT}>
         <Footer />
       </div>
       <Toaster position="top-center" richColors />
