@@ -85,6 +85,7 @@ export default function PopulationComparison({
           <div role="group" aria-label={`กราฟประชากรรายตำบล (คน) · ${source}`} className="grid gap-0.5">
             {areas.map((a, place) => {
               const picked = a.key === selected;
+              const canPick = pickable(a.key);
               return (
                 <PressButton
                   key={place}
@@ -92,10 +93,10 @@ export default function PopulationComparison({
                   type="button"
                   aria-pressed={picked}
                   aria-label={`ตำบล${a.name} ${formatCount(a.totals.total)} คน`}
-                  disabled={!pickable(a.key)}
+                  disabled={!canPick}
                   onClick={() => onPick(a.key)}
                   className={`grid min-h-11 grid-cols-[5.5rem_minmax(0,1fr)_3.5rem] items-center gap-3 rounded-md px-2 text-left text-xs transition-colors sm:grid-cols-[8rem_minmax(0,1fr)_4.5rem] sm:text-[13px] ${
-                    picked ? PICKED : pickable(a.key) ? "hover:bg-dc-canvas" : DISABLED
+                    picked ? PICKED : canPick ? "hover:bg-dc-canvas" : DISABLED
                   }`}
                 >
                   <span className="truncate text-dc-brand-deep">{a.name}</span>
@@ -116,7 +117,7 @@ export default function PopulationComparison({
 
         <div hidden={view !== "table"}>
           {/* A keyboard scrolls it to the columns past the buttons. */}
-          <ScrollBox label="ตารางประชากรรายตำบล" hint="border-t border-dc-border-subtle px-4 py-2">
+          <ScrollBox label="ตารางประชากรรายตำบล" hintClassName="border-t border-dc-border-subtle px-4 py-2">
             <table className="w-full min-w-[30rem] border-collapse text-[13px] tabular-nums">
               <caption className="sr-only">ประชากรรายตำบล ชาย หญิง รวม และบ้าน · {source}</caption>
               <thead className="bg-dc-surface-muted text-xs text-dc-brand-deep">

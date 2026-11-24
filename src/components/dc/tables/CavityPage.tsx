@@ -188,7 +188,7 @@ function CavityTable(props: { unitLabel: string; units: Units; funnel: Funnel; t
       <ScrollBox
         label={`ตารางราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
         className="rounded-[9px] border border-dc-border-subtle"
-        hint="mt-2"
+        hintClassName="mt-2"
       >
         <table className="w-full border-collapse text-xs tabular-nums">
           <caption className="bg-white px-4 pt-4 pb-3 text-left font-prompt text-sm font-semibold text-dc-brand-deep">

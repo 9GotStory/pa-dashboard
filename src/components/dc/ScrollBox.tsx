@@ -8,17 +8,17 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
  * frame, never the page (SPEC §9.1), and is focusable, so a keyboard scrolls
  * it. While the table is wider than the box, ปัดตารางซ้ายหรือขวา shows under
  * it (F95): measured, not by a breakpoint, as the width a table needs varies
- * with its data and the column it sits in. hint places that line.
+ * with its data and the column it sits in. hintClassName places that line.
  */
 export default function ScrollBox({
   label,
   className = "",
-  hint,
+  hintClassName,
   children,
 }: {
   label: string;
   className?: string;
-  hint: string;
+  hintClassName: string;
   children: ReactNode;
 }) {
   const box = useRef<HTMLDivElement>(null);
@@ -33,11 +33,17 @@ export default function ScrollBox({
   }, []);
   return (
     <>
-      <div ref={box} role="region" tabIndex={0} aria-label={label} className={`overflow-x-auto ${className}`}>
+      <div
+        ref={box}
+        role="region"
+        tabIndex={0}
+        aria-label={label}
+        className={className ? `overflow-x-auto ${className}` : "overflow-x-auto"}
+      >
         {children}
       </div>
       {scrolls && (
-        <p className={`flex items-center gap-1.5 text-sm text-dc-text-secondary ${hint}`}>
+        <p className={`flex items-center gap-1.5 text-sm text-dc-text-secondary ${hintClassName}`}>
           <MoveHorizontal aria-hidden="true" className="size-3.5 shrink-0" />
           ปัดตารางซ้ายหรือขวาเพื่อดูคอลัมน์อื่น
         </p>

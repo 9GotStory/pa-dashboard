@@ -77,7 +77,7 @@ export default function PopulationUnits(props: {
             </p>
             <ScrollBox
               label={`ตารางประชากรราย${unitLabel} (เลื่อนดูแนวนอนได้)`}
-              hint="border-t border-dc-border-subtle px-4 py-2"
+              hintClassName="border-t border-dc-border-subtle px-4 py-2"
             >
               <table className="w-full border-collapse text-xs tabular-nums">
                 <caption className="sr-only">{caption}</caption>

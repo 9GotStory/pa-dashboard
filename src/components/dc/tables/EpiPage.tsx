@@ -234,7 +234,7 @@ function Overview(props: {
           <ScrollBox
             label="ตารางภาพรวมการได้รับวัคซีน (เลื่อนดูแนวนอนได้)"
             className="hidden md:block"
-            hint="border-t border-dc-border-subtle px-4 py-2"
+            hintClassName="border-t border-dc-border-subtle px-4 py-2"
           >
             <table className="w-full border-collapse text-xs tabular-nums">
               <caption className="sr-only">เป้าหมาย ผลงาน ร้อยละ เกณฑ์ และผลประเมินรายวัคซีน</caption>

@@ -32,7 +32,7 @@ export default function ReportLoading({ children, frame = true }: { children: Re
           <>
             <div className="grid grid-cols-2 gap-3 sm:flex">
               {[0, 1, 2].map((i) => (
-                <div key={i} className="h-10 rounded-md bg-dc-surface-muted sm:w-36" />
+                <div key={i} className="h-11 rounded-md bg-dc-surface-muted sm:w-36" />
               ))}
             </div>
             <div className="h-4 w-48 max-w-full rounded bg-dc-surface-muted" />

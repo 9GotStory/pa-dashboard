@@ -131,7 +131,7 @@ export function CumulativePanel(props: {
       <div className="hidden sm:block">
         <TrendChart title="ร้อยละสะสมรายไตรมาส" points={points} goal={goal} unit="pct" />
       </div>
-      <ScrollBox label="ตารางรายไตรมาส (เลื่อนดูแนวนอนได้)" className="mt-3" hint="mt-2">
+      <ScrollBox label="ตารางรายไตรมาส (เลื่อนดูแนวนอนได้)" className="mt-3" hintClassName="mt-2">
         <table className="w-full border-collapse text-xs tabular-nums">
           <caption className="pb-2 text-left text-xs text-dc-text-secondary">
             ผลงานรายไตรมาสและร้อยละสะสม (ผลงานสะสม ÷ เป้าหมายทั้งปี {formatCount(target)})

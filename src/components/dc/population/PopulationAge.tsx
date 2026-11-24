@@ -149,7 +149,10 @@ function BandTable({ report, age, area }: { report: PopulationReport; age: Popul
         <p aria-hidden="true" className="px-4 pt-4 pb-3 font-prompt text-sm font-semibold text-dc-brand-deep">
           {caption}
         </p>
-        <ScrollBox label="ตารางประชากรรายช่วงอายุ (เลื่อนดูแนวนอนได้)" hint="border-t border-dc-border-subtle px-4 py-2">
+        <ScrollBox
+          label="ตารางประชากรรายช่วงอายุ (เลื่อนดูแนวนอนได้)"
+          hintClassName="border-t border-dc-border-subtle px-4 py-2"
+        >
           <table className="w-full border-collapse text-xs tabular-nums">
             <caption className="sr-only">{caption}</caption>
             <thead className="bg-dc-highlight-soft text-dc-brand-deep">
