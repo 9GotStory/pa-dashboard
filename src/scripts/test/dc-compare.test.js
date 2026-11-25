@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import test, { after } from "node:test";
-import { comparePage, exitCode, normalizeHtml, pagesToOpen } from "../dc-compare.mjs";
+import { comparePage, compareFiles, exitCode, fileName, normalizeHtml, pagesToOpen } from "../dc-compare.mjs";
 
 // dc-compare.mjs (#309): the parts that need no browser. The ids are of the
 // shape React 19.2.3's useId gives, read in its react-dom-client: _R_…_ in
@@ -226,4 +226,65 @@ test("a URL asked that neither build has is on neither side, and exitCode is 2 w
     lines: ["/reports/0000: on neither side"],
   });
   assert.equal(exitCode([result("differs"), missing, result("same")]), 2);
+});
+
+// The files of a run's differences (#385), named by the page's URL: the query
+// stays in the name, and two URLs never share one.
+test("fileName keeps a URL's query, so two URLs that differ only in it get two names", () => {
+  assert.equal(fileName("/reports/population?area=540603"), "reports%2Fpopulation%3Farea=540603");
+  const urls = [
+    "/reports/population",
+    "/reports/population?area=540603",
+    "/reports/population?area=54060317",
+    "/reports/population?area=540603&by=area",
+    "/reports/population%3Farea=540603",
+    "/reports/population_area=540603",
+  ];
+  const names = urls.map(fileName);
+  assert.equal(new Set(names).size, urls.length);
+  for (const name of names) assert.match(name, /^[\w.=%-]+$/);
+});
+
+test("compareFiles gives main's lines and the branch's of each part that differs, every line, and the name of their diff", () => {
+  const rows = ["บ้านหนุน", "บ้านกลาง", "ห้วยหม้าย", "เตาปูน", "หัวเมือง", "สะเอียบ", "แดนชุมพล"];
+  const name = "SHDC-s_kpi_food-4164a7c4-2569.csv";
+  const main = { ...FOOD, csv: { name, text: rows.map((row) => `"${row}","24"\r\n`).join("") } };
+  const branch = {
+    ...FOOD,
+    text: FOOD.text.replace("120 คน", "121 คน"),
+    csv: { name, text: rows.map((row) => `"${row}","24","53.85"\r\n`).join("") },
+  };
+  const page = "reports%2F4164a7c49fcb2b8c3ccca67dcdf28bd0";
+  assert.deepEqual(compareFiles("/reports/4164a7c49fcb2b8c3ccca67dcdf28bd0", branch, main), [
+    {
+      main: {
+        file: `${page}.text.main.txt`,
+        text: "ร้อยละสอบถาม ปีงบประมาณ 2569\nเด็กอายุครบ 6 เดือน\n215 คน\nถูกสอบถาม\n120 คน\n",
+      },
+      branch: {
+        file: `${page}.text.branch.txt`,
+        text: "ร้อยละสอบถาม ปีงบประมาณ 2569\nเด็กอายุครบ 6 เดือน\n215 คน\nถูกสอบถาม\n121 คน\n",
+      },
+      diff: `${page}.text.diff`,
+    },
+    {
+      main: {
+        file: `${page}.CSV.main.txt`,
+        text: `${name}\n"บ้านหนุน","24"\n"บ้านกลาง","24"\n"ห้วยหม้าย","24"\n"เตาปูน","24"\n"หัวเมือง","24"\n"สะเอียบ","24"\n"แดนชุมพล","24"\n\n`,
+      },
+      branch: {
+        file: `${page}.CSV.branch.txt`,
+        text: `${name}\n"บ้านหนุน","24","53.85"\n"บ้านกลาง","24","53.85"\n"ห้วยหม้าย","24","53.85"\n"เตาปูน","24","53.85"\n"หัวเมือง","24","53.85"\n"สะเอียบ","24","53.85"\n"แดนชุมพล","24","53.85"\n\n`,
+      },
+      diff: `${page}.CSV.diff`,
+    },
+  ]);
+});
+
+test("compareFiles gives no file for a page that is same, only on main, only on branch or on neither side", () => {
+  const url = "/reports/4164a7c49fcb2b8c3ccca67dcdf28bd0";
+  assert.deepEqual(compareFiles(url, FOOD, { ...FOOD }), []);
+  assert.deepEqual(compareFiles(url, null, FOOD), []);
+  assert.deepEqual(compareFiles(url, FOOD, null), []);
+  assert.deepEqual(compareFiles(url, null, null), []);
 });

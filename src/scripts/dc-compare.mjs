@@ -10,7 +10,11 @@
 // <!--$--> and <!--/$--> around a Suspense boundary), and the file name and
 // content of the CSV that ดาวน์โหลด CSV gives; no screenshots. Prints a line
 // a page, same, differs with the first lines that differ of each part, only
-// on branch or only on main.
+// on branch or only on main. For each part of a page that differs it writes
+// main's lines and the branch's, every one, as <page>.<part>.main.txt and
+// .branch.txt, and their diff from git diff --no-index as <page>.<part>.diff,
+// in .dc-lcp/compare/, which each run empties first; the last line names it
+// when it holds a file (#385).
 // When main's build is not of main's SHA, this public/data/ and node_modules/
 // it builds main and the branch again, as dc-lcp.mjs does, in a clean working
 // tree; with uncommitted files it stops. Exits as diff does: 0 when every
@@ -20,6 +24,7 @@
 // Chrome, as dc-check.mjs does (CODING_STANDARDS §3).
 // Usage: npm run dc:compare [-- <url> ...], such as
 //   npm run dc:compare -- "/reports/population?area=540603"
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -28,6 +33,8 @@ import { MAIN_BUILD, buildMain, git, hasMainBuild, mainBuildKey, run, snapshotHa
 import { serve } from "./dc-serve.mjs";
 
 const MAIN_OUT = path.join(MAIN_BUILD, "out");
+// The files of the last run's differences, beside main's build (#385).
+const COMPARE_FILES = ".dc-lcp/compare";
 // A desktop's width, with the panels side by side.
 const WIDTH = 1280;
 // How long a page may take to load its data once the network is idle, in ms.
@@ -103,6 +110,14 @@ function diffLines(name, main, branch) {
   return [`  ${name}, line ${start + 1}:`, ...side("-", main), ...side("+", branch)];
 }
 
+// Each part that differs between a page's sides, with main's lines and the
+// branch's.
+function differingParts(branch, main) {
+  return PARTS.map(([name, lines]) => [name, lines(main), lines(branch)]).filter(
+    ([, a, b]) => a.join("\n") !== b.join("\n"),
+  );
+}
+
 // A page's verdict, and the lines that say it: branch and main are what each
 // side shows, null when it has no such page.
 export function comparePage(url, branch, main) {
@@ -110,9 +125,7 @@ export function comparePage(url, branch, main) {
     const verdict = main ? "only on main" : branch ? "only on branch" : "on neither side";
     return { url, verdict, lines: [`${url}: ${verdict}`] };
   }
-  const differ = PARTS.map(([name, lines]) => [name, lines(main), lines(branch)]).filter(
-    ([, a, b]) => a.join("\n") !== b.join("\n"),
-  );
+  const differ = differingParts(branch, main);
   if (differ.length === 0) return { url, verdict: "same", lines: [`${url}: same`] };
   return {
     url,
@@ -122,6 +135,32 @@ export function comparePage(url, branch, main) {
       ...differ.flatMap(([name, a, b]) => diffLines(name, a, b)),
     ],
   };
+}
+
+// A page's URL as the start of a file's name: the / it begins with dropped,
+// and every other character but a letter, a digit, _, -, . and = written as
+// % and the hex of its UTF-8 bytes, % among them, so the query stays and two
+// URLs never share a name.
+export function fileName(url) {
+  return url
+    .slice(1)
+    .replace(/[^\w.=-]/g, (char) =>
+      [...Buffer.from(char)].map((byte) => `%${byte.toString(16).toUpperCase().padStart(2, "0")}`).join(""),
+    );
+}
+
+// The files of a page's differences in COMPARE_FILES, each part that differs
+// with main's lines and the branch's, every one of them, and the name of the
+// diff of the two; none for a page one build lacks.
+export function compareFiles(url, branch, main) {
+  if (!main || !branch) return [];
+  const page = fileName(url);
+  const file = (part, side, lines) => ({ file: `${page}.${part}.${side}.txt`, text: `${lines.join("\n")}\n` });
+  return differingParts(branch, main).map(([part, a, b]) => ({
+    main: file(part, "main", a),
+    branch: file(part, "branch", b),
+    diff: `${page}.${part}.diff`,
+  }));
 }
 
 // The exit code of the run, as diff's: 0 when every page is the same, 1 when
@@ -173,6 +212,26 @@ async function readPage(browser, url) {
   }
 }
 
+// Writes a page's files of compareFiles in COMPARE_FILES, and the diff of
+// each pair as git diff gives it, which exits 1 when the files differ.
+function writeFiles(files) {
+  for (const { main, branch, diff } of files) {
+    for (const side of [main, branch]) fs.writeFileSync(path.join(COMPARE_FILES, side.file), side.text);
+    const args = [
+      "diff",
+      "--no-index",
+      "--no-ext-diff",
+      "--no-color",
+      `--output=${diff}`,
+      "--",
+      main.file,
+      branch.file,
+    ];
+    if (spawnSync("git", args, { cwd: COMPARE_FILES, stdio: "inherit" }).status !== 1)
+      throw new Error(`git ${args.join(" ")} in ${COMPARE_FILES}/ failed`);
+  }
+}
+
 if (import.meta.main) {
   const asked = process.argv.slice(2);
   const bad = asked.find((url) => !url.startsWith("/"));
@@ -180,6 +239,8 @@ if (import.meta.main) {
   if (!fs.existsSync("public/data")) die("public/data/ is missing: run npm run snapshot first");
   if (!fs.existsSync("node_modules/.package-lock.json"))
     die("node_modules/.package-lock.json is missing: run npm ci first");
+  fs.rmSync(COMPARE_FILES, { recursive: true, force: true });
+  fs.mkdirSync(COMPARE_FILES, { recursive: true });
   const headSha = git("rev-parse", "--short", "HEAD");
   const mainSha = git("rev-parse", "--short", "main");
   const branch = git("rev-parse", "--abbrev-ref", "HEAD");
@@ -227,9 +288,12 @@ if (import.meta.main) {
       opening = `${url} on the branch: `;
       const branch = await readPage(browser, branchOrigin + url);
       opening = `${url} on main: `;
-      const result = comparePage(url, branch, await readPage(browser, mainOrigin + url));
+      const main = await readPage(browser, mainOrigin + url);
+      const result = comparePage(url, branch, main);
       console.log(result.lines.join("\n"));
       results.push(result);
+      opening = `${url}'s files: `;
+      writeFiles(compareFiles(url, branch, main));
     }
   } catch (error) {
     // Playwright messages end in a multi-line call log; the first line names the failure.
@@ -245,5 +309,7 @@ if (import.meta.main) {
   console.log(
     `\ndc-compare: main ${mainSha} vs out/ of ${start} ${headSha}${uncommitted}: ${results.length} page(s), ${counts.join(", ")}`,
   );
+  // A page that differs is one with files.
+  if (results.some(({ verdict }) => verdict === "differs")) console.log(`Differences in full: ${COMPARE_FILES}/`);
   process.exitCode = exitCode(results);
 }
