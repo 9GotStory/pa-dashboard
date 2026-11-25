@@ -156,9 +156,9 @@ export function compareFiles(url, branch, main) {
   if (!main || !branch) return [];
   const page = fileName(url);
   const file = (part, side, lines) => ({ file: `${page}.${part}.${side}.txt`, text: `${lines.join("\n")}\n` });
-  return differingParts(branch, main).map(([part, a, b]) => ({
-    main: file(part, "main", a),
-    branch: file(part, "branch", b),
+  return differingParts(branch, main).map(([part, mainLines, branchLines]) => ({
+    main: file(part, "main", mainLines),
+    branch: file(part, "branch", branchLines),
     diff: `${page}.${part}.diff`,
   }));
 }
@@ -212,11 +212,16 @@ async function readPage(browser, url) {
   }
 }
 
-// Writes a page's files of compareFiles in COMPARE_FILES, and the diff of
-// each pair as git diff gives it, which exits 1 when the files differ.
+// Writes the files of compareFiles, and the diff of each pair as git diff
+// gives it, which exits 1 when the files differ, in a directory beside
+// COMPARE_FILES that then takes its name, so a run that stops on the way
+// leaves none half written (CODING_STANDARDS §3).
 function writeFiles(files) {
+  const writing = `${COMPARE_FILES}.part`;
+  fs.rmSync(writing, { recursive: true, force: true });
+  fs.mkdirSync(writing, { recursive: true });
   for (const { main, branch, diff } of files) {
-    for (const side of [main, branch]) fs.writeFileSync(path.join(COMPARE_FILES, side.file), side.text);
+    for (const side of [main, branch]) fs.writeFileSync(path.join(writing, side.file), side.text);
     const args = [
       "diff",
       "--no-index",
@@ -227,20 +232,27 @@ function writeFiles(files) {
       main.file,
       branch.file,
     ];
-    if (spawnSync("git", args, { cwd: COMPARE_FILES, stdio: "inherit" }).status !== 1)
-      throw new Error(`git ${args.join(" ")} in ${COMPARE_FILES}/ failed`);
+    // git's stderr goes in the error, not the output.
+    const { status, stderr } = spawnSync("git", args, {
+      cwd: writing,
+      encoding: "utf8",
+      stdio: ["ignore", "ignore", "pipe"],
+    });
+    if (status !== 1)
+      throw new Error(`git ${args.join(" ")} in ${writing}/ exited ${status}: ${stderr?.trim() || "no message"}`);
   }
+  fs.renameSync(writing, COMPARE_FILES);
 }
 
 if (import.meta.main) {
+  // Emptied first, so a run that stops leaves no file of the last one.
+  fs.rmSync(COMPARE_FILES, { recursive: true, force: true });
   const asked = process.argv.slice(2);
   const bad = asked.find((url) => !url.startsWith("/"));
   if (bad) die(`${bad}: a URL is a path from the site's root, such as "/reports/population?area=540603"`);
   if (!fs.existsSync("public/data")) die("public/data/ is missing: run npm run snapshot first");
   if (!fs.existsSync("node_modules/.package-lock.json"))
     die("node_modules/.package-lock.json is missing: run npm ci first");
-  fs.rmSync(COMPARE_FILES, { recursive: true, force: true });
-  fs.mkdirSync(COMPARE_FILES, { recursive: true });
   const headSha = git("rev-parse", "--short", "HEAD");
   const mainSha = git("rev-parse", "--short", "main");
   const branch = git("rev-parse", "--abbrev-ref", "HEAD");
@@ -279,6 +291,8 @@ if (import.meta.main) {
   const servers = [await serve("out"), await serve(MAIN_OUT)];
   const [branchOrigin, mainOrigin] = servers.map((server) => `http://127.0.0.1:${server.address().port}`);
   const results = [];
+  // Every page's files of compareFiles, written once each page is read
+  const files = [];
   let browser;
   // The page being opened, which an error names
   let opening = "";
@@ -292,8 +306,7 @@ if (import.meta.main) {
       const result = comparePage(url, branch, main);
       console.log(result.lines.join("\n"));
       results.push(result);
-      opening = `${url}'s files: `;
-      writeFiles(compareFiles(url, branch, main));
+      files.push(...compareFiles(url, branch, main));
     }
   } catch (error) {
     // Playwright messages end in a multi-line call log; the first line names the failure.
@@ -309,7 +322,11 @@ if (import.meta.main) {
   console.log(
     `\ndc-compare: main ${mainSha} vs out/ of ${start} ${headSha}${uncommitted}: ${results.length} page(s), ${counts.join(", ")}`,
   );
-  // A page that differs is one with files.
-  if (results.some(({ verdict }) => verdict === "differs")) console.log(`Differences in full: ${COMPARE_FILES}/`);
+  try {
+    writeFiles(files);
+  } catch (error) {
+    die(error.message);
+  }
+  if (files.length > 0) console.log(`Differences in full: ${COMPARE_FILES}/`);
   process.exitCode = exitCode(results);
 }
