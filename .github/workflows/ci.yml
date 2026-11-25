@@ -46,5 +46,6 @@ jobs:
         run: npm run dc:budget
 
       - name: Page check
-        # CODING_STANDARDS §4–5: every Data Center page of out/ at 360 px, in the runner's Google Chrome
+        # CODING_STANDARDS §4–5: every Data Center page of out/ at 360 px, in the runner's Google Chrome;
+        # the text colour pairs against WCAG AA there, at 1440 px and on /pa (script.google.com aborted)
         run: npm run dc:check

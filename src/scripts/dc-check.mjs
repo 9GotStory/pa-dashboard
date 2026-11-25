@@ -14,7 +14,15 @@
 // bar chart is cut off or runs into its bar (SPEC §9.4). On every page at
 // 360 px, and on those opened at the review widths at each of them, the
 // check exits 1, naming the width, the size and the text, when text of the
-// site shows smaller than 12 px (SPEC §9.1). /reports as built, before any
+// site shows smaller than 12 px (SPEC §9.1). On every page at 360 px, on
+// those opened at the review widths at 1440 px, and on /pa, opened for this
+// rule alone at 360 and 1440 px with its requests to script.google.com
+// aborted, the check exits 1, naming the pages, the widths, the texts, the
+// two colours, the ratio and the threshold, when the colour pair of a text
+// as the URL opens the page is below WCAG AA, or names the element when a
+// text's ground is a picture or a gradient it cannot measure (SPEC §9.1). A
+// control that cannot be used is exempt (WCAG 1.4.3); graphics and the
+// states after a click are not measured. /reports as built, before any
 // JavaScript runs, must link every report on the site, รายงานประชากร among
 // them, and the check exits 1 naming each one it lacks (SPEC §9.3). A
 // รายงานที่รอวิเคราะห์ (its source table has no page) is not on the site: the
@@ -28,6 +36,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { chromium } from "playwright-core";
 import { TABLE_PAGES, awaitingWarnings, catalogReports, shownCatalog, tablePage } from "../lib/dc/tables/index.ts";
+import { failingPairs, formatPairs, groupPairs, measureLoaded } from "./dc-contrast.mjs";
 import { serve } from "./dc-serve.mjs";
 
 const OUT = path.resolve("out");
@@ -36,6 +45,9 @@ const WIDTH = 360;
 const REVIEW_WIDTHS = [320, 390, 768, 1440, 1920];
 // The smallest text the site shows, in px (SPEC §9.1 "ขนาดตัวอักษร").
 const MIN_TEXT = 12;
+// The review width the colour pair rule reads at as well as WIDTH: some text
+// shows only on a wide screen, as the home page's Hero.
+const CONTRAST_WIDE = 1440;
 // The width the population rules read the home page at: a desktop's, with
 // the map and the panel side by side.
 const POPULATION_WIDTH = 1280;
@@ -294,7 +306,7 @@ async function smallTextProblems(page, width) {
 // The widths of REVIEW_WIDTHS at which a page scrolls sideways, a name of a
 // unit bar chart does not show whole or text shows under MIN_TEXT px, as
 // problems naming the width; domRules, unitChartRule and smallTextRule check
-// the same at WIDTH.
+// the same at WIDTH. At CONTRAST_WIDE it measures the colour pairs as well.
 async function overflowProblems(browser, url) {
   const problems = [];
   const page = await browser.newPage();
@@ -311,11 +323,74 @@ async function overflowProblems(browser, url) {
         problems.push(`page scrolls sideways at ${width}px wide: ${scrollWidth}px wide at ${clientWidth}px`);
       for (const problem of await unitChartProblems(page)) problems.push(`at ${width}px wide: ${problem}`);
       problems.push(...(await smallTextProblems(page, width)));
+      if (width === CONTRAST_WIDE) await measureContrast(page, `${pathOf(url)} ${width}px`);
     }
   } finally {
     await page.close();
   }
   return problems;
+}
+
+// The colour pair rule (SPEC §9.1): the text of every page, as its URL opens
+// it, against WCAG AA, by dc-contrast.mjs's measure; the run fails on each
+// pair failingPairs names, a disabled control exempt. Graphics and the
+// states after a click are not measured (docs/agents/page-checks.md).
+// The rows of the texts measured, of every page and width
+const contrastRows = [];
+// How many pages, each at one width, measureContrast has read
+let contrastLoads = 0;
+// How many requests to script.google.com the pages opened by contrastPage aborted
+let gasAborted = 0;
+
+// The path and query of a URL, as the rule names a page
+const pathOf = (url) => {
+  const { pathname, search } = new URL(url);
+  return pathname + search;
+};
+
+// Measures the colour pairs of a page as it is, once it has loaded its data
+// (measureLoaded), adding its rows to contrastRows, each naming where (its
+// path and width); throws naming where when it cannot.
+async function measureContrast(page, where) {
+  try {
+    contrastRows.push(...(await measureLoaded(page, where)));
+  } catch (err) {
+    throw new Error(`${where}: colour pair rule: ${err.message}`);
+  }
+  contrastLoads++;
+}
+
+// Opens a page at width px on its own and measures it: map tiles blocked, so
+// the text on the map (Leaflet's attribution, on a translucent ground) is read
+// against the same ground every run, not against a tile that may or may not
+// have loaded, and any request to script.google.com aborted, so /pa keeps its
+// build's numbers (useKPIData) and never reaches the production GAS. Not on
+// checkPage's page: it loads the tiles, as a blocked tile is a console error
+// there.
+async function contrastPage(browser, url, width) {
+  const page = await browser.newPage({ viewport: { width, height: 800 } });
+  try {
+    await blockTiles(page);
+    await page.route(
+      (u) => u.hostname === "script.google.com",
+      (route) => {
+        gasAborted++;
+        return route.abort();
+      },
+    );
+    const response = await page.goto(url, { waitUntil: "networkidle" });
+    if (!response?.ok()) throw new Error(`${pathOf(url)}: HTTP ${response?.status()} for the colour pair rule`);
+    await measureContrast(page, `${pathOf(url)} ${width}px`);
+  } finally {
+    await page.close();
+  }
+}
+
+// The problems of the colour pair rule once every page is measured: a pair
+// a problem, naming the pages and widths, the texts, the two colours, the
+// ratio and the threshold, or what could not be measured.
+function contrastProblems() {
+  return formatPairs(failingPairs(groupPairs(contrastRows))).map((line) => `colour pair (SPEC §9.1): ${line}`);
 }
 
 // This build's catalog.json, รายงานที่รอวิเคราะห์ included.
@@ -574,6 +649,10 @@ try {
   ]) {
     for (const problem of await overflowProblems(browser, origin + urlPath)) problems.push(`${urlPath}: ${problem}`);
   }
+  for (const urlPath of checkedPaths) await contrastPage(browser, origin + urlPath, WIDTH);
+  // /pa for this rule alone, not /pa/{ปี}, whose components are the same
+  for (const width of [WIDTH, CONTRAST_WIDE]) await contrastPage(browser, origin + "/pa", width);
+  problems.push(...contrastProblems());
   for (const problem of unlinked) problems.push(`/reports: ${problem}`);
   if (shownYear) {
     for (const problem of await checkPopulation(browser, origin + "/", hasAge)) problems.push(`/: ${problem}`);
@@ -601,5 +680,8 @@ console.log(
     `with a page do not scroll sideways at ${REVIEW_WIDTHS.join(", ")} px; each report loads its own table's page only; ` +
     `the names of unit bar charts show whole (${unitChartMeasures} row(s) measured) and clear of their bars at every width checked; ` +
     `no text shows under ${MIN_TEXT} px at any width checked; ` +
-    `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}`,
+    `/reports links every report, รายงานประชากร among them, before JavaScript runs; ${populationResult}; ` +
+    `the colour pairs of text pass WCAG AA on every page at ${WIDTH} px, on those opened at the review widths at ${CONTRAST_WIDE} px ` +
+    `and on /pa at ${WIDTH} and ${CONTRAST_WIDE} px (${contrastRows.length} text(s) measured on ${contrastLoads} page(s) and width(s), ` +
+    `${groupPairs(contrastRows).length} pair(s), disabled controls exempt; ${gasAborted} request(s) to script.google.com aborted)`,
 );
